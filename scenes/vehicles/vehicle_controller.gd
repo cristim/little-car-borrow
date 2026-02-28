@@ -8,6 +8,13 @@ func _physics_process(_delta: float) -> void:
 	if not vehicle:
 		return
 
+	if not InputManager.is_vehicle():
+		vehicle.steering_input = 0.0
+		vehicle.throttle_input = 0.0
+		vehicle.brake_input = 0.0
+		vehicle.handbrake_input = 0.0
+		return
+
 	var steer: float = Input.get_action_strength("move_left") - Input.get_action_strength("move_right")
 	var throttle: float = Input.get_action_strength("move_forward")
 	var brake: float = Input.get_action_strength("move_backward")
