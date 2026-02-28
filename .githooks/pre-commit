@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Pre-commit hook: lint all staged GDScript files
+
+VENV_LINT=".venv/bin/gdlint"
+
+# Check if gdlint is available
+if [ ! -x "$VENV_LINT" ]; then
+    echo "ERROR: gdlint not found at $VENV_LINT"
+    echo "Run: python3 -m venv .venv && .venv/bin/pip install gdtoolkit"
+    exit 1
+fi
+
+# Get staged .gd files (only in src/, scenes/, tests/)
+STAGED_GD_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '(src|scenes|tests)/.*\.gd$' || true)
+
+if [ -z "$STAGED_GD_FILES" ]; then
+    exit 0
+fi
+
+echo "Linting staged GDScript files..."
+echo "$STAGED_GD_FILES" | xargs "$VENV_LINT"
+echo "Lint passed."
