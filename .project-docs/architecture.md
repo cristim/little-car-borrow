@@ -35,6 +35,24 @@ More autoloads will be added: AudioManager, WantedLevelManager, MissionManager, 
 - **Data-driven config** via exported vars and custom Resources
 - **Object pooling** for spawnable entities (traffic, pedestrians, police)
 
+## City Layout (Phase 3)
+- **Builder script**: `scenes/world/city.gd` generates all geometry procedurally at `_ready()`
+- **Grid**: 10x10 blocks, 11 N-S + 11 E-W roads
+- **Road widths**: 8m standard, 12m boulevard (index 5), 4m alley (index 2)
+- **Sidewalks**: 2.5m wide strips on each road side, 0.15m above road surface
+- **Buildings**: 1-3 per block, seeded RNG (seed 42), 5-20m tall, muted colors, layer 2
+- **Trees**: cylinder trunk + sphere canopy every 15m along sidewalks, layer 2
+- **Ramps**: 4 tilted-box ramps on boulevard and cross-streets, group "Road", layer 1
+- **Safety ground**: WorldBoundaryShape3D at Y=-5, group "Road"
+- All road/sidewalk surfaces in group `"Road"` for GEVP tire friction
+
+## Pause Menu
+- **File**: `scenes/ui/menus/pause_menu.gd` + `.tscn`
+- CanvasLayer with `process_mode = PROCESS_MODE_ALWAYS`
+- Toggled by `pause` input action (Esc key)
+- Pauses scene tree, shows semi-transparent overlay + Resume/Quit buttons
+- Saves and restores InputManager context (FOOT/VEHICLE) around pause
+
 ## Collision Layers
 | Layer | Name | Used By |
 |-------|------|---------|
