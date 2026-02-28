@@ -1,9 +1,8 @@
-class_name State
 extends Node
 ## Base class for all states in a state machine.
 
 # Reference to the state machine that owns this state, set by StateMachine.
-var state_machine: StateMachine
+var state_machine: Node
 
 
 func enter(_msg: Dictionary = {}) -> void:

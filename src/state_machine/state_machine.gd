@@ -1,16 +1,17 @@
-class_name StateMachine
 extends Node
 ## Generic node-based state machine. Add State children to use.
 
-@export var initial_state: State
+const StateScript = preload("res://src/state_machine/state.gd")
 
-var current_state: State
+@export var initial_state: Node
+
+var current_state: Node
 var states: Dictionary = {}
 
 
 func _ready() -> void:
 	for child in get_children():
-		if child is State:
+		if child is StateScript:
 			states[child.name.to_lower()] = child
 			child.state_machine = self
 	if initial_state:

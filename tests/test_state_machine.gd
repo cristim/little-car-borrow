@@ -1,9 +1,12 @@
 extends GutTest
 ## Tests for the StateMachine and State base classes.
 
+const StateScript = preload("res://src/state_machine/state.gd")
+const StateMachineScript = preload("res://src/state_machine/state_machine.gd")
+
 
 class MockState:
-	extends State
+	extends "res://src/state_machine/state.gd"
 	var entered := false
 	var exited := false
 	var last_msg: Dictionary = {}
@@ -17,7 +20,7 @@ class MockState:
 
 
 func test_transition_calls_exit_and_enter() -> void:
-	var sm := StateMachine.new()
+	var sm := StateMachineScript.new()
 	var state_a := MockState.new()
 	state_a.name = "StateA"
 	var state_b := MockState.new()
@@ -39,7 +42,7 @@ func test_transition_calls_exit_and_enter() -> void:
 
 
 func test_transition_to_invalid_state_does_not_crash() -> void:
-	var sm := StateMachine.new()
+	var sm := StateMachineScript.new()
 	var state_a := MockState.new()
 	state_a.name = "StateA"
 	sm.add_child(state_a)
