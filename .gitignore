@@ -1,0 +1,25 @@
+# Godot
+.godot/
+*.import
+.uid_cache
+
+# Python venv
+.venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+*.swp
+*.swo
+*~
+
+# Exported builds
+export/
+*.pck
+*.zip
+
+# Claude
+.claude/
