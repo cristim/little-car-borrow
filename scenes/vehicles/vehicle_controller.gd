@@ -2,13 +2,14 @@ extends Node
 ## Maps our game input actions to GEVP Vehicle properties.
 
 @export var vehicle: Node
+var active := false
 
 
 func _physics_process(_delta: float) -> void:
 	if not vehicle:
 		return
 
-	if not InputManager.is_vehicle():
+	if not active:
 		vehicle.steering_input = 0.0
 		vehicle.throttle_input = 0.0
 		vehicle.brake_input = 0.0

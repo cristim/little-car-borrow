@@ -14,6 +14,11 @@ func enter(msg: Dictionary = {}) -> void:
 	owner.collision_layer = 0
 	owner.collision_mask = 0
 
+	# Activate player's vehicle controller
+	var vc := _vehicle.get_node_or_null("VehicleController")
+	if vc:
+		vc.active = true
+
 	# Switch to vehicle context and camera
 	InputManager.set_context(InputManager.Context.VEHICLE)
 	var vcam := _vehicle.get_node_or_null("VehicleCamera")
