@@ -10,10 +10,10 @@ var nearest_vehicle: Node = null
 var current_vehicle: Node = null
 
 @onready var player_camera: Node3D = $PlayerCamera
-@onready var mesh: MeshInstance3D = $Mesh
 
 
 func _ready() -> void:
+	add_to_group("player")
 	InputManager.set_context(InputManager.Context.FOOT)
 	player_camera.make_active()
 	$InteractionArea.area_entered.connect(_on_interaction_area_entered)
