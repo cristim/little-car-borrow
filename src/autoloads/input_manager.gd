@@ -15,6 +15,12 @@ func set_context(ctx: Context) -> void:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed:
+		if current_context != Context.MENU and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
 func is_foot() -> bool:
 	return current_context == Context.FOOT
 
