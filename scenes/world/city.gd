@@ -1,36 +1,160 @@
 extends Node3D
-## Procedural greybox city builder.
-## Generates a 10x10 block grid with roads, sidewalks, buildings, trees,
-## ramps, and a safety ground plane at _ready().
+## Infinite procedural city using chunk-based generation.
+## Loads/unloads city tiles around the player as they move.
+## One chunk = one full grid tile (~488m x 488m).
+##
+## Performance: meshes merged via SurfaceTool, compound collision bodies,
+## shared material palette, MultiMesh trees. ~22 draw calls per chunk.
 
-const GRID_SIZE := 10
-const BLOCK_SIZE := 40.0
-const ROAD_WIDTH := 8.0
-const BOULEVARD_WIDTH := 12.0
-const ALLEY_WIDTH := 4.0
-const SIDEWALK_WIDTH := 2.5
-const SIDEWALK_HEIGHT := 0.15
-const ROAD_THICKNESS := 0.2
-const BOULEVARD_INDEX := 5
-const ALLEY_INDEX := 2
-const CURB_RAMP_RUN := 0.3
+const CHUNK_LOAD_RADIUS := 1.5  # in grid_span units — loads full 3x3 grid
+const CHUNK_UNLOAD_RADIUS := 2.5
+const UPDATE_INTERVAL := 0.2
+const SCAN_RANGE := 3  # check -3..+3 tiles around player
+const LOOKAHEAD_TIME := 3.0  # seconds of velocity prediction
 
+var _grid = preload("res://src/road_grid.gd").new()
+
+# Shared material palette — initialized once, reused across all chunks
 var _road_mat: StandardMaterial3D
 var _sidewalk_mat: StandardMaterial3D
-var _rng := RandomNumberGenerator.new()
+var _ground_mat: StandardMaterial3D
+var _marking_mat: StandardMaterial3D
+var _ramp_mat: StandardMaterial3D
+var _window_mat: StandardMaterial3D
+var _building_mats: Array[StandardMaterial3D] = []
+var _trunk_mats: Array[StandardMaterial3D] = []
+var _canopy_mats: Array[StandardMaterial3D] = []
+
+# Canonical tree meshes for MultiMesh (created once in _ready)
+var _trunk_mesh: CylinderMesh
+var _canopy_meshes: Array[Mesh] = []  # 5 variants: sphere, cone, tall, flat, sphere2
+
+# Builder scripts
+var _road_builder = preload("res://scenes/world/generator/chunk_builder_roads.gd").new()
+var _building_builder = preload("res://scenes/world/generator/chunk_builder_buildings.gd").new()
+var _tree_builder = preload("res://scenes/world/generator/chunk_builder_trees.gd").new()
+var _marking_builder = preload("res://scenes/world/generator/chunk_builder_markings.gd").new()
+var _ramp_builder = preload("res://scenes/world/generator/chunk_builder_ramps.gd").new()
+
+var _chunks: Dictionary = {}
+var _update_timer := 0.0
+var _player: Node3D = null
+var _player_found := false
 
 
 func _ready() -> void:
-	_rng.seed = 42
 	_init_materials()
-	_build_roads()
-	_build_block_ground()
-	_build_sidewalks()
-	_build_buildings()
-	_build_trees()
-	_build_ramps()
+	_init_tree_meshes()
+	_init_builders()
 	_build_safety_ground()
+	_load_chunks_around(Vector3.ZERO, Vector3.ZERO)
 
+
+func _process(delta: float) -> void:
+	if not _player:
+		_player = get_tree().get_first_node_in_group("player") as Node3D
+		if not _player:
+			return
+
+	# First time we find the player, immediately load around them
+	if not _player_found:
+		_player_found = true
+		_load_chunks_around(_player.global_position, Vector3.ZERO)
+
+	_update_timer += delta
+	if _update_timer < UPDATE_INTERVAL:
+		return
+	_update_timer = 0.0
+
+	var pos := _get_tracking_position()
+	var vel := _get_player_velocity()
+	_load_chunks_around(pos, vel)
+	_unload_distant_chunks(pos)
+
+
+func _load_chunks_around(pos: Vector3, velocity: Vector3) -> void:
+	var span: float = _grid.get_grid_span()
+	var load_dist := CHUNK_LOAD_RADIUS * span
+
+	# Also load around predicted future position
+	var predicted := pos + velocity * LOOKAHEAD_TIME
+	var center_curr := _grid.get_chunk_coord(Vector2(pos.x, pos.z))
+	var center_pred := _grid.get_chunk_coord(
+		Vector2(predicted.x, predicted.z)
+	)
+
+	for dx in range(-SCAN_RANGE, SCAN_RANGE + 1):
+		for dz in range(-SCAN_RANGE, SCAN_RANGE + 1):
+			var tile := Vector2i(center_curr.x + dx, center_curr.y + dz)
+			if _chunks.has(tile):
+				continue
+			var origin := _grid.get_chunk_origin(tile)
+			# Load if near current position OR near predicted position
+			var d_curr := Vector2(
+				pos.x - origin.x, pos.z - origin.y
+			).length()
+			var d_pred := Vector2(
+				predicted.x - origin.x, predicted.z - origin.y
+			).length()
+			if d_curr < load_dist or d_pred < load_dist:
+				_chunks[tile] = _build_chunk(tile)
+
+
+func _unload_distant_chunks(pos: Vector3) -> void:
+	var span: float = _grid.get_grid_span()
+	var unload_dist := CHUNK_UNLOAD_RADIUS * span
+	var to_remove: Array[Vector2i] = []
+
+	for tile: Vector2i in _chunks:
+		var origin := _grid.get_chunk_origin(tile)
+		var dist := Vector2(pos.x - origin.x, pos.z - origin.y).length()
+		if dist > unload_dist:
+			to_remove.append(tile)
+
+	for tile in to_remove:
+		var node: Node3D = _chunks[tile]
+		_chunks.erase(tile)
+		node.queue_free()
+
+
+func _get_tracking_position() -> Vector3:
+	var vehicle = _player.get("current_vehicle")
+	if vehicle and vehicle is Node3D:
+		return (vehicle as Node3D).global_position
+	return _player.global_position
+
+
+func _get_player_velocity() -> Vector3:
+	# When driving, read velocity from the vehicle RigidBody3D
+	var vehicle = _player.get("current_vehicle")
+	if vehicle and vehicle is RigidBody3D:
+		return (vehicle as RigidBody3D).linear_velocity
+	# On foot, CharacterBody3D has a velocity property
+	if _player is CharacterBody3D:
+		return (_player as CharacterBody3D).velocity
+	return Vector3.ZERO
+
+
+func _build_chunk(tile: Vector2i) -> Node3D:
+	var chunk := Node3D.new()
+	chunk.name = "Chunk_%d_%d" % [tile.x, tile.y]
+	add_child(chunk)
+
+	var origin := _grid.get_chunk_origin(tile)
+	var ox := origin.x
+	var oz := origin.y
+	var span: float = _grid.get_grid_span()
+
+	_road_builder.build(chunk, ox, oz, span)
+	_building_builder.build(chunk, tile, ox, oz)
+	_tree_builder.build(chunk, tile, ox, oz)
+	_marking_builder.build(chunk, ox, oz, span)
+	_ramp_builder.build(chunk, ox, oz)
+
+	return chunk
+
+
+# --- Material palette ---
 
 func _init_materials() -> void:
 	_road_mat = StandardMaterial3D.new()
@@ -39,216 +163,247 @@ func _init_materials() -> void:
 	_sidewalk_mat = StandardMaterial3D.new()
 	_sidewalk_mat.albedo_color = Color(0.55, 0.55, 0.53)
 
+	_ground_mat = StandardMaterial3D.new()
+	_ground_mat.albedo_color = Color(0.45, 0.45, 0.43)
 
-func _get_road_width(index: int) -> float:
-	if index == BOULEVARD_INDEX:
-		return BOULEVARD_WIDTH
-	if index == ALLEY_INDEX:
-		return ALLEY_WIDTH
-	return ROAD_WIDTH
+	_marking_mat = StandardMaterial3D.new()
+	_marking_mat.albedo_color = Color(1.0, 1.0, 1.0, 1.0)
+	_marking_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_marking_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_marking_mat.render_priority = 1
+	_marking_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+	_ramp_mat = StandardMaterial3D.new()
+	_ramp_mat.albedo_color = Color(0.6, 0.55, 0.2)
+
+	_window_mat = StandardMaterial3D.new()
+	_window_mat.albedo_color = Color(0.18, 0.22, 0.28)
+	_window_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+	# 12 building colors — cool-toned skyscraper schemes
+	var bld_colors: Array[Color] = [
+		Color(0.55, 0.58, 0.62), Color(0.48, 0.50, 0.55),
+		Color(0.62, 0.64, 0.66), Color(0.38, 0.42, 0.50),
+		Color(0.58, 0.56, 0.52), Color(0.42, 0.45, 0.52),
+		Color(0.52, 0.55, 0.60), Color(0.45, 0.48, 0.42),
+		Color(0.60, 0.58, 0.55), Color(0.35, 0.40, 0.48),
+		Color(0.50, 0.52, 0.48), Color(0.44, 0.46, 0.54),
+	]
+	for c in bld_colors:
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = c
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		_building_mats.append(mat)
+
+	# 5 trunk colors
+	var trunk_colors: Array[Color] = [
+		Color(0.35, 0.22, 0.10), Color(0.30, 0.18, 0.08),
+		Color(0.40, 0.25, 0.12), Color(0.28, 0.20, 0.10),
+		Color(0.38, 0.24, 0.14),
+	]
+	for c in trunk_colors:
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = c
+		_trunk_mats.append(mat)
+
+	# 6 canopy colors — vertex_color_use_as_albedo used on MultiMesh material
+	var canopy_colors: Array[Color] = [
+		Color(0.15, 0.42, 0.12), Color(0.12, 0.48, 0.10),
+		Color(0.18, 0.38, 0.14), Color(0.10, 0.45, 0.08),
+		Color(0.20, 0.40, 0.15), Color(0.14, 0.50, 0.12),
+	]
+	for c in canopy_colors:
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = c
+		_canopy_mats.append(mat)
 
 
-## Returns the center X or Z position of road at given index.
-func _get_road_center(index: int) -> float:
-	var pos := 0.0
-	for i in range(index):
-		pos += _get_road_width(i) * 0.5 + BLOCK_SIZE + _get_road_width(i + 1) * 0.5
-	# Offset so grid is centered around origin.
-	var total := _get_grid_span()
-	return pos - total * 0.5 + _get_road_width(0) * 0.5
+func _init_tree_meshes() -> void:
+	# Canonical trunk cylinder (unit size — scaled per instance via transform)
+	_trunk_mesh = CylinderMesh.new()
+	_trunk_mesh.top_radius = 0.7
+	_trunk_mesh.bottom_radius = 1.0
+	_trunk_mesh.height = 1.0
+	_trunk_mesh.radial_segments = 6
+	_trunk_mesh.rings = 1
+
+	# 5 canopy shape variants
+	var sphere := SphereMesh.new()
+	sphere.radius = 1.0
+	sphere.height = 2.0
+	sphere.radial_segments = 8
+	sphere.rings = 4
+	_canopy_meshes.append(sphere)
+
+	var cone := CylinderMesh.new()
+	cone.bottom_radius = 1.0
+	cone.top_radius = 0.2
+	cone.height = 1.0
+	cone.radial_segments = 8
+	cone.rings = 1
+	_canopy_meshes.append(cone)
+
+	var tall := SphereMesh.new()
+	tall.radius = 0.8
+	tall.height = 3.0
+	tall.radial_segments = 8
+	tall.rings = 4
+	_canopy_meshes.append(tall)
+
+	var flat := SphereMesh.new()
+	flat.radius = 1.5
+	flat.height = 1.0
+	flat.radial_segments = 8
+	flat.rings = 4
+	_canopy_meshes.append(flat)
+
+	var sphere2 := SphereMesh.new()
+	sphere2.radius = 1.2
+	sphere2.height = 2.4
+	sphere2.radial_segments = 8
+	sphere2.rings = 4
+	_canopy_meshes.append(sphere2)
 
 
-func _get_grid_span() -> float:
-	var span := 0.0
-	for i in range(GRID_SIZE + 1):
-		span += _get_road_width(i)
-	span += BLOCK_SIZE * GRID_SIZE
-	return span
+func _init_builders() -> void:
+	_road_builder.init(_grid, _road_mat, _sidewalk_mat, _ground_mat)
+	_building_builder.init(_grid, _building_mats, _window_mat)
+	_tree_builder.init(_grid, _trunk_mats, _canopy_mats, _trunk_mesh, _canopy_meshes)
+	_marking_builder.init(_grid, _marking_mat)
+	_ramp_builder.init(_grid, _ramp_mat)
 
 
-func _create_static_body(
-	parent: Node3D,
-	node_name: String,
-	pos: Vector3,
-	size: Vector3,
-	material: StandardMaterial3D,
-	group: String,
-	layer: int,
-	rotation_deg := Vector3.ZERO,
-) -> StaticBody3D:
+func _build_safety_ground() -> void:
 	var body := StaticBody3D.new()
-	body.name = node_name
-	body.position = pos
-	if rotation_deg != Vector3.ZERO:
-		body.rotation_degrees = rotation_deg
-	body.collision_layer = layer
-	body.collision_mask = 0
-	body.add_to_group(group)
-
-	var col := CollisionShape3D.new()
-	var shape := BoxShape3D.new()
-	shape.size = size
-	col.shape = shape
-	body.add_child(col)
-
-	var mesh_inst := MeshInstance3D.new()
-	var box_mesh := BoxMesh.new()
-	box_mesh.size = size
-	box_mesh.material = material
-	mesh_inst.mesh = box_mesh
-	body.add_child(mesh_inst)
-
-	parent.add_child(body)
-	return body
-
-
-func _build_roads() -> void:
-	var roads_parent := Node3D.new()
-	roads_parent.name = "Roads"
-	add_child(roads_parent)
-
-	var span := _get_grid_span()
-
-	# N-S roads (run along Z axis)
-	for i in range(GRID_SIZE + 1):
-		var w := _get_road_width(i)
-		var cx := _get_road_center(i)
-		_create_static_body(
-			roads_parent,
-			"RoadNS_%d" % i,
-			Vector3(cx, -ROAD_THICKNESS * 0.5, 0.0),
-			Vector3(w, ROAD_THICKNESS, span),
-			_road_mat,
-			"Road",
-			1,
-		)
-
-	# E-W roads (run along X axis)
-	for j in range(GRID_SIZE + 1):
-		var w := _get_road_width(j)
-		var cz := _get_road_center(j)
-		_create_static_body(
-			roads_parent,
-			"RoadEW_%d" % j,
-			Vector3(0.0, -ROAD_THICKNESS * 0.5, cz),
-			Vector3(span, ROAD_THICKNESS, w),
-			_road_mat,
-			"Road",
-			1,
-		)
-
-
-func _build_block_ground() -> void:
-	var ground_parent := Node3D.new()
-	ground_parent.name = "BlockGround"
-	add_child(ground_parent)
-
-	var ground_mat := StandardMaterial3D.new()
-	ground_mat.albedo_color = Color(0.45, 0.45, 0.43)
-
-	for bx in range(GRID_SIZE):
-		for bz in range(GRID_SIZE):
-			var x_start := _get_road_center(bx) + _get_road_width(bx) * 0.5
-			var x_end := _get_road_center(bx + 1) - _get_road_width(bx + 1) * 0.5
-			var z_start := _get_road_center(bz) + _get_road_width(bz) * 0.5
-			var z_end := _get_road_center(bz + 1) - _get_road_width(bz + 1) * 0.5
-			var bw := x_end - x_start
-			var bd := z_end - z_start
-			_create_static_body(
-				ground_parent,
-				"BlockGround_%d_%d" % [bx, bz],
-				Vector3((x_start + x_end) * 0.5, -ROAD_THICKNESS * 0.5, (z_start + z_end) * 0.5),
-				Vector3(bw, ROAD_THICKNESS, bd),
-				ground_mat,
-				"Road",
-				1,
-			)
-
-
-func _build_sidewalks() -> void:
-	var sw_parent := Node3D.new()
-	sw_parent.name = "Sidewalks"
-	add_child(sw_parent)
-
-	# N-S road sidewalks: one segment per block (between consecutive E-W roads)
-	for i in range(GRID_SIZE + 1):
-		var rw := _get_road_width(i)
-		var cx := _get_road_center(i)
-		for j in range(GRID_SIZE):
-			var z_start := _get_road_center(j) + _get_road_width(j) * 0.5
-			var z_end := _get_road_center(j + 1) - _get_road_width(j + 1) * 0.5
-			var seg_len := z_end - z_start
-			var seg_cz := (z_start + z_end) * 0.5
-			_create_sidewalk(
-				sw_parent,
-				"SwNS_%d_%d_L" % [i, j],
-				Vector3(cx - rw * 0.5 - SIDEWALK_WIDTH * 0.5, SIDEWALK_HEIGHT * 0.5, seg_cz),
-				SIDEWALK_WIDTH,
-				seg_len,
-				"z",
-			)
-			_create_sidewalk(
-				sw_parent,
-				"SwNS_%d_%d_R" % [i, j],
-				Vector3(cx + rw * 0.5 + SIDEWALK_WIDTH * 0.5, SIDEWALK_HEIGHT * 0.5, seg_cz),
-				SIDEWALK_WIDTH,
-				seg_len,
-				"z",
-			)
-
-	# E-W road sidewalks: one segment per block (between consecutive N-S roads)
-	for j in range(GRID_SIZE + 1):
-		var rw := _get_road_width(j)
-		var cz := _get_road_center(j)
-		for i in range(GRID_SIZE):
-			var x_start := _get_road_center(i) + _get_road_width(i) * 0.5
-			var x_end := _get_road_center(i + 1) - _get_road_width(i + 1) * 0.5
-			var seg_len := x_end - x_start
-			var seg_cx := (x_start + x_end) * 0.5
-			_create_sidewalk(
-				sw_parent,
-				"SwEW_%d_%d_T" % [j, i],
-				Vector3(seg_cx, SIDEWALK_HEIGHT * 0.5, cz - rw * 0.5 - SIDEWALK_WIDTH * 0.5),
-				SIDEWALK_WIDTH,
-				seg_len,
-				"x",
-			)
-			_create_sidewalk(
-				sw_parent,
-				"SwEW_%d_%d_B" % [j, i],
-				Vector3(seg_cx, SIDEWALK_HEIGHT * 0.5, cz + rw * 0.5 + SIDEWALK_WIDTH * 0.5),
-				SIDEWALK_WIDTH,
-				seg_len,
-				"x",
-			)
-
-
-## Creates a sidewalk with trapezoidal collision (sloped edges) for step-up.
-## along_axis: "z" for N-S sidewalks (width in X), "x" for E-W (width in Z).
-func _create_sidewalk(
-	parent: Node3D,
-	node_name: String,
-	pos: Vector3,
-	sw_width: float,
-	length: float,
-	along_axis: String,
-) -> void:
-	var body := StaticBody3D.new()
-	body.name = node_name
-	body.position = pos
+	body.name = "SafetyGround"
+	body.position = Vector3(0.0, -5.0, 0.0)
 	body.collision_layer = 1
 	body.collision_mask = 0
 	body.add_to_group("Road")
 
-	var hw := sw_width * 0.5
-	var hh := SIDEWALK_HEIGHT * 0.5
-	var hl := length * 0.5
-	var rr := CURB_RAMP_RUN
+	var col := CollisionShape3D.new()
+	col.shape = WorldBoundaryShape3D.new()
+	body.add_child(col)
 
+	add_child(body)
+
+
+# --- SurfaceTool helpers (shared by builders) ---
+
+## Emit 36 vertices (12 triangles) for an axis-aligned box.
+static func st_add_box(st: SurfaceTool, center: Vector3, size: Vector3) -> void:
+	var hx := size.x * 0.5
+	var hy := size.y * 0.5
+	var hz := size.z * 0.5
+	var cx := center.x
+	var cy := center.y
+	var cz := center.z
+
+	# 8 corners
+	var v0 := Vector3(cx - hx, cy - hy, cz - hz)
+	var v1 := Vector3(cx + hx, cy - hy, cz - hz)
+	var v2 := Vector3(cx + hx, cy + hy, cz - hz)
+	var v3 := Vector3(cx - hx, cy + hy, cz - hz)
+	var v4 := Vector3(cx - hx, cy - hy, cz + hz)
+	var v5 := Vector3(cx + hx, cy - hy, cz + hz)
+	var v6 := Vector3(cx + hx, cy + hy, cz + hz)
+	var v7 := Vector3(cx - hx, cy + hy, cz + hz)
+
+	# 6 faces, 2 tris each (CCW winding for outward normals)
+	# Front (-Z)
+	st.add_vertex(v0); st.add_vertex(v2); st.add_vertex(v1)
+	st.add_vertex(v0); st.add_vertex(v3); st.add_vertex(v2)
+	# Back (+Z)
+	st.add_vertex(v5); st.add_vertex(v6); st.add_vertex(v4)
+	st.add_vertex(v4); st.add_vertex(v6); st.add_vertex(v7)
+	# Left (-X)
+	st.add_vertex(v4); st.add_vertex(v7); st.add_vertex(v0)
+	st.add_vertex(v0); st.add_vertex(v7); st.add_vertex(v3)
+	# Right (+X)
+	st.add_vertex(v1); st.add_vertex(v2); st.add_vertex(v5)
+	st.add_vertex(v5); st.add_vertex(v2); st.add_vertex(v6)
+	# Top (+Y)
+	st.add_vertex(v3); st.add_vertex(v7); st.add_vertex(v2)
+	st.add_vertex(v2); st.add_vertex(v7); st.add_vertex(v6)
+	# Bottom (-Y)
+	st.add_vertex(v4); st.add_vertex(v0); st.add_vertex(v5)
+	st.add_vertex(v5); st.add_vertex(v0); st.add_vertex(v1)
+
+
+## Emit 30 vertices (10 triangles) for a box without the bottom face.
+## Use for buildings/objects sitting on ground to avoid z-fighting.
+static func st_add_box_no_bottom(
+	st: SurfaceTool, center: Vector3, size: Vector3,
+) -> void:
+	var hx := size.x * 0.5
+	var hy := size.y * 0.5
+	var hz := size.z * 0.5
+	var cx := center.x
+	var cy := center.y
+	var cz := center.z
+	var v0 := Vector3(cx - hx, cy - hy, cz - hz)
+	var v1 := Vector3(cx + hx, cy - hy, cz - hz)
+	var v2 := Vector3(cx + hx, cy + hy, cz - hz)
+	var v3 := Vector3(cx - hx, cy + hy, cz - hz)
+	var v4 := Vector3(cx - hx, cy - hy, cz + hz)
+	var v5 := Vector3(cx + hx, cy - hy, cz + hz)
+	var v6 := Vector3(cx + hx, cy + hy, cz + hz)
+	var v7 := Vector3(cx - hx, cy + hy, cz + hz)
+	# Front (-Z)
+	st.add_vertex(v0); st.add_vertex(v2); st.add_vertex(v1)
+	st.add_vertex(v0); st.add_vertex(v3); st.add_vertex(v2)
+	# Back (+Z)
+	st.add_vertex(v5); st.add_vertex(v6); st.add_vertex(v4)
+	st.add_vertex(v4); st.add_vertex(v6); st.add_vertex(v7)
+	# Left (-X)
+	st.add_vertex(v4); st.add_vertex(v7); st.add_vertex(v0)
+	st.add_vertex(v0); st.add_vertex(v7); st.add_vertex(v3)
+	# Right (+X)
+	st.add_vertex(v1); st.add_vertex(v2); st.add_vertex(v5)
+	st.add_vertex(v5); st.add_vertex(v2); st.add_vertex(v6)
+	# Top (+Y) only — no bottom face
+	st.add_vertex(v3); st.add_vertex(v7); st.add_vertex(v2)
+	st.add_vertex(v2); st.add_vertex(v7); st.add_vertex(v6)
+
+
+## Emit a flat quad on the XZ plane (for road markings).
+static func st_add_quad_xz(
+	st: SurfaceTool, cx: float, cz: float,
+	hw: float, hl: float, y: float,
+) -> void:
+	var v0 := Vector3(cx - hw, y, cz - hl)
+	var v1 := Vector3(cx + hw, y, cz - hl)
+	var v2 := Vector3(cx + hw, y, cz + hl)
+	var v3 := Vector3(cx - hw, y, cz + hl)
+	st.add_vertex(v0); st.add_vertex(v2); st.add_vertex(v1)
+	st.add_vertex(v0); st.add_vertex(v3); st.add_vertex(v2)
+
+
+## Add a BoxShape3D collision child to a StaticBody3D.
+static func add_box_collision(body: StaticBody3D, center: Vector3, size: Vector3) -> void:
+	var col := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = size
+	col.shape = shape
+	col.position = center
+	body.add_child(col)
+
+
+## Add a ramped sidewalk ConvexPolygonShape3D collision child.
+## along_axis: "z" for N-S roads, "x" for E-W roads.
+static func add_sidewalk_collision(
+	body: StaticBody3D, center: Vector3,
+	sw_width: float, length: float,
+	sh: float, ramp_run: float,
+	along_axis: String,
+) -> void:
+	var hw := sw_width * 0.5
+	var hh := sh * 0.5
+	var hl := length * 0.5
+	var rr := ramp_run
 	var col := CollisionShape3D.new()
 	var shape := ConvexPolygonShape3D.new()
 	var points: PackedVector3Array
-
 	if along_axis == "z":
 		points = PackedVector3Array([
 			Vector3(-hw, -hh, -hl),
@@ -271,219 +426,77 @@ func _create_sidewalk(
 			Vector3(hl, hh, hw - rr),
 			Vector3(hl, -hh, hw),
 		])
-
 	shape.points = points
 	col.shape = shape
+	col.position = center
 	body.add_child(col)
 
-	var mesh_inst := MeshInstance3D.new()
-	var box_mesh := BoxMesh.new()
-	if along_axis == "z":
-		box_mesh.size = Vector3(sw_width, SIDEWALK_HEIGHT, length)
-	else:
-		box_mesh.size = Vector3(length, SIDEWALK_HEIGHT, sw_width)
-	box_mesh.material = _sidewalk_mat
-	mesh_inst.mesh = box_mesh
-	body.add_child(mesh_inst)
 
-	parent.add_child(body)
-
-
-func _build_buildings() -> void:
-	var bld_parent := Node3D.new()
-	bld_parent.name = "Buildings"
-	add_child(bld_parent)
-
-	var idx := 0
-	for bx in range(GRID_SIZE):
-		for bz in range(GRID_SIZE):
-			var block_center := _get_block_center(bx, bz)
-			var count := _rng.randi_range(1, 4)
-			for _b in range(count):
-				var bw := _rng.randf_range(6.0, 22.0)
-				var bd := _rng.randf_range(6.0, 22.0)
-				# Mix of short shops and tall towers
-				var bh: float
-				if _rng.randf() < 0.15:
-					bh = _rng.randf_range(25.0, 45.0)
-				elif _rng.randf() < 0.3:
-					bh = _rng.randf_range(3.0, 6.0)
-				else:
-					bh = _rng.randf_range(7.0, 20.0)
-				var margin := 2.0
-				var max_offset_x := maxf((BLOCK_SIZE - bw) * 0.5 - margin, 0.0)
-				var max_offset_z := maxf((BLOCK_SIZE - bd) * 0.5 - margin, 0.0)
-				var ox := _rng.randf_range(-max_offset_x, max_offset_x)
-				var oz := _rng.randf_range(-max_offset_z, max_offset_z)
-
-				var mat := StandardMaterial3D.new()
-				mat.albedo_color = Color(
-					_rng.randf_range(0.35, 0.75),
-					_rng.randf_range(0.35, 0.7),
-					_rng.randf_range(0.35, 0.7),
-				)
-
-				_create_static_body(
-					bld_parent,
-					"Building_%d" % idx,
-					Vector3(block_center.x + ox, bh * 0.5, block_center.y + oz),
-					Vector3(bw, bh, bd),
-					mat,
-					"Static",
-					2,
-				)
-				idx += 1
-
-
-func _get_block_center(bx: int, bz: int) -> Vector2:
-	# Block (bx, bz) sits between road bx and road bx+1 (same for z).
-	var cx := (_get_road_center(bx) + _get_road_width(bx) * 0.5
-		+ _get_road_center(bx + 1) - _get_road_width(bx + 1) * 0.5) * 0.5
-	var cz := (_get_road_center(bz) + _get_road_width(bz) * 0.5
-		+ _get_road_center(bz + 1) - _get_road_width(bz + 1) * 0.5) * 0.5
-	return Vector2(cx, cz)
-
-
-func _build_trees() -> void:
-	var tree_parent := Node3D.new()
-	tree_parent.name = "Trees"
-	add_child(tree_parent)
-
-	var tree_spacing := 15.0
-	var idx := 0
-
-	# Place trees along N-S road sidewalks (right side), segmented per block
-	for i in range(GRID_SIZE + 1):
-		var rw := _get_road_width(i)
-		var cx := _get_road_center(i)
-		var tree_x := cx + rw * 0.5 + SIDEWALK_WIDTH * 0.5
-		for j in range(GRID_SIZE):
-			var z_start := _get_road_center(j) + _get_road_width(j) * 0.5
-			var z_end := _get_road_center(j + 1) - _get_road_width(j + 1) * 0.5
-			var z := z_start + tree_spacing * 0.5
-			while z < z_end - 1.0:
-				_add_tree(tree_parent, idx, Vector3(tree_x, SIDEWALK_HEIGHT, z))
-				idx += 1
-				z += tree_spacing + _rng.randf_range(-3.0, 3.0)
-
-	# Place trees along E-W road sidewalks (bottom side), segmented per block
-	for j in range(GRID_SIZE + 1):
-		var rw := _get_road_width(j)
-		var cz := _get_road_center(j)
-		var tree_z := cz + rw * 0.5 + SIDEWALK_WIDTH * 0.5
-		for i in range(GRID_SIZE):
-			var x_start := _get_road_center(i) + _get_road_width(i) * 0.5
-			var x_end := _get_road_center(i + 1) - _get_road_width(i + 1) * 0.5
-			var x := x_start + tree_spacing * 0.5
-			while x < x_end - 1.0:
-				_add_tree(tree_parent, idx, Vector3(x, SIDEWALK_HEIGHT, tree_z))
-				idx += 1
-				x += tree_spacing + _rng.randf_range(-3.0, 3.0)
-
-
-func _add_tree(parent: Node3D, idx: int, pos: Vector3) -> void:
-	var trunk_h := _rng.randf_range(2.0, 5.0)
-	var trunk_r := _rng.randf_range(0.12, 0.3)
-	var canopy_r := _rng.randf_range(1.0, 2.5)
-	var canopy_h := canopy_r * _rng.randf_range(1.2, 2.5)
-
-	var tree_node := Node3D.new()
-	tree_node.name = "Tree_%d" % idx
-	tree_node.position = pos
-	parent.add_child(tree_node)
-
-	# Trunk (cylinder) with random brown tint
-	var trunk_mat := StandardMaterial3D.new()
-	trunk_mat.albedo_color = Color(
-		_rng.randf_range(0.25, 0.45),
-		_rng.randf_range(0.15, 0.28),
-		_rng.randf_range(0.05, 0.15),
-	)
-	var trunk_mesh := MeshInstance3D.new()
-	var cyl := CylinderMesh.new()
-	cyl.top_radius = trunk_r * _rng.randf_range(0.6, 0.9)
-	cyl.bottom_radius = trunk_r
-	cyl.height = trunk_h
-	cyl.material = trunk_mat
-	trunk_mesh.mesh = cyl
-	trunk_mesh.position.y = trunk_h * 0.5
-	tree_node.add_child(trunk_mesh)
-
-	# Canopy (sphere) with random green tint
-	var canopy_mat := StandardMaterial3D.new()
-	canopy_mat.albedo_color = Color(
-		_rng.randf_range(0.08, 0.25),
-		_rng.randf_range(0.3, 0.55),
-		_rng.randf_range(0.05, 0.2),
-	)
-	var canopy_mesh := MeshInstance3D.new()
-	var sphere := SphereMesh.new()
-	sphere.radius = canopy_r
-	sphere.height = canopy_h
-	sphere.material = canopy_mat
-	canopy_mesh.mesh = sphere
-	canopy_mesh.position.y = trunk_h + canopy_h * 0.3
-	tree_node.add_child(canopy_mesh)
-
-	# Collision body for trunk
-	var body := StaticBody3D.new()
-	body.collision_layer = 2
-	body.collision_mask = 0
-	body.add_to_group("Static")
+## Add a CylinderShape3D collision child to a StaticBody3D.
+static func add_cylinder_collision(
+	body: StaticBody3D, center: Vector3,
+	radius: float, height: float,
+) -> void:
 	var col := CollisionShape3D.new()
 	var shape := CylinderShape3D.new()
-	shape.radius = trunk_r
-	shape.height = trunk_h
+	shape.radius = radius
+	shape.height = height
 	col.shape = shape
-	col.position.y = trunk_h * 0.5
-	body.add_child(col)
-	tree_node.add_child(body)
-
-
-func _build_ramps() -> void:
-	var ramp_parent := Node3D.new()
-	ramp_parent.name = "Ramps"
-	add_child(ramp_parent)
-
-	var ramp_mat := StandardMaterial3D.new()
-	ramp_mat.albedo_color = Color(0.6, 0.55, 0.2)
-
-	# Place ramps on the boulevard and other wide roads.
-	var boulevard_x := _get_road_center(BOULEVARD_INDEX)
-	var ramp_data := [
-		# [position, rotation_degrees] — tilted box acts as wedge
-		[Vector3(boulevard_x, 0.4, -80.0), Vector3(-15.0, 0.0, 0.0)],
-		[Vector3(boulevard_x, 0.4, 80.0), Vector3(15.0, 0.0, 0.0)],
-		# Cross-street ramps on road index 7 (an 8m road)
-		[Vector3(-60.0, 0.4, _get_road_center(7)), Vector3(0.0, 0.0, 15.0)],
-		[Vector3(60.0, 0.4, _get_road_center(3)), Vector3(0.0, 0.0, -15.0)],
-	]
-
-	for r_idx in range(ramp_data.size()):
-		var rpos: Vector3 = ramp_data[r_idx][0]
-		var rrot: Vector3 = ramp_data[r_idx][1]
-		_create_static_body(
-			ramp_parent,
-			"Ramp_%d" % r_idx,
-			rpos,
-			Vector3(4.0, 0.3, 6.0),
-			ramp_mat,
-			"Road",
-			1,
-			rrot,
-		)
-
-
-func _build_safety_ground() -> void:
-	var body := StaticBody3D.new()
-	body.name = "SafetyGround"
-	body.position = Vector3(0.0, -5.0, 0.0)
-	body.collision_layer = 1
-	body.collision_mask = 0
-	body.add_to_group("Road")
-
-	var col := CollisionShape3D.new()
-	col.shape = WorldBoundaryShape3D.new()
+	col.position = center
 	body.add_child(col)
 
-	add_child(body)
+
+## Emit window quads on one vertical face of a building.
+## face_center: world-space center of the face.
+## face_width/face_height: dimensions of the face.
+## normal: outward face normal. right: rightward direction along face.
+static func st_add_windows_on_face(
+	win_st: SurfaceTool,
+	face_center: Vector3,
+	face_width: float, face_height: float,
+	normal: Vector3,
+	right: Vector3,
+	rng: RandomNumberGenerator,
+) -> void:
+	var win_w := 1.5
+	var win_h := 2.0
+	var gap_x := rng.randf_range(0.6, 1.2)
+	var gap_y := 1.0
+	var floor_h := win_h + gap_y
+	var margin_x := 1.0
+	var margin_bottom := 3.0
+	var margin_top := 2.0
+	var offset := normal * 0.02
+
+	var usable_w := face_width - margin_x * 2.0
+	var usable_h := face_height - margin_bottom - margin_top
+	if usable_w < win_w or usable_h < win_h:
+		return
+
+	var cols := int(usable_w / (win_w + gap_x))
+	var rows := int(usable_h / floor_h)
+	if cols < 1 or rows < 1:
+		return
+
+	var total_w := cols * win_w + (cols - 1) * gap_x
+	var start_x := -total_w * 0.5 + win_w * 0.5
+	var start_y := -face_height * 0.5 + margin_bottom + win_h * 0.5
+
+	var up := Vector3.UP
+	for row in range(rows):
+		for col in range(cols):
+			var cx := start_x + col * (win_w + gap_x)
+			var cy := start_y + row * floor_h
+			var center := face_center + right * cx + up * cy + offset
+			var hw := win_w * 0.5
+			var hh := win_h * 0.5
+			var v0 := center - right * hw - up * hh
+			var v1 := center + right * hw - up * hh
+			var v2 := center + right * hw + up * hh
+			var v3 := center - right * hw + up * hh
+			win_st.add_vertex(v0)
+			win_st.add_vertex(v2)
+			win_st.add_vertex(v1)
+			win_st.add_vertex(v0)
+			win_st.add_vertex(v3)
+			win_st.add_vertex(v2)
