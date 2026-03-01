@@ -2,7 +2,7 @@
 
 A tongue-in-cheek open-world driving game built with Godot 4.5. Walk around, hop into cars, and cruise through a procedurally generated greybox city.
 
-**[Play in browser](https://YOUR_USERNAME.github.io/little-car-borrow/)** (replace with your actual GitHub Pages URL after deploying)
+**[Play in browser](https://cristim.github.io/little-car-borrow/)**
 
 ## Controls
 
