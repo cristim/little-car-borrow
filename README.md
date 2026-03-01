@@ -2,6 +2,8 @@
 
 A tongue-in-cheek open-world driving game built with Godot 4.5. Walk around, hop into cars, and cruise through a procedurally generated greybox city.
 
+Vibe-coded entirely using [Claude Code](https://docs.anthropic.com/en/docs/claude-code).
+
 Sick of waiting for GTA6?
 
 **[Play in browser](https://cristim.github.io/little-car-borrow/)**
