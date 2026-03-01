@@ -4,7 +4,7 @@
 
 [application]
 
-config/name="City Car Stealing Game"
+config/name="Little Car Borrow"
 run/main_scene="res://scenes/main/main.tscn"
 config/features=PackedStringArray("4.5", "Forward Plus")
 
@@ -158,4 +158,5 @@ common/physics_ticks_per_second=120
 [rendering]
 
 renderer/rendering_method="forward_plus"
+renderer/rendering_method.web="gl_compatibility"
 anti_aliasing/quality/msaa_3d=1

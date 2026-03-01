@@ -1,4 +1,4 @@
-.PHONY: run lint format test clean
+.PHONY: run lint format test clean export-web
 
 GODOT := godot
 VENV := .venv/bin
@@ -20,6 +20,11 @@ format-check:
 
 test:
 	$(GODOT) --path . --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests/ -gexit
+
+export-web:
+	@mkdir -p export/web
+	$(GODOT) --headless --export-release "Web"
+	@echo "Web build exported to export/web/"
 
 clean:
 	rm -rf .godot/ export/
