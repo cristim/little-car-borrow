@@ -2,6 +2,8 @@
 
 A tongue-in-cheek open-world driving game built with Godot 4.5. Walk around, hop into cars, and cruise through a procedurally generated greybox city.
 
+Sick of waiting for GTA6?
+
 **[Play in browser](https://cristim.github.io/little-car-borrow/)**
 
 ## Controls
