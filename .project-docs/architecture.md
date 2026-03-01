@@ -35,16 +35,59 @@ More autoloads will be added: AudioManager, WantedLevelManager, MissionManager, 
 - **Data-driven config** via exported vars and custom Resources
 - **Object pooling** for spawnable entities (traffic, pedestrians, police)
 
-## City Layout (Phase 3)
-- **Builder script**: `scenes/world/city.gd` generates all geometry procedurally at `_ready()`
-- **Grid**: 10x10 blocks, 11 N-S + 11 E-W roads
-- **Road widths**: 8m standard, 12m boulevard (index 5), 4m alley (index 2)
-- **Sidewalks**: 2.5m wide strips on each road side, 0.15m above road surface
-- **Buildings**: 1-3 per block, seeded RNG (seed 42), 5-20m tall, muted colors, layer 2
-- **Trees**: cylinder trunk + sphere canopy every 15m along sidewalks, layer 2
-- **Ramps**: 4 tilted-box ramps on boulevard and cross-streets, group "Road", layer 1
-- **Safety ground**: WorldBoundaryShape3D at Y=-5, group "Road"
+## Road Grid (`src/road_grid.gd`)
+- **RefCounted** utility — no `class_name`, used via `preload("res://src/road_grid.gd").new()`
+- Single source of truth for all grid constants (GRID_SIZE, BLOCK_SIZE, road widths, etc.)
+- Precomputes road centers at `_init()`, provides infinite tiling via `roundf()`:
+  - `get_road_center_local(i)` — center within one tile
+  - `get_road_center_near(i, ref)` — nearest world-space center to any reference coordinate
+  - `get_nearest_road_index(coord)` — closest road index at any world position
+  - `get_chunk_coord(pos)` / `get_chunk_origin(chunk)` — tile coordinate mapping
+- Grid span: ~488m per tile (10 blocks + 11 roads)
+
+## Infinite City (Phase 3)
+- **Chunk-based generation**: `scenes/world/city.gd` orchestrates chunk load/unload
+- One chunk = one full grid tile (~488m x 488m), stored in `_chunks: Dictionary[Vector2i, Node3D]`
+- Chunks loaded within 1.2x grid_span, unloaded beyond 1.5x (checked every 0.5s, max ~4 chunks)
+- Each chunk contains: roads, block ground, sidewalks, buildings, trees, ramps, lane markings
+- **Builders** (split into `scenes/world/generator/`):
+  - `chunk_builder_roads.gd` — merged road/ground/sidewalk meshes via SurfaceTool + compound collision
+  - `chunk_builder_buildings.gd` — buildings grouped by material palette (12 colors), ~12 draw calls
+  - `chunk_builder_trees.gd` — MultiMeshInstance3D with per-instance color, ~6 draw calls
+  - `chunk_builder_markings.gd` — lane lines + zebra crossings, 1 draw call
+  - `chunk_builder_ramps.gd` — fun ramps on boulevards
+- **Performance**: ~22 draw calls/chunk, ~5 StaticBody3D/chunk (was ~1500/~960)
+  - Shared material palette (~25 total) instead of ~550 unique materials per chunk
+  - SurfaceTool merges geometry into ArrayMesh per category
+  - MultiMesh for trees with `use_colors = true` + `vertex_color_use_as_albedo`
+  - Compound collision bodies: one StaticBody3D with many BoxShape3D children
+- **Buildings**: deterministic per-chunk RNG seeded with `hash(tile)`, 1-4 per block
+- **Trees**: seeded with `hash(tile) ^ 0x7F3A` for independent variety
+- **Lane markings**: dashed center lines, solid edge lines, boulevard double-center + lane dividers
+- **Zebra crossings**: at every intersection (4 per intersection, bars perpendicular to traffic)
+- **Safety ground**: WorldBoundaryShape3D at Y=-5 (infinite, created once)
 - All road/sidewalk surfaces in group `"Road"` for GEVP tire friction
+- Road widths: 8m standard, 12m boulevard (index 5), 4m alley (index 2)
+
+## NPC Traffic (Phase 4)
+- **TrafficManager** (`scenes/world/traffic_manager.gd`): spawns/despawns NPC vehicles around player
+  - Spawn radius 200m, despawn 250m, max 80 vehicles, min 40m from player
+  - Timer-based (0.5s interval, 3 spawns/tick), picks random road + direction
+  - Uses `road_grid.gd` for road centers — spawns on correct roads at any world position
+  - Listens to `EventBus.vehicle_entered` to detect stolen vehicles
+- **NPCVehicleController** (`scenes/vehicles/npc_vehicle_controller.gd`): AI waypoint driver
+  - Uses `road_grid.gd` for infinite tiling — drives seamlessly across chunk boundaries
+  - Drives intersection-to-intersection, random turns (no U-turns)
+  - Right-hand lane offset (`road_width/4` from center)
+  - PD controller for steering, proportional throttle
+  - **Collision avoidance**: forward + side raycasts (mask=26: Static+PlayerVehicle+NPC, every 5 frames)
+    - Forward ray (20m): `< 5m` hard brake, `5-15m` proportional brake, `> 15m` normal
+    - Side rays (±20°, 15m): compare left/right hit distance → steer avoidance correction
+  - `deactivate()` stops AI when player steals the vehicle
+- **VehicleController** has `active` flag — only processes input when true
+  - Driving state sets `active = true`, ExitingVehicle state sets `active = false`
+  - Prevents all VehicleControllers from responding to input simultaneously
+- Player added to `"player"` group for TrafficManager to find
 
 ## Pause Menu
 - **File**: `scenes/ui/menus/pause_menu.gd` + `.tscn`
@@ -69,5 +112,6 @@ More autoloads will be added: AudioManager, WantedLevelManager, MissionManager, 
 
 ## Performance Budget
 - 60 FPS at 1080p
-- Max 20 active NPC vehicles, 30 pedestrians
+- Max 80 NPC vehicles, 30 pedestrians
 - Spawn radius 200m, despawn 250m
+- ~22 draw calls per chunk, ~5 StaticBody3D per chunk, ~25 shared materials total
