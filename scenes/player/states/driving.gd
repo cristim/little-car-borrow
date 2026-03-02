@@ -25,6 +25,10 @@ func enter(msg: Dictionary = {}) -> void:
 	if vcam:
 		vcam.make_active()
 
+	# Stealing an NPC vehicle is a crime
+	if _vehicle.get_node_or_null("NPCVehicleController"):
+		EventBus.crime_committed.emit("vehicle_theft", 30)
+
 	EventBus.vehicle_entered.emit(_vehicle)
 
 
