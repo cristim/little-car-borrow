@@ -6,8 +6,8 @@
 | EventBus | src/autoloads/event_bus.gd | Signal hub for decoupled communication |
 | GameManager | src/autoloads/game_manager.gd | Game state, money, save/load, pause |
 | InputManager | src/autoloads/input_manager.gd | Foot/vehicle input context switching |
-
-More autoloads will be added: AudioManager, WantedLevelManager, MissionManager, WorldManager.
+| WantedLevelManager | src/autoloads/wanted_level_manager.gd | Crime heat tracking, wanted level 0-5 |
+| AudioManager | src/autoloads/audio_manager.gd | Bus management (SFX/Music/Ambient), play helpers |
 
 ## Player System
 - **CharacterBody3D** with capsule collider (layer 3/PlayerFoot, mask 1+2)
@@ -89,6 +89,39 @@ More autoloads will be added: AudioManager, WantedLevelManager, MissionManager, 
   - Prevents all VehicleControllers from responding to input simultaneously
 - Player added to `"player"` group for TrafficManager to find
 
+## Police / Wanted System (Phase 5)
+- **WantedLevelManager** autoload: heat accumulates from crimes, decays over time
+  - Heat thresholds: [0, 20, 50, 100, 170, 260] for levels 0-5
+  - 5s decay delay after last crime, then 3.0 heat/s decay
+- **CollisionCrimeDetector**: monitors player vehicle collisions
+  - Hit vehicle = 10 heat, hit pedestrian = 25 heat, vehicle theft = 30 heat
+  - 1s cooldown per crime type to prevent spam
+- **WantedHUD**: 5 stars top-right, flash yellow when active
+- **PoliceManager**: spawns police on roads when wanted > 0
+  - Max police = wanted_level * 2 (cap 10)
+  - Gradual 10s despawn when wanted drops to 0
+- **PoliceAIController**: PATROL (road following) / PURSUE (chase player)
+  - LOS detection: 80m range, 3s lock, 15s lost timeout
+  - PIT maneuver within 15m, pursuit speed 52 km/h
+- **Police vehicle**: white/blue, red/blue light bar, procedural siren
+
+## Audio System (Phase 9)
+- **AudioManager** autoload: creates SFX/Music/Ambient buses
+- **EngineAudio**: procedural AudioStreamGenerator on every vehicle
+  - Frequency 80-300 Hz mapped to speed, 2 harmonics, idle wobble
+- **PoliceSiren**: two-tone wail 600-800 Hz, active during pursuit
+- **TireScreechAudio**: filtered noise on lateral slip / handbrake
+- **AmbientAudio**: city drone (55+82 Hz) + random horn honks
+- **UISounds**: ascending/descending tones for wanted level changes
+
+## Pedestrian System (Phase 7)
+- **PedestrianModel**: greybox capsule+box head, 8 random colors
+- **Pedestrian**: CharacterBody3D (layer 6) with state machine
+  - Walk (1.4 m/s on sidewalks), Idle (2-8s), Flee (4 m/s from vehicles)
+  - ProximityArea (8m sphere) detects vehicles > 5 km/h
+  - Hit by player vehicle: queue_free + crime_committed
+- **PedestrianManager**: spawn/despawn within 120m, max 40, sidewalk placement
+
 ## Pause Menu
 - **File**: `scenes/ui/menus/pause_menu.gd` + `.tscn`
 - CanvasLayer with `process_mode = PROCESS_MODE_ALWAYS`
@@ -112,6 +145,6 @@ More autoloads will be added: AudioManager, WantedLevelManager, MissionManager, 
 
 ## Performance Budget
 - 60 FPS at 1080p
-- Max 80 NPC vehicles, 30 pedestrians
+- Max 80 NPC vehicles, 40 pedestrians, 10 police
 - Spawn radius 200m, despawn 250m
 - ~22 draw calls per chunk, ~5 StaticBody3D per chunk, ~25 shared materials total
