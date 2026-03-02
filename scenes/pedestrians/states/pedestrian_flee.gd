@@ -13,8 +13,8 @@ var _timer := 0.0
 
 func enter(msg: Dictionary = {}) -> void:
 	_timer = 0.0
-	_threat_pos = msg.get("threat_pos", owner.global_position)
-	var away := owner.global_position - _threat_pos
+	_threat_pos = msg.get("threat_pos", owner.global_position) as Vector3
+	var away: Vector3 = owner.global_position - _threat_pos
 	away.y = 0.0
 	if away.length_squared() > 0.01:
 		_flee_direction = away.normalized()
