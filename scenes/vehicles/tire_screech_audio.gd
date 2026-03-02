@@ -4,6 +4,7 @@ extends AudioStreamPlayer3D
 const SAMPLE_RATE := 22050.0
 const SLIP_SPEED_THRESHOLD := 20.0
 const LATERAL_THRESHOLD := 0.3
+const CULL_DISTANCE := 50.0
 
 var _phase := 0.0
 var _playback: AudioStreamGeneratorPlayback = null
@@ -28,6 +29,16 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if not _playback or not _vehicle:
 		return
+
+	# Distance culling
+	var cam := get_viewport().get_camera_3d()
+	if cam:
+		var dist := global_position.distance_to(cam.global_position)
+		if dist > CULL_DISTANCE:
+			var avail := _playback.get_frames_available()
+			for _i in range(avail):
+				_playback.push_frame(Vector2.ZERO)
+			return
 
 	var slip := _get_slip_intensity()
 	var frames_available := _playback.get_frames_available()

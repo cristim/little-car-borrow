@@ -9,6 +9,7 @@ const IDLE_WOBBLE_FREQ := 3.0
 const IDLE_WOBBLE_DEPTH := 8.0
 const HARMONIC_2_AMP := 0.3
 const HARMONIC_3_AMP := 0.15
+const CULL_DISTANCE := 60.0
 
 var _phase := 0.0
 var _phase2 := 0.0
@@ -34,6 +35,16 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if not _playback or not _vehicle:
 		return
+
+	# Distance culling: skip expensive audio generation for far vehicles
+	var cam := get_viewport().get_camera_3d()
+	if cam:
+		var dist := global_position.distance_to(cam.global_position)
+		if dist > CULL_DISTANCE:
+			var frames_available := _playback.get_frames_available()
+			for _i in range(frames_available):
+				_playback.push_frame(Vector2.ZERO)
+			return
 
 	var speed_kmh := 0.0
 	if "linear_velocity" in _vehicle:
