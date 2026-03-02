@@ -11,8 +11,12 @@ enum EscapePhase { NONE, REVERSE, STEER, RETURN }
 # Driving tuning
 const CRUISE_SPEED := 40.0  # km/h
 const ARRIVAL_DIST := 6.0
-const LANE_STEER_GAIN := 0.4
+const LANE_STEER_GAIN := 0.6
+const LANE_STEER_MAX := 0.5
 const HEADING_STEER_GAIN := 2.0
+const OFF_ROAD_THRESHOLD := 5.0  # lane_error above this = aggressive return
+const OFF_ROAD_LANE_GAIN := 2.0
+const OFF_ROAD_LANE_MAX := 0.9
 
 # Collision avoidance
 const RAY_LENGTH := 25.0
@@ -24,7 +28,7 @@ const RAY_INTERVAL := 3
 const STEER_AVOID_GAIN := 0.6
 const CROSS_RAY_LENGTH := 10.0
 const MAX_YIELD_TIME := 2.0  # max seconds to wait for cross traffic
-const RAY_MASK := 26  # Static | PlayerVehicle | NPC
+const RAY_MASK := 90  # Static | PlayerVehicle | NPC | Police
 
 # Stuck detection
 const REVERSE_TIMEOUT := 1.5
@@ -33,13 +37,19 @@ const STUCK_SPEED := 2.0
 const MIN_CREEP_THROTTLE := 0.25
 
 # Escape maneuver phases
-const ESCAPE_REVERSE_DURATION := 0.8
+const ESCAPE_REVERSE_DURATION := 1.5
 const ESCAPE_STEER_DURATION := 1.2
 const ESCAPE_RETURN_DURATION := 3.0
 const ESCAPE_RETURN_LANE_GAIN := 1.2
 const ESCAPE_RETURN_HEADING_GAIN := 3.0
 const MAX_ESCAPE_ATTEMPTS := 3
 const ON_LANE_THRESHOLD := 3.0
+const HEADING_ALIGN_DOT := 0.85  # ~30° — consider heading aligned with lane
+
+# Recovery target (commit-once system)
+const RECOVERY_HEADING_BIAS := 8.0  # heading-alignment bonus to break distance ties
+const RECOVERY_ARRIVAL_DIST := 4.0  # perpendicular dist to consider "on lane"
+const RECOVERY_MIN_SPEED := 5.0  # km/h — must be moving to confirm recovery
 
 var active := true
 var _grid = preload("res://src/road_grid.gd").new()
@@ -52,6 +62,7 @@ var _rng := RandomNumberGenerator.new()
 # Collision avoidance state
 var _ray_cooldown := 0
 var _dist_to_ahead := -1.0  # forward obstacle only
+var _hitting_wall := false  # true if forward obstacle is static (building)
 var _cross_traffic := false  # cross-traffic detected this frame
 var _steer_avoidance := 0.0
 
@@ -65,6 +76,11 @@ var _escape_phase: int = EscapePhase.NONE
 var _escape_timer := 0.0
 var _escape_steer := 0.0
 var _escape_attempts := 0
+
+# Recovery target state (commit-once)
+var _recovery_active := false
+var _recovery_road_index := 0
+var _recovery_direction: int = Direction.NORTH
 
 
 func initialize(vehicle: RigidBody3D, road_idx: int, direction: int) -> void:
@@ -103,9 +119,14 @@ func _physics_process(delta: float) -> void:
 	else:
 		_reverse_timer = 0.0
 
+	# Stuck against a wall = faster escape trigger
+	var stuck_timeout := STUCK_TIMEOUT
+	if _hitting_wall and _dist_to_ahead >= 0.0 and _dist_to_ahead < SOFT_BRAKE_DIST:
+		stuck_timeout = 0.4
+
 	if speed_kmh < STUCK_SPEED:
 		_stuck_timer += delta
-		if _stuck_timer > STUCK_TIMEOUT:
+		if _stuck_timer > stuck_timeout:
 			_begin_escape()
 	else:
 		_stuck_timer = 0.0
@@ -118,8 +139,16 @@ func _physics_process(delta: float) -> void:
 	else:
 		_yield_timer = 0.0
 
+	# Off-road: commit recovery target once, check completion each frame
+	if absf(_get_lane_error()) > OFF_ROAD_THRESHOLD:
+		_commit_recovery_target()
+	elif _recovery_active:
+		if _check_recovery_complete():
+			_cancel_recovery()
+
 	# Check if we've arrived at the next intersection
 	if _past_intersection():
+		_recovery_active = false
 		_pick_next_direction()
 		_find_next_intersection()
 
@@ -129,14 +158,39 @@ func _physics_process(delta: float) -> void:
 
 func _drive_normal(_delta: float) -> void:
 	var forward := _get_vehicle_forward()
-	var desired_heading := _get_desired_heading()
+
+	# When recovering, steer toward the locked recovery target
+	var desired_heading: Vector3
+	var lane_error: float
+	if _recovery_active:
+		desired_heading = _dir_to_heading(_recovery_direction)
+		lane_error = _get_recovery_lane_error()
+	else:
+		desired_heading = _get_desired_heading()
+		lane_error = _get_lane_error()
 
 	var heading_error := forward.cross(desired_heading).y
 	var steer := clampf(-heading_error * HEADING_STEER_GAIN, -1.0, 1.0)
 
-	var lane_error := _get_lane_error()
-	steer += clampf(-lane_error * LANE_STEER_GAIN, -0.3, 0.3)
+	var abs_lane := absf(lane_error)
+	var off_road := abs_lane > OFF_ROAD_THRESHOLD
+
+	# Lane correction — stronger when far off-road
+	if off_road:
+		steer += clampf(
+			-lane_error * OFF_ROAD_LANE_GAIN, -OFF_ROAD_LANE_MAX, OFF_ROAD_LANE_MAX
+		)
+	else:
+		steer += clampf(-lane_error * LANE_STEER_GAIN, -LANE_STEER_MAX, LANE_STEER_MAX)
+
 	steer += clampf(_steer_avoidance, -0.5, 0.5)
+
+	# Wall evasion: when close to a wall, steer hard toward lane
+	if _hitting_wall and _dist_to_ahead >= 0.0 and _dist_to_ahead < SOFT_BRAKE_DIST:
+		var wall_urgency := 1.0 - (_dist_to_ahead / SOFT_BRAKE_DIST)
+		var lane_steer := -signf(lane_error) if abs_lane > 0.5 else _steer_avoidance
+		steer = lerpf(steer, lane_steer, wall_urgency * 0.7)
+
 	steer = clampf(steer, -1.0, 1.0)
 
 	var speed_kmh := _vehicle.linear_velocity.length() * 3.6
@@ -146,26 +200,41 @@ func _drive_normal(_delta: float) -> void:
 	if speed_kmh > CRUISE_SPEED + 15.0:
 		brake = clampf((speed_kmh - CRUISE_SPEED) * 0.05, 0.0, 1.0)
 
-	# Forward obstacle braking (actual vehicle-forward ray)
+	# Forward obstacle braking
 	if _dist_to_ahead >= 0.0:
-		if _dist_to_ahead < HARD_BRAKE_DIST:
-			brake = 0.4
-			throttle = MIN_CREEP_THROTTLE
-		elif _dist_to_ahead < SOFT_BRAKE_DIST:
-			var t := (
-				(_dist_to_ahead - HARD_BRAKE_DIST)
-				/ (SOFT_BRAKE_DIST - HARD_BRAKE_DIST)
-			)
-			brake = maxf(brake, 0.4 * (1.0 - t))
-			throttle = lerpf(MIN_CREEP_THROTTLE, throttle, t)
+		if _hitting_wall:
+			# Wall ahead: stop completely and steer away, do NOT creep
+			if _dist_to_ahead < HARD_BRAKE_DIST:
+				brake = 0.8
+				throttle = 0.0
+			elif _dist_to_ahead < SOFT_BRAKE_DIST:
+				var t := (
+					(_dist_to_ahead - HARD_BRAKE_DIST)
+					/ (SOFT_BRAKE_DIST - HARD_BRAKE_DIST)
+				)
+				brake = maxf(brake, 0.6 * (1.0 - t))
+				throttle = lerpf(0.0, throttle, t)
+		else:
+			# Vehicle ahead: slow down but keep creeping
+			if _dist_to_ahead < HARD_BRAKE_DIST:
+				brake = 0.4
+				throttle = MIN_CREEP_THROTTLE
+			elif _dist_to_ahead < SOFT_BRAKE_DIST:
+				var t := (
+					(_dist_to_ahead - HARD_BRAKE_DIST)
+					/ (SOFT_BRAKE_DIST - HARD_BRAKE_DIST)
+				)
+				brake = maxf(brake, 0.4 * (1.0 - t))
+				throttle = lerpf(MIN_CREEP_THROTTLE, throttle, t)
 
 	# Cross-traffic: light brake but only up to MAX_YIELD_TIME
 	if _cross_traffic and _yield_timer < MAX_YIELD_TIME:
 		brake = maxf(brake, 0.3)
 		throttle = minf(throttle, 0.15)
 
-	# Always maintain forward creep
-	throttle = maxf(throttle, MIN_CREEP_THROTTLE)
+	# Maintain forward creep only if NOT facing a wall up close
+	if not (_hitting_wall and _dist_to_ahead >= 0.0 and _dist_to_ahead < HARD_BRAKE_DIST):
+		throttle = maxf(throttle, MIN_CREEP_THROTTLE)
 
 	_vehicle.steering_input = steer
 	_vehicle.throttle_input = throttle
@@ -181,11 +250,19 @@ func _begin_escape() -> void:
 
 	if _escape_attempts > MAX_ESCAPE_ATTEMPTS:
 		_escape_attempts = 0
+		_recovery_active = false  # force fresh recovery target
 		_road_index = _find_nearest_road_index()
 		_direction = _pick_best_direction()
 		_find_next_intersection()
 
-	if absf(_steer_avoidance) > 0.1:
+	# Ensure we have a recovery target
+	_commit_recovery_target()
+
+	# Steer toward the recovery lane
+	var lane_err := _get_recovery_lane_error()
+	if absf(lane_err) > 1.0:
+		_escape_steer = -signf(lane_err)
+	elif absf(_steer_avoidance) > 0.1:
 		_escape_steer = signf(_steer_avoidance)
 	elif _escape_attempts % 2 == 0:
 		_escape_steer = 1.0
@@ -204,6 +281,18 @@ func _process_escape(delta: float) -> void:
 		_ray_cooldown = RAY_INTERVAL
 		_cast_rays()
 
+	# Commit recovery target once (idempotent guard inside)
+	_commit_recovery_target()
+
+	# Only allow escape cancel during RETURN phase with full recovery check
+	if _escape_phase == EscapePhase.RETURN and _check_recovery_complete():
+		_cancel_recovery()
+		_escape_phase = EscapePhase.NONE
+		_escape_timer = 0.0
+		_stuck_timer = 0.0
+		_escape_attempts = 0
+		return
+
 	match _escape_phase:
 		EscapePhase.REVERSE:
 			_vehicle.steering_input = -_escape_steer * 0.5
@@ -211,25 +300,26 @@ func _process_escape(delta: float) -> void:
 			_vehicle.brake_input = 0.0
 			_vehicle.handbrake_input = 0.0
 			var back_dir := _vehicle.global_transform.basis.z
-			_vehicle.apply_central_force(back_dir * 3000.0)
+			_vehicle.apply_central_force(back_dir * 6000.0)
 			if _escape_timer >= ESCAPE_REVERSE_DURATION:
 				_escape_phase = EscapePhase.STEER
 				_escape_timer = 0.0
 
 		EscapePhase.STEER:
+			# Steer toward recovery lane (stable target)
+			var lane_err := _get_recovery_lane_error()
+			if absf(lane_err) > 1.0:
+				_escape_steer = -signf(lane_err)
 			_vehicle.steering_input = _escape_steer
 			_vehicle.throttle_input = 0.6
 			_vehicle.brake_input = 0.0
 			_vehicle.handbrake_input = 0.0
 			if _escape_timer >= ESCAPE_STEER_DURATION:
-				_road_index = _find_nearest_road_index()
-				_direction = _pick_best_direction()
-				_find_next_intersection()
 				_escape_phase = EscapePhase.RETURN
 				_escape_timer = 0.0
 
 		EscapePhase.RETURN:
-			var desired_heading := _get_desired_heading()
+			var desired_heading := _dir_to_heading(_recovery_direction)
 			var forward := _get_vehicle_forward()
 
 			var heading_err := forward.cross(desired_heading).y
@@ -237,7 +327,7 @@ func _process_escape(delta: float) -> void:
 				-heading_err * ESCAPE_RETURN_HEADING_GAIN, -1.0, 1.0
 			)
 
-			var lane_err := _get_lane_error()
+			var lane_err := _get_recovery_lane_error()
 			steer += clampf(-lane_err * ESCAPE_RETURN_LANE_GAIN, -0.6, 0.6)
 			steer += clampf(_steer_avoidance, -0.4, 0.4)
 			steer = clampf(steer, -1.0, 1.0)
@@ -254,12 +344,6 @@ func _process_escape(delta: float) -> void:
 			_vehicle.throttle_input = throttle
 			_vehicle.brake_input = 0.0
 			_vehicle.handbrake_input = 0.0
-
-			if absf(lane_err) < ON_LANE_THRESHOLD:
-				_escape_phase = EscapePhase.NONE
-				_escape_timer = 0.0
-				_stuck_timer = 0.0
-				return
 
 			if _escape_timer >= ESCAPE_RETURN_DURATION:
 				_escape_phase = EscapePhase.NONE
@@ -310,8 +394,11 @@ func _cast_rays() -> void:
 	var result := space.intersect_ray(query)
 	if result:
 		_dist_to_ahead = from.distance_to(result.position)
+		# StaticBody3D = building/wall, RigidBody3D = another vehicle
+		_hitting_wall = result.collider is StaticBody3D
 	else:
 		_dist_to_ahead = -1.0
+		_hitting_wall = false
 
 	# Side rays
 	var angle_rad := deg_to_rad(SIDE_RAY_ANGLE)
@@ -473,6 +560,82 @@ func _find_nearest_road_index() -> int:
 	var was_ns := _direction == Direction.NORTH or _direction == Direction.SOUTH
 	var coord := pos.z if was_ns else pos.x
 	return _grid.get_nearest_road_index(coord)
+
+
+func _commit_recovery_target() -> void:
+	if _recovery_active:
+		return
+	var pos := _vehicle.global_position
+	var forward := _get_vehicle_forward()
+
+	# Find nearest NS road (road center varies along x-axis)
+	var ns_idx := _grid.get_nearest_road_index(pos.x)
+	var ns_center := _grid.get_road_center_near(ns_idx, pos.x)
+	var ns_dist := absf(pos.x - ns_center)
+
+	# Find nearest EW road (road center varies along z-axis)
+	var ew_idx := _grid.get_nearest_road_index(pos.z)
+	var ew_center := _grid.get_road_center_near(ew_idx, pos.z)
+	var ew_dist := absf(pos.z - ew_center)
+
+	# Score = distance - heading alignment bonus (lower = better)
+	var ns_heading_component := absf(forward.z)  # how aligned with NS
+	var ew_heading_component := absf(forward.x)  # how aligned with EW
+	var ns_score := ns_dist - ns_heading_component * RECOVERY_HEADING_BIAS
+	var ew_score := ew_dist - ew_heading_component * RECOVERY_HEADING_BIAS
+
+	if ns_score <= ew_score:
+		_recovery_road_index = ns_idx
+		_recovery_direction = Direction.NORTH if forward.z < 0.0 else Direction.SOUTH
+	else:
+		_recovery_road_index = ew_idx
+		_recovery_direction = Direction.EAST if forward.x > 0.0 else Direction.WEST
+
+	_recovery_active = true
+
+
+func _cancel_recovery() -> void:
+	_road_index = _recovery_road_index
+	_direction = _recovery_direction
+	_find_next_intersection()
+	_recovery_active = false
+
+
+func _check_recovery_complete() -> bool:
+	var perp_dist := absf(_get_recovery_lane_error())
+	if perp_dist > RECOVERY_ARRIVAL_DIST:
+		return false
+	var forward := _get_vehicle_forward()
+	var desired := _dir_to_heading(_recovery_direction)
+	if forward.dot(desired) < HEADING_ALIGN_DOT:
+		return false
+	var speed_kmh := _vehicle.linear_velocity.length() * 3.6
+	if speed_kmh < RECOVERY_MIN_SPEED:
+		return false
+	return true
+
+
+func _get_recovery_lane_error() -> float:
+	var pos := _vehicle.global_position
+	var is_ns := (
+		_recovery_direction == Direction.NORTH
+		or _recovery_direction == Direction.SOUTH
+	)
+	var road_axis := pos.x if is_ns else pos.z
+	var road_center := _grid.get_road_center_near(_recovery_road_index, road_axis)
+	var rw := _grid.get_road_width(_recovery_road_index)
+	var lane_offset := rw / 4.0
+
+	match _recovery_direction:
+		Direction.NORTH:
+			return pos.x - (road_center + lane_offset)
+		Direction.SOUTH:
+			return pos.x - (road_center - lane_offset)
+		Direction.EAST:
+			return pos.z - (road_center + lane_offset)
+		Direction.WEST:
+			return pos.z - (road_center - lane_offset)
+	return 0.0
 
 
 func _get_reverse(dir: int) -> int:
