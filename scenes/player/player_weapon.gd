@@ -230,21 +230,51 @@ func _play_gunshot() -> void:
 	var asp := AudioStreamPlayer3D.new()
 	var gen := AudioStreamGenerator.new()
 	gen.mix_rate = 22050.0
-	gen.buffer_length = 0.15
+	gen.buffer_length = 0.5
 	asp.stream = gen
-	asp.max_distance = 50.0
-	asp.bus = "Ambient"
+	asp.max_distance = 60.0
+	asp.bus = "SFX"
 	owner.add_child(asp)
 	asp.play()
 
 	var playback: AudioStreamGeneratorPlayback = asp.get_stream_playback()
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
-	var frames := int(22050.0 * 0.08)
-	for i in range(frames):
-		var t := float(i) / float(frames)
-		var env := (1.0 - t) * (1.0 - t)
-		var noise := (rng.randf() - 0.5) * 0.4 * env
-		playback.push_frame(Vector2(noise, noise))
 
-	get_tree().create_timer(0.3).timeout.connect(asp.queue_free)
+	var rate := 22050.0
+	var total_frames := int(rate * 0.4)
+	var snap_end := int(rate * 0.005)
+	var body_end := int(rate * 0.06)
+	var phase := 0.0
+	var filter_state := 0.0
+
+	for i in range(total_frames):
+		var t := float(i) / rate
+		var sample := 0.0
+
+		if i < snap_end:
+			# Sharp transient snap — full-band noise burst
+			var snap_env := 1.0 - float(i) / float(snap_end)
+			sample += (rng.randf() - 0.5) * 0.7 * snap_env * snap_env
+		if i < body_end:
+			# Low-frequency body thump — sine sweep downward
+			var body_t := float(i) / float(body_end)
+			var body_env := (1.0 - body_t) * (1.0 - body_t)
+			var freq := lerpf(200.0, 60.0, body_t)
+			phase += freq / rate
+			if phase > 1.0:
+				phase -= 1.0
+			sample += sin(phase * TAU) * 0.5 * body_env
+
+		# Reverb tail — filtered decaying noise
+		if i >= snap_end:
+			var tail_t := float(i - snap_end) / float(total_frames - snap_end)
+			var tail_env := exp(-tail_t * 6.0)
+			var noise := (rng.randf() - 0.5) * 0.25 * tail_env
+			# Simple low-pass filter for muffled echo
+			filter_state += 0.08 * (noise - filter_state)
+			sample += filter_state
+
+		playback.push_frame(Vector2(sample, sample))
+
+	get_tree().create_timer(0.5).timeout.connect(asp.queue_free)

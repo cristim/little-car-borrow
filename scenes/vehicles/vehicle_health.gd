@@ -175,15 +175,37 @@ func _play_fire_sound() -> void:
 	gen.mix_rate = 22050.0
 	gen.buffer_length = 2.0
 	asp.stream = gen
-	asp.max_distance = 30.0
-	asp.bus = "Ambient"
+	asp.max_distance = 35.0
+	asp.bus = "SFX"
 	_vehicle.add_child(asp)
 	asp.play()
 
 	var playback: AudioStreamGeneratorPlayback = asp.get_stream_playback()
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
-	var frames := int(22050.0 * 1.5)
+	var rate := 22050.0
+	var frames := int(rate * 1.5)
+	var filter_lo := 0.0
+	var filter_hi := 0.0
+	var crackle_counter := 0
+	var crackle_interval := rng.randi_range(400, 1200)
+
 	for i in range(frames):
-		var noise := (rng.randf() - 0.5) * 0.15
-		playback.push_frame(Vector2(noise, noise))
+		var noise := rng.randf() - 0.5
+
+		# Low rumble via low-pass filtered noise
+		filter_lo += 0.015 * (noise - filter_lo)
+		# Higher crackle via band-pass
+		filter_hi += 0.12 * (noise - filter_hi)
+		var band := filter_hi - filter_lo
+
+		var sample := filter_lo * 0.2 + band * 0.08
+
+		# Random crackle pops
+		crackle_counter += 1
+		if crackle_counter >= crackle_interval:
+			crackle_counter = 0
+			crackle_interval = rng.randi_range(300, 1000)
+			sample += (rng.randf() - 0.5) * 0.3
+
+		playback.push_frame(Vector2(sample, sample))
