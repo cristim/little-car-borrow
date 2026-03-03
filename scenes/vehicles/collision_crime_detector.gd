@@ -55,6 +55,7 @@ func _on_body_entered(body: Node) -> void:
 	if body.is_in_group("pedestrian"):
 		crime_type = "hit_pedestrian"
 		heat_points = 25
+		EventBus.pedestrian_killed.emit(body)
 		body.queue_free()
 	elif body is RigidBody3D:
 		crime_type = "hit_vehicle"

@@ -22,6 +22,7 @@ var _initial_burst_done := false
 
 func _ready() -> void:
 	_rng.randomize()
+	EventBus.pedestrian_killed.connect(_on_pedestrian_killed)
 
 
 func _process(delta: float) -> void:
@@ -118,3 +119,7 @@ func _despawn_far() -> void:
 		_pedestrians.erase(p)
 		if is_instance_valid(p):
 			p.queue_free()
+
+
+func _on_pedestrian_killed(pedestrian: Node) -> void:
+	_pedestrians.erase(pedestrian)

@@ -31,5 +31,8 @@ signal show_notification(text: String, duration: float)
 signal show_interaction_prompt(text: String)
 signal hide_interaction_prompt
 
+# Pedestrian signals
+signal pedestrian_killed(pedestrian: Node)
+
 # World signals
 signal time_of_day_changed(hour: float)
