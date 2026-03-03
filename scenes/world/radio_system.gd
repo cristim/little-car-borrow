@@ -4,8 +4,8 @@ extends Node
 ## Press T (radio_next) to switch stations or turn off.
 ## Each genre plays melody + bass + percussion simultaneously.
 
-const MUSIC_INTERVAL_MIN := 10.0
-const MUSIC_INTERVAL_MAX := 20.0
+const MUSIC_INTERVAL_MIN := 2.0
+const MUSIC_INTERVAL_MAX := 5.0
 const DJ_INTERVAL_MIN := 25.0
 const DJ_INTERVAL_MAX := 50.0
 const POLICE_ANNOUNCE_INTERVAL := 20.0
@@ -94,8 +94,8 @@ const GENRE_POP := {
 	],
 	"tempo_min": 0.13,
 	"tempo_max": 0.2,
-	"notes_min": 20,
-	"notes_max": 48,
+	"notes_min": 80,
+	"notes_max": 200,
 	"melody_vol": 0.055,
 	"bass_vol": 0.04,
 	"perc_vol": 0.03,
@@ -115,24 +115,26 @@ const GENRE_POP := {
 const GENRE_ROCK := {
 	"name": "Car Rock Radio",
 	"melody_wave": "distorted",
-	"bass_wave": "square",
+	"bass_wave": "sine",
 	"drum_pattern": "rock",
 	"scales": [
-		[130.8, 146.8, 164.8, 174.6, 196.0, 220.0, 246.9, 261.6],
-		[98.0, 110.0, 123.5, 130.8, 146.8, 164.8, 174.6, 196.0],
+		# E minor pentatonic - classic rock lead range
+		[164.8, 196.0, 220.0, 246.9, 293.7, 329.6, 392.0, 440.0],
+		# A minor pentatonic - higher register solos
+		[220.0, 261.6, 293.7, 329.6, 392.0, 440.0, 523.3, 587.3],
 	],
-	"tempo_min": 0.08,
-	"tempo_max": 0.14,
-	"notes_min": 24,
-	"notes_max": 60,
-	"melody_vol": 0.065,
+	"tempo_min": 0.12,
+	"tempo_max": 0.22,
+	"notes_min": 100,
+	"notes_max": 250,
+	"melody_vol": 0.06,
 	"bass_vol": 0.05,
 	"perc_vol": 0.04,
 	"adsr": [0.005, 0.03, 0.85, 0.05],
 	"chord_beats": 4,
 	"passing_tone_chance": 0.15,
 	"delay": [0.10, 0.20],
-	"bass_cutoff": 0.25,
+	"bass_cutoff": 0.30,
 	"dj_lines": [
 		"Car Rock Radio! Crank it up!",
 		"That riff was insane! More rock ahead.",
@@ -152,8 +154,8 @@ const GENRE_JAZZ := {
 	],
 	"tempo_min": 0.18,
 	"tempo_max": 0.35,
-	"notes_min": 12,
-	"notes_max": 32,
+	"notes_min": 50,
+	"notes_max": 120,
 	"melody_vol": 0.045,
 	"bass_vol": 0.035,
 	"perc_vol": 0.015,
@@ -181,8 +183,8 @@ const GENRE_ELECTRONIC := {
 	],
 	"tempo_min": 0.06,
 	"tempo_max": 0.1,
-	"notes_min": 32,
-	"notes_max": 80,
+	"notes_min": 150,
+	"notes_max": 400,
 	"melody_vol": 0.045,
 	"bass_vol": 0.055,
 	"perc_vol": 0.04,
@@ -211,8 +213,8 @@ const GENRE_CLASSICAL := {
 	],
 	"tempo_min": 0.25,
 	"tempo_max": 0.45,
-	"notes_min": 10,
-	"notes_max": 28,
+	"notes_min": 40,
+	"notes_max": 100,
 	"melody_vol": 0.05,
 	"bass_vol": 0.03,
 	"perc_vol": 0.0,
