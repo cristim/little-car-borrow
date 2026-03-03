@@ -16,6 +16,7 @@ InputManager="*res://src/autoloads/input_manager.gd"
 WantedLevelManager="*res://src/autoloads/wanted_level_manager.gd"
 AudioManager="*res://src/autoloads/audio_manager.gd"
 DayNightManager="*res://src/autoloads/day_night_manager.gd"
+MissionManager="*res://src/autoloads/mission_manager.gd"
 
 [display]
 
