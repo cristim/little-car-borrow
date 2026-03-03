@@ -46,8 +46,11 @@ func _shoot() -> void:
 	if not camera:
 		return
 
-	var from := camera.global_position
-	var dir := -camera.global_transform.basis.z
+	# Project ray from crosshair screen position (centered horizontally, 35% from top)
+	var vp_size := get_viewport().get_visible_rect().size
+	var crosshair_screen := Vector2(vp_size.x * 0.5, vp_size.y * 0.35)
+	var from := camera.project_ray_origin(crosshair_screen)
+	var dir := camera.project_ray_normal(crosshair_screen)
 	var to := from + dir * SHOOT_RANGE
 
 	var space: PhysicsDirectSpaceState3D = owner.get_world_3d().direct_space_state
