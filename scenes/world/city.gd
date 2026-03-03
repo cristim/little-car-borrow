@@ -8,7 +8,7 @@ extends Node3D
 
 const CHUNK_LOAD_RADIUS := 1.5  # in grid_span units — loads full 3x3 grid
 const CHUNK_UNLOAD_RADIUS := 2.5
-const UPDATE_INTERVAL := 0.2
+const UPDATE_INTERVAL := 0.5
 const SCAN_RANGE := 3  # check -3..+3 tiles around player
 const LOOKAHEAD_TIME := 3.0  # seconds of velocity prediction
 

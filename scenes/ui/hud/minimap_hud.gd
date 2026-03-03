@@ -18,6 +18,7 @@ const MARKER_DROPOFF_COLOR := Color(1.0, 0.9, 0.2)
 
 var _grid = preload("res://src/road_grid.gd").new()
 var _player: Node3D = null
+var _frame_count := 0
 
 
 func _ready() -> void:
@@ -30,7 +31,9 @@ func _process(_delta: float) -> void:
 			get_tree().get_first_node_in_group("player")
 			as Node3D
 		)
-	queue_redraw()
+	_frame_count += 1
+	if _frame_count % 5 == 0:
+		queue_redraw()
 
 
 func _draw() -> void:

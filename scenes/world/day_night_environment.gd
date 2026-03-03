@@ -62,6 +62,8 @@ var _light: DirectionalLight3D
 var _env: WorldEnvironment
 var _city: Node3D
 var _sky_mat: ProceduralSkyMaterial
+var _last_lights_visible := false
+var _last_window_night := false
 
 
 func _ready() -> void:
@@ -140,6 +142,9 @@ func _update_windows(h: float) -> void:
 	if not win_mat:
 		return
 	var night := h < 6.0 or h > 19.0
+	if night == _last_window_night:
+		return
+	_last_window_night = night
 	if night:
 		win_mat.emission_enabled = true
 		win_mat.emission = Color(0.9, 0.8, 0.5)
@@ -153,6 +158,9 @@ func _update_streetlights() -> void:
 		DayNightManager.is_night()
 		or DayNightManager.is_dusk_or_dawn()
 	)
+	if show == _last_lights_visible:
+		return
+	_last_lights_visible = show
 	get_tree().call_group("streetlight", "set_visible", show)
 
 

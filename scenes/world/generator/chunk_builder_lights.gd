@@ -1,27 +1,31 @@
 extends RefCounted
-## Builds streetlights along roads in each chunk.
-## One light per road segment at every other intersection.
+## Builds streetlight poles along roads in each chunk.
+## Uses emissive material for glow effect instead of OmniLight3D (performance).
 ## All lights added to "streetlight" group for day-night toggling.
 
 const POLE_HEIGHT := 3.5
 const POLE_RADIUS := 0.075
-const LIGHT_RANGE := 12.0
-const LIGHT_ENERGY := 0.6
-const LIGHT_COLOR := Color(1.0, 0.9, 0.6)
+const LAMP_RADIUS := 0.2
+const LAMP_COLOR := Color(1.0, 0.9, 0.6)
 
 var _grid: RefCounted
 var _pole_mat: StandardMaterial3D
+var _lamp_mat: StandardMaterial3D
 
 
 func init(grid: RefCounted, pole_mat: StandardMaterial3D) -> void:
 	_grid = grid
 	_pole_mat = pole_mat
 
+	# Emissive lamp material — glows without OmniLight3D
+	_lamp_mat = StandardMaterial3D.new()
+	_lamp_mat.albedo_color = LAMP_COLOR
+	_lamp_mat.emission_enabled = true
+	_lamp_mat.emission = LAMP_COLOR
+	_lamp_mat.emission_energy_multiplier = 2.0
+
 
 func build(chunk: Node3D, ox: float, oz: float) -> void:
-	var span: float = _grid.get_grid_span()
-	var half_span := span * 0.5
-
 	# Place lights along N-S roads (every other intersection)
 	for ri in range(_grid.GRID_SIZE + 1):
 		var rx: float = _grid.get_road_center_local(ri) + ox
@@ -51,7 +55,7 @@ func _add_light(chunk: Node3D, x: float, z: float) -> void:
 	var root := Node3D.new()
 	root.name = "Streetlight"
 	root.position = Vector3(x, 0.0, z)
-	root.visible = false  # starts hidden; day_night_environment toggles
+	root.visible = false
 	root.add_to_group("streetlight")
 
 	# Pole mesh
@@ -67,13 +71,16 @@ func _add_light(chunk: Node3D, x: float, z: float) -> void:
 	pole.position.y = POLE_HEIGHT * 0.5
 	root.add_child(pole)
 
-	# OmniLight at top
-	var light := OmniLight3D.new()
-	light.light_color = LIGHT_COLOR
-	light.light_energy = LIGHT_ENERGY
-	light.omni_range = LIGHT_RANGE
-	light.shadow_enabled = false
-	light.position.y = POLE_HEIGHT
-	root.add_child(light)
+	# Emissive lamp sphere at top (no OmniLight3D)
+	var lamp := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = LAMP_RADIUS
+	sphere.height = LAMP_RADIUS * 2.0
+	sphere.radial_segments = 6
+	sphere.rings = 3
+	sphere.material = _lamp_mat
+	lamp.mesh = sphere
+	lamp.position.y = POLE_HEIGHT
+	root.add_child(lamp)
 
 	chunk.add_child(root)
