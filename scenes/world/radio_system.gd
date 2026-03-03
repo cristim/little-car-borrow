@@ -1,8 +1,8 @@
 extends Node
-## In-vehicle radio with multi-genre procedural music, DJ chatter via TTS,
-## and police scanner announcements.
+## In-vehicle radio with multi-genre layered procedural music, DJ chatter
+## via TTS, and police scanner announcements.
 ## Press T (radio_next) to switch stations or turn off.
-## Only audible while player is driving (InputManager.is_vehicle()).
+## Each genre plays melody + bass + percussion simultaneously.
 
 const MUSIC_INTERVAL_MIN := 10.0
 const MUSIC_INTERVAL_MAX := 20.0
@@ -13,19 +13,25 @@ const STATIC_DURATION := 0.4
 const MIX_RATE := 22050.0
 
 # --- Genre definitions ---
-# Each genre: {scales, waveform, tempo_range, notes_range, volume, name, dj}
+# melody_wave: square, distorted, triangle, saw, sine
+# bass_wave: sine, square, saw (bass is always lower octave)
+# perc_style: kick, hihat, snare, none
 const GENRE_POP := {
 	"name": "Little Car FM Pop",
-	"waveform": "square",
+	"melody_wave": "square",
+	"bass_wave": "sine",
+	"perc_style": "kick",
 	"scales": [
 		[261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9, 523.3],
 		[329.6, 370.0, 392.0, 440.0, 493.9, 523.3, 587.3, 659.3],
 	],
 	"tempo_min": 0.13,
 	"tempo_max": 0.2,
-	"notes_min": 16,
-	"notes_max": 40,
-	"volume": 0.07,
+	"notes_min": 20,
+	"notes_max": 48,
+	"melody_vol": 0.055,
+	"bass_vol": 0.04,
+	"perc_vol": 0.03,
 	"dj_lines": [
 		"You're listening to Little Car Pop, number one hits!",
 		"That was a banger! More pop coming right up.",
@@ -36,7 +42,9 @@ const GENRE_POP := {
 
 const GENRE_ROCK := {
 	"name": "Car Rock Radio",
-	"waveform": "distorted",
+	"melody_wave": "distorted",
+	"bass_wave": "square",
+	"perc_style": "snare",
 	"scales": [
 		[130.8, 146.8, 164.8, 174.6, 196.0, 220.0, 246.9, 261.6],
 		[98.0, 110.0, 123.5, 130.8, 146.8, 164.8, 174.6, 196.0],
@@ -45,7 +53,9 @@ const GENRE_ROCK := {
 	"tempo_max": 0.14,
 	"notes_min": 24,
 	"notes_max": 60,
-	"volume": 0.09,
+	"melody_vol": 0.065,
+	"bass_vol": 0.05,
+	"perc_vol": 0.04,
 	"dj_lines": [
 		"Car Rock Radio! Crank it up!",
 		"That riff was insane! More rock ahead.",
@@ -56,7 +66,9 @@ const GENRE_ROCK := {
 
 const GENRE_JAZZ := {
 	"name": "Smooth Jazz Drive",
-	"waveform": "triangle",
+	"melody_wave": "triangle",
+	"bass_wave": "sine",
+	"perc_style": "hihat",
 	"scales": [
 		[220.0, 261.6, 277.2, 293.7, 329.6, 370.0, 392.0, 440.0],
 		[196.0, 233.1, 246.9, 261.6, 293.7, 311.1, 349.2, 392.0],
@@ -65,7 +77,9 @@ const GENRE_JAZZ := {
 	"tempo_max": 0.35,
 	"notes_min": 12,
 	"notes_max": 32,
-	"volume": 0.06,
+	"melody_vol": 0.045,
+	"bass_vol": 0.035,
+	"perc_vol": 0.015,
 	"dj_lines": [
 		"Smooth Jazz Drive. Relax and cruise.",
 		"That was silky smooth. More jazz coming up.",
@@ -76,7 +90,9 @@ const GENRE_JAZZ := {
 
 const GENRE_ELECTRONIC := {
 	"name": "Neon Beat FM",
-	"waveform": "saw",
+	"melody_wave": "saw",
+	"bass_wave": "saw",
+	"perc_style": "kick",
 	"scales": [
 		[130.8, 164.8, 196.0, 220.0, 261.6, 293.7, 329.6, 392.0],
 		[65.4, 82.4, 98.0, 130.8, 164.8, 196.0, 261.6, 329.6],
@@ -85,7 +101,9 @@ const GENRE_ELECTRONIC := {
 	"tempo_max": 0.1,
 	"notes_min": 32,
 	"notes_max": 80,
-	"volume": 0.065,
+	"melody_vol": 0.045,
+	"bass_vol": 0.055,
+	"perc_vol": 0.04,
 	"dj_lines": [
 		"Neon Beat FM! Drop the bass!",
 		"Electronic vibes for night riders.",
@@ -96,7 +114,9 @@ const GENRE_ELECTRONIC := {
 
 const GENRE_CLASSICAL := {
 	"name": "Classical Cruise",
-	"waveform": "sine",
+	"melody_wave": "sine",
+	"bass_wave": "sine",
+	"perc_style": "none",
 	"scales": [
 		[261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9, 523.3],
 		[196.0, 220.0, 246.9, 261.6, 293.7, 329.6, 349.2, 392.0],
@@ -106,7 +126,9 @@ const GENRE_CLASSICAL := {
 	"tempo_max": 0.45,
 	"notes_min": 10,
 	"notes_max": 28,
-	"volume": 0.06,
+	"melody_vol": 0.05,
+	"bass_vol": 0.03,
+	"perc_vol": 0.0,
 	"dj_lines": [
 		"Classical Cruise. Elegant driving.",
 		"A timeless masterpiece. More after this.",
@@ -146,18 +168,35 @@ var _police_timer := 0.0
 var _is_playing_music := false
 var _radio_on := false
 
-# Music generation state
-var _note_phase := 0.0
-var _note_phase2 := 0.0
-var _note_freq := 440.0
-var _note_freq2 := 0.0
-var _note_timer := 0.0
-var _note_duration := 0.0
+# Melody state
+var _mel_phase := 0.0
+var _mel_phase2 := 0.0
+var _mel_freq := 440.0
+var _mel_freq2 := 0.0
+var _mel_timer := 0.0
+var _mel_vol := 0.05
+var _mel_wave := "square"
+
+# Bass state
+var _bass_phase := 0.0
+var _bass_freq := 110.0
+var _bass_timer := 0.0
+var _bass_vol := 0.04
+var _bass_wave := "sine"
+var _bass_root := 0
+
+# Percussion state
+var _perc_phase := 0.0
+var _perc_timer := 0.0
+var _perc_interval := 0.0
+var _perc_env := 0.0
+var _perc_vol := 0.03
+var _perc_style := "kick"
+
+# Shared music state
 var _current_scale: Array = []
 var _notes_remaining := 0
-var _music_volume := 0.07
 var _beat_time := 0.15
-var _waveform := "square"
 
 # Arpeggio state for electronic
 var _arp_index := 0
@@ -279,19 +318,16 @@ func _switch_station() -> void:
 	if not InputManager.is_vehicle():
 		return
 
-	# Cycle: genre0 -> genre1 -> ... -> genreN -> OFF -> genre0
 	if _radio_on:
 		if _genre_index < _genres.size() - 1:
 			_genre_index += 1
 		else:
-			# Turn off
 			_radio_on = false
 			_is_playing_music = false
 			_play_static_burst()
 			_speak_tts("Radio off.")
 			return
 	else:
-		# Turn back on at first genre
 		_radio_on = true
 		_genre_index = 0
 
@@ -307,8 +343,12 @@ func _switch_station() -> void:
 
 func _apply_genre() -> void:
 	var genre: Dictionary = _genres[_genre_index]
-	_waveform = genre.get("waveform", "square")
-	_music_volume = genre.get("volume", 0.07)
+	_mel_wave = genre.get("melody_wave", "square")
+	_mel_vol = genre.get("melody_vol", 0.05)
+	_bass_wave = genre.get("bass_wave", "sine")
+	_bass_vol = genre.get("bass_vol", 0.04)
+	_perc_style = genre.get("perc_style", "kick")
+	_perc_vol = genre.get("perc_vol", 0.03)
 	var scales: Array = genre.get("scales", [[440.0]])
 	_current_scale = scales[_rng.randi() % scales.size()]
 
@@ -327,8 +367,16 @@ func _start_music_segment() -> void:
 	var tmax: float = genre.get("tempo_max", 0.2)
 	_beat_time = _rng.randf_range(tmin, tmax)
 
+	# Percussion interval = 2 or 4 beats
+	var perc_mult := 2 if _rng.randf() < 0.6 else 4
+	_perc_interval = _beat_time * perc_mult
+
+	# Bass plays root note of scale (lowest note)
+	_bass_root = 0
+	_bass_freq = _current_scale[0] * 0.5
+
 	# Build arpeggio pattern for electronic genre
-	if _waveform == "saw":
+	if _mel_wave == "saw":
 		_arp_pattern.clear()
 		for _i in range(4):
 			_arp_pattern.append(
@@ -336,30 +384,48 @@ func _start_music_segment() -> void:
 			)
 		_arp_index = 0
 
-	_note_timer = 0.0
-	_pick_next_note()
+	_mel_timer = 0.0
+	_bass_timer = 0.0
+	_perc_timer = 0.0
+	_pick_next_melody_note()
+	_pick_next_bass_note()
 
 
-func _pick_next_note() -> void:
-	if _waveform == "saw" and not _arp_pattern.is_empty():
-		# Electronic: cycle through arpeggio pattern
-		_note_freq = _arp_pattern[_arp_index % _arp_pattern.size()]
+func _pick_next_melody_note() -> void:
+	if _mel_wave == "saw" and not _arp_pattern.is_empty():
+		_mel_freq = _arp_pattern[_arp_index % _arp_pattern.size()]
 		_arp_index += 1
 	else:
-		_note_freq = _current_scale[
+		_mel_freq = _current_scale[
 			_rng.randi() % _current_scale.size()
 		]
 
 	# Rock: add a fifth for power chord feel
-	if _waveform == "distorted":
-		_note_freq2 = _note_freq * 1.5
+	if _mel_wave == "distorted":
+		_mel_freq2 = _mel_freq * 1.5
 	else:
-		_note_freq2 = 0.0
+		_mel_freq2 = 0.0
 
-	_note_duration = _beat_time * _rng.randi_range(1, 3)
-	_note_timer = _note_duration
-	_note_phase = 0.0
-	_note_phase2 = 0.0
+	var duration := _beat_time * _rng.randi_range(1, 3)
+	_mel_timer = duration
+	_mel_phase = 0.0
+	_mel_phase2 = 0.0
+
+
+func _pick_next_bass_note() -> void:
+	# Bass alternates between root, fifth, and random scale note
+	var choice := _rng.randi() % 3
+	if choice == 0:
+		_bass_freq = _current_scale[0] * 0.5
+	elif choice == 1:
+		# Fifth above root
+		var fifth_idx: int = mini(4, _current_scale.size() - 1)
+		_bass_freq = _current_scale[fifth_idx] * 0.5
+	else:
+		var idx := _rng.randi() % _current_scale.size()
+		_bass_freq = _current_scale[idx] * 0.5
+	_bass_timer = _beat_time * _rng.randi_range(2, 4)
+	_bass_phase = 0.0
 
 
 func _fill_music(delta: float) -> void:
@@ -368,65 +434,125 @@ func _fill_music(delta: float) -> void:
 	var frames := _music_playback.get_frames_available()
 	var inv_rate := 1.0 / MIX_RATE
 	for _i in range(frames):
-		var sample := _generate_sample()
+		var sample := _gen_melody()
+		sample += _gen_bass()
+		sample += _gen_percussion()
+		sample = clampf(sample, -0.5, 0.5)
 		_music_playback.push_frame(Vector2(sample, sample))
-		_note_phase += _note_freq * inv_rate
-		if _note_phase > 1.0:
-			_note_phase -= 1.0
-		if _note_freq2 > 0.0:
-			_note_phase2 += _note_freq2 * inv_rate
-			if _note_phase2 > 1.0:
-				_note_phase2 -= 1.0
 
-	_note_timer -= delta
-	if _note_timer <= 0.0:
+		# Advance phases
+		_mel_phase += _mel_freq * inv_rate
+		if _mel_phase > 1.0:
+			_mel_phase -= 1.0
+		if _mel_freq2 > 0.0:
+			_mel_phase2 += _mel_freq2 * inv_rate
+			if _mel_phase2 > 1.0:
+				_mel_phase2 -= 1.0
+		_bass_phase += _bass_freq * inv_rate
+		if _bass_phase > 1.0:
+			_bass_phase -= 1.0
+		_perc_phase += inv_rate
+		_perc_env = maxf(_perc_env - inv_rate * 15.0, 0.0)
+
+	# Melody note timing
+	_mel_timer -= delta
+	if _mel_timer <= 0.0:
 		_notes_remaining -= 1
 		if _notes_remaining <= 0:
 			_is_playing_music = false
 			_music_timer = _rng.randf_range(
 				MUSIC_INTERVAL_MIN, MUSIC_INTERVAL_MAX
 			)
-		else:
-			_pick_next_note()
+			return
+		_pick_next_melody_note()
+
+	# Bass note timing
+	_bass_timer -= delta
+	if _bass_timer <= 0.0:
+		_pick_next_bass_note()
+
+	# Percussion timing
+	if _perc_style != "none" and _perc_interval > 0.0:
+		_perc_timer -= delta
+		if _perc_timer <= 0.0:
+			_perc_timer = _perc_interval
+			_perc_env = 1.0
+			_perc_phase = 0.0
 
 
-func _generate_sample() -> float:
-	var vol := _music_volume
-	var phase := _note_phase
+func _gen_melody() -> float:
+	var vol := _mel_vol
+	var phase := _mel_phase
 
-	if _waveform == "square":
+	if _mel_wave == "square":
 		var wave := signf(sin(phase * TAU)) * vol
 		wave += signf(sin(phase * TAU * 1.005)) * (vol * 0.3)
 		return wave
 
-	if _waveform == "distorted":
-		# Distorted square with power chord fifth
+	if _mel_wave == "distorted":
 		var wave := clampf(
 			sin(phase * TAU) * 3.0, -1.0, 1.0
 		) * vol
-		if _note_freq2 > 0.0:
+		if _mel_freq2 > 0.0:
 			wave += clampf(
-				sin(_note_phase2 * TAU) * 3.0, -1.0, 1.0
+				sin(_mel_phase2 * TAU) * 3.0, -1.0, 1.0
 			) * (vol * 0.7)
 		return wave
 
-	if _waveform == "triangle":
-		# Triangle wave with slight vibrato
+	if _mel_wave == "triangle":
 		var vibrato := sin(phase * TAU * 0.02) * 0.003
-		var tri := (2.0 * absf(2.0 * fmod(phase + vibrato, 1.0) - 1.0) - 1.0)
+		var p := fmod(phase + vibrato, 1.0)
+		var tri := (2.0 * absf(2.0 * p - 1.0) - 1.0)
 		return tri * vol
 
-	if _waveform == "saw":
-		# Saw wave with detune for thickness
+	if _mel_wave == "saw":
 		var saw1 := (2.0 * fmod(phase, 1.0) - 1.0) * vol
-		var saw2_phase := fmod(phase * 1.01, 1.0)
-		var saw2 := (2.0 * saw2_phase - 1.0) * (vol * 0.5)
+		var saw2_p := fmod(phase * 1.01, 1.0)
+		var saw2 := (2.0 * saw2_p - 1.0) * (vol * 0.5)
 		return saw1 + saw2
 
-	# Sine (classical)
+	# Sine (classical) with overtone
 	var wave := sin(phase * TAU) * vol
 	wave += sin(phase * TAU * 2.0) * (vol * 0.15)
 	return wave
+
+
+func _gen_bass() -> float:
+	var phase := _bass_phase
+	var vol := _bass_vol
+
+	if _bass_wave == "square":
+		return signf(sin(phase * TAU)) * vol
+
+	if _bass_wave == "saw":
+		return (2.0 * fmod(phase, 1.0) - 1.0) * vol
+
+	# Default sine bass
+	return sin(phase * TAU) * vol
+
+
+func _gen_percussion() -> float:
+	if _perc_env <= 0.0:
+		return 0.0
+	var vol := _perc_vol * _perc_env
+
+	if _perc_style == "kick":
+		# Low frequency thump that drops in pitch
+		var freq := lerpf(150.0, 50.0, 1.0 - _perc_env)
+		return sin(_perc_phase * freq * TAU) * vol
+
+	if _perc_style == "snare":
+		# Noise burst + tone
+		var noise := (_rng.randf() - 0.5) * vol * 0.8
+		var tone := sin(_perc_phase * 200.0 * TAU) * vol * 0.4
+		return noise + tone
+
+	if _perc_style == "hihat":
+		# High frequency filtered noise
+		var noise := (_rng.randf() - 0.5) * vol * 0.6
+		return noise
+
+	return 0.0
 
 
 func _fill_silence() -> void:
