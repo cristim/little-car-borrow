@@ -79,10 +79,15 @@ func accept_mission(mission_id: String) -> void:
 	if mission.is_empty():
 		return
 
+	var mtype: String = mission.get("type", "")
+
+	# Taxi requires being in a vehicle
+	if mtype == "taxi" and not InputManager.is_vehicle():
+		return
+
 	_active_mission = mission
 	_available_missions.clear()
 
-	var mtype: String = mission.get("type", "")
 	if mtype == "theft":
 		# Theft skips pickup — go straight to needing the vehicle
 		_active_mission["state"] = "pickup"
