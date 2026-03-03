@@ -21,6 +21,7 @@ func _ready() -> void:
 	EventBus.mission_marker_reached.connect(
 		_on_marker_reached
 	)
+	EventBus.vehicle_entered.connect(_on_vehicle_entered)
 
 
 func _on_mission_available(mission_data: Dictionary) -> void:
@@ -52,7 +53,10 @@ func _on_mission_started(mission_id: String) -> void:
 
 	var mtype: String = mission.get("type", "")
 	if mtype == "theft":
-		# Theft: spawn dropoff only (no physical pickup)
+		# Theft: no marker yet — dropoff spawns when vehicle entered
+		pass
+	elif mtype == "taxi":
+		# Taxi: passenger at start, spawn dropoff immediately
 		var dp: Vector3 = mission.get(
 			"dropoff_pos", Vector3.ZERO
 		)
@@ -62,6 +66,22 @@ func _on_mission_started(mission_id: String) -> void:
 			"pickup_pos", Vector3.ZERO
 		)
 		_spawn_marker(mission_id, "pickup", pp)
+
+
+func _on_vehicle_entered(_vehicle: Node) -> void:
+	# Check if theft mission dropoff needs spawning
+	var mission := MissionManager.get_active_mission()
+	if mission.is_empty():
+		return
+	if mission.get("type") != "theft":
+		return
+	if mission.get("state") != "active":
+		return
+	var mid: String = mission.get("id", "")
+	if _markers.has(mid):
+		return  # already spawned
+	var dp: Vector3 = mission.get("dropoff_pos", Vector3.ZERO)
+	_spawn_marker(mid, "dropoff", dp)
 
 
 func _on_marker_reached(
