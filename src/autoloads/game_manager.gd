@@ -2,7 +2,6 @@ extends Node
 ## Manages global game state: money, health, save/load, pause.
 
 const MAX_HEALTH := 100.0
-const RESPAWN_DELAY := 3.0
 
 var money: int = 0
 var is_paused: bool = false
@@ -42,15 +41,14 @@ func heal(amount: float) -> void:
 func _die() -> void:
 	is_dead = true
 	EventBus.player_died.emit()
-	get_tree().create_timer(RESPAWN_DELAY).timeout.connect(_respawn)
 
 
-func _respawn() -> void:
+func restart_game() -> void:
 	is_dead = false
 	health = MAX_HEALTH
+	money = 0
 	WantedLevelManager.clear()
-	EventBus.player_health_changed.emit(health, MAX_HEALTH)
-	EventBus.player_respawned.emit()
+	get_tree().reload_current_scene()
 
 
 func toggle_pause() -> void:

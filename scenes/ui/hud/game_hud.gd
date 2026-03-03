@@ -20,6 +20,7 @@ var _reward_timer := 0.0
 @onready var stars_hbox: HBoxContainer = $TopRight/StarsHBox
 @onready var health_bar: ColorRect = $BottomLeft/HealthBg/HealthBar
 @onready var death_label: Label = $DeathLabel
+@onready var restart_prompt: Label = $RestartPrompt
 
 
 func _ready() -> void:
@@ -32,13 +33,13 @@ func _ready() -> void:
 	EventBus.mission_failed.connect(_on_mission_done)
 	EventBus.player_health_changed.connect(_on_health)
 	EventBus.player_died.connect(_on_died)
-	EventBus.player_respawned.connect(_on_respawned)
 
 	money_label.text = "$%d" % GameManager.money
 	objective_label.visible = false
 	timer_label.visible = false
 	reward_label.visible = false
 	death_label.visible = false
+	restart_prompt.visible = false
 	_update_stars()
 
 
@@ -133,12 +134,18 @@ func _on_died() -> void:
 	death_label.add_theme_color_override(
 		"font_color", Color(0.8, 0.1, 0.1)
 	)
+	# Show restart prompt after a short delay
+	get_tree().create_timer(2.0).timeout.connect(_show_restart_prompt)
 
 
-func _on_respawned() -> void:
-	death_label.visible = false
-	health_bar.size.x = 200.0
-	health_bar.color = Color(0.8, 0.15, 0.15, 0.9)
+func _show_restart_prompt() -> void:
+	if GameManager.is_dead:
+		restart_prompt.visible = true
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if GameManager.is_dead and event.is_action_pressed("reload"):
+		GameManager.restart_game()
 
 
 func _update_stars() -> void:
