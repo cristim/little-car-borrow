@@ -85,8 +85,8 @@ const DRUM_PATTERNS := {
 # drum_pattern: key into DRUM_PATTERNS
 const GENRE_POP := {
 	"name": "Little Car FM Pop",
-	"melody_wave": "square",
-	"bass_wave": "sine",
+	"melody_wave": "triangle",  # clean keyboard/piano tone
+	"bass_wave": "sine",  # round bass guitar
 	"drum_pattern": "pop",
 	"scales": [
 		[261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9, 523.3],
@@ -103,7 +103,7 @@ const GENRE_POP := {
 	"chord_beats": 4,
 	"passing_tone_chance": 0.2,
 	"delay": [0.15, 0.25],
-	"bass_cutoff": 0.15,
+	"bass_cutoff": 0.22,  # pop bass guitar needs presence
 	"dj_lines": [
 		"You're listening to Little Car Pop, number one hits!",
 		"That was a banger! More pop coming right up.",
@@ -114,8 +114,8 @@ const GENRE_POP := {
 
 const GENRE_ROCK := {
 	"name": "Car Rock Radio",
-	"melody_wave": "distorted",
-	"bass_wave": "sine",
+	"melody_wave": "distorted",  # overdriven electric guitar
+	"bass_wave": "saw",  # bass guitar with pick (filtered by LP)
 	"drum_pattern": "rock",
 	"scales": [
 		# E minor pentatonic - classic rock lead range
@@ -134,7 +134,7 @@ const GENRE_ROCK := {
 	"chord_beats": 4,
 	"passing_tone_chance": 0.15,
 	"delay": [0.10, 0.20],
-	"bass_cutoff": 0.30,
+	"bass_cutoff": 0.22,  # filter saw into warm-but-gritty bass guitar
 	"dj_lines": [
 		"Car Rock Radio! Crank it up!",
 		"That riff was insane! More rock ahead.",
@@ -145,8 +145,8 @@ const GENRE_ROCK := {
 
 const GENRE_JAZZ := {
 	"name": "Smooth Jazz Drive",
-	"melody_wave": "triangle",
-	"bass_wave": "sine",
+	"melody_wave": "triangle",  # mellow sax / vibraphone
+	"bass_wave": "sine",  # warm upright bass
 	"drum_pattern": "jazz",
 	"scales": [
 		[220.0, 261.6, 277.2, 293.7, 329.6, 370.0, 392.0, 440.0],
@@ -174,8 +174,8 @@ const GENRE_JAZZ := {
 
 const GENRE_ELECTRONIC := {
 	"name": "Neon Beat FM",
-	"melody_wave": "saw",
-	"bass_wave": "saw",
+	"melody_wave": "saw",  # analog synth lead
+	"bass_wave": "saw",  # filtered synth bass
 	"drum_pattern": "electronic",
 	"scales": [
 		[130.8, 164.8, 196.0, 220.0, 261.6, 293.7, 329.6, 392.0],
@@ -203,8 +203,8 @@ const GENRE_ELECTRONIC := {
 
 const GENRE_CLASSICAL := {
 	"name": "Classical Cruise",
-	"melody_wave": "sine",
-	"bass_wave": "sine",
+	"melody_wave": "sine",  # strings / flute
+	"bass_wave": "sine",  # warm cello
 	"drum_pattern": "classical",
 	"scales": [
 		[261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9, 523.3],
