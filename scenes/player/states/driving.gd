@@ -2,11 +2,16 @@ extends "res://src/state_machine/state.gd"
 ## Player is driving a vehicle. Hides player, activates vehicle camera.
 
 var _vehicle: Node = null
+var _original_collision_layer := 0
 
 
 func enter(msg: Dictionary = {}) -> void:
 	_vehicle = msg.get("vehicle")
 	owner.current_vehicle = _vehicle
+
+	# Switch vehicle to PlayerVehicle collision layer
+	_original_collision_layer = _vehicle.collision_layer
+	_vehicle.collision_layer = 8
 
 	# Hide player
 	owner.visible = false
@@ -34,6 +39,7 @@ func enter(msg: Dictionary = {}) -> void:
 
 func exit() -> void:
 	if _vehicle:
+		_vehicle.collision_layer = _original_collision_layer
 		_vehicle.steering_input = 0.0
 		_vehicle.throttle_input = 0.0
 		_vehicle.brake_input = 0.0
