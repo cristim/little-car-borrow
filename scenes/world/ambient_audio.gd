@@ -10,6 +10,7 @@ const HORN_DURATION := 0.3
 
 var _phase := 0.0
 var _phase2 := 0.0
+var _horn_phase := 0.0
 var _playback: AudioStreamGeneratorPlayback = null
 var _rng := RandomNumberGenerator.new()
 var _horn_timer := 0.0
@@ -47,6 +48,7 @@ func _process(delta: float) -> void:
 			_horn_active = true
 			_horn_remaining = HORN_DURATION
 			_horn_freq = _rng.randf_range(280.0, 400.0)
+			_horn_phase = 0.0
 
 	var frames_available := _playback.get_frames_available()
 	for _i in range(frames_available):
@@ -54,10 +56,13 @@ func _process(delta: float) -> void:
 		var drone := sin(_phase * TAU) * 0.04
 		drone += sin(_phase2 * TAU) * 0.025
 
-		# Occasional horn honk
+		# Occasional horn honk (separate phase to avoid discontinuity)
 		var horn := 0.0
 		if _horn_active:
-			horn = sin(_phase * TAU * (_horn_freq / DRONE_FREQ)) * 0.06
+			horn = sin(_horn_phase * TAU) * 0.06
+			_horn_phase += _horn_freq / SAMPLE_RATE
+			if _horn_phase > 1.0:
+				_horn_phase -= 1.0
 
 		var sample := drone + horn
 		_playback.push_frame(Vector2(sample, sample))
