@@ -5,7 +5,11 @@ extends Node
 const SHOOT_RANGE := 50.0
 const SHOOT_COOLDOWN := 0.3
 const SHOOT_DAMAGE := 25.0
-const VEHICLE_IMPULSE := 500.0
+const VEHICLE_IMPULSE := 80.0
+const MAX_WORLD_DECALS := 30
+const WORLD_DECAL_LIFETIME := 15.0
+const MAX_BLOOD_DECALS := 20
+const BLOOD_DECAL_LIFETIME := 20.0
 const MUZZLE_FLASH_TIME := 0.06
 const AIM_POSE_TIME := 0.3
 
@@ -16,6 +20,8 @@ var _cooldown := 0.0
 var _flash_timer := 0.0
 var _muzzle_flash: MeshInstance3D = null
 var _player_model: Node3D = null
+var _world_decals: Array[MeshInstance3D] = []
+var _blood_decals: Array[MeshInstance3D] = []
 
 
 func _ready() -> void:
@@ -84,20 +90,28 @@ func _shoot() -> void:
 
 	var body: Node = result["collider"]
 	var hit_pos: Vector3 = result["position"]
+	var hit_normal: Vector3 = result["normal"]
 
 	if body.is_in_group("pedestrian"):
 		_spawn_ragdoll(body, dir)
+		_spawn_blood(hit_pos)
 		EventBus.pedestrian_killed.emit(body)
 		EventBus.crime_committed.emit("shoot_pedestrian", 35)
 		body.queue_free()
 	elif body.is_in_group("police_officer"):
 		_spawn_ragdoll(body, dir)
+		_spawn_blood(hit_pos)
 		EventBus.crime_committed.emit("shoot_police", 60)
 		body.queue_free()
 	elif body is RigidBody3D:
 		var impulse := dir * VEHICLE_IMPULSE
 		(body as RigidBody3D).apply_impulse(impulse, hit_pos - body.global_position)
+		var vh := body.get_node_or_null("VehicleHealth")
+		if vh:
+			vh.take_damage(SHOOT_DAMAGE, hit_pos, hit_normal)
 		EventBus.crime_committed.emit("shoot_vehicle", 15)
+	elif body is StaticBody3D:
+		_spawn_world_decal(hit_pos, hit_normal)
 
 
 func _spawn_ragdoll(target: Node, shoot_dir: Vector3) -> void:
@@ -111,6 +125,64 @@ func _spawn_ragdoll(target: Node, shoot_dir: Vector3) -> void:
 	var impulse := shoot_dir * 15.0
 	impulse.y = 0.0
 	ragdoll.apply_central_impulse(impulse)
+
+
+func _spawn_decal(
+	pos: Vector3,
+	normal: Vector3,
+	size: float,
+	color: Color,
+) -> MeshInstance3D:
+	var decal := MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(size, size)
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	plane.material = mat
+	decal.mesh = plane
+	decal.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	get_tree().current_scene.add_child(decal)
+	decal.global_position = pos + normal * 0.01
+	if normal.abs() != Vector3.UP:
+		decal.look_at(decal.global_position + normal, Vector3.UP)
+	else:
+		decal.look_at(decal.global_position + normal, Vector3.FORWARD)
+	decal.rotate_object_local(Vector3.RIGHT, -PI / 2.0)
+	return decal
+
+
+func _spawn_world_decal(pos: Vector3, normal: Vector3) -> void:
+	var decal := _spawn_decal(pos, normal, 0.12, Color(0.08, 0.08, 0.08))
+	_world_decals.append(decal)
+	if _world_decals.size() > MAX_WORLD_DECALS:
+		var old: MeshInstance3D = _world_decals.pop_front()
+		if is_instance_valid(old):
+			old.queue_free()
+	get_tree().create_timer(WORLD_DECAL_LIFETIME).timeout.connect(
+		func() -> void:
+			_world_decals.erase(decal)
+			if is_instance_valid(decal):
+				decal.queue_free()
+	)
+
+
+func _spawn_blood(hit_pos: Vector3) -> void:
+	var blood_pos := Vector3(hit_pos.x, 0.02, hit_pos.z)
+	var decal := _spawn_decal(
+		blood_pos, Vector3.UP, 0.2, Color(0.4, 0.02, 0.02)
+	)
+	_blood_decals.append(decal)
+	if _blood_decals.size() > MAX_BLOOD_DECALS:
+		var old: MeshInstance3D = _blood_decals.pop_front()
+		if is_instance_valid(old):
+			old.queue_free()
+	get_tree().create_timer(BLOOD_DECAL_LIFETIME).timeout.connect(
+		func() -> void:
+			_blood_decals.erase(decal)
+			if is_instance_valid(decal):
+				decal.queue_free()
+	)
 
 
 func _setup_gun_mesh() -> void:

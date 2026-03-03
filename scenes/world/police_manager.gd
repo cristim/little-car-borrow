@@ -12,6 +12,9 @@ const DESPAWN_FADE_TIME := 10.0
 var _grid = preload("res://src/road_grid.gd").new()
 var _police_scene: PackedScene = preload("res://scenes/vehicles/police_vehicle.tscn")
 var _ai_script: GDScript = preload("res://scenes/vehicles/police_ai_controller.gd")
+var _vehicle_health_script: GDScript = preload(
+	"res://scenes/vehicles/vehicle_health.gd"
+)
 
 var _police: Array[Node] = []
 var _player: Node3D = null
@@ -161,6 +164,10 @@ func _try_spawn() -> void:
 		var ai: Node = _ai_script.new()
 		ai.name = "PoliceAIController"
 		vehicle.add_child(ai)
+
+		var vh: Node = _vehicle_health_script.new()
+		vh.name = "VehicleHealth"
+		vehicle.add_child(vh)
 
 		get_tree().current_scene.add_child(vehicle)
 		vehicle.add_to_group("police_vehicle")

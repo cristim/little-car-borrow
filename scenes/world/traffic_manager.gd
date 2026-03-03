@@ -78,6 +78,9 @@ var _vehicle_scene: PackedScene = preload("res://scenes/vehicles/base_vehicle.ts
 var _npc_controller_script: GDScript = preload(
 	"res://scenes/vehicles/npc_vehicle_controller.gd"
 )
+var _vehicle_health_script: GDScript = preload(
+	"res://scenes/vehicles/vehicle_health.gd"
+)
 var _spawn_timer := 0.0
 var _player: Node3D = null
 var _rng := RandomNumberGenerator.new()
@@ -223,6 +226,10 @@ func _try_spawn() -> void:
 		var npc: Node = _npc_controller_script.new()
 		npc.name = "NPCVehicleController"
 		vehicle.add_child(npc)
+
+		var vh: Node = _vehicle_health_script.new()
+		vh.name = "VehicleHealth"
+		vehicle.add_child(vh)
 
 		get_tree().current_scene.add_child(vehicle)
 		vehicle.add_to_group("npc_vehicle")
