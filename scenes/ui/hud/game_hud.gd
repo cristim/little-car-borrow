@@ -18,6 +18,8 @@ var _reward_timer := 0.0
 @onready var timer_label: Label = $TopLeft/TimerLabel
 @onready var reward_label: Label = $CenterTop/RewardLabel
 @onready var stars_hbox: HBoxContainer = $TopRight/StarsHBox
+@onready var health_bar: ColorRect = $BottomLeft/HealthBg/HealthBar
+@onready var death_label: Label = $DeathLabel
 
 
 func _ready() -> void:
@@ -28,11 +30,15 @@ func _ready() -> void:
 	EventBus.mission_timer_updated.connect(_on_timer)
 	EventBus.mission_completed.connect(_on_mission_done)
 	EventBus.mission_failed.connect(_on_mission_done)
+	EventBus.player_health_changed.connect(_on_health)
+	EventBus.player_died.connect(_on_died)
+	EventBus.player_respawned.connect(_on_respawned)
 
 	money_label.text = "$%d" % GameManager.money
 	objective_label.visible = false
 	timer_label.visible = false
 	reward_label.visible = false
+	death_label.visible = false
 	_update_stars()
 
 
@@ -109,6 +115,30 @@ func _on_mission_done(_mission_id: String) -> void:
 	_reward_timer = 3.0
 	objective_label.visible = false
 	timer_label.visible = false
+
+
+func _on_health(current: float, max_hp: float) -> void:
+	var ratio := current / max_hp if max_hp > 0.0 else 0.0
+	health_bar.size.x = 200.0 * ratio
+	if ratio < 0.3:
+		health_bar.color = Color(0.9, 0.1, 0.1, 0.9)
+	elif ratio < 0.6:
+		health_bar.color = Color(0.9, 0.6, 0.1, 0.9)
+	else:
+		health_bar.color = Color(0.8, 0.15, 0.15, 0.9)
+
+
+func _on_died() -> void:
+	death_label.visible = true
+	death_label.add_theme_color_override(
+		"font_color", Color(0.8, 0.1, 0.1)
+	)
+
+
+func _on_respawned() -> void:
+	death_label.visible = false
+	health_bar.size.x = 200.0
+	health_bar.color = Color(0.8, 0.15, 0.15, 0.9)
 
 
 func _update_stars() -> void:
