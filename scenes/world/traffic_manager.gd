@@ -6,7 +6,7 @@ extends Node
 const SPAWN_RADIUS := 200.0
 const DESPAWN_RADIUS := 250.0
 const DESPAWN_BEHIND_RADIUS := 120.0
-const MIN_SPAWN_DIST := 40.0
+const MIN_SPAWN_DIST := 90.0
 const MIN_VEHICLE_DIST := 12.0
 const MAX_VEHICLES := 30
 const SPAWN_INTERVAL := 0.5
@@ -81,7 +81,6 @@ var _npc_controller_script: GDScript = preload(
 var _spawn_timer := 0.0
 var _player: Node3D = null
 var _rng := RandomNumberGenerator.new()
-var _initial_burst_done := false
 var _player_velocity := Vector3.ZERO
 var _time_multiplier := 1.0
 
@@ -118,17 +117,19 @@ func _process(delta: float) -> void:
 	else:
 		_player_velocity = Vector3.ZERO
 
-	if not _initial_burst_done:
-		_initial_burst_done = true
-		for _i in range(MAX_VEHICLES):
-			_try_spawn()
-		return
-
 	_spawn_timer += delta
 	if _spawn_timer >= SPAWN_INTERVAL:
 		_spawn_timer = 0.0
 		_despawn_far()
-		for _i in range(SPAWNS_PER_TICK):
+		# Spawn more aggressively when vehicle count is low
+		var effective_max := int(MAX_VEHICLES * _time_multiplier)
+		var deficit := effective_max - _vehicles.size()
+		var count := SPAWNS_PER_TICK
+		if deficit > effective_max / 2:
+			count = 10
+		elif deficit > effective_max / 4:
+			count = 6
+		for _i in range(count):
 			_try_spawn()
 
 
