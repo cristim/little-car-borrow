@@ -7,7 +7,7 @@ enum AIState { PATROL, PURSUE }
 
 # Driving tuning
 const PATROL_SPEED := 40.0
-const PURSUIT_SPEED := 52.0
+const PURSUIT_SPEED := 70.0
 const ARRIVAL_DIST := 6.0
 const LANE_STEER_GAIN := 0.6
 const LANE_STEER_MAX := 0.5
@@ -15,8 +15,9 @@ const HEADING_STEER_GAIN := 2.0
 const OFF_ROAD_THRESHOLD := 5.0
 const OFF_ROAD_LANE_GAIN := 2.0
 const OFF_ROAD_LANE_MAX := 0.9
-const PIT_DISTANCE := 15.0
-const PIT_STEER_GAIN := 1.5
+const PIT_DISTANCE := 20.0
+const PIT_STEER_GAIN := 2.5
+const PURSUIT_BLEND := 0.55
 
 # Collision avoidance
 const RAY_LENGTH := 25.0
@@ -30,9 +31,9 @@ const STEER_AVOID_GAIN := 0.6
 const RAY_MASK := 90
 
 # Line-of-sight
-const LOS_RANGE := 80.0
-const LOS_LOCK_TIME := 3.0
-const LOS_LOST_TIMEOUT := 15.0
+const LOS_RANGE := 100.0
+const LOS_LOCK_TIME := 1.0
+const LOS_LOST_TIMEOUT := 20.0
 
 # Stuck detection
 const STUCK_TIMEOUT := 0.8
@@ -218,20 +219,24 @@ func _drive(_delta: float) -> void:
 	if speed_kmh > cruise + 15.0:
 		brake = clampf((speed_kmh - cruise) * 0.05, 0.0, 1.0)
 
-	# Forward obstacle braking
+	# Forward obstacle braking (less cautious in pursuit)
 	if _dist_to_ahead >= 0.0:
-		if _dist_to_ahead < HARD_BRAKE_DIST:
-			brake = 0.6
-			throttle = 0.1
-		elif _dist_to_ahead < SOFT_BRAKE_DIST:
+		var pursuing := _ai_state == AIState.PURSUE
+		var hard_dist := 1.5 if pursuing else HARD_BRAKE_DIST
+		var soft_dist := 6.0 if pursuing else SOFT_BRAKE_DIST
+		if _dist_to_ahead < hard_dist:
+			brake = 0.4 if pursuing else 0.6
+			throttle = 0.3 if pursuing else 0.1
+		elif _dist_to_ahead < soft_dist:
 			var t := (
-				(_dist_to_ahead - HARD_BRAKE_DIST)
-				/ (SOFT_BRAKE_DIST - HARD_BRAKE_DIST)
+				(_dist_to_ahead - hard_dist)
+				/ (soft_dist - hard_dist)
 			)
-			brake = maxf(brake, 0.4 * (1.0 - t))
-			throttle = lerpf(0.15, throttle, t)
+			brake = maxf(brake, 0.3 * (1.0 - t))
+			throttle = lerpf(0.2, throttle, t)
 
-	throttle = maxf(throttle, 0.2)
+	var min_throttle := 0.35 if _ai_state == AIState.PURSUE else 0.2
+	throttle = maxf(throttle, min_throttle)
 
 	_vehicle.steering_input = steer
 	_vehicle.throttle_input = throttle
@@ -354,7 +359,9 @@ func _get_desired_heading() -> Vector3:
 		if to_player.length_squared() > 1.0:
 			# Blend road heading with direct pursuit heading
 			var road_heading := _dir_to_heading(_direction)
-			return road_heading.lerp(to_player.normalized(), 0.3).normalized()
+			return road_heading.lerp(
+				to_player.normalized(), PURSUIT_BLEND
+			).normalized()
 	return _dir_to_heading(_direction)
 
 
