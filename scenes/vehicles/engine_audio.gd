@@ -60,6 +60,8 @@ func _process(_delta: float) -> void:
 	# Idle wobble
 	if speed_kmh < 5.0:
 		_wobble_phase += IDLE_WOBBLE_FREQ / SAMPLE_RATE
+		if _wobble_phase > 1.0:
+			_wobble_phase -= 1.0
 		base_freq += sin(_wobble_phase * TAU) * IDLE_WOBBLE_DEPTH
 
 	var volume := lerpf(0.15, 0.6, maxf(speed_ratio, throttle))
