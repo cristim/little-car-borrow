@@ -23,15 +23,70 @@ const PROGRESSIONS := [
 	[[5, 7, 2], [3, 5, 7], [0, 2, 4], [4, 6, 1]],  # vi-IV-I-V
 ]
 
+# 16-step drum patterns per genre: each step is [kick_vel, snare_vel, hihat_vel, open_hat_vel]
+# Velocity 0.0 = silent, 1.0 = full hit, <1.0 = ghost note
+const DRUM_PATTERNS := {
+	"pop": [
+		[1.0, 0.0, 0.8, 0.0], [0.0, 0.0, 0.5, 0.0],
+		[0.0, 0.0, 0.8, 0.0], [0.0, 0.0, 0.5, 0.0],
+		[0.0, 1.0, 0.8, 0.0], [0.0, 0.0, 0.5, 0.0],
+		[0.3, 0.0, 0.8, 0.0], [0.0, 0.0, 0.5, 0.0],
+		[1.0, 0.0, 0.8, 0.0], [0.0, 0.0, 0.5, 0.0],
+		[0.0, 0.0, 0.8, 0.0], [0.0, 0.3, 0.5, 0.0],
+		[0.0, 1.0, 0.8, 0.0], [0.0, 0.0, 0.5, 0.0],
+		[0.3, 0.0, 0.8, 0.0], [0.0, 0.0, 0.5, 0.0],
+	],
+	"rock": [
+		[1.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0],
+		[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0],
+		[0.0, 1.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0],
+		[0.0, 0.0, 1.0, 0.0], [0.5, 0.0, 1.0, 0.0],
+		[1.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0],
+		[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0],
+		[0.0, 1.0, 0.0, 1.0], [0.0, 0.0, 1.0, 0.0],
+		[0.5, 0.0, 1.0, 0.0], [0.0, 0.3, 1.0, 0.0],
+	],
+	"jazz": [
+		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.8, 0.0],
+		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.8, 0.0],
+		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.8, 0.0],
+		[0.0, 0.3, 0.0, 0.0], [0.0, 0.0, 0.8, 0.0],
+		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.8, 0.0],
+		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.8, 0.0],
+		[0.0, 0.0, 0.0, 0.0], [0.0, 0.3, 0.8, 0.0],
+		[0.5, 0.0, 0.0, 0.0], [0.0, 0.0, 0.8, 0.0],
+	],
+	"electronic": [
+		[1.0, 0.0, 0.8, 0.0], [0.0, 0.0, 0.8, 0.0],
+		[0.0, 0.0, 0.0, 0.8], [0.0, 0.0, 0.8, 0.0],
+		[1.0, 1.0, 0.8, 0.0], [0.0, 0.0, 0.8, 0.0],
+		[0.0, 0.0, 0.0, 0.8], [0.0, 0.0, 0.8, 0.0],
+		[1.0, 0.0, 0.8, 0.0], [0.0, 0.0, 0.8, 0.0],
+		[0.0, 0.0, 0.0, 0.8], [0.0, 0.0, 0.8, 0.0],
+		[1.0, 1.0, 0.8, 0.0], [0.0, 0.0, 0.8, 0.0],
+		[0.5, 0.0, 0.0, 0.8], [0.0, 0.0, 0.8, 0.0],
+	],
+	"classical": [
+		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0],
+	],
+}
+
 # --- Genre definitions ---
 # melody_wave: square, distorted, triangle, saw, sine
 # bass_wave: sine, square, saw (bass is always lower octave)
-# perc_style: kick, hihat, snare, none
+# drum_pattern: key into DRUM_PATTERNS
 const GENRE_POP := {
 	"name": "Little Car FM Pop",
 	"melody_wave": "square",
 	"bass_wave": "sine",
-	"perc_style": "kick",
+	"drum_pattern": "pop",
 	"scales": [
 		[261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9, 523.3],
 		[329.6, 370.0, 392.0, 440.0, 493.9, 523.3, 587.3, 659.3],
@@ -58,7 +113,7 @@ const GENRE_ROCK := {
 	"name": "Car Rock Radio",
 	"melody_wave": "distorted",
 	"bass_wave": "square",
-	"perc_style": "snare",
+	"drum_pattern": "rock",
 	"scales": [
 		[130.8, 146.8, 164.8, 174.6, 196.0, 220.0, 246.9, 261.6],
 		[98.0, 110.0, 123.5, 130.8, 146.8, 164.8, 174.6, 196.0],
@@ -85,7 +140,7 @@ const GENRE_JAZZ := {
 	"name": "Smooth Jazz Drive",
 	"melody_wave": "triangle",
 	"bass_wave": "sine",
-	"perc_style": "hihat",
+	"drum_pattern": "jazz",
 	"scales": [
 		[220.0, 261.6, 277.2, 293.7, 329.6, 370.0, 392.0, 440.0],
 		[196.0, 233.1, 246.9, 261.6, 293.7, 311.1, 349.2, 392.0],
@@ -112,7 +167,7 @@ const GENRE_ELECTRONIC := {
 	"name": "Neon Beat FM",
 	"melody_wave": "saw",
 	"bass_wave": "saw",
-	"perc_style": "kick",
+	"drum_pattern": "electronic",
 	"scales": [
 		[130.8, 164.8, 196.0, 220.0, 261.6, 293.7, 329.6, 392.0],
 		[65.4, 82.4, 98.0, 130.8, 164.8, 196.0, 261.6, 329.6],
@@ -139,7 +194,7 @@ const GENRE_CLASSICAL := {
 	"name": "Classical Cruise",
 	"melody_wave": "sine",
 	"bass_wave": "sine",
-	"perc_style": "none",
+	"drum_pattern": "classical",
 	"scales": [
 		[261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9, 523.3],
 		[196.0, 220.0, 246.9, 261.6, 293.7, 329.6, 349.2, 392.0],
@@ -211,13 +266,14 @@ var _bass_vol := 0.04
 var _bass_wave := "sine"
 var _bass_root := 0
 
-# Percussion state
-var _perc_phase := 0.0
-var _perc_timer := 0.0
-var _perc_interval := 0.0
-var _perc_env := 0.0
+# Drum pattern state
+var _drum_pattern: Array = []
+var _drum_step := 0
+var _drum_timer := 0.0
 var _perc_vol := 0.03
-var _perc_style := "kick"
+# Per-voice envelopes and phases: [kick, snare, hihat_closed, hihat_open]
+var _drum_env := [0.0, 0.0, 0.0, 0.0]
+var _drum_phase := [0.0, 0.0, 0.0, 0.0]
 
 # Melody envelope state (0=off, 1=attack, 2=decay, 3=sustain, 4=release)
 var _mel_env := 0.0
@@ -396,7 +452,8 @@ func _apply_genre() -> void:
 	_mel_vol = genre.get("melody_vol", 0.05)
 	_bass_wave = genre.get("bass_wave", "sine")
 	_bass_vol = genre.get("bass_vol", 0.04)
-	_perc_style = genre.get("perc_style", "kick")
+	var dp_key: String = genre.get("drum_pattern", "pop")
+	_drum_pattern = DRUM_PATTERNS.get(dp_key, DRUM_PATTERNS["pop"])
 	_perc_vol = genre.get("perc_vol", 0.03)
 	var adsr: Array = genre.get("adsr", [0.01, 0.05, 0.7, 0.08])
 	var atk: float = maxf(adsr[0], 0.001)
@@ -427,9 +484,9 @@ func _start_music_segment() -> void:
 	var tmax: float = genre.get("tempo_max", 0.2)
 	_beat_time = _rng.randf_range(tmin, tmax)
 
-	# Percussion interval = 2 or 4 beats
-	var perc_mult := 2 if _rng.randf() < 0.6 else 4
-	_perc_interval = _beat_time * perc_mult
+	# Reset drum sequencer
+	_drum_step = 0
+	_drum_timer = 0.0
 
 	# Initialize chord progression
 	_chord_progression = PROGRESSIONS[_rng.randi() % PROGRESSIONS.size()]
@@ -450,7 +507,6 @@ func _start_music_segment() -> void:
 
 	_mel_timer = 0.0
 	_bass_timer = 0.0
-	_perc_timer = 0.0
 	_pick_next_melody_note()
 	_pick_next_bass_note()
 
@@ -551,8 +607,15 @@ func _fill_music(delta: float) -> void:
 		_bass_phase += _bass_freq * inv_rate
 		if _bass_phase > 1.0:
 			_bass_phase -= 1.0
-		_perc_phase += inv_rate
-		_perc_env = maxf(_perc_env - inv_rate * 15.0, 0.0)
+		# Advance drum voice phases and envelopes
+		_drum_phase[0] += inv_rate
+		_drum_phase[1] += inv_rate
+		_drum_phase[2] += inv_rate
+		_drum_phase[3] += inv_rate
+		_drum_env[0] = maxf(_drum_env[0] - inv_rate * 12.0, 0.0)
+		_drum_env[1] = maxf(_drum_env[1] - inv_rate * 18.0, 0.0)
+		_drum_env[2] = maxf(_drum_env[2] - inv_rate * 25.0, 0.0)
+		_drum_env[3] = maxf(_drum_env[3] - inv_rate * 8.0, 0.0)
 
 		# Advance melody envelope
 		if _mel_env_state == 1:
@@ -611,13 +674,12 @@ func _fill_music(delta: float) -> void:
 	if _bass_timer <= 0.0:
 		_pick_next_bass_note()
 
-	# Percussion timing
-	if _perc_style != "none" and _perc_interval > 0.0:
-		_perc_timer -= delta
-		if _perc_timer <= 0.0:
-			_perc_timer = _perc_interval
-			_perc_env = 1.0
-			_perc_phase = 0.0
+	# Drum step sequencer (16 steps per bar, each step = beat_time)
+	if not _drum_pattern.is_empty():
+		_drum_timer -= delta
+		if _drum_timer <= 0.0:
+			_drum_timer += _beat_time
+			_advance_drum_step()
 
 
 func _gen_melody() -> float:
@@ -675,28 +737,50 @@ func _gen_bass() -> float:
 	return sin(phase * TAU) * vol
 
 
+func _advance_drum_step() -> void:
+	if _drum_pattern.is_empty():
+		return
+	var step: Array = _drum_pattern[_drum_step % _drum_pattern.size()]
+	_drum_step += 1
+	for v in range(4):
+		var vel: float = step[v]
+		if vel > 0.0:
+			_drum_env[v] = vel
+			_drum_phase[v] = 0.0
+
+
 func _gen_percussion() -> float:
-	if _perc_env <= 0.0:
-		return 0.0
-	var vol := _perc_vol * _perc_env
+	var out := 0.0
 
-	if _perc_style == "kick":
-		# Low frequency thump that drops in pitch
-		var freq := lerpf(150.0, 50.0, 1.0 - _perc_env)
-		return sin(_perc_phase * freq * TAU) * vol
+	# Kick: pitch-dropping sine
+	var kick_e: float = _drum_env[0]
+	if kick_e > 0.0:
+		var vol: float = _perc_vol * kick_e
+		var freq := lerpf(150.0, 50.0, 1.0 - kick_e)
+		var ph: float = _drum_phase[0]
+		out += sin(ph * freq * TAU) * vol
 
-	if _perc_style == "snare":
-		# Noise burst + tone
-		var noise := (_rng.randf() - 0.5) * vol * 0.8
-		var tone := sin(_perc_phase * 200.0 * TAU) * vol * 0.4
-		return noise + tone
+	# Snare: noise + tone
+	var snare_e: float = _drum_env[1]
+	if snare_e > 0.0:
+		var vol: float = _perc_vol * snare_e
+		var ph: float = _drum_phase[1]
+		out += (_rng.randf() - 0.5) * vol * 0.8
+		out += sin(ph * 200.0 * TAU) * vol * 0.4
 
-	if _perc_style == "hihat":
-		# High frequency filtered noise
-		var noise := (_rng.randf() - 0.5) * vol * 0.6
-		return noise
+	# Closed hihat: short high noise
+	var hh_e: float = _drum_env[2]
+	if hh_e > 0.0:
+		var vol: float = _perc_vol * hh_e
+		out += (_rng.randf() - 0.5) * vol * 0.5
 
-	return 0.0
+	# Open hihat: longer high noise
+	var oh_e: float = _drum_env[3]
+	if oh_e > 0.0:
+		var vol: float = _perc_vol * oh_e
+		out += (_rng.randf() - 0.5) * vol * 0.6
+
+	return out
 
 
 func _fill_silence() -> void:
