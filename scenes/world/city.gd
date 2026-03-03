@@ -159,15 +159,65 @@ func _build_chunk(tile: Vector2i) -> Node3D:
 
 # --- Material palette ---
 
+func _load_tex(path: String) -> Texture2D:
+	if ResourceLoader.exists(path):
+		return load(path) as Texture2D
+	return null
+
+
+func _apply_pbr(
+	mat: StandardMaterial3D, base_path: String, tile: Vector3,
+) -> void:
+	var color := _load_tex(base_path + "_Color.jpg")
+	if color:
+		mat.albedo_texture = color
+	var normal := _load_tex(base_path + "_NormalGL.jpg")
+	if normal:
+		mat.normal_enabled = true
+		mat.normal_texture = normal
+	var rough := _load_tex(base_path + "_Roughness.jpg")
+	if rough:
+		mat.roughness_texture = rough
+		mat.roughness_texture_channel = (
+			BaseMaterial3D.TEXTURE_CHANNEL_RED
+		)
+	var ao := _load_tex(base_path + "_AmbientOcclusion.jpg")
+	if ao:
+		mat.ao_enabled = true
+		mat.ao_texture = ao
+		mat.ao_texture_channel = (
+			BaseMaterial3D.TEXTURE_CHANNEL_RED
+		)
+	# Use triplanar mapping — works without UVs on SurfaceTool meshes
+	mat.uv1_triplanar = true
+	mat.uv1_scale = tile
+	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+
+
 func _init_materials() -> void:
 	_road_mat = StandardMaterial3D.new()
 	_road_mat.albedo_color = Color(0.2, 0.2, 0.22)
+	_apply_pbr(
+		_road_mat,
+		"res://assets/textures/road/Road007_1K-JPG",
+		Vector3(8, 8, 1),
+	)
 
 	_sidewalk_mat = StandardMaterial3D.new()
 	_sidewalk_mat.albedo_color = Color(0.55, 0.55, 0.53)
+	_apply_pbr(
+		_sidewalk_mat,
+		"res://assets/textures/concrete/Concrete026_1K-JPG",
+		Vector3(4, 4, 1),
+	)
 
 	_ground_mat = StandardMaterial3D.new()
 	_ground_mat.albedo_color = Color(0.45, 0.45, 0.43)
+	_apply_pbr(
+		_ground_mat,
+		"res://assets/textures/grass/Grass001_1K-JPG",
+		Vector3(12, 12, 1),
+	)
 
 	_marking_mat = StandardMaterial3D.new()
 	_marking_mat.albedo_color = Color(1.0, 1.0, 1.0, 1.0)
@@ -192,10 +242,17 @@ func _init_materials() -> void:
 		Color(0.60, 0.58, 0.55), Color(0.35, 0.40, 0.48),
 		Color(0.50, 0.52, 0.48), Color(0.44, 0.46, 0.54),
 	]
-	for c in bld_colors:
+	for idx in range(bld_colors.size()):
 		var mat := StandardMaterial3D.new()
-		mat.albedo_color = c
+		mat.albedo_color = bld_colors[idx]
 		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		# Apply brick texture to half the palette for variety
+		if idx % 2 == 0:
+			_apply_pbr(
+				mat,
+				"res://assets/textures/brick/Bricks018_1K-JPG",
+				Vector3(3, 3, 1),
+			)
 		_building_mats.append(mat)
 
 	# 5 trunk colors
