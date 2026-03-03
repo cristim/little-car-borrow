@@ -123,16 +123,16 @@ const GENRE_ROCK := {
 		# A minor pentatonic - higher register solos
 		[220.0, 261.6, 293.7, 329.6, 392.0, 440.0, 523.3, 587.3],
 	],
-	"tempo_min": 0.12,
-	"tempo_max": 0.22,
+	"tempo_min": 0.10,
+	"tempo_max": 0.20,
 	"notes_min": 100,
 	"notes_max": 250,
-	"melody_vol": 0.06,
-	"bass_vol": 0.05,
+	"melody_vol": 0.07,
+	"bass_vol": 0.045,
 	"perc_vol": 0.04,
-	"adsr": [0.005, 0.03, 0.85, 0.05],
+	"adsr": [0.005, 0.03, 0.9, 0.04],
 	"chord_beats": 4,
-	"passing_tone_chance": 0.15,
+	"passing_tone_chance": 0.70,
 	"delay": [0.10, 0.20],
 	"bass_cutoff": 0.22,  # filter saw into warm-but-gritty bass guitar
 	"dj_lines": [
