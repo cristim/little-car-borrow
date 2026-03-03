@@ -174,14 +174,14 @@ func _collect_tree(
 			var h := rng.randf_range(4.0, 7.0)
 			_add_canopy(canopy_transforms, canopy_colors, 2,
 				Vector3(pos.x, trunk_top + h * 0.35, pos.z),
-				Vector3(r, h / 3.0, r), canopy_color)
+				Vector3(r, h / 3.75, r), canopy_color)
 		3:
 			# Weeping: flat main + drooping lobes (variant 3)
 			var main_r := rng.randf_range(1.5, 2.8)
 			var main_h := main_r * rng.randf_range(0.6, 0.9)
 			_add_canopy(canopy_transforms, canopy_colors, 3,
 				Vector3(pos.x, trunk_top + main_h * 0.3, pos.z),
-				Vector3(main_r, main_h, main_r), canopy_color)
+				Vector3(main_r, main_h * 1.5, main_r), canopy_color)
 			var lobes := rng.randi_range(2, 3)
 			for ci in range(lobes):
 				var angle := float(ci) * TAU / float(lobes) + rng.randf_range(-0.3, 0.3)
@@ -205,7 +205,7 @@ func _collect_tree(
 				var cz := pos.z + rng.randf_range(-0.3, 0.3)
 				_add_canopy(canopy_transforms, canopy_colors, 4,
 					Vector3(cx, y + h * 0.4, cz),
-					Vector3(r, h / 2.4, r), canopy_color)
+					Vector3(r, h / 2.0, r), canopy_color)
 				y += gap
 
 
