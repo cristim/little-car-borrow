@@ -103,6 +103,7 @@ const GENRE_POP := {
 	"chord_beats": 4,
 	"passing_tone_chance": 0.2,
 	"delay": [0.15, 0.25],
+	"bass_cutoff": 0.15,
 	"dj_lines": [
 		"You're listening to Little Car Pop, number one hits!",
 		"That was a banger! More pop coming right up.",
@@ -131,6 +132,7 @@ const GENRE_ROCK := {
 	"chord_beats": 4,
 	"passing_tone_chance": 0.15,
 	"delay": [0.10, 0.20],
+	"bass_cutoff": 0.25,
 	"dj_lines": [
 		"Car Rock Radio! Crank it up!",
 		"That riff was insane! More rock ahead.",
@@ -159,6 +161,7 @@ const GENRE_JAZZ := {
 	"chord_beats": 2,
 	"passing_tone_chance": 0.3,
 	"delay": [0.20, 0.35],
+	"bass_cutoff": 0.10,
 	"dj_lines": [
 		"Smooth Jazz Drive. Relax and cruise.",
 		"That was silky smooth. More jazz coming up.",
@@ -187,6 +190,7 @@ const GENRE_ELECTRONIC := {
 	"chord_beats": 8,
 	"passing_tone_chance": 0.1,
 	"delay": [0.25, 0.35],
+	"bass_cutoff": 0.18,
 	"dj_lines": [
 		"Neon Beat FM! Drop the bass!",
 		"Electronic vibes for night riders.",
@@ -216,6 +220,7 @@ const GENRE_CLASSICAL := {
 	"chord_beats": 4,
 	"passing_tone_chance": 0.25,
 	"delay": [0.18, 0.30],
+	"bass_cutoff": 0.12,
 	"dj_lines": [
 		"Classical Cruise. Elegant driving.",
 		"A timeless masterpiece. More after this.",
@@ -280,6 +285,14 @@ var _perc_vol := 0.03
 # Per-voice envelopes and phases: [kick, snare, hihat_closed, hihat_open]
 var _drum_env := [0.0, 0.0, 0.0, 0.0]
 var _drum_phase := [0.0, 0.0, 0.0, 0.0]
+
+# Chorus/PWM state
+var _chorus_phase := 0.0
+var _pwm_phase := 0.0
+
+# Bass low-pass filter state
+var _bass_lp_prev := 0.0
+var _bass_cutoff := 0.15
 
 # Melody envelope state (0=off, 1=attack, 2=decay, 3=sustain, 4=release)
 var _mel_env := 0.0
@@ -484,6 +497,8 @@ func _apply_genre() -> void:
 	var delay_cfg: Array = genre.get("delay", [0.15, 0.25])
 	_delay_mix = delay_cfg[0]
 	_delay_feedback = delay_cfg[1]
+	_bass_cutoff = genre.get("bass_cutoff", 0.15)
+	_bass_lp_prev = 0.0
 	_chord_beats_per_change = genre.get("chord_beats", 4)
 	_passing_tone_chance = genre.get("passing_tone_chance", 0.2)
 	var scales: Array = genre.get("scales", [[440.0]])
@@ -627,6 +642,12 @@ func _fill_music(delta: float) -> void:
 		_mel_phase += _mel_freq * inv_rate
 		if _mel_phase > 1.0:
 			_mel_phase -= 1.0
+		_chorus_phase += _mel_freq * 1.003 * inv_rate
+		if _chorus_phase > 1.0:
+			_chorus_phase -= 1.0
+		_pwm_phase += 0.8 * inv_rate
+		if _pwm_phase > 1.0:
+			_pwm_phase -= 1.0
 		if _mel_freq2 > 0.0:
 			_mel_phase2 += _mel_freq2 * inv_rate
 			if _mel_phase2 > 1.0:
@@ -715,15 +736,27 @@ func _gen_melody() -> float:
 	var vol := _mel_vol * _mel_env
 	var phase := _mel_phase
 
+	# Chorus: detuned second oscillator at freq*1.003 (30% mix)
+	var chorus_p := fmod(_chorus_phase, 1.0)
+
 	if _mel_wave == "square":
-		var wave := signf(sin(phase * TAU)) * vol
-		wave += signf(sin(phase * TAU * 1.005)) * (vol * 0.3)
+		# PWM: duty cycle varies slowly between 0.35 and 0.65
+		var duty := 0.5 + 0.15 * sin(_pwm_phase * TAU)
+		var p := fmod(phase, 1.0)
+		var wave := (1.0 if p < duty else -1.0) * vol
+		var cp := fmod(chorus_p, 1.0)
+		wave += (1.0 if cp < duty else -1.0) * (vol * 0.3)
 		return wave
 
 	if _mel_wave == "distorted":
 		var wave := clampf(
 			sin(phase * TAU) * 3.0, -1.0, 1.0
 		) * vol
+		# Chorus on distorted
+		wave += clampf(
+			sin(chorus_p * TAU) * 3.0, -1.0, 1.0
+		) * (vol * 0.3)
+		# Rock power chord fifth
 		if _mel_freq2 > 0.0:
 			wave += clampf(
 				sin(_mel_phase2 * TAU) * 3.0, -1.0, 1.0
@@ -733,18 +766,22 @@ func _gen_melody() -> float:
 	if _mel_wave == "triangle":
 		var vibrato := sin(phase * TAU * 0.02) * 0.003
 		var p := fmod(phase + vibrato, 1.0)
-		var tri := (2.0 * absf(2.0 * p - 1.0) - 1.0)
-		return tri * vol
+		var tri := (2.0 * absf(2.0 * p - 1.0) - 1.0) * vol
+		# Chorus
+		var cp := fmod(chorus_p + vibrato, 1.0)
+		tri += (2.0 * absf(2.0 * cp - 1.0) - 1.0) * (vol * 0.3)
+		return tri
 
 	if _mel_wave == "saw":
 		var saw1 := (2.0 * fmod(phase, 1.0) - 1.0) * vol
-		var saw2_p := fmod(phase * 1.01, 1.0)
-		var saw2 := (2.0 * saw2_p - 1.0) * (vol * 0.5)
+		# Chorus replaces the old detuned saw
+		var saw2 := (2.0 * fmod(chorus_p, 1.0) - 1.0) * (vol * 0.3)
 		return saw1 + saw2
 
-	# Sine (classical) with overtone
+	# Sine (classical) with overtone + chorus
 	var wave := sin(phase * TAU) * vol
 	wave += sin(phase * TAU * 2.0) * (vol * 0.15)
+	wave += sin(chorus_p * TAU) * (vol * 0.3)
 	return wave
 
 
@@ -753,15 +790,18 @@ func _gen_bass() -> float:
 		return 0.0
 	var phase := _bass_phase
 	var vol := _bass_vol * _bass_env
+	var raw := 0.0
 
 	if _bass_wave == "square":
-		return signf(sin(phase * TAU)) * vol
+		raw = signf(sin(phase * TAU)) * vol
+	elif _bass_wave == "saw":
+		raw = (2.0 * fmod(phase, 1.0) - 1.0) * vol
+	else:
+		raw = sin(phase * TAU) * vol
 
-	if _bass_wave == "saw":
-		return (2.0 * fmod(phase, 1.0) - 1.0) * vol
-
-	# Default sine bass
-	return sin(phase * TAU) * vol
+	# One-pole low-pass filter for warmth
+	_bass_lp_prev += _bass_cutoff * (raw - _bass_lp_prev)
+	return _bass_lp_prev
 
 
 func _advance_drum_step() -> void:
