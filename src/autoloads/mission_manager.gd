@@ -95,6 +95,16 @@ func accept_mission(mission_id: String) -> void:
 		EventBus.mission_objective_updated.emit(
 			_active_mission.get("objective", "")
 		)
+	elif mtype == "taxi":
+		# Taxi: passenger is at start, skip to active
+		_active_mission["state"] = "active"
+		var tl: float = mission.get("time_limit", 0.0)
+		if tl > 0.0:
+			_mission_timer = tl
+		EventBus.mission_started.emit(mission_id)
+		EventBus.mission_objective_updated.emit(
+			"Drive the passenger to the destination"
+		)
 	else:
 		_active_mission["state"] = "pickup"
 		EventBus.mission_started.emit(mission_id)
@@ -173,7 +183,7 @@ func _on_pickup_reached() -> void:
 	if mtype == "delivery":
 		obj = "Deliver the package"
 	elif mtype == "taxi":
-		obj = "Drive to the destination"
+		obj = "Drive the passenger to the destination"
 	EventBus.mission_objective_updated.emit(obj)
 
 
