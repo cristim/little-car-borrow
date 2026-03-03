@@ -47,15 +47,36 @@ func _process(delta: float) -> void:
 	if max_police <= 0:
 		return
 
+	var level := WantedLevelManager.wanted_level
+	# Spawn faster at higher wanted levels
+	var interval := SPAWN_INTERVAL
+	if level >= 4:
+		interval = 0.3
+	elif level >= 3:
+		interval = 0.5
+	elif level >= 2:
+		interval = 0.7
+
 	_spawn_timer += delta
-	if _spawn_timer >= SPAWN_INTERVAL:
+	if _spawn_timer >= interval:
 		_spawn_timer = 0.0
-		if _police.size() < max_police:
-			_try_spawn()
+		var deficit := max_police - _police.size()
+		var spawns := 1
+		if deficit > 4:
+			spawns = 3
+		elif deficit > 2:
+			spawns = 2
+		for _i in range(spawns):
+			if _police.size() < max_police:
+				_try_spawn()
 
 
 func _get_max_police() -> int:
-	return mini(WantedLevelManager.wanted_level * 2, 10)
+	var level := WantedLevelManager.wanted_level
+	# 1 star=2, 2=4, 3=7, 4=10, 5=14
+	if level <= 2:
+		return level * 2
+	return level * 3 - 1
 
 
 func _on_wanted_level_changed(level: int) -> void:
