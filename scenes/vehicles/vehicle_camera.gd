@@ -63,11 +63,11 @@ func _physics_process(delta: float) -> void:
 	else:
 		# When stopped, follow vehicle rotation
 		var target_angle := _target.rotation.y
-		rotation.y = lerp_angle(rotation.y, target_angle + PI, delta * rotation_speed)
+		rotation.y = lerp_angle(rotation.y, target_angle, delta * rotation_speed)
 
 
 func make_active() -> void:
 	if _target:
 		global_position = _target.global_position
-		rotation.y = _target.rotation.y + PI
+		rotation.y = _target.rotation.y
 	camera.make_current()
