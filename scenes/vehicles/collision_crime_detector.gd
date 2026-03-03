@@ -5,6 +5,9 @@ extends Node
 const MIN_COLLISION_SPEED := 15.0
 const CRIME_COOLDOWN := 1.0
 
+var _ragdoll_script: GDScript = preload(
+	"res://scenes/pedestrians/pedestrian_ragdoll.gd"
+)
 var _vehicle: RigidBody3D = null
 var _cooldowns: Dictionary = {}
 
@@ -55,6 +58,7 @@ func _on_body_entered(body: Node) -> void:
 	if body.is_in_group("pedestrian"):
 		crime_type = "hit_pedestrian"
 		heat_points = 25
+		_spawn_ragdoll(body)
 		EventBus.pedestrian_killed.emit(body)
 		body.queue_free()
 	elif body is RigidBody3D:
@@ -70,3 +74,15 @@ func _on_body_entered(body: Node) -> void:
 
 	_cooldowns[crime_type] = CRIME_COOLDOWN
 	EventBus.crime_committed.emit(crime_type, heat_points)
+
+
+func _spawn_ragdoll(pedestrian: Node) -> void:
+	if not _vehicle or not is_instance_valid(_vehicle):
+		return
+	var ragdoll := RigidBody3D.new()
+	ragdoll.set_script(_ragdoll_script)
+	ragdoll.position = (pedestrian as Node3D).global_position
+	ragdoll.rotation = (pedestrian as Node3D).global_rotation
+	ragdoll.copy_visual_from(pedestrian)
+	get_tree().current_scene.add_child(ragdoll)
+	ragdoll.launch(_vehicle.linear_velocity)
