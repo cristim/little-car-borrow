@@ -12,6 +12,17 @@ const POLICE_ANNOUNCE_INTERVAL := 20.0
 const STATIC_DURATION := 0.4
 const MIX_RATE := 22050.0
 
+# Chord progressions as scale-degree indices (0-based into 8-note scale)
+# Each progression is 4 chords; each chord is a triad [root, third, fifth]
+const PROGRESSIONS := [
+	[[0, 2, 4], [3, 5, 7], [4, 6, 1], [0, 2, 4]],  # I-IV-V-I
+	[[0, 2, 4], [4, 6, 1], [5, 7, 2], [3, 5, 7]],  # I-V-vi-IV
+	[[0, 2, 4], [5, 7, 2], [3, 5, 7], [4, 6, 1]],  # I-vi-IV-V
+	[[1, 3, 5], [4, 6, 1], [0, 2, 4], [0, 2, 4]],  # ii-V-I-I
+	[[0, 2, 4], [2, 4, 6], [3, 5, 7], [4, 6, 1]],  # I-iii-IV-V
+	[[5, 7, 2], [3, 5, 7], [0, 2, 4], [4, 6, 1]],  # vi-IV-I-V
+]
+
 # --- Genre definitions ---
 # melody_wave: square, distorted, triangle, saw, sine
 # bass_wave: sine, square, saw (bass is always lower octave)
@@ -33,6 +44,8 @@ const GENRE_POP := {
 	"bass_vol": 0.04,
 	"perc_vol": 0.03,
 	"adsr": [0.01, 0.05, 0.7, 0.08],
+	"chord_beats": 4,
+	"passing_tone_chance": 0.2,
 	"dj_lines": [
 		"You're listening to Little Car Pop, number one hits!",
 		"That was a banger! More pop coming right up.",
@@ -58,6 +71,8 @@ const GENRE_ROCK := {
 	"bass_vol": 0.05,
 	"perc_vol": 0.04,
 	"adsr": [0.005, 0.03, 0.85, 0.05],
+	"chord_beats": 4,
+	"passing_tone_chance": 0.15,
 	"dj_lines": [
 		"Car Rock Radio! Crank it up!",
 		"That riff was insane! More rock ahead.",
@@ -83,6 +98,8 @@ const GENRE_JAZZ := {
 	"bass_vol": 0.035,
 	"perc_vol": 0.015,
 	"adsr": [0.04, 0.1, 0.4, 0.15],
+	"chord_beats": 2,
+	"passing_tone_chance": 0.3,
 	"dj_lines": [
 		"Smooth Jazz Drive. Relax and cruise.",
 		"That was silky smooth. More jazz coming up.",
@@ -108,6 +125,8 @@ const GENRE_ELECTRONIC := {
 	"bass_vol": 0.055,
 	"perc_vol": 0.04,
 	"adsr": [0.002, 0.06, 0.2, 0.04],
+	"chord_beats": 8,
+	"passing_tone_chance": 0.1,
 	"dj_lines": [
 		"Neon Beat FM! Drop the bass!",
 		"Electronic vibes for night riders.",
@@ -134,6 +153,8 @@ const GENRE_CLASSICAL := {
 	"bass_vol": 0.03,
 	"perc_vol": 0.0,
 	"adsr": [0.08, 0.1, 0.8, 0.2],
+	"chord_beats": 4,
+	"passing_tone_chance": 0.25,
 	"dj_lines": [
 		"Classical Cruise. Elegant driving.",
 		"A timeless masterpiece. More after this.",
@@ -212,6 +233,14 @@ var _env_decay_rate := 0.0
 var _env_sustain := 0.7
 var _env_release_rate := 0.0
 var _env_release_time := 0.08
+
+# Chord progression state
+var _chord_progression: Array = []
+var _chord_index := 0
+var _chord_tones: Array = []
+var _chord_beat_counter := 0
+var _chord_beats_per_change := 4
+var _passing_tone_chance := 0.2
 
 # Shared music state
 var _current_scale: Array = []
@@ -378,6 +407,8 @@ func _apply_genre() -> void:
 	_env_attack_rate = 1.0 / (atk * MIX_RATE)
 	_env_decay_rate = (1.0 - _env_sustain) / (dec * MIX_RATE)
 	_env_release_rate = 1.0 / (rel * MIX_RATE)
+	_chord_beats_per_change = genre.get("chord_beats", 4)
+	_passing_tone_chance = genre.get("passing_tone_chance", 0.2)
 	var scales: Array = genre.get("scales", [[440.0]])
 	_current_scale = scales[_rng.randi() % scales.size()]
 
@@ -400,17 +431,21 @@ func _start_music_segment() -> void:
 	var perc_mult := 2 if _rng.randf() < 0.6 else 4
 	_perc_interval = _beat_time * perc_mult
 
-	# Bass plays root note of scale (lowest note)
-	_bass_root = 0
-	_bass_freq = _current_scale[0] * 0.5
+	# Initialize chord progression
+	_chord_progression = PROGRESSIONS[_rng.randi() % PROGRESSIONS.size()]
+	_chord_index = 0
+	_chord_beat_counter = 0
+	_update_chord()
 
-	# Build arpeggio pattern for electronic genre
+	# Bass follows chord root
+	_bass_freq = _current_scale[_chord_tones[0] % _current_scale.size()] * 0.5
+
+	# Build arpeggio pattern from chord tones for electronic genre
 	if _mel_wave == "saw":
 		_arp_pattern.clear()
-		for _i in range(4):
-			_arp_pattern.append(
-				_current_scale[_rng.randi() % _current_scale.size()]
-			)
+		for i in range(4):
+			var deg: int = _chord_tones[i % _chord_tones.size()]
+			_arp_pattern.append(_current_scale[deg % _current_scale.size()])
 		_arp_index = 0
 
 	_mel_timer = 0.0
@@ -420,11 +455,38 @@ func _start_music_segment() -> void:
 	_pick_next_bass_note()
 
 
+func _update_chord() -> void:
+	if _chord_progression.is_empty():
+		return
+	_chord_tones = _chord_progression[_chord_index % _chord_progression.size()]
+
+
 func _pick_next_melody_note() -> void:
+	# Advance chord progression
+	_chord_beat_counter += 1
+	if _chord_beat_counter >= _chord_beats_per_change:
+		_chord_beat_counter = 0
+		_chord_index += 1
+		_update_chord()
+		# Rebuild arp from new chord
+		if _mel_wave == "saw" and not _chord_tones.is_empty():
+			_arp_pattern.clear()
+			for i in range(4):
+				var deg: int = _chord_tones[i % _chord_tones.size()]
+				_arp_pattern.append(
+					_current_scale[deg % _current_scale.size()]
+				)
+			_arp_index = 0
+
 	if _mel_wave == "saw" and not _arp_pattern.is_empty():
 		_mel_freq = _arp_pattern[_arp_index % _arp_pattern.size()]
 		_arp_index += 1
+	elif not _chord_tones.is_empty() and _rng.randf() > _passing_tone_chance:
+		# Pick from current chord tones
+		var deg: int = _chord_tones[_rng.randi() % _chord_tones.size()]
+		_mel_freq = _current_scale[deg % _current_scale.size()]
 	else:
+		# Passing tone - any scale note
 		_mel_freq = _current_scale[
 			_rng.randi() % _current_scale.size()
 		]
@@ -444,17 +506,22 @@ func _pick_next_melody_note() -> void:
 
 
 func _pick_next_bass_note() -> void:
-	# Bass alternates between root, fifth, and random scale note
-	var choice := _rng.randi() % 3
-	if choice == 0:
-		_bass_freq = _current_scale[0] * 0.5
-	elif choice == 1:
-		# Fifth above root
-		var fifth_idx: int = mini(4, _current_scale.size() - 1)
-		_bass_freq = _current_scale[fifth_idx] * 0.5
+	# Bass follows chord root
+	if not _chord_tones.is_empty():
+		var root_deg: int = _chord_tones[0]
+		var choice := _rng.randi() % 3
+		if choice == 0:
+			_bass_freq = _current_scale[root_deg % _current_scale.size()] * 0.5
+		elif choice == 1:
+			# Fifth of chord
+			var fifth_deg: int = _chord_tones[2 % _chord_tones.size()]
+			_bass_freq = _current_scale[fifth_deg % _current_scale.size()] * 0.5
+		else:
+			# Chord third
+			var third_deg: int = _chord_tones[1 % _chord_tones.size()]
+			_bass_freq = _current_scale[third_deg % _current_scale.size()] * 0.5
 	else:
-		var idx := _rng.randi() % _current_scale.size()
-		_bass_freq = _current_scale[idx] * 0.5
+		_bass_freq = _current_scale[0] * 0.5
 	_bass_timer = _beat_time * _rng.randi_range(2, 4)
 	_bass_phase = 0.0
 	_bass_env = 0.0
