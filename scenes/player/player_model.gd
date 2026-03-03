@@ -9,8 +9,10 @@ const DECAY_SPEED := 8.0
 const RUN_THRESHOLD := 6.0  # m/s — above this, use run amplitude
 const ELBOW_RATIO := 0.5
 const KNEE_RATIO := 0.7
+const AIM_SHOULDER_X := -PI / 2.0
 
 var _phase := 0.0
+var _aim_timer := 0.0
 
 @onready var _left_shoulder: Node3D = $LeftShoulderPivot
 @onready var _right_shoulder: Node3D = $RightShoulderPivot
@@ -22,7 +24,14 @@ var _phase := 0.0
 @onready var _right_knee: Node3D = $RightHipPivot/RightKneePivot
 
 
+func set_aiming(duration: float) -> void:
+	_aim_timer = duration
+
+
 func _process(delta: float) -> void:
+	if _aim_timer > 0.0:
+		_aim_timer -= delta
+
 	var parent := get_parent()
 	if not parent:
 		return
@@ -75,3 +84,8 @@ func _process(delta: float) -> void:
 			_right_knee.rotation.x, 0.0, delta * DECAY_SPEED
 		)
 		_phase = 0.0
+
+	# Override right arm to aim pose when shooting
+	if _aim_timer > 0.0:
+		_right_shoulder.rotation.x = AIM_SHOULDER_X
+		_right_elbow.rotation.x = 0.0
