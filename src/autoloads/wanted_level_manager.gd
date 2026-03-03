@@ -29,7 +29,7 @@ func _process(delta: float) -> void:
 
 
 func _on_crime_committed(_crime_type: String, heat_points: int) -> void:
-	heat += heat_points
+	heat = minf(heat + heat_points, HEAT_THRESHOLDS[-1] + 40.0)
 	_decay_cooldown = HEAT_DECAY_DELAY
 	_update_level()
 
