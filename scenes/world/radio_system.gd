@@ -1,27 +1,119 @@
 extends Node
-## In-vehicle radio with music simulation, DJ chatter via TTS,
+## In-vehicle radio with multi-genre procedural music, DJ chatter via TTS,
 ## and police scanner announcements.
+## Press T (radio_next) to switch stations or turn off.
 ## Only audible while player is driving (InputManager.is_vehicle()).
 
-const MUSIC_INTERVAL_MIN := 15.0
-const MUSIC_INTERVAL_MAX := 30.0
-const DJ_INTERVAL_MIN := 30.0
-const DJ_INTERVAL_MAX := 60.0
+const MUSIC_INTERVAL_MIN := 10.0
+const MUSIC_INTERVAL_MAX := 20.0
+const DJ_INTERVAL_MIN := 25.0
+const DJ_INTERVAL_MAX := 50.0
 const POLICE_ANNOUNCE_INTERVAL := 20.0
-const STATIC_DURATION := 0.3
+const STATIC_DURATION := 0.4
+const MIX_RATE := 22050.0
 
-const DJ_LINES := [
-	"You're listening to Little Car FM, the city's number one station!",
-	"That was a classic! Stay tuned for more hits.",
-	"Traffic is heavy downtown. Good luck out there!",
-	"It's a beautiful day in the city. Keep those wheels rolling!",
-	"Next up, a fan favorite. Don't touch that dial!",
-	"Little Car FM, all hits, all the time.",
-	"Coming up, more music after these messages.",
-	"You're cruising with Little Car FM!",
-	"The weather today: sunny with a chance of reckless driving.",
-	"This one goes out to all the night owls out there.",
-]
+# --- Genre definitions ---
+# Each genre: {scales, waveform, tempo_range, notes_range, volume, name, dj}
+const GENRE_POP := {
+	"name": "Little Car FM Pop",
+	"waveform": "square",
+	"scales": [
+		[261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9, 523.3],
+		[329.6, 370.0, 392.0, 440.0, 493.9, 523.3, 587.3, 659.3],
+	],
+	"tempo_min": 0.13,
+	"tempo_max": 0.2,
+	"notes_min": 16,
+	"notes_max": 40,
+	"volume": 0.07,
+	"dj_lines": [
+		"You're listening to Little Car Pop, number one hits!",
+		"That was a banger! More pop coming right up.",
+		"Pop FM, feel good music all day!",
+		"Next up, another chart topper. Stay tuned!",
+	],
+}
+
+const GENRE_ROCK := {
+	"name": "Car Rock Radio",
+	"waveform": "distorted",
+	"scales": [
+		[130.8, 146.8, 164.8, 174.6, 196.0, 220.0, 246.9, 261.6],
+		[98.0, 110.0, 123.5, 130.8, 146.8, 164.8, 174.6, 196.0],
+	],
+	"tempo_min": 0.08,
+	"tempo_max": 0.14,
+	"notes_min": 24,
+	"notes_max": 60,
+	"volume": 0.09,
+	"dj_lines": [
+		"Car Rock Radio! Crank it up!",
+		"That riff was insane! More rock ahead.",
+		"Rock and roll on four wheels!",
+		"Head banging while driving. Not recommended, but here we are.",
+	],
+}
+
+const GENRE_JAZZ := {
+	"name": "Smooth Jazz Drive",
+	"waveform": "triangle",
+	"scales": [
+		[220.0, 261.6, 277.2, 293.7, 329.6, 370.0, 392.0, 440.0],
+		[196.0, 233.1, 246.9, 261.6, 293.7, 311.1, 349.2, 392.0],
+	],
+	"tempo_min": 0.18,
+	"tempo_max": 0.35,
+	"notes_min": 12,
+	"notes_max": 32,
+	"volume": 0.06,
+	"dj_lines": [
+		"Smooth Jazz Drive. Relax and cruise.",
+		"That was silky smooth. More jazz coming up.",
+		"Easy listening for easy driving.",
+		"Jazz FM, where every note takes you somewhere.",
+	],
+}
+
+const GENRE_ELECTRONIC := {
+	"name": "Neon Beat FM",
+	"waveform": "saw",
+	"scales": [
+		[130.8, 164.8, 196.0, 220.0, 261.6, 293.7, 329.6, 392.0],
+		[65.4, 82.4, 98.0, 130.8, 164.8, 196.0, 261.6, 329.6],
+	],
+	"tempo_min": 0.06,
+	"tempo_max": 0.1,
+	"notes_min": 32,
+	"notes_max": 80,
+	"volume": 0.065,
+	"dj_lines": [
+		"Neon Beat FM! Drop the bass!",
+		"Electronic vibes for night riders.",
+		"Beats per minute: way too many. You're welcome.",
+		"Neon Beat, the sound of the city.",
+	],
+}
+
+const GENRE_CLASSICAL := {
+	"name": "Classical Cruise",
+	"waveform": "sine",
+	"scales": [
+		[261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9, 523.3],
+		[196.0, 220.0, 246.9, 261.6, 293.7, 329.6, 349.2, 392.0],
+		[349.2, 392.0, 440.0, 493.9, 523.3, 587.3, 659.3, 698.5],
+	],
+	"tempo_min": 0.25,
+	"tempo_max": 0.45,
+	"notes_min": 10,
+	"notes_max": 28,
+	"volume": 0.06,
+	"dj_lines": [
+		"Classical Cruise. Elegant driving.",
+		"A timeless masterpiece. More after this.",
+		"Orchestral beauty for your commute.",
+		"Classical Cruise, where every drive is a concerto.",
+	],
+}
 
 const POLICE_LINES_WANTED := [
 	"All units, suspect vehicle spotted. Pursue with caution.",
@@ -39,12 +131,8 @@ const POLICE_LINES_CALM := [
 	"All clear on the main boulevard. Over.",
 ]
 
-# Music note frequencies for procedural radio tunes
-const SCALES := [
-	[261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9, 523.3],
-	[220.0, 246.9, 261.6, 293.7, 329.6, 349.2, 392.0, 440.0],
-	[329.6, 370.0, 392.0, 440.0, 493.9, 523.3, 587.3, 659.3],
-]
+var _genres: Array = []
+var _genre_index := 0
 
 var _music_player: AudioStreamPlayer
 var _static_player: AudioStreamPlayer
@@ -60,35 +148,47 @@ var _radio_on := true
 
 # Music generation state
 var _note_phase := 0.0
+var _note_phase2 := 0.0
 var _note_freq := 440.0
+var _note_freq2 := 0.0
 var _note_timer := 0.0
 var _note_duration := 0.0
 var _current_scale: Array = []
 var _notes_remaining := 0
-var _music_volume := 0.08
+var _music_volume := 0.07
 var _beat_time := 0.15
+var _waveform := "square"
+
+# Arpeggio state for electronic
+var _arp_index := 0
+var _arp_pattern: Array = []
 
 # Static burst state
 var _static_timer := 0.0
 var _playing_static := false
 
 # TTS
-var _tts_available := false
 var _tts_voice_id := ""
 var _tts_queue: Array[String] = []
-var _tts_speaking := false
 
 
 func _ready() -> void:
 	_rng.randomize()
+
+	_genres = [
+		GENRE_POP, GENRE_ROCK, GENRE_JAZZ,
+		GENRE_ELECTRONIC, GENRE_CLASSICAL,
+	]
+	_genre_index = 0
+
 	_music_timer = _rng.randf_range(2.0, 5.0)
-	_dj_timer = _rng.randf_range(10.0, 20.0)
+	_dj_timer = _rng.randf_range(8.0, 15.0)
 	_police_timer = POLICE_ANNOUNCE_INTERVAL
 
 	# Music generator
 	_music_player = AudioStreamPlayer.new()
 	var gen := AudioStreamGenerator.new()
-	gen.mix_rate = 22050.0
+	gen.mix_rate = MIX_RATE
 	gen.buffer_length = 0.1
 	_music_player.stream = gen
 	_music_player.bus = "Ambient"
@@ -99,7 +199,7 @@ func _ready() -> void:
 	# Static burst generator
 	_static_player = AudioStreamPlayer.new()
 	var sgen := AudioStreamGenerator.new()
-	sgen.mix_rate = 22050.0
+	sgen.mix_rate = MIX_RATE
 	sgen.buffer_length = 0.1
 	_static_player.stream = sgen
 	_static_player.bus = "Ambient"
@@ -108,7 +208,6 @@ func _ready() -> void:
 	_static_playback = _static_player.get_stream_playback()
 
 	# TTS setup
-	_tts_available = DisplayServer.tts_is_speaking() or true
 	var voices := DisplayServer.tts_get_voices()
 	for v in voices:
 		var lang: String = v.get("language", "")
@@ -118,9 +217,14 @@ func _ready() -> void:
 	if _tts_voice_id.is_empty() and not voices.is_empty():
 		_tts_voice_id = voices[0].get("id", "")
 
-	_current_scale = SCALES[0]
-
+	_apply_genre()
 	EventBus.wanted_level_changed.connect(_on_wanted_changed)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("radio_next"):
+		_switch_station()
+		get_viewport().set_input_as_handled()
 
 
 func _process(delta: float) -> void:
@@ -128,6 +232,7 @@ func _process(delta: float) -> void:
 
 	if not in_vehicle or not _radio_on:
 		_fill_silence()
+		_fill_static_silence()
 		return
 
 	# Static bursts
@@ -153,7 +258,10 @@ func _process(delta: float) -> void:
 	if _dj_timer <= 0.0:
 		_dj_timer = _rng.randf_range(DJ_INTERVAL_MIN, DJ_INTERVAL_MAX)
 		_play_static_burst()
-		_speak_tts(DJ_LINES[_rng.randi() % DJ_LINES.size()])
+		var genre: Dictionary = _genres[_genre_index]
+		var lines: Array = genre.get("dj_lines", [])
+		if not lines.is_empty():
+			_speak_tts(lines[_rng.randi() % lines.size()])
 
 	# Police scanner
 	_police_timer -= delta
@@ -165,38 +273,108 @@ func _process(delta: float) -> void:
 	_process_tts_queue()
 
 
+func _switch_station() -> void:
+	if not InputManager.is_vehicle():
+		return
+
+	# Cycle: genre0 -> genre1 -> ... -> genreN -> OFF -> genre0
+	if _radio_on:
+		if _genre_index < _genres.size() - 1:
+			_genre_index += 1
+		else:
+			# Turn off
+			_radio_on = false
+			_is_playing_music = false
+			_play_static_burst()
+			_speak_tts("Radio off.")
+			return
+	else:
+		# Turn back on at first genre
+		_radio_on = true
+		_genre_index = 0
+
+	_apply_genre()
+	_is_playing_music = false
+	_music_timer = _rng.randf_range(1.0, 3.0)
+	_play_static_burst()
+
+	var genre: Dictionary = _genres[_genre_index]
+	var station_name: String = genre.get("name", "Radio")
+	_speak_tts("Now playing: " + station_name)
+
+
+func _apply_genre() -> void:
+	var genre: Dictionary = _genres[_genre_index]
+	_waveform = genre.get("waveform", "square")
+	_music_volume = genre.get("volume", 0.07)
+	var scales: Array = genre.get("scales", [[440.0]])
+	_current_scale = scales[_rng.randi() % scales.size()]
+
+
 func _start_music_segment() -> void:
 	_is_playing_music = true
-	_current_scale = SCALES[_rng.randi() % SCALES.size()]
-	_notes_remaining = _rng.randi_range(16, 48)
-	_beat_time = _rng.randf_range(0.12, 0.2)
+	var genre: Dictionary = _genres[_genre_index]
+	var scales: Array = genre.get("scales", [[440.0]])
+	_current_scale = scales[_rng.randi() % scales.size()]
+
+	var nmin: int = genre.get("notes_min", 16)
+	var nmax: int = genre.get("notes_max", 40)
+	_notes_remaining = _rng.randi_range(nmin, nmax)
+
+	var tmin: float = genre.get("tempo_min", 0.12)
+	var tmax: float = genre.get("tempo_max", 0.2)
+	_beat_time = _rng.randf_range(tmin, tmax)
+
+	# Build arpeggio pattern for electronic genre
+	if _waveform == "saw":
+		_arp_pattern.clear()
+		for _i in range(4):
+			_arp_pattern.append(
+				_current_scale[_rng.randi() % _current_scale.size()]
+			)
+		_arp_index = 0
+
 	_note_timer = 0.0
 	_pick_next_note()
 
 
 func _pick_next_note() -> void:
-	_note_freq = _current_scale[
-		_rng.randi() % _current_scale.size()
-	]
+	if _waveform == "saw" and not _arp_pattern.is_empty():
+		# Electronic: cycle through arpeggio pattern
+		_note_freq = _arp_pattern[_arp_index % _arp_pattern.size()]
+		_arp_index += 1
+	else:
+		_note_freq = _current_scale[
+			_rng.randi() % _current_scale.size()
+		]
+
+	# Rock: add a fifth for power chord feel
+	if _waveform == "distorted":
+		_note_freq2 = _note_freq * 1.5
+	else:
+		_note_freq2 = 0.0
+
 	_note_duration = _beat_time * _rng.randi_range(1, 3)
 	_note_timer = _note_duration
 	_note_phase = 0.0
+	_note_phase2 = 0.0
 
 
 func _fill_music(delta: float) -> void:
 	if not _music_playback:
 		return
 	var frames := _music_playback.get_frames_available()
+	var inv_rate := 1.0 / MIX_RATE
 	for _i in range(frames):
-		# Simple square wave with slight detune for warmth
-		var wave := signf(sin(_note_phase * TAU)) * _music_volume
-		wave += signf(sin(_note_phase * TAU * 1.005)) * (
-			_music_volume * 0.3
-		)
-		_music_playback.push_frame(Vector2(wave, wave))
-		_note_phase += _note_freq / 22050.0
+		var sample := _generate_sample()
+		_music_playback.push_frame(Vector2(sample, sample))
+		_note_phase += _note_freq * inv_rate
 		if _note_phase > 1.0:
 			_note_phase -= 1.0
+		if _note_freq2 > 0.0:
+			_note_phase2 += _note_freq2 * inv_rate
+			if _note_phase2 > 1.0:
+				_note_phase2 -= 1.0
 
 	_note_timer -= delta
 	if _note_timer <= 0.0:
@@ -208,6 +386,45 @@ func _fill_music(delta: float) -> void:
 			)
 		else:
 			_pick_next_note()
+
+
+func _generate_sample() -> float:
+	var vol := _music_volume
+	var phase := _note_phase
+
+	if _waveform == "square":
+		var wave := signf(sin(phase * TAU)) * vol
+		wave += signf(sin(phase * TAU * 1.005)) * (vol * 0.3)
+		return wave
+
+	if _waveform == "distorted":
+		# Distorted square with power chord fifth
+		var wave := clampf(
+			sin(phase * TAU) * 3.0, -1.0, 1.0
+		) * vol
+		if _note_freq2 > 0.0:
+			wave += clampf(
+				sin(_note_phase2 * TAU) * 3.0, -1.0, 1.0
+			) * (vol * 0.7)
+		return wave
+
+	if _waveform == "triangle":
+		# Triangle wave with slight vibrato
+		var vibrato := sin(phase * TAU * 0.02) * 0.003
+		var tri := (2.0 * absf(2.0 * fmod(phase + vibrato, 1.0) - 1.0) - 1.0)
+		return tri * vol
+
+	if _waveform == "saw":
+		# Saw wave with detune for thickness
+		var saw1 := (2.0 * fmod(phase, 1.0) - 1.0) * vol
+		var saw2_phase := fmod(phase * 1.01, 1.0)
+		var saw2 := (2.0 * saw2_phase - 1.0) * (vol * 0.5)
+		return saw1 + saw2
+
+	# Sine (classical)
+	var wave := sin(phase * TAU) * vol
+	wave += sin(phase * TAU * 2.0) * (vol * 0.15)
+	return wave
 
 
 func _fill_silence() -> void:
