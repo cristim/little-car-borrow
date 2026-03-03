@@ -32,6 +32,7 @@ const GENRE_POP := {
 	"melody_vol": 0.055,
 	"bass_vol": 0.04,
 	"perc_vol": 0.03,
+	"adsr": [0.01, 0.05, 0.7, 0.08],
 	"dj_lines": [
 		"You're listening to Little Car Pop, number one hits!",
 		"That was a banger! More pop coming right up.",
@@ -56,6 +57,7 @@ const GENRE_ROCK := {
 	"melody_vol": 0.065,
 	"bass_vol": 0.05,
 	"perc_vol": 0.04,
+	"adsr": [0.005, 0.03, 0.85, 0.05],
 	"dj_lines": [
 		"Car Rock Radio! Crank it up!",
 		"That riff was insane! More rock ahead.",
@@ -80,6 +82,7 @@ const GENRE_JAZZ := {
 	"melody_vol": 0.045,
 	"bass_vol": 0.035,
 	"perc_vol": 0.015,
+	"adsr": [0.04, 0.1, 0.4, 0.15],
 	"dj_lines": [
 		"Smooth Jazz Drive. Relax and cruise.",
 		"That was silky smooth. More jazz coming up.",
@@ -104,6 +107,7 @@ const GENRE_ELECTRONIC := {
 	"melody_vol": 0.045,
 	"bass_vol": 0.055,
 	"perc_vol": 0.04,
+	"adsr": [0.002, 0.06, 0.2, 0.04],
 	"dj_lines": [
 		"Neon Beat FM! Drop the bass!",
 		"Electronic vibes for night riders.",
@@ -129,6 +133,7 @@ const GENRE_CLASSICAL := {
 	"melody_vol": 0.05,
 	"bass_vol": 0.03,
 	"perc_vol": 0.0,
+	"adsr": [0.08, 0.1, 0.8, 0.2],
 	"dj_lines": [
 		"Classical Cruise. Elegant driving.",
 		"A timeless masterpiece. More after this.",
@@ -192,6 +197,21 @@ var _perc_interval := 0.0
 var _perc_env := 0.0
 var _perc_vol := 0.03
 var _perc_style := "kick"
+
+# Melody envelope state (0=off, 1=attack, 2=decay, 3=sustain, 4=release)
+var _mel_env := 0.0
+var _mel_env_state := 0
+
+# Bass envelope state
+var _bass_env := 0.0
+var _bass_env_state := 0
+
+# Precomputed envelope rates (per sample)
+var _env_attack_rate := 0.0
+var _env_decay_rate := 0.0
+var _env_sustain := 0.7
+var _env_release_rate := 0.0
+var _env_release_time := 0.08
 
 # Shared music state
 var _current_scale: Array = []
@@ -349,6 +369,15 @@ func _apply_genre() -> void:
 	_bass_vol = genre.get("bass_vol", 0.04)
 	_perc_style = genre.get("perc_style", "kick")
 	_perc_vol = genre.get("perc_vol", 0.03)
+	var adsr: Array = genre.get("adsr", [0.01, 0.05, 0.7, 0.08])
+	var atk: float = maxf(adsr[0], 0.001)
+	var dec: float = maxf(adsr[1], 0.001)
+	_env_sustain = adsr[2]
+	_env_release_time = adsr[3]
+	var rel: float = maxf(adsr[3], 0.001)
+	_env_attack_rate = 1.0 / (atk * MIX_RATE)
+	_env_decay_rate = (1.0 - _env_sustain) / (dec * MIX_RATE)
+	_env_release_rate = 1.0 / (rel * MIX_RATE)
 	var scales: Array = genre.get("scales", [[440.0]])
 	_current_scale = scales[_rng.randi() % scales.size()]
 
@@ -410,6 +439,8 @@ func _pick_next_melody_note() -> void:
 	_mel_timer = duration
 	_mel_phase = 0.0
 	_mel_phase2 = 0.0
+	_mel_env = 0.0
+	_mel_env_state = 1
 
 
 func _pick_next_bass_note() -> void:
@@ -426,6 +457,8 @@ func _pick_next_bass_note() -> void:
 		_bass_freq = _current_scale[idx] * 0.5
 	_bass_timer = _beat_time * _rng.randi_range(2, 4)
 	_bass_phase = 0.0
+	_bass_env = 0.0
+	_bass_env_state = 1
 
 
 func _fill_music(delta: float) -> void:
@@ -440,7 +473,7 @@ func _fill_music(delta: float) -> void:
 		sample = clampf(sample, -0.5, 0.5)
 		_music_playback.push_frame(Vector2(sample, sample))
 
-		# Advance phases
+		# Advance oscillator phases
 		_mel_phase += _mel_freq * inv_rate
 		if _mel_phase > 1.0:
 			_mel_phase -= 1.0
@@ -453,6 +486,46 @@ func _fill_music(delta: float) -> void:
 			_bass_phase -= 1.0
 		_perc_phase += inv_rate
 		_perc_env = maxf(_perc_env - inv_rate * 15.0, 0.0)
+
+		# Advance melody envelope
+		if _mel_env_state == 1:
+			_mel_env += _env_attack_rate
+			if _mel_env >= 1.0:
+				_mel_env = 1.0
+				_mel_env_state = 2
+		elif _mel_env_state == 2:
+			_mel_env -= _env_decay_rate
+			if _mel_env <= _env_sustain:
+				_mel_env = _env_sustain
+				_mel_env_state = 3
+		elif _mel_env_state == 4:
+			_mel_env -= _env_release_rate
+			if _mel_env <= 0.0:
+				_mel_env = 0.0
+				_mel_env_state = 0
+
+		# Advance bass envelope
+		if _bass_env_state == 1:
+			_bass_env += _env_attack_rate
+			if _bass_env >= 1.0:
+				_bass_env = 1.0
+				_bass_env_state = 2
+		elif _bass_env_state == 2:
+			_bass_env -= _env_decay_rate
+			if _bass_env <= _env_sustain:
+				_bass_env = _env_sustain
+				_bass_env_state = 3
+		elif _bass_env_state == 4:
+			_bass_env -= _env_release_rate
+			if _bass_env <= 0.0:
+				_bass_env = 0.0
+				_bass_env_state = 0
+
+	# Trigger release when note is about to end
+	if _mel_env_state != 4 and _mel_env_state != 0 and _mel_timer <= _env_release_time:
+		_mel_env_state = 4
+	if _bass_env_state != 4 and _bass_env_state != 0 and _bass_timer <= _env_release_time:
+		_bass_env_state = 4
 
 	# Melody note timing
 	_mel_timer -= delta
@@ -481,7 +554,9 @@ func _fill_music(delta: float) -> void:
 
 
 func _gen_melody() -> float:
-	var vol := _mel_vol
+	if _mel_env <= 0.0:
+		return 0.0
+	var vol := _mel_vol * _mel_env
 	var phase := _mel_phase
 
 	if _mel_wave == "square":
@@ -518,8 +593,10 @@ func _gen_melody() -> float:
 
 
 func _gen_bass() -> float:
+	if _bass_env <= 0.0:
+		return 0.0
 	var phase := _bass_phase
-	var vol := _bass_vol
+	var vol := _bass_vol * _bass_env
 
 	if _bass_wave == "square":
 		return signf(sin(phase * TAU)) * vol
