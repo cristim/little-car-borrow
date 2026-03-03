@@ -38,6 +38,7 @@ const LOS_LOST_TIMEOUT := 15.0
 const STUCK_TIMEOUT := 0.8
 const STUCK_SPEED := 2.0
 const ESCAPE_FORCE_DURATION := 1.5
+const MAX_ESCAPE_ATTEMPTS := 3
 
 var active := true
 
@@ -60,6 +61,7 @@ var _steer_avoidance := 0.0
 var _stuck_timer := 0.0
 var _escape_timer := 0.0
 var _escaping := false
+var _escape_attempts := 0
 
 # LOS tracking
 var _los_timer := 0.0
@@ -103,6 +105,8 @@ func _physics_process(delta: float) -> void:
 			_begin_escape()
 	else:
 		_stuck_timer = 0.0
+		if speed_kmh > 10.0:
+			_escape_attempts = 0
 
 	# Check intersection arrival
 	if _past_intersection():
@@ -237,8 +241,16 @@ func _drive(_delta: float) -> void:
 
 func _begin_escape() -> void:
 	_stuck_timer = 0.0
-	_escaping = true
 	_escape_timer = 0.0
+	_escape_attempts += 1
+
+	if _escape_attempts > MAX_ESCAPE_ATTEMPTS:
+		_escape_attempts = 0
+		_road_index = _find_nearest_road_index()
+		_direction = _pick_best_direction()
+		_find_next_intersection()
+
+	_escaping = true
 
 
 func _process_escape(delta: float) -> void:
@@ -450,6 +462,26 @@ func _update_direction(new_dir: int) -> void:
 		var coord := pos.z if was_ns else pos.x
 		_road_index = _grid.get_nearest_road_index(coord)
 	_direction = new_dir
+
+
+func _find_nearest_road_index() -> int:
+	var pos := _vehicle.global_position
+	var was_ns := _direction == Direction.NORTH or _direction == Direction.SOUTH
+	var coord := pos.z if was_ns else pos.x
+	return _grid.get_nearest_road_index(coord)
+
+
+func _pick_best_direction() -> int:
+	var forward := _get_vehicle_forward()
+	var best_dir := _direction
+	var best_dot := -2.0
+	for d in [Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST]:
+		var heading := _dir_to_heading(d)
+		var dot := forward.dot(heading)
+		if dot > best_dot:
+			best_dot = dot
+			best_dir = d
+	return best_dir
 
 
 func _get_reverse(dir: int) -> int:
