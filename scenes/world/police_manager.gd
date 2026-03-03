@@ -62,6 +62,8 @@ func _on_wanted_level_changed(level: int) -> void:
 	if level <= 0 and not _police.is_empty():
 		_despawning = true
 		_despawn_timer = 0.0
+	else:
+		_despawning = false
 
 
 func _try_spawn() -> void:
