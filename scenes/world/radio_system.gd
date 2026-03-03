@@ -179,7 +179,7 @@ const GENRE_ELECTRONIC := {
 	"drum_pattern": "electronic",
 	"scales": [
 		[130.8, 164.8, 196.0, 220.0, 261.6, 293.7, 329.6, 392.0],
-		[65.4, 82.4, 98.0, 130.8, 164.8, 196.0, 261.6, 329.6],
+		[98.0, 130.8, 164.8, 196.0, 220.0, 261.6, 329.6, 392.0],
 	],
 	"tempo_min": 0.06,
 	"tempo_max": 0.1,
@@ -277,7 +277,6 @@ var _bass_freq := 110.0
 var _bass_timer := 0.0
 var _bass_vol := 0.04
 var _bass_wave := "sine"
-var _bass_root := 0
 
 # Drum pattern state
 var _drum_pattern: Array = []
@@ -499,6 +498,8 @@ func _apply_genre() -> void:
 	var delay_cfg: Array = genre.get("delay", [0.15, 0.25])
 	_delay_mix = delay_cfg[0]
 	_delay_feedback = delay_cfg[1]
+	_delay_buf.fill(0.0)
+	_delay_write = 0
 	_bass_cutoff = genre.get("bass_cutoff", 0.15)
 	_bass_lp_prev = 0.0
 	_chord_beats_per_change = genre.get("chord_beats", 4)
@@ -528,11 +529,8 @@ func _start_music_segment() -> void:
 	# Initialize chord progression
 	_chord_progression = PROGRESSIONS[_rng.randi() % PROGRESSIONS.size()]
 	_chord_index = 0
-	_chord_beat_counter = 0
+	_chord_beat_counter = -1
 	_update_chord()
-
-	# Bass follows chord root
-	_bass_freq = _current_scale[_chord_tones[0] % _current_scale.size()] * 0.5
 
 	# Build arpeggio pattern from chord tones for electronic genre
 	if _mel_wave == "saw":
@@ -594,7 +592,8 @@ func _pick_next_melody_note() -> void:
 	_mel_timer = duration
 	_mel_phase = 0.0
 	_mel_phase2 = 0.0
-	_mel_env = 0.0
+	# Don't reset _mel_env to 0 - if release completed it's already 0;
+	# if release was skipped (frame drop), attack from current level avoids click
 	_mel_env_state = 1
 
 
@@ -617,7 +616,6 @@ func _pick_next_bass_note() -> void:
 		_bass_freq = _current_scale[0] * 0.5
 	_bass_timer = _beat_time * _rng.randi_range(2, 4)
 	_bass_phase = 0.0
-	_bass_env = 0.0
 	_bass_env_state = 1
 
 
@@ -723,22 +721,27 @@ func _fill_music(delta: float) -> void:
 	if _mel_timer <= 0.0:
 		_notes_remaining -= 1
 		if _notes_remaining <= 0:
-			_is_playing_music = false
-			_music_timer = _rng.randf_range(
-				MUSIC_INTERVAL_MIN, MUSIC_INTERVAL_MAX
-			)
+			# Song ending: force release on all voices, wait for decay
+			_mel_env_state = 4
+			_bass_env_state = 4
+			if _mel_env <= 0.0 and _bass_env <= 0.0:
+				_is_playing_music = false
+				_music_timer = _rng.randf_range(
+					MUSIC_INTERVAL_MIN, MUSIC_INTERVAL_MAX
+				)
 			return
 		_pick_next_melody_note()
 
 	# Bass note timing
 	_bass_timer -= delta
 	if _bass_timer <= 0.0:
-		_pick_next_bass_note()
+		if _notes_remaining > 0:
+			_pick_next_bass_note()
 
 	# Drum step sequencer (16 steps per bar, each step = beat_time)
 	if not _drum_pattern.is_empty():
 		_drum_timer -= delta
-		if _drum_timer <= 0.0:
+		while _drum_timer <= 0.0:
 			_drum_timer += _beat_time
 			_advance_drum_step()
 
@@ -937,6 +940,8 @@ func _on_vehicle_exited(_vehicle: Node) -> void:
 
 
 func _on_wanted_changed(level: int) -> void:
+	if not _radio_on:
+		return
 	if level >= 3:
 		_police_timer = minf(_police_timer, 8.0)
 	if level >= 1:
