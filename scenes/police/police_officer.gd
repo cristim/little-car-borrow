@@ -13,7 +13,13 @@ const MUZZLE_FLASH_TIME := 0.08
 var _player: Node3D = null
 var _shoot_timer := 0.0
 var _flash_timer := 0.0
+var _shoot_pose_timer := 0.0
+var _anim_phase := 0.0
 var _muzzle_flash: MeshInstance3D
+var _left_shoulder: Node3D
+var _right_shoulder: Node3D
+var _left_hip: Node3D
+var _right_hip: Node3D
 var _rng := RandomNumberGenerator.new()
 
 
@@ -92,6 +98,9 @@ func _physics_process(delta: float) -> void:
 		if _flash_timer <= 0.0 and _muzzle_flash:
 			_muzzle_flash.visible = false
 
+	# Limb animation
+	_animate_limbs(delta, h_dist)
+
 
 func _shoot(_target_pos: Vector3) -> void:
 	# Accuracy check — miss sometimes
@@ -104,8 +113,9 @@ func _shoot(_target_pos: Vector3) -> void:
 		_muzzle_flash.visible = true
 		_flash_timer = MUZZLE_FLASH_TIME
 
-	# Gunshot sound via audio generator would be heavy;
-	# use a simple AudioStreamPlayer with procedural pop
+	# Raise right arm to aim
+	_shoot_pose_timer = 0.4
+
 	_play_gunshot()
 
 
@@ -145,6 +155,46 @@ func _get_target_pos() -> Vector3:
 	return global_position
 
 
+func _animate_limbs(delta: float, h_dist: float) -> void:
+	if not _left_shoulder:
+		return
+
+	# Shoot pose timer
+	if _shoot_pose_timer > 0.0:
+		_shoot_pose_timer -= delta
+
+	# Run cycle when moving
+	if h_dist > 2.0:
+		_anim_phase += delta * CHASE_SPEED * 6.0
+		var swing := sin(_anim_phase) * 0.5
+		_left_shoulder.rotation.x = swing
+		_left_hip.rotation.x = -swing
+		_right_hip.rotation.x = swing
+		# Right arm follows walk cycle unless shooting
+		if _shoot_pose_timer <= 0.0:
+			_right_shoulder.rotation.x = -swing
+		else:
+			_right_shoulder.rotation.x = -PI / 2.0
+	else:
+		# Decay to idle
+		_left_shoulder.rotation.x = lerpf(
+			_left_shoulder.rotation.x, 0.0, delta * 8.0
+		)
+		_left_hip.rotation.x = lerpf(
+			_left_hip.rotation.x, 0.0, delta * 8.0
+		)
+		_right_hip.rotation.x = lerpf(
+			_right_hip.rotation.x, 0.0, delta * 8.0
+		)
+		if _shoot_pose_timer <= 0.0:
+			_right_shoulder.rotation.x = lerpf(
+				_right_shoulder.rotation.x, 0.0, delta * 8.0
+			)
+		else:
+			_right_shoulder.rotation.x = -PI / 2.0
+		_anim_phase = 0.0
+
+
 func _build_model() -> void:
 	var model := Node3D.new()
 	model.name = "OfficerModel"
@@ -155,6 +205,9 @@ func _build_model() -> void:
 
 	var skin_mat := StandardMaterial3D.new()
 	skin_mat.albedo_color = Color(0.75, 0.6, 0.45)
+
+	var gun_mat := StandardMaterial3D.new()
+	gun_mat.albedo_color = Color(0.1, 0.1, 0.1)
 
 	# Torso
 	var torso := MeshInstance3D.new()
@@ -174,7 +227,7 @@ func _build_model() -> void:
 	head.position = Vector3(0.0, 1.36, 0.0)
 	model.add_child(head)
 
-	# Hat (dark blue cap)
+	# Hat
 	var hat := MeshInstance3D.new()
 	var hat_mesh := BoxMesh.new()
 	hat_mesh.size = Vector3(0.26, 0.08, 0.26)
@@ -183,42 +236,44 @@ func _build_model() -> void:
 	hat.position = Vector3(0.0, 1.51, 0.0)
 	model.add_child(hat)
 
-	# Legs
-	var leg_mesh := CylinderMesh.new()
-	leg_mesh.top_radius = 0.08
-	leg_mesh.bottom_radius = 0.08
-	leg_mesh.height = 0.75
-	for x_off in [-0.1, 0.1]:
-		var leg := MeshInstance3D.new()
-		leg.mesh = leg_mesh
-		leg.material_override = uniform_mat
-		leg.position = Vector3(x_off, 0.375, 0.0)
-		model.add_child(leg)
-
-	# Arms
+	# Arm mesh (shared)
 	var arm_mesh := CylinderMesh.new()
 	arm_mesh.top_radius = 0.06
 	arm_mesh.bottom_radius = 0.06
-	arm_mesh.height = 0.55
-	for x_off in [-0.25, 0.25]:
-		var arm := MeshInstance3D.new()
-		arm.mesh = arm_mesh
-		arm.material_override = uniform_mat
-		arm.position = Vector3(x_off, 0.97, 0.0)
-		model.add_child(arm)
+	arm_mesh.height = 0.5
 
-	# Gun (small box in right hand)
+	# Left shoulder pivot
+	_left_shoulder = Node3D.new()
+	_left_shoulder.name = "LeftShoulderPivot"
+	_left_shoulder.position = Vector3(-0.25, 1.2, 0.0)
+	model.add_child(_left_shoulder)
+	var l_arm := MeshInstance3D.new()
+	l_arm.mesh = arm_mesh
+	l_arm.material_override = uniform_mat
+	l_arm.position = Vector3(0.0, -0.25, 0.0)
+	_left_shoulder.add_child(l_arm)
+
+	# Right shoulder pivot (holds gun + muzzle flash)
+	_right_shoulder = Node3D.new()
+	_right_shoulder.name = "RightShoulderPivot"
+	_right_shoulder.position = Vector3(0.25, 1.2, 0.0)
+	model.add_child(_right_shoulder)
+	var r_arm := MeshInstance3D.new()
+	r_arm.mesh = arm_mesh
+	r_arm.material_override = uniform_mat
+	r_arm.position = Vector3(0.0, -0.25, 0.0)
+	_right_shoulder.add_child(r_arm)
+
+	# Gun on right arm
 	var gun := MeshInstance3D.new()
-	var gun_mesh := BoxMesh.new()
-	gun_mesh.size = Vector3(0.06, 0.06, 0.2)
-	gun.mesh = gun_mesh
-	var gun_mat := StandardMaterial3D.new()
-	gun_mat.albedo_color = Color(0.1, 0.1, 0.1)
+	var g_mesh := BoxMesh.new()
+	g_mesh.size = Vector3(0.06, 0.06, 0.2)
+	gun.mesh = g_mesh
 	gun.material_override = gun_mat
-	gun.position = Vector3(0.25, 0.75, -0.15)
-	model.add_child(gun)
+	gun.position = Vector3(0.0, -0.45, -0.08)
+	_right_shoulder.add_child(gun)
 
-	# Muzzle flash (yellow emissive, starts hidden)
+	# Muzzle flash on right arm
 	_muzzle_flash = MeshInstance3D.new()
 	var flash_mesh := SphereMesh.new()
 	flash_mesh.radius = 0.08
@@ -232,6 +287,34 @@ func _build_model() -> void:
 	flash_mat.emission_energy_multiplier = 3.0
 	flash_mesh.material = flash_mat
 	_muzzle_flash.mesh = flash_mesh
-	_muzzle_flash.position = Vector3(0.25, 0.75, -0.28)
+	_muzzle_flash.position = Vector3(0.0, -0.45, -0.2)
 	_muzzle_flash.visible = false
-	model.add_child(_muzzle_flash)
+	_right_shoulder.add_child(_muzzle_flash)
+
+	# Leg mesh (shared)
+	var leg_mesh := CylinderMesh.new()
+	leg_mesh.top_radius = 0.08
+	leg_mesh.bottom_radius = 0.08
+	leg_mesh.height = 0.75
+
+	# Left hip pivot
+	_left_hip = Node3D.new()
+	_left_hip.name = "LeftHipPivot"
+	_left_hip.position = Vector3(-0.1, 0.75, 0.0)
+	model.add_child(_left_hip)
+	var l_leg := MeshInstance3D.new()
+	l_leg.mesh = leg_mesh
+	l_leg.material_override = uniform_mat
+	l_leg.position = Vector3(0.0, -0.375, 0.0)
+	_left_hip.add_child(l_leg)
+
+	# Right hip pivot
+	_right_hip = Node3D.new()
+	_right_hip.name = "RightHipPivot"
+	_right_hip.position = Vector3(0.1, 0.75, 0.0)
+	model.add_child(_right_hip)
+	var r_leg := MeshInstance3D.new()
+	r_leg.mesh = leg_mesh
+	r_leg.material_override = uniform_mat
+	r_leg.position = Vector3(0.0, -0.375, 0.0)
+	_right_hip.add_child(r_leg)

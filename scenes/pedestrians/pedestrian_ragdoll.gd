@@ -63,18 +63,28 @@ func copy_visual_from(source: Node3D) -> void:
 		model = source.get_node_or_null("OfficerModel")
 	if not model:
 		return
-	# Clone each mesh child from the model
-	for child in model.get_children():
+	_copy_meshes_recursive(model, self, model.global_transform)
+
+
+func _copy_meshes_recursive(
+	node: Node, parent: Node, root_xform: Transform3D
+) -> void:
+	for child in node.get_children():
 		if child is MeshInstance3D:
 			var mesh_copy := MeshInstance3D.new()
 			mesh_copy.mesh = (child as MeshInstance3D).mesh
 			mesh_copy.material_override = (
 				(child as MeshInstance3D).material_override
 			)
-			mesh_copy.position = child.position
-			mesh_copy.rotation = child.rotation
-			mesh_copy.scale = child.scale
-			add_child(mesh_copy)
+			# Flatten global position relative to model root
+			var local_xform: Transform3D = (
+				root_xform.inverse()
+				* (child as Node3D).global_transform
+			)
+			mesh_copy.transform = local_xform
+			parent.add_child(mesh_copy)
+		if child.get_child_count() > 0:
+			_copy_meshes_recursive(child, parent, root_xform)
 
 
 func _set_alpha(alpha: float) -> void:
