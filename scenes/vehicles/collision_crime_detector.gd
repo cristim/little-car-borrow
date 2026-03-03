@@ -55,7 +55,12 @@ func _on_body_entered(body: Node) -> void:
 	var crime_type: String
 	var heat_points: int
 
-	if body.is_in_group("pedestrian"):
+	if body.is_in_group("police_officer"):
+		crime_type = "hit_police_officer"
+		heat_points = 50
+		_spawn_ragdoll(body)
+		body.queue_free()
+	elif body.is_in_group("pedestrian"):
 		crime_type = "hit_pedestrian"
 		heat_points = 25
 		_spawn_ragdoll(body)

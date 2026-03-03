@@ -57,8 +57,10 @@ func launch(vehicle_velocity: Vector3) -> void:
 	) * mass)
 
 
-func copy_visual_from(pedestrian: Node3D) -> void:
-	var model := pedestrian.get_node_or_null("PedestrianModel")
+func copy_visual_from(source: Node3D) -> void:
+	var model := source.get_node_or_null("PedestrianModel")
+	if not model:
+		model = source.get_node_or_null("OfficerModel")
 	if not model:
 		return
 	# Clone each mesh child from the model
