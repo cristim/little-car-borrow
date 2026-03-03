@@ -625,18 +625,29 @@ func _fill_music(delta: float) -> void:
 	var frames := _music_playback.get_frames_available()
 	var inv_rate := 1.0 / MIX_RATE
 	for _i in range(frames):
-		var sample := _gen_melody()
-		sample += _gen_bass()
-		sample += _gen_percussion()
-		# Delay effect: read from buffer, mix, write back with feedback
+		var mel := _gen_melody()
+		var bass := _gen_bass()
+		var perc := _gen_percussion()
+
+		# Stereo panning: melody right (0.2), bass left (-0.15), perc center
+		var left := mel * 0.8 + bass * 1.15 + perc
+		var right := mel * 1.2 + bass * 0.85 + perc
+
+		# Delay on mono sum, then add to both channels
+		var mono := mel + bass + perc
 		var delayed: float = _delay_buf[_delay_write]
-		var wet := sample + delayed * _delay_mix
-		_delay_buf[_delay_write] = sample + delayed * _delay_feedback
+		_delay_buf[_delay_write] = mono + delayed * _delay_feedback
 		_delay_write += 1
 		if _delay_write >= DELAY_SIZE:
 			_delay_write = 0
-		sample = clampf(wet, -0.5, 0.5)
-		_music_playback.push_frame(Vector2(sample, sample))
+		var delay_wet := delayed * _delay_mix
+		left += delay_wet
+		right += delay_wet
+
+		_music_playback.push_frame(Vector2(
+			clampf(left, -0.5, 0.5),
+			clampf(right, -0.5, 0.5),
+		))
 
 		# Advance oscillator phases
 		_mel_phase += _mel_freq * inv_rate
