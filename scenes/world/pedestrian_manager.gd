@@ -4,7 +4,8 @@ extends Node
 
 const SPAWN_RADIUS := 120.0
 const DESPAWN_RADIUS := 150.0
-const MIN_SPAWN_DIST := 25.0
+const DESPAWN_BEHIND_RADIUS := 60.0
+const MIN_SPAWN_DIST := 40.0
 const MIN_PED_DIST := 5.0
 const MAX_PEDESTRIANS := 20
 const SPAWN_INTERVAL := 0.5
@@ -17,7 +18,7 @@ var _pedestrians: Array[Node] = []
 var _player: Node3D = null
 var _rng := RandomNumberGenerator.new()
 var _spawn_timer := 0.0
-var _initial_burst_done := false
+var _player_velocity := Vector3.ZERO
 var _time_multiplier := 1.0
 
 
@@ -33,17 +34,23 @@ func _process(delta: float) -> void:
 		if not _player:
 			return
 
-	if not _initial_burst_done:
-		_initial_burst_done = true
-		for _i in range(MAX_PEDESTRIANS):
-			_try_spawn()
-		return
+	if "velocity" in _player:
+		_player_velocity = _player.velocity
+	else:
+		_player_velocity = Vector3.ZERO
 
 	_spawn_timer += delta
 	if _spawn_timer >= SPAWN_INTERVAL:
 		_spawn_timer = 0.0
 		_despawn_far()
-		for _i in range(SPAWNS_PER_TICK):
+		var effective_max := int(MAX_PEDESTRIANS * _time_multiplier)
+		var deficit := effective_max - _pedestrians.size()
+		var count := SPAWNS_PER_TICK
+		if deficit > effective_max / 2:
+			count = 8
+		elif deficit > effective_max / 4:
+			count = 5
+		for _i in range(count):
 			_try_spawn()
 
 
@@ -84,6 +91,15 @@ func _try_spawn() -> void:
 		if dist < MIN_SPAWN_DIST or dist > SPAWN_RADIUS:
 			continue
 
+		# Bias spawns ahead of player movement
+		var h_vel := Vector3(_player_velocity.x, 0.0, _player_velocity.z)
+		if h_vel.length_squared() > 1.0:
+			var offset := spawn_pos - player_pos
+			offset.y = 0.0
+			if h_vel.normalized().dot(offset.normalized()) < -0.3:
+				if _rng.randf() < 0.7:
+					continue
+
 		var too_close := false
 		for p in _pedestrians:
 			if is_instance_valid(p) and spawn_pos.distance_to(
@@ -111,13 +127,23 @@ func _despawn_far() -> void:
 	if not _player:
 		return
 	var player_pos := _player.global_position
+	var h_vel := Vector3(_player_velocity.x, 0.0, _player_velocity.z)
+	var moving := h_vel.length_squared() > 1.0
+	var vel_dir := h_vel.normalized() if moving else Vector3.ZERO
 	var to_remove: Array[Node] = []
 	for p in _pedestrians:
 		if not is_instance_valid(p):
 			to_remove.append(p)
 			continue
-		if (p as Node3D).global_position.distance_to(player_pos) > DESPAWN_RADIUS:
+		var p_pos := (p as Node3D).global_position
+		var d := p_pos.distance_to(player_pos)
+		if d > DESPAWN_RADIUS:
 			to_remove.append(p)
+		elif moving and d > DESPAWN_BEHIND_RADIUS:
+			var offset := p_pos - player_pos
+			offset.y = 0.0
+			if vel_dir.dot(offset.normalized()) < -0.5:
+				to_remove.append(p)
 	for p in to_remove:
 		_pedestrians.erase(p)
 		if is_instance_valid(p):

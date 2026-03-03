@@ -5,7 +5,7 @@ extends Node
 
 const SPAWN_RADIUS := 200.0
 const DESPAWN_RADIUS := 250.0
-const DESPAWN_BEHIND_RADIUS := 120.0
+const DESPAWN_BEHIND_RADIUS := 80.0
 const MIN_SPAWN_DIST := 90.0
 const MIN_VEHICLE_DIST := 12.0
 const MAX_VEHICLES := 30
