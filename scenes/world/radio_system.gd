@@ -118,22 +118,22 @@ const GENRE_ROCK := {
 	"bass_wave": "saw",  # bass guitar with pick (filtered by LP)
 	"drum_pattern": "rock",
 	"scales": [
-		# E minor pentatonic - classic rock lead range
+		# Low E minor pentatonic - heavy riffs
+		[110.0, 130.8, 146.8, 164.8, 196.0, 220.0, 261.6, 293.7],
+		# E minor pentatonic - standard metal range
 		[164.8, 196.0, 220.0, 246.9, 293.7, 329.6, 392.0, 440.0],
-		# A minor pentatonic - higher register solos
-		[220.0, 261.6, 293.7, 329.6, 392.0, 440.0, 523.3, 587.3],
 	],
-	"tempo_min": 0.10,
-	"tempo_max": 0.20,
-	"notes_min": 100,
-	"notes_max": 250,
-	"melody_vol": 0.07,
+	"tempo_min": 0.15,
+	"tempo_max": 0.30,
+	"notes_min": 80,
+	"notes_max": 200,
+	"melody_vol": 0.06,
 	"bass_vol": 0.045,
-	"perc_vol": 0.04,
-	"adsr": [0.005, 0.03, 0.9, 0.04],
+	"perc_vol": 0.045,
+	"adsr": [0.003, 0.04, 0.75, 0.03],
 	"chord_beats": 4,
-	"passing_tone_chance": 0.70,
-	"delay": [0.10, 0.20],
+	"passing_tone_chance": 0.40,
+	"delay": [0.04, 0.08],
 	"bass_cutoff": 0.22,  # filter saw into warm-but-gritty bass guitar
 	"dj_lines": [
 		"Car Rock Radio! Crank it up!",
@@ -762,17 +762,14 @@ func _gen_melody() -> float:
 		return wave
 
 	if _mel_wave == "distorted":
+		# Heavy distortion - no chorus (raw, dry, aggressive)
 		var wave := clampf(
-			sin(phase * TAU) * 3.0, -1.0, 1.0
+			sin(phase * TAU) * 8.0, -1.0, 1.0
 		) * vol
-		# Chorus on distorted
-		wave += clampf(
-			sin(chorus_p * TAU) * 3.0, -1.0, 1.0
-		) * (vol * 0.3)
-		# Rock power chord fifth
+		# Power chord fifth
 		if _mel_freq2 > 0.0:
 			wave += clampf(
-				sin(_mel_phase2 * TAU) * 3.0, -1.0, 1.0
+				sin(_mel_phase2 * TAU) * 8.0, -1.0, 1.0
 			) * (vol * 0.7)
 		return wave
 
