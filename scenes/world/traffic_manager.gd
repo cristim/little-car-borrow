@@ -224,6 +224,7 @@ func _try_spawn() -> void:
 		vehicle.add_child(npc)
 
 		get_tree().current_scene.add_child(vehicle)
+		vehicle.add_to_group("npc_vehicle")
 		npc.initialize(vehicle, road_idx, direction)
 
 		_vehicles.append(vehicle)

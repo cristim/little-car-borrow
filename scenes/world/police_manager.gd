@@ -142,6 +142,7 @@ func _try_spawn() -> void:
 		vehicle.add_child(ai)
 
 		get_tree().current_scene.add_child(vehicle)
+		vehicle.add_to_group("police_vehicle")
 		ai.initialize(vehicle, road_idx, direction)
 
 		_police.append(vehicle)
