@@ -28,6 +28,8 @@ func _pause() -> void:
 	visible = true
 	$Overlay.visible = true
 	$Panel.visible = true
+	$ControlsPanel.visible = false
+	$AudioPanel.visible = false
 
 
 func _resume() -> void:
@@ -35,6 +37,8 @@ func _resume() -> void:
 	visible = false
 	$Overlay.visible = false
 	$Panel.visible = false
+	$ControlsPanel.visible = false
+	$AudioPanel.visible = false
 	InputManager.set_context(_previous_context)
 
 
@@ -45,6 +49,12 @@ func _on_resume_pressed() -> void:
 func _on_controls_pressed() -> void:
 	$Panel.visible = false
 	$ControlsPanel.visible = true
+
+
+func _on_audio_pressed() -> void:
+	$Panel.visible = false
+	$AudioPanel.visible = true
+	$AudioPanel.refresh_sliders()
 
 
 func _on_fullscreen_pressed() -> void:
