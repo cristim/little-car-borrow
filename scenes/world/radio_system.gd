@@ -11,6 +11,7 @@ const DJ_INTERVAL_MAX := 50.0
 const POLICE_ANNOUNCE_INTERVAL := 20.0
 const STATIC_DURATION := 0.4
 const MIX_RATE := 22050.0
+const DELAY_SIZE := 7718  # ~0.35s at 22050 Hz
 
 # Chord progressions as scale-degree indices (0-based into 8-note scale)
 # Each progression is 4 chords; each chord is a triad [root, third, fifth]
@@ -101,6 +102,7 @@ const GENRE_POP := {
 	"adsr": [0.01, 0.05, 0.7, 0.08],
 	"chord_beats": 4,
 	"passing_tone_chance": 0.2,
+	"delay": [0.15, 0.25],
 	"dj_lines": [
 		"You're listening to Little Car Pop, number one hits!",
 		"That was a banger! More pop coming right up.",
@@ -128,6 +130,7 @@ const GENRE_ROCK := {
 	"adsr": [0.005, 0.03, 0.85, 0.05],
 	"chord_beats": 4,
 	"passing_tone_chance": 0.15,
+	"delay": [0.10, 0.20],
 	"dj_lines": [
 		"Car Rock Radio! Crank it up!",
 		"That riff was insane! More rock ahead.",
@@ -155,6 +158,7 @@ const GENRE_JAZZ := {
 	"adsr": [0.04, 0.1, 0.4, 0.15],
 	"chord_beats": 2,
 	"passing_tone_chance": 0.3,
+	"delay": [0.20, 0.35],
 	"dj_lines": [
 		"Smooth Jazz Drive. Relax and cruise.",
 		"That was silky smooth. More jazz coming up.",
@@ -182,6 +186,7 @@ const GENRE_ELECTRONIC := {
 	"adsr": [0.002, 0.06, 0.2, 0.04],
 	"chord_beats": 8,
 	"passing_tone_chance": 0.1,
+	"delay": [0.25, 0.35],
 	"dj_lines": [
 		"Neon Beat FM! Drop the bass!",
 		"Electronic vibes for night riders.",
@@ -210,6 +215,7 @@ const GENRE_CLASSICAL := {
 	"adsr": [0.08, 0.1, 0.8, 0.2],
 	"chord_beats": 4,
 	"passing_tone_chance": 0.25,
+	"delay": [0.18, 0.30],
 	"dj_lines": [
 		"Classical Cruise. Elegant driving.",
 		"A timeless masterpiece. More after this.",
@@ -298,6 +304,12 @@ var _chord_beat_counter := 0
 var _chord_beats_per_change := 4
 var _passing_tone_chance := 0.2
 
+# Delay effect state
+var _delay_buf := PackedFloat32Array()
+var _delay_write := 0
+var _delay_mix := 0.15
+var _delay_feedback := 0.25
+
 # Shared music state
 var _current_scale: Array = []
 var _notes_remaining := 0
@@ -328,6 +340,11 @@ func _ready() -> void:
 	_music_timer = _rng.randf_range(2.0, 5.0)
 	_dj_timer = _rng.randf_range(8.0, 15.0)
 	_police_timer = POLICE_ANNOUNCE_INTERVAL
+
+	# Delay buffer
+	_delay_buf.resize(DELAY_SIZE)
+	_delay_buf.fill(0.0)
+	_delay_write = 0
 
 	# Music generator
 	_music_player = AudioStreamPlayer.new()
@@ -464,6 +481,9 @@ func _apply_genre() -> void:
 	_env_attack_rate = 1.0 / (atk * MIX_RATE)
 	_env_decay_rate = (1.0 - _env_sustain) / (dec * MIX_RATE)
 	_env_release_rate = 1.0 / (rel * MIX_RATE)
+	var delay_cfg: Array = genre.get("delay", [0.15, 0.25])
+	_delay_mix = delay_cfg[0]
+	_delay_feedback = delay_cfg[1]
 	_chord_beats_per_change = genre.get("chord_beats", 4)
 	_passing_tone_chance = genre.get("passing_tone_chance", 0.2)
 	var scales: Array = genre.get("scales", [[440.0]])
@@ -593,7 +613,14 @@ func _fill_music(delta: float) -> void:
 		var sample := _gen_melody()
 		sample += _gen_bass()
 		sample += _gen_percussion()
-		sample = clampf(sample, -0.5, 0.5)
+		# Delay effect: read from buffer, mix, write back with feedback
+		var delayed: float = _delay_buf[_delay_write]
+		var wet := sample + delayed * _delay_mix
+		_delay_buf[_delay_write] = sample + delayed * _delay_feedback
+		_delay_write += 1
+		if _delay_write >= DELAY_SIZE:
+			_delay_write = 0
+		sample = clampf(wet, -0.5, 0.5)
 		_music_playback.push_frame(Vector2(sample, sample))
 
 		# Advance oscillator phases
