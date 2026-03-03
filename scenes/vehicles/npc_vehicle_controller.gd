@@ -430,7 +430,7 @@ func _cast_rays() -> void:
 	var heading := _get_desired_heading()
 	var cross_left := heading.rotated(Vector3.UP, PI * 0.5)
 	var cross_right := heading.rotated(Vector3.UP, -PI * 0.5)
-	var cross_mask := 24  # PlayerVehicle | NPC only
+	var cross_mask := 88  # PlayerVehicle | NPC | Police
 
 	var clq := PhysicsRayQueryParameters3D.create(
 		from, from + cross_left * CROSS_RAY_LENGTH
