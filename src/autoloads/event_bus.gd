@@ -21,10 +21,13 @@ signal police_search_started
 signal police_search_ended
 
 # Mission signals
+signal mission_available(mission_data: Dictionary)
 signal mission_started(mission_id: String)
 signal mission_completed(mission_id: String)
 signal mission_failed(mission_id: String)
 signal mission_objective_updated(objective_text: String)
+signal mission_marker_reached(mission_id: String, marker_type: String)
+signal mission_timer_updated(time_remaining: float)
 
 # UI signals
 signal show_notification(text: String, duration: float)
