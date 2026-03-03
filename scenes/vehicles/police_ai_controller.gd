@@ -41,6 +41,11 @@ const STUCK_SPEED := 2.0
 const ESCAPE_FORCE_DURATION := 1.5
 const MAX_ESCAPE_ATTEMPTS := 3
 
+# Officer dismount
+const DISMOUNT_RANGE := 12.0
+const DISMOUNT_COOLDOWN := 15.0
+const MAX_OFFICERS_PER_CAR := 2
+
 var active := true
 
 var _grid = preload("res://src/road_grid.gd").new()
@@ -69,6 +74,13 @@ var _los_timer := 0.0
 var _los_lost_timer := 0.0
 var _pursuit_locked := false
 
+# Officer spawning
+var _officer_script: GDScript = preload(
+	"res://scenes/police/police_officer.gd"
+)
+var _officers_spawned := 0
+var _dismount_timer := 0.0
+
 
 func initialize(vehicle: RigidBody3D, road_idx: int, direction: int) -> void:
 	_vehicle = vehicle
@@ -87,6 +99,7 @@ func _physics_process(delta: float) -> void:
 
 	_update_ai_state(delta)
 	_update_lights_and_siren()
+	_try_dismount(delta)
 
 	# Collision detection (throttled)
 	_ray_cooldown -= 1
@@ -180,6 +193,38 @@ func _update_lights_and_siren() -> void:
 	var siren := _vehicle.get_node_or_null("PoliceSiren")
 	if siren:
 		siren.siren_active = pursuing
+
+
+func _try_dismount(delta: float) -> void:
+	if _ai_state != AIState.PURSUE:
+		return
+	if _officers_spawned >= MAX_OFFICERS_PER_CAR:
+		return
+
+	_dismount_timer -= delta
+	if _dismount_timer > 0.0:
+		return
+
+	if not _player or not _vehicle:
+		return
+
+	var target := _get_player_vehicle_pos()
+	var dist := _vehicle.global_position.distance_to(target)
+	if dist > DISMOUNT_RANGE:
+		return
+
+	# Spawn officer on the side of the vehicle
+	var officer := CharacterBody3D.new()
+	officer.set_script(_officer_script)
+	var side := _vehicle.global_transform.basis.x * 2.0
+	officer.global_position = (
+		_vehicle.global_position + side
+		+ Vector3(0.0, 0.5, 0.0)
+	)
+	get_tree().current_scene.add_child(officer)
+
+	_officers_spawned += 1
+	_dismount_timer = DISMOUNT_COOLDOWN
 
 
 func _drive(_delta: float) -> void:
