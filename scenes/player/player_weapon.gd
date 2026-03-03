@@ -107,10 +107,10 @@ func _spawn_ragdoll(target: Node, shoot_dir: Vector3) -> void:
 	ragdoll.rotation = (target as Node3D).global_rotation
 	ragdoll.copy_visual_from(target)
 	get_tree().current_scene.add_child(ragdoll)
-	# Small push in shot direction so body falls backward, stays low
-	var impulse := shoot_dir * 1.5
+	# Gentle nudge so body drops near where it stood
+	var impulse := shoot_dir * 15.0
 	impulse.y = 0.0
-	ragdoll.apply_central_impulse(impulse * ragdoll.mass)
+	ragdoll.apply_central_impulse(impulse)
 
 
 func _setup_gun_mesh() -> void:
