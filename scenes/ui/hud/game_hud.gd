@@ -21,6 +21,7 @@ var _reward_timer := 0.0
 @onready var health_bar: ColorRect = $BottomLeft/HealthBg/HealthBar
 @onready var death_label: Label = $DeathLabel
 @onready var restart_prompt: Label = $RestartPrompt
+@onready var crosshair: Label = $Crosshair
 
 
 func _ready() -> void:
@@ -33,6 +34,8 @@ func _ready() -> void:
 	EventBus.mission_failed.connect(_on_mission_done)
 	EventBus.player_health_changed.connect(_on_health)
 	EventBus.player_died.connect(_on_died)
+	EventBus.vehicle_entered.connect(_on_vehicle_entered)
+	EventBus.vehicle_exited.connect(_on_vehicle_exited)
 
 	money_label.text = "$%d" % GameManager.money
 	objective_label.visible = false
@@ -127,6 +130,14 @@ func _on_health(current: float, max_hp: float) -> void:
 		health_bar.color = Color(0.9, 0.6, 0.1, 0.9)
 	else:
 		health_bar.color = Color(0.8, 0.15, 0.15, 0.9)
+
+
+func _on_vehicle_entered(_vehicle: Node) -> void:
+	crosshair.visible = false
+
+
+func _on_vehicle_exited(_vehicle: Node) -> void:
+	crosshair.visible = true
 
 
 func _on_died() -> void:
