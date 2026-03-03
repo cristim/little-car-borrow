@@ -144,7 +144,7 @@ var _music_timer := 0.0
 var _dj_timer := 0.0
 var _police_timer := 0.0
 var _is_playing_music := false
-var _radio_on := true
+var _radio_on := false
 
 # Music generation state
 var _note_phase := 0.0
@@ -219,6 +219,8 @@ func _ready() -> void:
 
 	_apply_genre()
 	EventBus.wanted_level_changed.connect(_on_wanted_changed)
+	EventBus.vehicle_entered.connect(_on_vehicle_entered)
+	EventBus.vehicle_exited.connect(_on_vehicle_exited)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -481,6 +483,26 @@ func _process_tts_queue() -> void:
 		return
 	var text: String = _tts_queue.pop_front()
 	DisplayServer.tts_speak(text, _tts_voice_id, 70, 1.0, 1.1)
+
+
+func _on_vehicle_entered(_vehicle: Node) -> void:
+	_radio_on = true
+	_genre_index = _rng.randi() % _genres.size()
+	_apply_genre()
+	_is_playing_music = false
+	_music_timer = _rng.randf_range(1.0, 3.0)
+	_dj_timer = _rng.randf_range(3.0, 8.0)
+	_play_static_burst()
+	var genre: Dictionary = _genres[_genre_index]
+	var station_name: String = genre.get("name", "Radio")
+	_speak_tts("Now playing: " + station_name)
+
+
+func _on_vehicle_exited(_vehicle: Node) -> void:
+	_radio_on = false
+	_is_playing_music = false
+	_tts_queue.clear()
+	DisplayServer.tts_stop()
 
 
 func _on_wanted_changed(level: int) -> void:
