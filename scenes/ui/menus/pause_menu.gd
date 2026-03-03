@@ -42,5 +42,14 @@ func _on_resume_pressed() -> void:
 	_resume()
 
 
+func _on_controls_pressed() -> void:
+	$Panel.visible = false
+	$ControlsPanel.visible = true
+
+
+func _on_fullscreen_pressed() -> void:
+	InputManager._toggle_fullscreen()
+
+
 func _on_quit_pressed() -> void:
 	get_tree().quit()
