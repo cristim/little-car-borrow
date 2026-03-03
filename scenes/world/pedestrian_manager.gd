@@ -18,11 +18,13 @@ var _player: Node3D = null
 var _rng := RandomNumberGenerator.new()
 var _spawn_timer := 0.0
 var _initial_burst_done := false
+var _time_multiplier := 1.0
 
 
 func _ready() -> void:
 	_rng.randomize()
 	EventBus.pedestrian_killed.connect(_on_pedestrian_killed)
+	EventBus.time_of_day_changed.connect(_on_time_changed)
 
 
 func _process(delta: float) -> void:
@@ -46,7 +48,8 @@ func _process(delta: float) -> void:
 
 
 func _try_spawn() -> void:
-	if _pedestrians.size() >= MAX_PEDESTRIANS:
+	var effective_max := int(MAX_PEDESTRIANS * _time_multiplier)
+	if _pedestrians.size() >= effective_max:
 		return
 
 	var player_pos := _player.global_position
@@ -123,3 +126,12 @@ func _despawn_far() -> void:
 
 func _on_pedestrian_killed(pedestrian: Node) -> void:
 	_pedestrians.erase(pedestrian)
+
+
+func _on_time_changed(hour: float) -> void:
+	if hour < 5.0 or hour > 22.0:
+		_time_multiplier = 0.3  # deep night
+	elif hour < 7.0 or hour > 20.0:
+		_time_multiplier = 0.6  # dawn/dusk
+	else:
+		_time_multiplier = 1.0  # day

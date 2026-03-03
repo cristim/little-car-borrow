@@ -83,6 +83,7 @@ var _player: Node3D = null
 var _rng := RandomNumberGenerator.new()
 var _initial_burst_done := false
 var _player_velocity := Vector3.ZERO
+var _time_multiplier := 1.0
 
 var _car_colors: Array[Color] = [
 	Color(0.15, 0.25, 0.55),
@@ -101,6 +102,7 @@ var _car_colors: Array[Color] = [
 func _ready() -> void:
 	_rng.randomize()
 	EventBus.vehicle_entered.connect(_on_vehicle_stolen)
+	EventBus.time_of_day_changed.connect(_on_time_changed)
 	for v in VARIANTS:
 		_total_weight += v.weight
 
@@ -131,7 +133,8 @@ func _process(delta: float) -> void:
 
 
 func _try_spawn() -> void:
-	if _vehicles.size() >= MAX_VEHICLES:
+	var effective_max := int(MAX_VEHICLES * _time_multiplier)
+	if _vehicles.size() >= effective_max:
 		return
 
 	var player_pos := _player.global_position
@@ -344,3 +347,12 @@ func _randomize_color(vehicle: Node) -> void:
 		var child := body.get_node_or_null(child_name)
 		if child:
 			child.material_override = mat
+
+
+func _on_time_changed(hour: float) -> void:
+	if hour < 5.0 or hour > 22.0:
+		_time_multiplier = 0.5  # deep night
+	elif hour < 7.0 or hour > 20.0:
+		_time_multiplier = 0.7  # dawn/dusk
+	else:
+		_time_multiplier = 1.0  # day
