@@ -95,10 +95,10 @@ func _try_spawn() -> void:
 		ped.position = spawn_pos
 		get_tree().current_scene.add_child(ped)
 
-		# Set initial walk direction
+		# Set initial walk direction via state machine API
 		var sm := ped.get_node_or_null("StateMachine")
-		if sm and sm.current_state and sm.current_state.has_method("enter"):
-			sm.current_state.enter({"direction": walk_dir})
+		if sm:
+			sm.transition_to("PedestrianWalk", {"direction": walk_dir})
 
 		_pedestrians.append(ped)
 		return
