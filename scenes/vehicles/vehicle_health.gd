@@ -278,6 +278,14 @@ func _explode() -> void:
 	if police:
 		police.deactivate()
 
+	# Kill police lights and siren
+	var light_bar := _vehicle.get_node_or_null("PoliceLightBar")
+	if light_bar:
+		light_bar.lights_active = false
+	var siren := _vehicle.get_node_or_null("PoliceSiren")
+	if siren:
+		siren.siren_active = false
+
 	# Turn the body fully black (burned out)
 	_set_body_burned()
 
