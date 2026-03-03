@@ -24,6 +24,7 @@ var _window_mat: StandardMaterial3D
 var _building_mats: Array[StandardMaterial3D] = []
 var _trunk_mats: Array[StandardMaterial3D] = []
 var _canopy_mats: Array[StandardMaterial3D] = []
+var _pole_mat: StandardMaterial3D
 
 # Canonical tree meshes for MultiMesh (created once in _ready)
 var _trunk_mesh: CylinderMesh
@@ -35,6 +36,7 @@ var _building_builder = preload("res://scenes/world/generator/chunk_builder_buil
 var _tree_builder = preload("res://scenes/world/generator/chunk_builder_trees.gd").new()
 var _marking_builder = preload("res://scenes/world/generator/chunk_builder_markings.gd").new()
 var _ramp_builder = preload("res://scenes/world/generator/chunk_builder_ramps.gd").new()
+var _light_builder = preload("res://scenes/world/generator/chunk_builder_lights.gd").new()
 
 var _chunks: Dictionary = {}
 var _update_timer := 0.0
@@ -150,6 +152,7 @@ func _build_chunk(tile: Vector2i) -> Node3D:
 	_tree_builder.build(chunk, tile, ox, oz)
 	_marking_builder.build(chunk, ox, oz, span)
 	_ramp_builder.build(chunk, ox, oz)
+	_light_builder.build(chunk, ox, oz)
 
 	return chunk
 
@@ -217,6 +220,9 @@ func _init_materials() -> void:
 		mat.albedo_color = c
 		_canopy_mats.append(mat)
 
+	_pole_mat = StandardMaterial3D.new()
+	_pole_mat.albedo_color = Color(0.25, 0.25, 0.25)
+
 
 func _init_tree_meshes() -> void:
 	# Canonical trunk cylinder (unit size — scaled per instance via transform)
@@ -244,22 +250,22 @@ func _init_tree_meshes() -> void:
 	_canopy_meshes.append(cone)
 
 	var tall := SphereMesh.new()
-	tall.radius = 0.8
-	tall.height = 3.0
+	tall.radius = 1.0
+	tall.height = 3.75
 	tall.radial_segments = 8
 	tall.rings = 4
 	_canopy_meshes.append(tall)
 
 	var flat := SphereMesh.new()
-	flat.radius = 1.5
-	flat.height = 1.0
+	flat.radius = 1.0
+	flat.height = 0.667
 	flat.radial_segments = 8
 	flat.rings = 4
 	_canopy_meshes.append(flat)
 
 	var sphere2 := SphereMesh.new()
-	sphere2.radius = 1.2
-	sphere2.height = 2.4
+	sphere2.radius = 1.0
+	sphere2.height = 2.0
 	sphere2.radial_segments = 8
 	sphere2.rings = 4
 	_canopy_meshes.append(sphere2)
@@ -271,6 +277,7 @@ func _init_builders() -> void:
 	_tree_builder.init(_grid, _trunk_mats, _canopy_mats, _trunk_mesh, _canopy_meshes)
 	_marking_builder.init(_grid, _marking_mat)
 	_ramp_builder.init(_grid, _ramp_mat)
+	_light_builder.init(_grid, _pole_mat)
 
 
 func _build_safety_ground() -> void:
