@@ -23,6 +23,32 @@ func _ensure_buses() -> void:
 			AudioServer.set_bus_name(idx, bus_name)
 			AudioServer.set_bus_send(idx, BUS_MASTER)
 	_buses_created = true
+	_setup_music_bus_effects()
+
+
+func _setup_music_bus_effects() -> void:
+	var idx := AudioServer.get_bus_index(BUS_MUSIC)
+	if idx < 0:
+		return
+	# Slot 0: Delay effect (adjusted per-genre by radio_system)
+	var delay := AudioEffectDelay.new()
+	delay.tap1_active = true
+	delay.tap1_delay_ms = 300.0
+	delay.tap1_level_db = -14.0
+	delay.tap2_active = false
+	delay.feedback_active = true
+	delay.feedback_delay_ms = 300.0
+	delay.feedback_level_db = -14.0
+	delay.dry = 1.0
+	AudioServer.add_bus_effect(idx, delay)
+	# Slot 1: Distortion (off by default, enabled for rock)
+	var dist := AudioEffectDistortion.new()
+	dist.mode = AudioEffectDistortion.MODE_CLIP
+	dist.drive = 0.0
+	dist.pre_gain = 0.0
+	dist.post_gain = 0.0
+	dist.keep_hf_hz = 8000.0
+	AudioServer.add_bus_effect(idx, dist)
 
 
 func set_bus_volume(bus_name: String, linear: float) -> void:
