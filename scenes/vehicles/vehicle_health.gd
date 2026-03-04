@@ -55,7 +55,7 @@ func take_damage(amount: float, hit_pos: Vector3, hit_normal: Vector3) -> void:
 
 
 func _store_original_color() -> void:
-	var mesh := _body.get_node_or_null("LowerBody") as MeshInstance3D
+	var mesh := _body.get_node_or_null("CarBody") as MeshInstance3D
 	if not mesh:
 		return
 	if mesh.material_override:
@@ -99,7 +99,7 @@ func _spawn_bullet_hole(hit_pos: Vector3, hit_normal: Vector3) -> void:
 func _darken_body() -> void:
 	if not _body:
 		return
-	var mesh := _body.get_node_or_null("LowerBody") as MeshInstance3D
+	var mesh := _body.get_node_or_null("CarBody") as MeshInstance3D
 	if not mesh:
 		return
 
@@ -107,11 +107,7 @@ func _darken_body() -> void:
 	if not mesh.material_override:
 		var new_mat := StandardMaterial3D.new()
 		new_mat.albedo_color = _original_color
-		# Apply to all body panels
-		for child_name in ["LowerBody", "Cabin", "LeftDoorPivot/DoorPanel"]:
-			var child := _body.get_node_or_null(child_name)
-			if child:
-				child.material_override = new_mat
+		mesh.material_override = new_mat
 
 	# Compute darkened color from original, not from current
 	var ratio: float = health / MAX_HEALTH
@@ -265,6 +261,9 @@ func _explode() -> void:
 	if not _vehicle or not is_instance_valid(_vehicle):
 		return
 
+	# Eject player if they're driving this vehicle
+	EventBus.force_exit_vehicle.emit(_vehicle)
+
 	# Small upward pop, not a launch
 	_vehicle.apply_central_impulse(Vector3(0, 1500.0, 0))
 
@@ -319,10 +318,9 @@ func _set_body_burned() -> void:
 		return
 	var burned_mat := StandardMaterial3D.new()
 	burned_mat.albedo_color = Color(0.03, 0.03, 0.03)
-	for child_name in ["LowerBody", "Cabin", "LeftDoorPivot/DoorPanel"]:
-		var child := _body.get_node_or_null(child_name)
-		if child:
-			child.material_override = burned_mat
+	var car_body := _body.get_node_or_null("CarBody") as MeshInstance3D
+	if car_body:
+		car_body.material_override = burned_mat
 
 
 func _play_fire_sound() -> void:
