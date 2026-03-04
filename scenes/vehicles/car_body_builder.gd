@@ -54,6 +54,13 @@ const VARIANT_OVERRIDES := {
 # Ring vertex count: 3 per corner (4 corners) = 12 vertices
 const RING_VERTS := 12
 
+# Edge indices to skip when lofting, creating gaps for window glass.
+# Edge i connects ring vertex i to (i+1)%12.
+# Side windows: skip upper-left (1) and upper-right (8) side edges.
+const SIDE_WINDOW_EDGES := [1, 8]
+# Windshield/rear window: skip the top row edges (corners + top surface).
+const GLASS_TOP_EDGES := [0, 9, 10, 11]
+
 
 func build_body(variant_name: String) -> ArrayMesh:
 	var profiles := _generate_profiles(variant_name)
@@ -61,12 +68,27 @@ func build_body(variant_name: String) -> ArrayMesh:
 	for p in profiles:
 		rings.append(_profile_to_ring(p))
 
+	# Track which profiles are cabin profiles (have window inset)
+	var cabin_flags: Array[bool] = []
+	for p in profiles:
+		cabin_flags.append(float(p.inset) > 0.01)
+
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 
-	# Loft between adjacent rings
+	# Loft between adjacent rings, skipping edges where windows go
 	for i in range(rings.size() - 1):
-		_loft(st, rings[i], rings[i + 1])
+		var skip: Array = []
+		var a_cab: bool = cabin_flags[i]
+		var b_cab: bool = cabin_flags[i + 1]
+		if a_cab and b_cab:
+			# Between two cabin profiles: leave side window gaps
+			skip = SIDE_WINDOW_EDGES
+		elif a_cab != b_cab:
+			# Hood-to-cabin or cabin-to-trunk: leave windshield/rear gap
+			skip = GLASS_TOP_EDGES
+
+		_loft(st, rings[i], rings[i + 1], skip)
 
 	# Cap front and rear
 	_cap(st, rings[0], true)
@@ -198,9 +220,16 @@ func _profile_to_ring(profile: Dictionary) -> PackedVector3Array:
 	return ring
 
 
-func _loft(st: SurfaceTool, ring_a: PackedVector3Array, ring_b: PackedVector3Array) -> void:
+func _loft(
+	st: SurfaceTool,
+	ring_a: PackedVector3Array,
+	ring_b: PackedVector3Array,
+	skip_edges: Array = [],
+) -> void:
 	var count: int = ring_a.size()
 	for i in range(count):
+		if skip_edges.has(i):
+			continue
 		var next_i: int = (i + 1) % count
 		# Two triangles per quad
 		st.add_vertex(ring_a[i])
