@@ -248,35 +248,26 @@ func _build_window_quad(
 	var yt_a: float = profile_a.yt
 	var yt_b: float = profile_b.yt
 
-	# Use the lower top as bottom edge, higher top as top edge
+	# Use the lower top as bottom edge of the glass
 	var y_bottom: float = minf(yt_a, yt_b) * 0.5
-	var y_top_a: float = yt_a
-	var y_top_b: float = yt_b
 	var hw: float = minf(hw_a, hw_b) * 0.85
-
-	var tl := Vector3(-hw, y_top_a, z_a)
-	var tr := Vector3(hw, y_top_a, z_a)
-	var bl := Vector3(-hw, y_bottom, z_b) if is_front else Vector3(-hw, y_bottom, z_a)
-	var br := Vector3(hw, y_bottom, z_b) if is_front else Vector3(hw, y_bottom, z_a)
-	var tl2 := Vector3(-hw, y_top_b, z_b)
-	var tr2 := Vector3(hw, y_top_b, z_b)
 
 	if is_front:
 		# Windshield: angled quad from hood to cabin top
 		st.add_vertex(Vector3(-hw, y_bottom, z_a))
 		st.add_vertex(Vector3(hw, y_bottom, z_a))
-		st.add_vertex(Vector3(-hw, y_top_b, z_b))
+		st.add_vertex(Vector3(-hw, yt_b, z_b))
 
 		st.add_vertex(Vector3(hw, y_bottom, z_a))
-		st.add_vertex(Vector3(hw, y_top_b, z_b))
-		st.add_vertex(Vector3(-hw, y_top_b, z_b))
+		st.add_vertex(Vector3(hw, yt_b, z_b))
+		st.add_vertex(Vector3(-hw, yt_b, z_b))
 	else:
 		# Rear window: angled quad from cabin top down to trunk
-		st.add_vertex(Vector3(-hw, y_top_a, z_a))
-		st.add_vertex(Vector3(hw, y_top_a, z_a))
+		st.add_vertex(Vector3(-hw, yt_a, z_a))
+		st.add_vertex(Vector3(hw, yt_a, z_a))
 		st.add_vertex(Vector3(-hw, y_bottom, z_b))
 
-		st.add_vertex(Vector3(hw, y_top_a, z_a))
+		st.add_vertex(Vector3(hw, yt_a, z_a))
 		st.add_vertex(Vector3(hw, y_bottom, z_b))
 		st.add_vertex(Vector3(-hw, y_bottom, z_b))
 
