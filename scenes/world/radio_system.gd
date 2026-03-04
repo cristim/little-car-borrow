@@ -1,8 +1,9 @@
 extends Node
-## In-vehicle radio with multi-genre layered procedural music, DJ chatter
+## In-vehicle radio with multi-genre sample-based music, DJ chatter
 ## via TTS, and police scanner announcements.
 ## Press T (radio_next) to switch stations or turn off.
-## Each genre plays melody + bass + percussion simultaneously.
+## Each genre plays melody + bass + percussion simultaneously using
+## AudioStreamPolyphonic for sample playback.
 
 const MUSIC_INTERVAL_MIN := 2.0
 const MUSIC_INTERVAL_MAX := 5.0
@@ -11,10 +12,35 @@ const DJ_INTERVAL_MAX := 50.0
 const POLICE_ANNOUNCE_INTERVAL := 20.0
 const STATIC_DURATION := 0.4
 const MIX_RATE := 22050.0
-const DELAY_SIZE := 7718  # ~0.35s at 22050 Hz
+
+# --- Preloaded samples ---
+const SMP_KICK = preload("res://assets/audio/samples/drums/kick.wav")
+const SMP_SNARE = preload("res://assets/audio/samples/drums/snare.wav")
+const SMP_SNARE_BRUSH = preload("res://assets/audio/samples/drums/snare_brush.wav")
+const SMP_HIHAT_CLOSED = preload("res://assets/audio/samples/drums/hihat_closed.wav")
+const SMP_HIHAT_OPEN = preload("res://assets/audio/samples/drums/hihat_open.wav")
+const SMP_RIDE = preload("res://assets/audio/samples/drums/ride.wav")
+const SMP_PIANO_C4 = preload("res://assets/audio/samples/melodic/piano_c4.wav")
+const SMP_PIANO_C2 = preload("res://assets/audio/samples/melodic/piano_c2.wav")
+const SMP_GUITAR_DIST_C3 = preload("res://assets/audio/samples/melodic/guitar_dist_c3.wav")
+const SMP_BASS_GUITAR_C2 = preload("res://assets/audio/samples/melodic/bass_guitar_c2.wav")
+const SMP_SAX_C4 = preload("res://assets/audio/samples/melodic/sax_c4.wav")
+const SMP_UPRIGHT_BASS_C2 = preload("res://assets/audio/samples/melodic/upright_bass_c2.wav")
+const SMP_SYNTH_LEAD_C4 = preload("res://assets/audio/samples/melodic/synth_lead_c4.wav")
+const SMP_SYNTH_BASS_C2 = preload("res://assets/audio/samples/melodic/synth_bass_c2.wav")
+const SMP_VIOLIN_C4 = preload("res://assets/audio/samples/melodic/violin_c4.wav")
+
+# Drum kit lookup: name -> AudioStream
+const DRUM_SAMPLES := {
+	"kick": SMP_KICK,
+	"snare": SMP_SNARE,
+	"snare_brush": SMP_SNARE_BRUSH,
+	"hihat_closed": SMP_HIHAT_CLOSED,
+	"hihat_open": SMP_HIHAT_OPEN,
+	"ride": SMP_RIDE,
+}
 
 # Chord progressions as scale-degree indices (0-based into 8-note scale)
-# Each progression is 4 chords; each chord is a triad [root, third, fifth]
 const PROGRESSIONS := [
 	[[0, 2, 4], [3, 5, 7], [4, 6, 1], [0, 2, 4]],  # I-IV-V-I
 	[[0, 2, 4], [4, 6, 1], [5, 7, 2], [3, 5, 7]],  # I-V-vi-IV
@@ -25,7 +51,6 @@ const PROGRESSIONS := [
 ]
 
 # 16-step drum patterns per genre: each step is [kick_vel, snare_vel, hihat_vel, open_hat_vel]
-# Velocity 0.0 = silent, 1.0 = full hit, <1.0 = ghost note
 const DRUM_PATTERNS := {
 	"pop": [
 		[1.0, 0.0, 0.8, 0.0], [0.0, 0.0, 0.5, 0.0],
@@ -80,14 +105,14 @@ const DRUM_PATTERNS := {
 }
 
 # --- Genre definitions ---
-# melody_wave: square, distorted, triangle, saw, sine
-# bass_wave: sine, square, saw (bass is always lower octave)
-# drum_pattern: key into DRUM_PATTERNS
 const GENRE_POP := {
 	"name": "Little Car FM Pop",
-	"melody_wave": "triangle",  # clean keyboard/piano tone
-	"bass_wave": "sine",  # round bass guitar
+	"mel_sample": SMP_PIANO_C4,
+	"mel_root_hz": 261.626,
+	"bas_sample": SMP_PIANO_C2,
+	"bas_root_hz": 65.406,
 	"drum_pattern": "pop",
+	"drum_kit": ["kick", "snare", "hihat_closed", "hihat_open"],
 	"scales": [
 		[261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9, 523.3],
 		[329.6, 370.0, 392.0, 440.0, 493.9, 523.3, 587.3, 659.3],
@@ -96,14 +121,15 @@ const GENRE_POP := {
 	"tempo_max": 0.2,
 	"notes_min": 80,
 	"notes_max": 200,
-	"melody_vol": 0.055,
-	"bass_vol": 0.04,
-	"perc_vol": 0.03,
-	"adsr": [0.01, 0.05, 0.7, 0.08],
+	"mel_vol_db": -18.0,
+	"bas_vol_db": -20.0,
+	"drum_vol_db": -16.0,
 	"chord_beats": 4,
 	"passing_tone_chance": 0.2,
-	"delay": [0.15, 0.25],
-	"bass_cutoff": 0.22,  # pop bass guitar needs presence
+	"melody_mode": "chord",
+	"delay_ms": 250.0,
+	"delay_feedback_db": -14.0,
+	"dist_drive": 0.0,
 	"dj_lines": [
 		"You're listening to Little Car Pop, number one hits!",
 		"That was a banger! More pop coming right up.",
@@ -114,27 +140,29 @@ const GENRE_POP := {
 
 const GENRE_ROCK := {
 	"name": "Car Rock Radio",
-	"melody_wave": "distorted",  # overdriven electric guitar
-	"bass_wave": "saw",  # bass guitar with pick (filtered by LP)
+	"mel_sample": SMP_GUITAR_DIST_C3,
+	"mel_root_hz": 130.813,
+	"bas_sample": SMP_BASS_GUITAR_C2,
+	"bas_root_hz": 65.406,
 	"drum_pattern": "rock",
+	"drum_kit": ["kick", "snare", "hihat_closed", "hihat_open"],
 	"scales": [
-		# Low E minor pentatonic - heavy riffs
 		[110.0, 130.8, 146.8, 164.8, 196.0, 220.0, 261.6, 293.7],
-		# E minor pentatonic - standard metal range
 		[164.8, 196.0, 220.0, 246.9, 293.7, 329.6, 392.0, 440.0],
 	],
 	"tempo_min": 0.15,
 	"tempo_max": 0.30,
 	"notes_min": 80,
 	"notes_max": 200,
-	"melody_vol": 0.06,
-	"bass_vol": 0.045,
-	"perc_vol": 0.045,
-	"adsr": [0.003, 0.04, 0.75, 0.03],
+	"mel_vol_db": -14.0,
+	"bas_vol_db": -18.0,
+	"drum_vol_db": -14.0,
 	"chord_beats": 4,
 	"passing_tone_chance": 0.40,
-	"delay": [0.04, 0.08],
-	"bass_cutoff": 0.22,  # filter saw into warm-but-gritty bass guitar
+	"melody_mode": "power_chord",
+	"delay_ms": 80.0,
+	"delay_feedback_db": -20.0,
+	"dist_drive": 0.5,
 	"dj_lines": [
 		"Car Rock Radio! Crank it up!",
 		"That riff was insane! More rock ahead.",
@@ -145,9 +173,12 @@ const GENRE_ROCK := {
 
 const GENRE_JAZZ := {
 	"name": "Smooth Jazz Drive",
-	"melody_wave": "triangle",  # mellow sax / vibraphone
-	"bass_wave": "sine",  # warm upright bass
+	"mel_sample": SMP_SAX_C4,
+	"mel_root_hz": 261.626,
+	"bas_sample": SMP_UPRIGHT_BASS_C2,
+	"bas_root_hz": 65.406,
 	"drum_pattern": "jazz",
+	"drum_kit": ["kick", "snare_brush", "ride", "hihat_open"],
 	"scales": [
 		[220.0, 261.6, 277.2, 293.7, 329.6, 370.0, 392.0, 440.0],
 		[196.0, 233.1, 246.9, 261.6, 293.7, 311.1, 349.2, 392.0],
@@ -156,14 +187,15 @@ const GENRE_JAZZ := {
 	"tempo_max": 0.35,
 	"notes_min": 50,
 	"notes_max": 120,
-	"melody_vol": 0.045,
-	"bass_vol": 0.035,
-	"perc_vol": 0.015,
-	"adsr": [0.04, 0.1, 0.4, 0.15],
+	"mel_vol_db": -18.0,
+	"bas_vol_db": -20.0,
+	"drum_vol_db": -20.0,
 	"chord_beats": 2,
 	"passing_tone_chance": 0.3,
-	"delay": [0.20, 0.35],
-	"bass_cutoff": 0.10,
+	"melody_mode": "chord",
+	"delay_ms": 350.0,
+	"delay_feedback_db": -12.0,
+	"dist_drive": 0.0,
 	"dj_lines": [
 		"Smooth Jazz Drive. Relax and cruise.",
 		"That was silky smooth. More jazz coming up.",
@@ -174,9 +206,12 @@ const GENRE_JAZZ := {
 
 const GENRE_ELECTRONIC := {
 	"name": "Neon Beat FM",
-	"melody_wave": "saw",  # analog synth lead
-	"bass_wave": "saw",  # filtered synth bass
+	"mel_sample": SMP_SYNTH_LEAD_C4,
+	"mel_root_hz": 261.626,
+	"bas_sample": SMP_SYNTH_BASS_C2,
+	"bas_root_hz": 65.406,
 	"drum_pattern": "electronic",
+	"drum_kit": ["kick", "snare", "hihat_closed", "hihat_open"],
 	"scales": [
 		[130.8, 164.8, 196.0, 220.0, 261.6, 293.7, 329.6, 392.0],
 		[98.0, 130.8, 164.8, 196.0, 220.0, 261.6, 329.6, 392.0],
@@ -185,14 +220,15 @@ const GENRE_ELECTRONIC := {
 	"tempo_max": 0.1,
 	"notes_min": 150,
 	"notes_max": 400,
-	"melody_vol": 0.045,
-	"bass_vol": 0.055,
-	"perc_vol": 0.04,
-	"adsr": [0.002, 0.06, 0.2, 0.04],
+	"mel_vol_db": -18.0,
+	"bas_vol_db": -16.0,
+	"drum_vol_db": -14.0,
 	"chord_beats": 8,
 	"passing_tone_chance": 0.1,
-	"delay": [0.25, 0.35],
-	"bass_cutoff": 0.18,
+	"melody_mode": "arp",
+	"delay_ms": 300.0,
+	"delay_feedback_db": -10.0,
+	"dist_drive": 0.0,
 	"dj_lines": [
 		"Neon Beat FM! Drop the bass!",
 		"Electronic vibes for night riders.",
@@ -203,9 +239,12 @@ const GENRE_ELECTRONIC := {
 
 const GENRE_CLASSICAL := {
 	"name": "Classical Cruise",
-	"melody_wave": "sine",  # strings / flute
-	"bass_wave": "sine",  # warm cello
+	"mel_sample": SMP_VIOLIN_C4,
+	"mel_root_hz": 261.626,
+	"bas_sample": SMP_UPRIGHT_BASS_C2,
+	"bas_root_hz": 65.406,
 	"drum_pattern": "classical",
+	"drum_kit": ["kick", "snare", "hihat_closed", "hihat_open"],
 	"scales": [
 		[261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9, 523.3],
 		[196.0, 220.0, 246.9, 261.6, 293.7, 329.6, 349.2, 392.0],
@@ -215,14 +254,15 @@ const GENRE_CLASSICAL := {
 	"tempo_max": 0.45,
 	"notes_min": 40,
 	"notes_max": 100,
-	"melody_vol": 0.05,
-	"bass_vol": 0.03,
-	"perc_vol": 0.0,
-	"adsr": [0.08, 0.1, 0.8, 0.2],
+	"mel_vol_db": -16.0,
+	"bas_vol_db": -20.0,
+	"drum_vol_db": -40.0,
 	"chord_beats": 4,
 	"passing_tone_chance": 0.25,
-	"delay": [0.18, 0.30],
-	"bass_cutoff": 0.12,
+	"melody_mode": "chord",
+	"delay_ms": 250.0,
+	"delay_feedback_db": -14.0,
+	"dist_drive": 0.0,
 	"dj_lines": [
 		"Classical Cruise. Elegant driving.",
 		"A timeless masterpiece. More after this.",
@@ -250,9 +290,21 @@ const POLICE_LINES_CALM := [
 var _genres: Array = []
 var _genre_index := 0
 
-var _music_player: AudioStreamPlayer
+# Polyphonic players for sample playback
+var _melody_player: AudioStreamPlayer
+var _bass_player: AudioStreamPlayer
+var _drum_player: AudioStreamPlayer
+var _melody_poly: AudioStreamPlaybackPolyphonic
+var _bass_poly: AudioStreamPlaybackPolyphonic
+var _drum_poly: AudioStreamPlaybackPolyphonic
+
+# Active stream IDs for note-off
+var _mel_stream_id: int = -1
+var _mel_stream_id2: int = -1  # Power chord fifth
+var _bass_stream_id: int = -1
+
+# Static burst (keeps AudioStreamGenerator)
 var _static_player: AudioStreamPlayer
-var _music_playback: AudioStreamGeneratorPlayback
 var _static_playback: AudioStreamGeneratorPlayback
 
 var _rng := RandomNumberGenerator.new()
@@ -262,53 +314,25 @@ var _police_timer := 0.0
 var _is_playing_music := false
 var _radio_on := false
 
-# Melody state
-var _mel_phase := 0.0
-var _mel_phase2 := 0.0
-var _mel_freq := 440.0
-var _mel_freq2 := 0.0
-var _mel_timer := 0.0
-var _mel_vol := 0.05
-var _mel_wave := "square"
+# Current genre sample/volume config
+var _mel_sample: AudioStream
+var _mel_root_hz := 261.626
+var _mel_vol_db := -18.0
+var _bas_sample: AudioStream
+var _bas_root_hz := 65.406
+var _bas_vol_db := -20.0
+var _drum_kit: Array = []
+var _drum_vol_db := -16.0
+var _melody_mode := "chord"
 
-# Bass state
-var _bass_phase := 0.0
-var _bass_freq := 110.0
+# Melody/bass note timing
+var _mel_timer := 0.0
 var _bass_timer := 0.0
-var _bass_vol := 0.04
-var _bass_wave := "sine"
 
 # Drum pattern state
 var _drum_pattern: Array = []
 var _drum_step := 0
 var _drum_timer := 0.0
-var _perc_vol := 0.03
-# Per-voice envelopes and phases: [kick, snare, hihat_closed, hihat_open]
-var _drum_env := [0.0, 0.0, 0.0, 0.0]
-var _drum_phase := [0.0, 0.0, 0.0, 0.0]
-
-# Chorus/PWM state
-var _chorus_phase := 0.0
-var _pwm_phase := 0.0
-
-# Bass low-pass filter state
-var _bass_lp_prev := 0.0
-var _bass_cutoff := 0.15
-
-# Melody envelope state (0=off, 1=attack, 2=decay, 3=sustain, 4=release)
-var _mel_env := 0.0
-var _mel_env_state := 0
-
-# Bass envelope state
-var _bass_env := 0.0
-var _bass_env_state := 0
-
-# Precomputed envelope rates (per sample)
-var _env_attack_rate := 0.0
-var _env_decay_rate := 0.0
-var _env_sustain := 0.7
-var _env_release_rate := 0.0
-var _env_release_time := 0.08
 
 # Chord progression state
 var _chord_progression: Array = []
@@ -317,12 +341,6 @@ var _chord_tones: Array = []
 var _chord_beat_counter := 0
 var _chord_beats_per_change := 4
 var _passing_tone_chance := 0.2
-
-# Delay effect state
-var _delay_buf := PackedFloat32Array()
-var _delay_write := 0
-var _delay_mix := 0.15
-var _delay_feedback := 0.25
 
 # Shared music state
 var _current_scale: Array = []
@@ -355,23 +373,37 @@ func _ready() -> void:
 	_dj_timer = _rng.randf_range(8.0, 15.0)
 	_police_timer = POLICE_ANNOUNCE_INTERVAL
 
-	# Delay buffer
-	_delay_buf.resize(DELAY_SIZE)
-	_delay_buf.fill(0.0)
-	_delay_write = 0
+	# Melody polyphonic player
+	_melody_player = AudioStreamPlayer.new()
+	var mel_stream := AudioStreamPolyphonic.new()
+	mel_stream.polyphony = 4
+	_melody_player.stream = mel_stream
+	_melody_player.bus = "Music"
+	add_child(_melody_player)
+	_melody_player.play()
+	_melody_poly = _melody_player.get_stream_playback()
 
-	# Music generator
-	_music_player = AudioStreamPlayer.new()
-	var gen := AudioStreamGenerator.new()
-	gen.mix_rate = MIX_RATE
-	gen.buffer_length = 0.1
-	_music_player.stream = gen
-	_music_player.bus = "Ambient"
-	add_child(_music_player)
-	_music_player.play()
-	_music_playback = _music_player.get_stream_playback()
+	# Bass polyphonic player
+	_bass_player = AudioStreamPlayer.new()
+	var bas_stream := AudioStreamPolyphonic.new()
+	bas_stream.polyphony = 2
+	_bass_player.stream = bas_stream
+	_bass_player.bus = "Music"
+	add_child(_bass_player)
+	_bass_player.play()
+	_bass_poly = _bass_player.get_stream_playback()
 
-	# Static burst generator
+	# Drum polyphonic player
+	_drum_player = AudioStreamPlayer.new()
+	var drm_stream := AudioStreamPolyphonic.new()
+	drm_stream.polyphony = 8
+	_drum_player.stream = drm_stream
+	_drum_player.bus = "Music"
+	add_child(_drum_player)
+	_drum_player.play()
+	_drum_poly = _drum_player.get_stream_playback()
+
+	# Static burst generator (keeps AudioStreamGenerator)
 	_static_player = AudioStreamPlayer.new()
 	var sgen := AudioStreamGenerator.new()
 	sgen.mix_rate = MIX_RATE
@@ -408,7 +440,7 @@ func _process(delta: float) -> void:
 	var in_vehicle := InputManager.is_vehicle()
 
 	if not in_vehicle or not _radio_on:
-		_fill_silence()
+		_stop_all_music()
 		_fill_static_silence()
 		return
 
@@ -423,9 +455,8 @@ func _process(delta: float) -> void:
 
 	# Music timing
 	if _is_playing_music:
-		_fill_music(delta)
+		_advance_music(delta)
 	else:
-		_fill_silence()
 		_music_timer -= delta
 		if _music_timer <= 0.0:
 			_start_music_segment()
@@ -460,6 +491,7 @@ func _switch_station() -> void:
 		else:
 			_radio_on = false
 			_is_playing_music = false
+			_stop_all_music()
 			_play_static_burst()
 			_speak_tts("Radio off.")
 			return
@@ -469,6 +501,7 @@ func _switch_station() -> void:
 
 	_apply_genre()
 	_is_playing_music = false
+	_stop_all_music()
 	_music_timer = _rng.randf_range(1.0, 3.0)
 	_play_static_burst()
 
@@ -479,33 +512,49 @@ func _switch_station() -> void:
 
 func _apply_genre() -> void:
 	var genre: Dictionary = _genres[_genre_index]
-	_mel_wave = genre.get("melody_wave", "square")
-	_mel_vol = genre.get("melody_vol", 0.05)
-	_bass_wave = genre.get("bass_wave", "sine")
-	_bass_vol = genre.get("bass_vol", 0.04)
+	_mel_sample = genre.get("mel_sample", SMP_PIANO_C4)
+	_mel_root_hz = genre.get("mel_root_hz", 261.626)
+	_mel_vol_db = genre.get("mel_vol_db", -18.0)
+	_bas_sample = genre.get("bas_sample", SMP_PIANO_C2)
+	_bas_root_hz = genre.get("bas_root_hz", 65.406)
+	_bas_vol_db = genre.get("bas_vol_db", -20.0)
 	var dp_key: String = genre.get("drum_pattern", "pop")
 	_drum_pattern = DRUM_PATTERNS.get(dp_key, DRUM_PATTERNS["pop"])
-	_perc_vol = genre.get("perc_vol", 0.03)
-	var adsr: Array = genre.get("adsr", [0.01, 0.05, 0.7, 0.08])
-	var atk: float = maxf(adsr[0], 0.001)
-	var dec: float = maxf(adsr[1], 0.001)
-	_env_sustain = adsr[2]
-	_env_release_time = adsr[3]
-	var rel: float = maxf(adsr[3], 0.001)
-	_env_attack_rate = 1.0 / (atk * MIX_RATE)
-	_env_decay_rate = (1.0 - _env_sustain) / (dec * MIX_RATE)
-	_env_release_rate = 1.0 / (rel * MIX_RATE)
-	var delay_cfg: Array = genre.get("delay", [0.15, 0.25])
-	_delay_mix = delay_cfg[0]
-	_delay_feedback = delay_cfg[1]
-	_delay_buf.fill(0.0)
-	_delay_write = 0
-	_bass_cutoff = genre.get("bass_cutoff", 0.15)
-	_bass_lp_prev = 0.0
+	_drum_kit = genre.get("drum_kit", ["kick", "snare", "hihat_closed", "hihat_open"])
+	_drum_vol_db = genre.get("drum_vol_db", -16.0)
+	_melody_mode = genre.get("melody_mode", "chord")
 	_chord_beats_per_change = genre.get("chord_beats", 4)
 	_passing_tone_chance = genre.get("passing_tone_chance", 0.2)
 	var scales: Array = genre.get("scales", [[440.0]])
 	_current_scale = scales[_rng.randi() % scales.size()]
+	_update_bus_effects(genre)
+
+
+func _update_bus_effects(genre: Dictionary) -> void:
+	var bus_idx := AudioServer.get_bus_index("Music")
+	if bus_idx < 0:
+		return
+	# Update delay (slot 0)
+	var delay_ms: float = genre.get("delay_ms", 300.0)
+	var delay_fb: float = genre.get("delay_feedback_db", -14.0)
+	var delay_effect: AudioEffectDelay = AudioServer.get_bus_effect(bus_idx, 0)
+	if delay_effect:
+		delay_effect.tap1_delay_ms = delay_ms
+		delay_effect.tap1_level_db = delay_fb
+		delay_effect.feedback_delay_ms = delay_ms
+		delay_effect.feedback_level_db = delay_fb
+	# Update distortion (slot 1)
+	var dist_drive: float = genre.get("dist_drive", 0.0)
+	var dist_effect: AudioEffectDistortion = AudioServer.get_bus_effect(bus_idx, 1)
+	if dist_effect:
+		if dist_drive > 0.0:
+			dist_effect.drive = dist_drive
+			dist_effect.pre_gain = 6.0
+			dist_effect.post_gain = -3.0
+		else:
+			dist_effect.drive = 0.0
+			dist_effect.pre_gain = 0.0
+			dist_effect.post_gain = 0.0
 
 
 func _start_music_segment() -> void:
@@ -532,8 +581,8 @@ func _start_music_segment() -> void:
 	_chord_beat_counter = -1
 	_update_chord()
 
-	# Build arpeggio pattern from chord tones for electronic genre
-	if _mel_wave == "saw":
+	# Build arpeggio pattern for electronic genre
+	if _melody_mode == "arp":
 		_arp_pattern.clear()
 		for i in range(4):
 			var deg: int = _chord_tones[i % _chord_tones.size()]
@@ -542,8 +591,8 @@ func _start_music_segment() -> void:
 
 	_mel_timer = 0.0
 	_bass_timer = 0.0
-	_pick_next_melody_note()
-	_pick_next_bass_note()
+	_trigger_melody_note()
+	_trigger_bass_note()
 
 
 func _update_chord() -> void:
@@ -552,7 +601,7 @@ func _update_chord() -> void:
 	_chord_tones = _chord_progression[_chord_index % _chord_progression.size()]
 
 
-func _pick_next_melody_note() -> void:
+func _trigger_melody_note() -> void:
 	# Advance chord progression
 	_chord_beat_counter += 1
 	if _chord_beat_counter >= _chord_beats_per_change:
@@ -560,7 +609,7 @@ func _pick_next_melody_note() -> void:
 		_chord_index += 1
 		_update_chord()
 		# Rebuild arp from new chord
-		if _mel_wave == "saw" and not _chord_tones.is_empty():
+		if _melody_mode == "arp" and not _chord_tones.is_empty():
 			_arp_pattern.clear()
 			for i in range(4):
 				var deg: int = _chord_tones[i % _chord_tones.size()]
@@ -569,176 +618,112 @@ func _pick_next_melody_note() -> void:
 				)
 			_arp_index = 0
 
-	if _mel_wave == "saw" and not _arp_pattern.is_empty():
-		_mel_freq = _arp_pattern[_arp_index % _arp_pattern.size()]
+	var desired_hz := 440.0
+	if _melody_mode == "arp" and not _arp_pattern.is_empty():
+		desired_hz = _arp_pattern[_arp_index % _arp_pattern.size()]
 		_arp_index += 1
 	elif not _chord_tones.is_empty() and _rng.randf() > _passing_tone_chance:
-		# Pick from current chord tones
 		var deg: int = _chord_tones[_rng.randi() % _chord_tones.size()]
-		_mel_freq = _current_scale[deg % _current_scale.size()]
+		desired_hz = _current_scale[deg % _current_scale.size()]
 	else:
-		# Passing tone - any scale note
-		_mel_freq = _current_scale[
-			_rng.randi() % _current_scale.size()
-		]
+		desired_hz = _current_scale[_rng.randi() % _current_scale.size()]
 
-	# Rock: add a fifth for power chord feel
-	if _mel_wave == "distorted":
-		_mel_freq2 = _mel_freq * 1.5
-	else:
-		_mel_freq2 = 0.0
+	var pitch_scale: float = desired_hz / _mel_root_hz
+
+	# Stop previous melody note
+	if _mel_stream_id >= 0 and _melody_poly:
+		_melody_poly.stop_stream(_mel_stream_id)
+		_mel_stream_id = -1
+	if _mel_stream_id2 >= 0 and _melody_poly:
+		_melody_poly.stop_stream(_mel_stream_id2)
+		_mel_stream_id2 = -1
+
+	# Play new melody note
+	if _melody_poly:
+		_mel_stream_id = _melody_poly.play_stream(
+			_mel_sample, 0.0, _mel_vol_db, pitch_scale
+		)
+		# Rock: power chord fifth
+		if _melody_mode == "power_chord":
+			_mel_stream_id2 = _melody_poly.play_stream(
+				_mel_sample, 0.0, _mel_vol_db - 3.0, pitch_scale * 1.5
+			)
 
 	var duration := _beat_time * _rng.randi_range(1, 3)
 	_mel_timer = duration
-	_mel_phase = 0.0
-	_mel_phase2 = 0.0
-	# Don't reset _mel_env to 0 - if release completed it's already 0;
-	# if release was skipped (frame drop), attack from current level avoids click
-	_mel_env_state = 1
 
 
-func _pick_next_bass_note() -> void:
-	# Bass follows chord root
+func _trigger_bass_note() -> void:
+	var desired_hz := 65.0
 	if not _chord_tones.is_empty():
 		var root_deg: int = _chord_tones[0]
 		var choice := _rng.randi() % 3
 		if choice == 0:
-			_bass_freq = _current_scale[root_deg % _current_scale.size()] * 0.5
+			desired_hz = _current_scale[root_deg % _current_scale.size()] * 0.5
 		elif choice == 1:
-			# Fifth of chord
 			var fifth_deg: int = _chord_tones[2 % _chord_tones.size()]
-			_bass_freq = _current_scale[fifth_deg % _current_scale.size()] * 0.5
+			desired_hz = _current_scale[fifth_deg % _current_scale.size()] * 0.5
 		else:
-			# Chord third
 			var third_deg: int = _chord_tones[1 % _chord_tones.size()]
-			_bass_freq = _current_scale[third_deg % _current_scale.size()] * 0.5
+			desired_hz = _current_scale[third_deg % _current_scale.size()] * 0.5
 	else:
-		_bass_freq = _current_scale[0] * 0.5
+		desired_hz = _current_scale[0] * 0.5
+
+	var pitch_scale: float = desired_hz / _bas_root_hz
+
+	# Stop previous bass note
+	if _bass_stream_id >= 0 and _bass_poly:
+		_bass_poly.stop_stream(_bass_stream_id)
+		_bass_stream_id = -1
+
+	# Play new bass note
+	if _bass_poly:
+		_bass_stream_id = _bass_poly.play_stream(
+			_bas_sample, 0.0, _bas_vol_db, pitch_scale
+		)
+
 	_bass_timer = _beat_time * _rng.randi_range(2, 4)
-	_bass_phase = 0.0
-	_bass_env_state = 1
 
 
-func _fill_music(delta: float) -> void:
-	if not _music_playback:
+func _advance_drum_step() -> void:
+	if _drum_pattern.is_empty() or not _drum_poly:
 		return
-	var frames := _music_playback.get_frames_available()
-	var inv_rate := 1.0 / MIX_RATE
-	for _i in range(frames):
-		var mel := _gen_melody()
-		var bass := _gen_bass()
-		var perc := _gen_percussion()
+	var step: Array = _drum_pattern[_drum_step % _drum_pattern.size()]
+	_drum_step += 1
 
-		# Stereo panning: melody right (0.2), bass left (-0.15), perc center
-		var left := mel * 0.8 + bass * 1.15 + perc
-		var right := mel * 1.2 + bass * 0.85 + perc
+	# Map step voices to drum kit samples
+	# step = [kick_vel, snare_vel, hihat_vel, open_hat_vel]
+	for v in range(mini(step.size(), _drum_kit.size())):
+		var vel: float = step[v]
+		if vel > 0.0:
+			var kit_name: String = _drum_kit[v]
+			var sample: AudioStream = DRUM_SAMPLES.get(kit_name)
+			if sample:
+				var vel_db: float = _drum_vol_db + linear_to_db(vel)
+				_drum_poly.play_stream(sample, 0.0, vel_db, 1.0)
 
-		# Delay on mono sum, then add to both channels
-		var mono := mel + bass + perc
-		var delayed: float = _delay_buf[_delay_write]
-		_delay_buf[_delay_write] = mono + delayed * _delay_feedback
-		_delay_write += 1
-		if _delay_write >= DELAY_SIZE:
-			_delay_write = 0
-		var delay_wet := delayed * _delay_mix
-		left += delay_wet
-		right += delay_wet
 
-		_music_playback.push_frame(Vector2(
-			clampf(left, -0.5, 0.5),
-			clampf(right, -0.5, 0.5),
-		))
-
-		# Advance oscillator phases
-		_mel_phase += _mel_freq * inv_rate
-		if _mel_phase > 1.0:
-			_mel_phase -= 1.0
-		_chorus_phase += _mel_freq * 1.003 * inv_rate
-		if _chorus_phase > 1.0:
-			_chorus_phase -= 1.0
-		_pwm_phase += 0.8 * inv_rate
-		if _pwm_phase > 1.0:
-			_pwm_phase -= 1.0
-		if _mel_freq2 > 0.0:
-			_mel_phase2 += _mel_freq2 * inv_rate
-			if _mel_phase2 > 1.0:
-				_mel_phase2 -= 1.0
-		_bass_phase += _bass_freq * inv_rate
-		if _bass_phase > 1.0:
-			_bass_phase -= 1.0
-		# Advance drum voice phases and envelopes
-		_drum_phase[0] += inv_rate
-		_drum_phase[1] += inv_rate
-		_drum_phase[2] += inv_rate
-		_drum_phase[3] += inv_rate
-		_drum_env[0] = maxf(_drum_env[0] - inv_rate * 12.0, 0.0)
-		_drum_env[1] = maxf(_drum_env[1] - inv_rate * 18.0, 0.0)
-		_drum_env[2] = maxf(_drum_env[2] - inv_rate * 25.0, 0.0)
-		_drum_env[3] = maxf(_drum_env[3] - inv_rate * 8.0, 0.0)
-
-		# Advance melody envelope
-		if _mel_env_state == 1:
-			_mel_env += _env_attack_rate
-			if _mel_env >= 1.0:
-				_mel_env = 1.0
-				_mel_env_state = 2
-		elif _mel_env_state == 2:
-			_mel_env -= _env_decay_rate
-			if _mel_env <= _env_sustain:
-				_mel_env = _env_sustain
-				_mel_env_state = 3
-		elif _mel_env_state == 4:
-			_mel_env -= _env_release_rate
-			if _mel_env <= 0.0:
-				_mel_env = 0.0
-				_mel_env_state = 0
-
-		# Advance bass envelope
-		if _bass_env_state == 1:
-			_bass_env += _env_attack_rate
-			if _bass_env >= 1.0:
-				_bass_env = 1.0
-				_bass_env_state = 2
-		elif _bass_env_state == 2:
-			_bass_env -= _env_decay_rate
-			if _bass_env <= _env_sustain:
-				_bass_env = _env_sustain
-				_bass_env_state = 3
-		elif _bass_env_state == 4:
-			_bass_env -= _env_release_rate
-			if _bass_env <= 0.0:
-				_bass_env = 0.0
-				_bass_env_state = 0
-
-	# Trigger release when note is about to end
-	if _mel_env_state != 4 and _mel_env_state != 0 and _mel_timer <= _env_release_time:
-		_mel_env_state = 4
-	if _bass_env_state != 4 and _bass_env_state != 0 and _bass_timer <= _env_release_time:
-		_bass_env_state = 4
-
+func _advance_music(delta: float) -> void:
 	# Melody note timing
 	_mel_timer -= delta
 	if _mel_timer <= 0.0:
 		_notes_remaining -= 1
 		if _notes_remaining <= 0:
-			# Song ending: force release on all voices, wait for decay
-			_mel_env_state = 4
-			_bass_env_state = 4
-			if _mel_env <= 0.0 and _bass_env <= 0.0:
-				_is_playing_music = false
-				_music_timer = _rng.randf_range(
-					MUSIC_INTERVAL_MIN, MUSIC_INTERVAL_MAX
-				)
+			_stop_all_music()
+			_is_playing_music = false
+			_music_timer = _rng.randf_range(
+				MUSIC_INTERVAL_MIN, MUSIC_INTERVAL_MAX
+			)
 			return
-		_pick_next_melody_note()
+		_trigger_melody_note()
 
 	# Bass note timing
 	_bass_timer -= delta
 	if _bass_timer <= 0.0:
 		if _notes_remaining > 0:
-			_pick_next_bass_note()
+			_trigger_bass_note()
 
-	# Drum step sequencer (16 steps per bar, each step = beat_time)
+	# Drum step sequencer
 	if not _drum_pattern.is_empty():
 		_drum_timer -= delta
 		while _drum_timer <= 0.0:
@@ -746,129 +731,16 @@ func _fill_music(delta: float) -> void:
 			_advance_drum_step()
 
 
-func _gen_melody() -> float:
-	if _mel_env <= 0.0:
-		return 0.0
-	var vol := _mel_vol * _mel_env
-	var phase := _mel_phase
-
-	# Chorus: detuned second oscillator at freq*1.003 (30% mix)
-	var chorus_p := fmod(_chorus_phase, 1.0)
-
-	if _mel_wave == "square":
-		# PWM: duty cycle varies slowly between 0.35 and 0.65
-		var duty := 0.5 + 0.15 * sin(_pwm_phase * TAU)
-		var p := fmod(phase, 1.0)
-		var wave := (1.0 if p < duty else -1.0) * vol
-		var cp := fmod(chorus_p, 1.0)
-		wave += (1.0 if cp < duty else -1.0) * (vol * 0.3)
-		return wave
-
-	if _mel_wave == "distorted":
-		# Heavy distortion - no chorus (raw, dry, aggressive)
-		var wave := clampf(
-			sin(phase * TAU) * 8.0, -1.0, 1.0
-		) * vol
-		# Power chord fifth
-		if _mel_freq2 > 0.0:
-			wave += clampf(
-				sin(_mel_phase2 * TAU) * 8.0, -1.0, 1.0
-			) * (vol * 0.7)
-		return wave
-
-	if _mel_wave == "triangle":
-		var vibrato := sin(phase * TAU * 0.02) * 0.003
-		var p := fmod(phase + vibrato, 1.0)
-		var tri := (2.0 * absf(2.0 * p - 1.0) - 1.0) * vol
-		# Chorus
-		var cp := fmod(chorus_p + vibrato, 1.0)
-		tri += (2.0 * absf(2.0 * cp - 1.0) - 1.0) * (vol * 0.3)
-		return tri
-
-	if _mel_wave == "saw":
-		var saw1 := (2.0 * fmod(phase, 1.0) - 1.0) * vol
-		# Chorus replaces the old detuned saw
-		var saw2 := (2.0 * fmod(chorus_p, 1.0) - 1.0) * (vol * 0.3)
-		return saw1 + saw2
-
-	# Sine (classical) with overtone + chorus
-	var wave := sin(phase * TAU) * vol
-	wave += sin(phase * TAU * 2.0) * (vol * 0.15)
-	wave += sin(chorus_p * TAU) * (vol * 0.3)
-	return wave
-
-
-func _gen_bass() -> float:
-	if _bass_env <= 0.0:
-		return 0.0
-	var phase := _bass_phase
-	var vol := _bass_vol * _bass_env
-	var raw := 0.0
-
-	if _bass_wave == "square":
-		raw = signf(sin(phase * TAU)) * vol
-	elif _bass_wave == "saw":
-		raw = (2.0 * fmod(phase, 1.0) - 1.0) * vol
-	else:
-		raw = sin(phase * TAU) * vol
-
-	# One-pole low-pass filter for warmth
-	_bass_lp_prev += _bass_cutoff * (raw - _bass_lp_prev)
-	return _bass_lp_prev
-
-
-func _advance_drum_step() -> void:
-	if _drum_pattern.is_empty():
-		return
-	var step: Array = _drum_pattern[_drum_step % _drum_pattern.size()]
-	_drum_step += 1
-	for v in range(4):
-		var vel: float = step[v]
-		if vel > 0.0:
-			_drum_env[v] = vel
-			_drum_phase[v] = 0.0
-
-
-func _gen_percussion() -> float:
-	var out := 0.0
-
-	# Kick: pitch-dropping sine
-	var kick_e: float = _drum_env[0]
-	if kick_e > 0.0:
-		var vol: float = _perc_vol * kick_e
-		var freq := lerpf(150.0, 50.0, 1.0 - kick_e)
-		var ph: float = _drum_phase[0]
-		out += sin(ph * freq * TAU) * vol
-
-	# Snare: noise + tone
-	var snare_e: float = _drum_env[1]
-	if snare_e > 0.0:
-		var vol: float = _perc_vol * snare_e
-		var ph: float = _drum_phase[1]
-		out += (_rng.randf() - 0.5) * vol * 0.8
-		out += sin(ph * 200.0 * TAU) * vol * 0.4
-
-	# Closed hihat: short high noise
-	var hh_e: float = _drum_env[2]
-	if hh_e > 0.0:
-		var vol: float = _perc_vol * hh_e
-		out += (_rng.randf() - 0.5) * vol * 0.5
-
-	# Open hihat: longer high noise
-	var oh_e: float = _drum_env[3]
-	if oh_e > 0.0:
-		var vol: float = _perc_vol * oh_e
-		out += (_rng.randf() - 0.5) * vol * 0.6
-
-	return out
-
-
-func _fill_silence() -> void:
-	if not _music_playback:
-		return
-	var frames := _music_playback.get_frames_available()
-	for _i in range(frames):
-		_music_playback.push_frame(Vector2.ZERO)
+func _stop_all_music() -> void:
+	if _mel_stream_id >= 0 and _melody_poly:
+		_melody_poly.stop_stream(_mel_stream_id)
+		_mel_stream_id = -1
+	if _mel_stream_id2 >= 0 and _melody_poly:
+		_melody_poly.stop_stream(_mel_stream_id2)
+		_mel_stream_id2 = -1
+	if _bass_stream_id >= 0 and _bass_poly:
+		_bass_poly.stop_stream(_bass_stream_id)
+		_bass_stream_id = -1
 
 
 func _play_static_burst() -> void:
@@ -935,6 +807,7 @@ func _on_vehicle_entered(_vehicle: Node) -> void:
 func _on_vehicle_exited(_vehicle: Node) -> void:
 	_radio_on = false
 	_is_playing_music = false
+	_stop_all_music()
 	_tts_queue.clear()
 	DisplayServer.tts_stop()
 
