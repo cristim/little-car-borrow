@@ -23,12 +23,17 @@ const VARIANTS := [
 	{"name": "pickup", "weight": 1, "mass_mult": 1.5},
 ]
 const GLASS_COLOR := Color(0.6, 0.75, 0.85, 0.4)
+const INTERIOR_COLOR := Color(0.12, 0.12, 0.12, 1)
 
 var _grid = preload("res://src/road_grid.gd").new()
 var _builder = preload("res://scenes/vehicles/car_body_builder.gd").new()
 var _total_weight := 0
-var _body_mesh_cache := {}   # variant_name -> ArrayMesh
-var _window_mesh_cache := {} # variant_name -> Dictionary of ArrayMesh
+var _body_mesh_cache := {}      # variant_name -> ArrayMesh
+var _window_mesh_cache := {}    # variant_name -> Dictionary of ArrayMesh
+var _interior_mesh_cache := {}  # variant_name -> ArrayMesh
+var _floor_mesh_cache := {}     # variant_name -> ArrayMesh
+var _detail_mesh_cache := {}    # variant_name -> ArrayMesh
+var _door_mesh_cache := {}      # variant_name -> Dictionary (meshes + pivots)
 
 var _vehicles: Array[Node] = []
 var _vehicle_scene: PackedScene = preload("res://scenes/vehicles/base_vehicle.tscn")
@@ -67,6 +72,10 @@ func _ready() -> void:
 		var vname: String = v.name
 		_body_mesh_cache[vname] = _builder.build_body(vname)
 		_window_mesh_cache[vname] = _builder.build_windows(vname)
+		_interior_mesh_cache[vname] = _builder.build_interior(vname)
+		_floor_mesh_cache[vname] = _builder.build_floor(vname)
+		_detail_mesh_cache[vname] = _builder.build_details(vname)
+		_door_mesh_cache[vname] = _builder.build_doors(vname)
 
 
 func _process(delta: float) -> void:
@@ -262,6 +271,7 @@ func _apply_variant(vehicle: Node) -> void:
 	# Assign cached window meshes with glass material
 	var glass_mat := StandardMaterial3D.new()
 	glass_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	glass_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	glass_mat.albedo_color = GLASS_COLOR
 	var windows: Dictionary = _window_mesh_cache[vname]
 	for window_name in windows:
@@ -269,8 +279,58 @@ func _apply_variant(vehicle: Node) -> void:
 		if node:
 			node.mesh = windows[window_name]
 			node.material_override = glass_mat
-			# Reset transform — geometry is baked into the mesh
 			node.transform = Transform3D.IDENTITY
+
+	# Assign cached interior mesh
+	var int_mesh: ArrayMesh = _interior_mesh_cache[vname]
+	if int_mesh.get_surface_count() > 0 and car_body:
+		var interior := MeshInstance3D.new()
+		interior.name = "Interior"
+		interior.mesh = int_mesh
+		var int_mat := StandardMaterial3D.new()
+		int_mat.albedo_color = INTERIOR_COLOR
+		int_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		interior.material_override = int_mat
+		car_body.add_child(interior)
+
+	# Assign cached floor mesh
+	var fl_mesh: ArrayMesh = _floor_mesh_cache[vname]
+	if fl_mesh.get_surface_count() > 0 and car_body:
+		var floor_node := MeshInstance3D.new()
+		floor_node.name = "Floor"
+		floor_node.mesh = fl_mesh
+		var fl_mat := StandardMaterial3D.new()
+		fl_mat.albedo_color = Color(0.15, 0.15, 0.15, 1.0)
+		floor_node.material_override = fl_mat
+		car_body.add_child(floor_node)
+
+	# Assign cached detail mesh (grille, plates)
+	var det_mesh: ArrayMesh = _detail_mesh_cache[vname]
+	if det_mesh.get_surface_count() > 0 and car_body:
+		var details := MeshInstance3D.new()
+		details.name = "Details"
+		details.mesh = det_mesh
+		var det_mat := StandardMaterial3D.new()
+		det_mat.albedo_color = Color(0.15, 0.15, 0.15, 1.0)
+		det_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		details.material_override = det_mat
+		car_body.add_child(details)
+
+	# Assign cached door meshes to pivots
+	var int_door_mat := StandardMaterial3D.new()
+	int_door_mat.albedo_color = INTERIOR_COLOR
+	var door_data: Dictionary = _door_mesh_cache[vname]
+	if door_data.size() > 0:
+		_apply_door(
+			body, "LeftDoorPivot", door_data,
+			"LeftDoor", "LeftDoorInner", "LeftDoorWindow",
+			"left_pivot", int_door_mat, glass_mat,
+		)
+		_apply_door(
+			body, "RightDoorPivot", door_data,
+			"RightDoor", "RightDoorInner", "RightDoorWindow",
+			"right_pivot", int_door_mat, glass_mat,
+		)
 
 	# Adjust vehicle mass
 	if "vehicle_mass" in vehicle:
@@ -287,6 +347,46 @@ func _randomize_color(vehicle: Node) -> void:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = _car_colors[_rng.randi() % _car_colors.size()]
 	car_body.material_override = mat
+	# Apply same color to door meshes
+	for pivot_name in ["LeftDoorPivot", "RightDoorPivot"]:
+		var pivot := body.get_node_or_null(pivot_name)
+		if pivot:
+			for child in pivot.get_children():
+				if child is MeshInstance3D and child.name.ends_with("Door"):
+					child.material_override = mat
+
+
+func _apply_door(
+	body: Node3D,
+	pivot_name: String,
+	door_data: Dictionary,
+	body_key: String,
+	inner_key: String,
+	window_key: String,
+	pivot_key: String,
+	inner_mat: StandardMaterial3D,
+	glass_mat: StandardMaterial3D,
+) -> void:
+	var pivot := body.get_node_or_null(pivot_name) as Node3D
+	if not pivot:
+		pivot = Node3D.new()
+		pivot.name = pivot_name
+		body.add_child(pivot)
+	pivot.position = door_data[pivot_key]
+	var door_mi := MeshInstance3D.new()
+	door_mi.name = body_key
+	door_mi.mesh = door_data[body_key]
+	pivot.add_child(door_mi)
+	var inner_mi := MeshInstance3D.new()
+	inner_mi.name = inner_key
+	inner_mi.mesh = door_data[inner_key]
+	inner_mi.material_override = inner_mat
+	pivot.add_child(inner_mi)
+	var win_mi := MeshInstance3D.new()
+	win_mi.name = window_key
+	win_mi.mesh = door_data[window_key]
+	win_mi.material_override = glass_mat
+	pivot.add_child(win_mi)
 
 
 func _on_time_changed(hour: float) -> void:
