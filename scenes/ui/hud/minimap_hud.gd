@@ -41,7 +41,7 @@ func _draw() -> void:
 		return
 
 	var player_pos := _get_tracking_position()
-	var yaw := _get_camera_yaw()
+	var yaw := _get_heading_yaw()
 
 	# Background circle
 	var center := Vector2(MAP_CENTER, MAP_CENTER)
@@ -166,8 +166,8 @@ func _draw_compass(yaw: float) -> void:
 		var label: String = d[0]
 		var dir: Vector2 = d[1]
 		# Rotate direction by yaw
-		var rot_x := dir.x * cos(-yaw) - dir.y * sin(-yaw)
-		var rot_y := dir.x * sin(-yaw) + dir.y * cos(-yaw)
+		var rot_x := dir.x * cos(yaw) - dir.y * sin(yaw)
+		var rot_y := dir.x * sin(yaw) + dir.y * cos(yaw)
 		var pos := center + Vector2(rot_x, rot_y) * (
 			MAP_RADIUS - 12.0
 		)
@@ -203,9 +203,9 @@ func _world_to_minimap(
 ) -> Vector2:
 	var dx := world_pos.x - player_pos.x
 	var dz := world_pos.z - player_pos.z
-	var rx := dx * cos(-yaw) - dz * sin(-yaw)
-	var ry := dx * sin(-yaw) + dz * cos(-yaw)
-	return Vector2(MAP_CENTER + rx * SCALE, MAP_CENTER - ry * SCALE)
+	var rx := dx * cos(yaw) - dz * sin(yaw)
+	var ry := dx * sin(yaw) + dz * cos(yaw)
+	return Vector2(MAP_CENTER + rx * SCALE, MAP_CENTER + ry * SCALE)
 
 
 func _in_circle(p: Vector2) -> bool:
@@ -221,7 +221,11 @@ func _get_tracking_position() -> Vector3:
 	return _player.global_position
 
 
-func _get_camera_yaw() -> float:
+func _get_heading_yaw() -> float:
+	var vehicle = _player.get("current_vehicle")
+	if vehicle and vehicle is Node3D:
+		var bz: Vector3 = (vehicle as Node3D).global_transform.basis.z
+		return atan2(bz.x, bz.z)
 	var cam := get_viewport().get_camera_3d()
 	if cam:
 		return cam.global_rotation.y
