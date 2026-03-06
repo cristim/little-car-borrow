@@ -18,16 +18,18 @@ func enter(msg: Dictionary = {}) -> void:
 	var player := owner as CharacterBody3D
 	player.velocity = Vector3.ZERO
 
-	_progress_bar = owner.get_node("PlayerUI/StealProgressBar")
+	_progress_bar = owner.get_node_or_null("PlayerUI/StealProgressBar")
 	if _progress_bar:
 		_progress_bar.show_progress()
 
-	# Open the driver door
-	_door_pivot = _vehicle.get_node_or_null("Body/LeftDoorPivot")
+	# Open the nearest door
+	_door_pivot = _get_nearest_door_pivot(player)
 	if _door_pivot:
+		var is_right: bool = _door_pivot.name == "RightDoorPivot"
+		var angle: float = -DOOR_OPEN_ANGLE if is_right else DOOR_OPEN_ANGLE
 		var tween := _door_pivot.create_tween()
 		tween.tween_property(
-			_door_pivot, "rotation:y", DOOR_OPEN_ANGLE, DOOR_ANIM_DURATION
+			_door_pivot, "rotation:y", angle, DOOR_ANIM_DURATION
 		)
 
 	EventBus.hide_interaction_prompt.emit()
@@ -58,6 +60,21 @@ func update(delta: float) -> void:
 
 	if _timer >= STEAL_DURATION:
 		state_machine.transition_to("Driving", {"vehicle": _vehicle})
+
+
+func _get_nearest_door_pivot(player: Node3D) -> Node3D:
+	var left := _vehicle.get_node_or_null("Body/LeftDoorPivot") as Node3D
+	var right := _vehicle.get_node_or_null("Body/RightDoorPivot") as Node3D
+	if not left and not right:
+		return null
+	if not right:
+		return left
+	if not left:
+		return right
+	var pos := player.global_position
+	var dl: float = pos.distance_to(left.global_position)
+	var dr: float = pos.distance_to(right.global_position)
+	return right if dr < dl else left
 
 
 func physics_update(delta: float) -> void:
