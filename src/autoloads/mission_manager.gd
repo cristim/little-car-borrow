@@ -125,15 +125,15 @@ func complete_mission() -> void:
 		"_delivered_vehicle", null
 	)
 	if delivered_vehicle and is_instance_valid(delivered_vehicle):
-		# Force player out first if driving
-		EventBus.vehicle_exited.emit(delivered_vehicle)
-		(delivered_vehicle as Node).queue_free()
+		# Force player out first, then free next frame
+		EventBus.force_exit_vehicle.emit(delivered_vehicle)
+		(delivered_vehicle as Node).call_deferred("queue_free")
 
 	GameManager.add_money(reward)
 	EventBus.mission_completed.emit(mid)
 	EventBus.mission_objective_updated.emit("")
 	_active_mission = {}
-	_refresh_timer = REFRESH_INTERVAL - 5.0  # new missions soon
+	_refresh_timer = 0.0
 
 
 func fail_mission(_reason: String) -> void:
@@ -144,7 +144,7 @@ func fail_mission(_reason: String) -> void:
 	EventBus.mission_failed.emit(mid)
 	EventBus.mission_objective_updated.emit("")
 	_active_mission = {}
-	_refresh_timer = REFRESH_INTERVAL - 5.0
+	_refresh_timer = 0.0
 
 
 func get_active_mission() -> Dictionary:
