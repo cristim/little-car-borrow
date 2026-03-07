@@ -30,8 +30,8 @@ func _ready() -> void:
 	EventBus.player_money_changed.connect(_on_money)
 	EventBus.mission_objective_updated.connect(_on_objective)
 	EventBus.mission_timer_updated.connect(_on_timer)
-	EventBus.mission_completed.connect(_on_mission_done)
-	EventBus.mission_failed.connect(_on_mission_done)
+	EventBus.mission_completed.connect(_on_mission_completed)
+	EventBus.mission_failed.connect(_on_mission_failed)
 	EventBus.player_health_changed.connect(_on_health)
 	EventBus.player_died.connect(_on_died)
 	EventBus.vehicle_entered.connect(_on_vehicle_entered)
@@ -104,17 +104,22 @@ func _on_timer(time_remaining: float) -> void:
 		)
 
 
-func _on_mission_done(_mission_id: String) -> void:
+func _on_mission_completed(_mission_id: String) -> void:
 	var mission := MissionManager.get_active_mission()
 	var reward: int = mission.get("reward", 0)
-	if reward > 0:
-		reward_label.text = "+$%d" % reward
-		reward_label.remove_theme_color_override("font_color")
-	else:
-		reward_label.text = "MISSION FAILED"
-		reward_label.add_theme_color_override(
-			"font_color", Color(1.0, 0.3, 0.3)
-		)
+	reward_label.text = "+$%d" % reward
+	reward_label.remove_theme_color_override("font_color")
+	reward_label.visible = true
+	_reward_timer = 3.0
+	objective_label.visible = false
+	timer_label.visible = false
+
+
+func _on_mission_failed(_mission_id: String) -> void:
+	reward_label.text = "MISSION FAILED"
+	reward_label.add_theme_color_override(
+		"font_color", Color(1.0, 0.3, 0.3)
+	)
 	reward_label.visible = true
 	_reward_timer = 3.0
 	objective_label.visible = false
@@ -129,7 +134,7 @@ func _on_health(current: float, max_hp: float) -> void:
 	elif ratio < 0.6:
 		health_bar.color = Color(0.9, 0.6, 0.1, 0.9)
 	else:
-		health_bar.color = Color(0.8, 0.15, 0.15, 0.9)
+		health_bar.color = Color(0.2, 0.8, 0.2, 0.9)
 
 
 func _on_vehicle_entered(_vehicle: Node) -> void:
@@ -138,6 +143,7 @@ func _on_vehicle_entered(_vehicle: Node) -> void:
 
 func _on_vehicle_exited(_vehicle: Node) -> void:
 	crosshair.visible = true
+	_speed_kmh = 0.0
 
 
 func _on_died() -> void:
