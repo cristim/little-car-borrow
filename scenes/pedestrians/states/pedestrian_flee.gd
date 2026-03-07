@@ -24,7 +24,8 @@ func enter(msg: Dictionary = {}) -> void:
 
 func physics_update(delta: float) -> void:
 	var ped := owner as CharacterBody3D
-	ped.velocity = _flee_direction * FLEE_SPEED
+	ped.velocity.x = _flee_direction.x * FLEE_SPEED
+	ped.velocity.z = _flee_direction.z * FLEE_SPEED
 	ped.velocity.y -= 9.8 * delta
 	ped.move_and_slide()
 

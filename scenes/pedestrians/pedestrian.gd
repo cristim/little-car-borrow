@@ -3,8 +3,6 @@ extends CharacterBody3D
 
 const FLEE_VEHICLE_SPEED := 5.0
 
-var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
-
 
 func _ready() -> void:
 	add_to_group("pedestrian")

@@ -14,7 +14,9 @@ func enter(_msg: Dictionary = {}) -> void:
 
 func physics_update(delta: float) -> void:
 	var ped := owner as CharacterBody3D
-	ped.velocity = Vector3(0.0, -9.8 * delta, 0.0)
+	ped.velocity.x = 0.0
+	ped.velocity.z = 0.0
+	ped.velocity.y -= 9.8 * delta
 	ped.move_and_slide()
 
 	_timer += delta

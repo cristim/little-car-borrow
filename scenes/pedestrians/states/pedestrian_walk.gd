@@ -4,7 +4,6 @@ extends "res://src/state_machine/state.gd"
 const WALK_SPEED := 1.4
 const TURN_CHANCE := 0.3
 
-var _grid = preload("res://src/road_grid.gd").new()
 var _direction := Vector3.FORWARD
 var _rng := RandomNumberGenerator.new()
 var _walk_timer := 0.0
@@ -21,7 +20,8 @@ func enter(_msg: Dictionary = {}) -> void:
 
 func physics_update(delta: float) -> void:
 	var ped := owner as CharacterBody3D
-	ped.velocity = _direction * WALK_SPEED
+	ped.velocity.x = _direction.x * WALK_SPEED
+	ped.velocity.z = _direction.z * WALK_SPEED
 	ped.velocity.y -= 9.8 * delta
 	ped.move_and_slide()
 
