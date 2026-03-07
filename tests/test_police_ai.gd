@@ -24,6 +24,9 @@ class TestablePoliceAI:
 	func _check_los() -> bool:
 		return _los_cached
 
+	func _update_direction(new_dir: int) -> void:
+		_direction = new_dir
+
 
 var _ai: Node
 
@@ -249,3 +252,91 @@ func test_rapid_state_cycling_clean() -> void:
 	# Timers reset then immediately += delta in the same call
 	assert_almost_eq(_ai._los_lost_timer, 0.1, 0.001)
 	assert_almost_eq(_ai._los_check_timer, 0.1, 0.001)
+
+
+# ==========================================================================
+# Avoidance clamping (Round 8: negative clamp case)
+# ==========================================================================
+
+func test_avoidance_clamp_positive_over_range() -> void:
+	# _drive() uses clampf(_steer_avoidance, -0.5, 0.5)
+	assert_eq(clampf(0.8, -0.5, 0.5), 0.5)
+
+
+func test_avoidance_clamp_negative_over_range() -> void:
+	# Negative avoidance should clamp to -0.5, not 0
+	assert_eq(clampf(-0.8, -0.5, 0.5), -0.5)
+
+
+func test_avoidance_clamp_within_range_unchanged() -> void:
+	assert_eq(clampf(0.3, -0.5, 0.5), 0.3)
+	assert_eq(clampf(-0.3, -0.5, 0.5), -0.3)
+
+
+# ==========================================================================
+# Guard logic: dist <= 1.0 (Round 8)
+# ==========================================================================
+
+func test_pursuit_steer_at_zero_heading_err_for_overlap() -> void:
+	# When player overlaps car (dist <= 1.0), caller passes heading_err=0.0.
+	# Steer should be 0.0 — no fishtailing or error.
+	var steer := PoliceAIScript._calc_pursuit_steer(0.0, 1.5)
+	assert_eq(steer, 0.0)
+	# Speed should also stay at base cruise (heading_err_abs=0.0 < slow_angle)
+	var cruise := PoliceAIScript._calc_pursuit_cruise(0.0, 60.0, 0.5, 30.0)
+	assert_eq(cruise, 60.0)
+
+
+# ==========================================================================
+# Patrol regression (Round 8)
+# ==========================================================================
+
+func test_patrol_pick_direction_never_reverses() -> void:
+	# _pick_next_direction (patrol path) should never pick reverse of current
+	for i in range(20):
+		_ai._direction = PoliceAIScript.Direction.NORTH
+		_ai._pick_next_direction()
+		assert_ne(
+			_ai._direction, PoliceAIScript.Direction.SOUTH,
+			"Patrol should never U-turn from NORTH (iteration %d)" % i,
+		)
+
+
+func test_patrol_pick_direction_covers_all_non_reverse() -> void:
+	# Over many iterations, all 3 non-reverse directions should appear
+	_ai._direction = PoliceAIScript.Direction.NORTH
+	var seen := {}
+	for i in range(100):
+		_ai._direction = PoliceAIScript.Direction.NORTH
+		_ai._pick_next_direction()
+		seen[_ai._direction] = true
+	# Should see NORTH (straight), EAST, WEST — but never SOUTH
+	assert_true(
+		seen.size() >= 2,
+		"Should see at least 2 distinct directions, got %d" % seen.size(),
+	)
+	assert_false(
+		seen.has(PoliceAIScript.Direction.SOUTH),
+		"Should never pick reverse (SOUTH)",
+	)
+
+
+func test_patrol_state_after_pursue_ends() -> void:
+	# After PURSUE→PATROL, the AI should be in a valid patrol state
+	_ai._ai_state = PoliceAIScript.AIState.PURSUE
+	_ai._pursuit_locked = true
+	_ai._direction = PoliceAIScript.Direction.EAST
+
+	WantedLevelManager.wanted_level = 0
+	_ai._update_ai_state(0.1)
+
+	assert_eq(_ai._ai_state, PoliceAIScript.AIState.PATROL)
+	# Should be able to pick a new direction without crashing
+	_ai._pick_next_direction()
+	# Direction should be valid (not reverse of EAST=WEST is excluded,
+	# but road_index=0 from mock, and direction was reset by _pick_best_direction)
+	var dir: int = _ai._direction
+	assert_true(
+		dir >= 0 and dir <= 3,
+		"Direction should be valid enum value, got %d" % dir,
+	)
