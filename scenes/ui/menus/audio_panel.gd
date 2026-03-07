@@ -58,10 +58,10 @@ func _on_volume_changed(value: float, bus_name: String) -> void:
 	AudioManager.set_bus_volume(bus_name, value)
 	var data: Dictionary = _sliders[bus_name]
 	(data.label as Label).text = "%d%%" % roundi(value * 100.0)
-	SettingsManager.save()
 
 
 func _on_back() -> void:
+	SettingsManager.save()
 	visible = false
 	get_parent().get_node("Panel").visible = true
 

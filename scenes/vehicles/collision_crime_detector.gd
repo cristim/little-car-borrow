@@ -18,6 +18,10 @@ func _ready() -> void:
 
 
 func _on_vehicle_entered(vehicle: Node) -> void:
+	# Disconnect old vehicle signal if still connected (guard double-connect)
+	if _vehicle and is_instance_valid(_vehicle):
+		if _vehicle.body_entered.is_connected(_on_body_entered):
+			_vehicle.body_entered.disconnect(_on_body_entered)
 	_vehicle = vehicle as RigidBody3D
 	if _vehicle:
 		_vehicle.body_entered.connect(_on_body_entered)
