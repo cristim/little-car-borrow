@@ -16,6 +16,7 @@ var _grid = preload("res://src/road_grid.gd").new()
 
 
 func _ready() -> void:
+	_rng.randomize()
 	EventBus.mission_marker_reached.connect(_on_marker_reached)
 	EventBus.vehicle_entered.connect(_on_vehicle_entered)
 
@@ -54,7 +55,8 @@ func _refresh_available() -> void:
 	if not _player:
 		return
 
-	# Remove old available missions
+	# Remove old available missions and stale markers
+	EventBus.missions_refreshed.emit()
 	_available_missions.clear()
 
 	var generators := [

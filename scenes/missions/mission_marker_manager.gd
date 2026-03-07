@@ -14,6 +14,7 @@ var _markers: Dictionary = {}  # mission_id -> Array[Node3D]
 
 
 func _ready() -> void:
+	EventBus.missions_refreshed.connect(_on_missions_refreshed)
 	EventBus.mission_available.connect(_on_mission_available)
 	EventBus.mission_started.connect(_on_mission_started)
 	EventBus.mission_completed.connect(_on_mission_done)
@@ -22,6 +23,14 @@ func _ready() -> void:
 		_on_marker_reached
 	)
 	EventBus.vehicle_entered.connect(_on_vehicle_entered)
+
+
+func _on_missions_refreshed() -> void:
+	var all_ids: Array[String] = []
+	for mid: String in _markers:
+		all_ids.append(mid)
+	for mid in all_ids:
+		_clear_markers(mid)
 
 
 func _on_mission_available(mission_data: Dictionary) -> void:

@@ -13,6 +13,7 @@ signal vehicle_exited(vehicle: Node)
 signal vehicle_speed_changed(speed_kmh: float)
 signal vehicle_damaged(vehicle: Node, amount: float)
 signal vehicle_destroyed(vehicle: Node)
+signal force_exit_vehicle(vehicle: Node)
 
 # Wanted level signals
 signal crime_committed(crime_type: String, heat_points: int)
@@ -27,6 +28,7 @@ signal mission_completed(mission_id: String)
 signal mission_failed(mission_id: String)
 signal mission_objective_updated(objective_text: String)
 signal mission_marker_reached(mission_id: String, marker_type: String)
+signal missions_refreshed
 signal mission_timer_updated(time_remaining: float)
 
 # UI signals
