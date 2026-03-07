@@ -447,7 +447,7 @@ func _cast_rays() -> void:
 	var crr := space.intersect_ray(crq)
 
 	# Cross traffic is a separate flag — does NOT feed into _dist_to_ahead
-	_cross_traffic = clr != null or crr != null
+	_cross_traffic = not clr.is_empty() or not crr.is_empty()
 
 	# Steer avoidance from side rays
 	if left_dist < SIDE_RAY_LENGTH or right_dist < SIDE_RAY_LENGTH:
