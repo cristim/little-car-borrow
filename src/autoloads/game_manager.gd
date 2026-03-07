@@ -8,7 +8,6 @@ const SECTION := "progress"
 var money: int = 0
 var missions_completed: int = 0
 var total_earnings: int = 0
-var is_paused: bool = false
 var health: float = MAX_HEALTH
 var is_dead: bool = false
 
@@ -60,6 +59,7 @@ func restart_game() -> void:
 	is_dead = false
 	health = MAX_HEALTH
 	WantedLevelManager.clear()
+	MissionManager.fail_mission("restart")
 	get_tree().reload_current_scene()
 
 
@@ -84,8 +84,3 @@ func load_progress() -> void:
 func _on_mission_completed(_mission_id: String) -> void:
 	missions_completed += 1
 	save_progress()
-
-
-func toggle_pause() -> void:
-	is_paused = !is_paused
-	get_tree().paused = is_paused
