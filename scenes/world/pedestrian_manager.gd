@@ -23,6 +23,7 @@ var _time_multiplier := 1.0
 
 
 func _ready() -> void:
+	_rng.randomize()
 	EventBus.pedestrian_killed.connect(_on_pedestrian_killed)
 	EventBus.time_of_day_changed.connect(_on_time_changed)
 

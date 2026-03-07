@@ -11,6 +11,7 @@ var _idle_interval := 0.0
 
 
 func enter(_msg: Dictionary = {}) -> void:
+	_rng.randomize()
 	if _msg.has("direction"):
 		_direction = _msg["direction"]
 	_idle_interval = _rng.randf_range(8.0, 20.0)

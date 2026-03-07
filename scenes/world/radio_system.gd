@@ -361,6 +361,7 @@ var _tts_queue: Array[String] = []
 
 
 func _ready() -> void:
+	_rng.randomize()
 	_genres = [
 		GENRE_POP, GENRE_ROCK, GENRE_JAZZ,
 		GENRE_ELECTRONIC, GENRE_CLASSICAL,

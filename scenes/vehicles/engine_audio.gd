@@ -36,6 +36,7 @@ var _smooth_volume := 0.15
 
 func _ready() -> void:
 	_vehicle = get_parent()
+	_rng.randomize()
 	var gen := AudioStreamGenerator.new()
 	gen.mix_rate = SAMPLE_RATE
 	gen.buffer_length = 0.1

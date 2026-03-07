@@ -25,6 +25,7 @@ var _despawning := false
 
 
 func _ready() -> void:
+	_rng.randomize()
 	EventBus.wanted_level_changed.connect(_on_wanted_level_changed)
 
 

@@ -84,6 +84,7 @@ var _horn_max := HORN_INTERVAL_MAX_DAY
 
 
 func _ready() -> void:
+	_rng.randomize()
 	_horn_timer = _rng.randf_range(_horn_min, _horn_max)
 	_gust_timer = _rng.randf_range(GUST_INTERVAL_MIN, GUST_INTERVAL_MAX)
 	_chirp_timer = _rng.randf_range(CHIRP_INTERVAL_MIN, CHIRP_INTERVAL_MAX)

@@ -7,6 +7,7 @@ var _rng := RandomNumberGenerator.new()
 
 
 func enter(_msg: Dictionary = {}) -> void:
+	_rng.randomize()
 	_timer = 0.0
 	_duration = _rng.randf_range(2.0, 8.0)
 
