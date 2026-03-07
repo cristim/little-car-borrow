@@ -52,15 +52,19 @@ func _process(delta: float) -> void:
 	if not _playback or not _vehicle:
 		return
 
-	# Distance culling
+	# Distance culling — stop playback entirely instead of pushing silence
 	var cam := get_viewport().get_camera_3d()
 	if cam:
 		var dist := global_position.distance_to(cam.global_position)
 		if dist > CULL_DISTANCE:
-			var frames_available := _playback.get_frames_available()
-			for _i in range(frames_available):
-				_playback.push_frame(Vector2.ZERO)
+			if playing:
+				stop()
 			return
+		if not playing:
+			play()
+			_playback = get_stream_playback()
+			if not _playback:
+				return
 
 	var speed_kmh := 0.0
 	if "linear_velocity" in _vehicle:
