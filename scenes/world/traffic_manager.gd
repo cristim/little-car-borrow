@@ -196,6 +196,13 @@ func _try_spawn() -> void:
 			) < MIN_VEHICLE_DIST:
 				too_close = true
 				break
+		if not too_close:
+			for v in get_tree().get_nodes_in_group("police_vehicle"):
+				if spawn_pos.distance_to(
+					(v as Node3D).global_position
+				) < MIN_VEHICLE_DIST:
+					too_close = true
+					break
 		if too_close:
 			continue
 
