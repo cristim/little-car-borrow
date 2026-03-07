@@ -228,7 +228,7 @@ func _generate_delivery() -> Dictionary:
 	var tl := _rng.randf_range(90.0, 150.0)
 	var reward := _rng.randi_range(300, 800)
 	return {
-		"id": "delivery_%d" % Time.get_ticks_msec(),
+		"id": "delivery_%d" % Time.get_ticks_usec(),
 		"type": "delivery",
 		"title": "Express Delivery",
 		"objective": "Pick up the package",
@@ -249,7 +249,7 @@ func _generate_taxi() -> Dictionary:
 	var tl := _rng.randf_range(60.0, 120.0)
 	var reward := _rng.randi_range(200, 500)
 	return {
-		"id": "taxi_%d" % Time.get_ticks_msec(),
+		"id": "taxi_%d" % Time.get_ticks_usec(),
 		"type": "taxi",
 		"title": "Taxi Fare",
 		"objective": "Pick up the passenger",
@@ -276,7 +276,7 @@ func _generate_theft() -> Dictionary:
 	var dropoff := _gen_sidewalk_pos(start, 200.0, 400.0)
 	var reward := _rng.randi_range(500, 1500)
 	return {
-		"id": "theft_%d" % Time.get_ticks_msec(),
+		"id": "theft_%d" % Time.get_ticks_usec(),
 		"type": "theft",
 		"title": "Vehicle Theft",
 		"objective": "Steal a %s and deliver it" % variant,
