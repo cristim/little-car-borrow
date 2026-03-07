@@ -54,6 +54,10 @@ func update(delta: float) -> void:
 		state_machine.transition_to("Idle")
 		return
 
+	if not is_instance_valid(_vehicle):
+		state_machine.transition_to("Idle")
+		return
+
 	_timer += delta
 	if _progress_bar:
 		_progress_bar.update_progress(_timer / STEAL_DURATION)
