@@ -112,7 +112,8 @@ func _try_spawn() -> void:
 
 		if is_ns:
 			var lane_offset := rw / 4.0
-			var heading_north := _rng.randi() % 2 == 0
+			# Head toward player, not random
+			var heading_north := (player_pos.z + along) > player_pos.z
 			if heading_north:
 				direction = 0
 				spawn_pos = Vector3(
@@ -127,7 +128,8 @@ func _try_spawn() -> void:
 				yaw = PI
 		else:
 			var lane_offset := rw / 4.0
-			var heading_east := _rng.randi() % 2 == 0
+			# Head toward player, not random
+			var heading_east := (player_pos.x + along) < player_pos.x
 			if heading_east:
 				direction = 2
 				spawn_pos = Vector3(

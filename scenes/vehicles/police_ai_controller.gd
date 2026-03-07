@@ -7,7 +7,7 @@ enum AIState { PATROL, PURSUE }
 
 # Driving tuning
 const PATROL_SPEED := 40.0
-const PURSUIT_SPEED := 70.0
+const PURSUIT_SPEED := 60.0
 const ARRIVAL_DIST := 6.0
 const LANE_STEER_GAIN := 0.6
 const LANE_STEER_MAX := 0.5
@@ -15,9 +15,11 @@ const HEADING_STEER_GAIN := 2.0
 const OFF_ROAD_THRESHOLD := 5.0
 const OFF_ROAD_LANE_GAIN := 2.0
 const OFF_ROAD_LANE_MAX := 0.9
-const PIT_DISTANCE := 20.0
-const PIT_STEER_GAIN := 2.5
-const PURSUIT_BLEND := 0.55
+
+# Pursuit steering
+const PURSUIT_STEER_GAIN := 1.5
+const PURSUIT_TURN_SLOW_ANGLE := 0.5
+const PURSUIT_MIN_TURN_SPEED := 30.0
 
 # Collision avoidance
 const RAY_LENGTH := 25.0
@@ -37,7 +39,6 @@ const RAY_MASK := 90
 
 # Line-of-sight
 const LOS_RANGE := 100.0
-const LOS_LOCK_TIME := 1.0
 const LOS_LOST_TIMEOUT := 20.0
 const LOS_CHECK_INTERVAL := 0.2
 
@@ -76,7 +77,6 @@ var _escaping := false
 var _escape_attempts := 0
 
 # LOS tracking
-var _los_timer := 0.0
 var _los_lost_timer := 0.0
 var _pursuit_locked := false
 var _los_check_timer := 0.0
@@ -139,8 +139,8 @@ func _physics_process(delta: float) -> void:
 		if speed_kmh > 10.0:
 			_escape_attempts = 0
 
-	# Check intersection arrival
-	if _past_intersection():
+	# Only check intersections during patrol (pursuit uses direct steering)
+	if _ai_state == AIState.PATROL and _past_intersection():
 		_pick_next_direction()
 		_find_next_intersection()
 
@@ -151,35 +151,47 @@ func _update_ai_state(delta: float) -> void:
 	if WantedLevelManager.wanted_level <= 0:
 		if _ai_state == AIState.PURSUE:
 			_ai_state = AIState.PATROL
+			_road_index = _find_nearest_road_index()
+			_direction = _pick_best_direction()
+			_find_next_intersection()
 			_pursuit_locked = false
-			_los_timer = 0.0
 			_los_lost_timer = 0.0
+			_escaping = false
+			_escape_timer = 0.0
+			_escape_attempts = 0
 		return
 
-	# Throttle LOS raycasts
+	# Wanted level > 0: pursue immediately
+	if _ai_state == AIState.PATROL:
+		_ai_state = AIState.PURSUE
+		_pursuit_locked = true
+		_los_lost_timer = 0.0
+		_los_check_timer = 0.0
+		_escaping = false
+		_escape_timer = 0.0
+		_escape_attempts = 0
+
+	# Throttle LOS raycasts to track if player is visible
 	_los_check_timer += delta
 	if _los_check_timer >= LOS_CHECK_INTERVAL:
 		_los_check_timer = 0.0
 		_los_cached = _check_los()
 
-	if _ai_state == AIState.PATROL:
-		if _los_cached:
-			_los_timer += delta
+	# Drop pursuit only after losing LOS for a long time
+	if _los_cached:
+		_los_lost_timer = 0.0
+	else:
+		_los_lost_timer += delta
+		if _los_lost_timer >= LOS_LOST_TIMEOUT:
+			_ai_state = AIState.PATROL
+			_road_index = _find_nearest_road_index()
+			_direction = _pick_best_direction()
+			_find_next_intersection()
+			_pursuit_locked = false
 			_los_lost_timer = 0.0
-			if _los_timer >= LOS_LOCK_TIME:
-				_ai_state = AIState.PURSUE
-				_pursuit_locked = true
-		else:
-			_los_timer = maxf(_los_timer - delta, 0.0)
-	elif _ai_state == AIState.PURSUE:
-		if _los_cached:
-			_los_lost_timer = 0.0
-		else:
-			_los_lost_timer += delta
-			if _los_lost_timer >= LOS_LOST_TIMEOUT:
-				_ai_state = AIState.PATROL
-				_pursuit_locked = false
-				_los_timer = 0.0
+			_escaping = false
+			_escape_timer = 0.0
+			_escape_attempts = 0
 
 
 func _check_los() -> bool:
@@ -251,34 +263,43 @@ func _try_dismount(delta: float) -> void:
 
 
 func _drive(_delta: float) -> void:
-	var cruise := PATROL_SPEED if _ai_state == AIState.PATROL else PURSUIT_SPEED
-	var desired_heading := _get_desired_heading()
+	var pursuing := _ai_state == AIState.PURSUE
+	var cruise := PURSUIT_SPEED if pursuing else PATROL_SPEED
 	var forward := _get_vehicle_forward()
-	var lane_error := _get_lane_error()
 
-	var heading_error := forward.cross(desired_heading).y
-	var steer := clampf(-heading_error * HEADING_STEER_GAIN, -1.0, 1.0)
+	# Steering: direct-to-player during pursuit, road-following during patrol
+	var steer: float
+	var heading_err := 0.0
 
-	# Lane correction
-	if absf(lane_error) > OFF_ROAD_THRESHOLD:
-		steer += clampf(
-			-lane_error * OFF_ROAD_LANE_GAIN, -OFF_ROAD_LANE_MAX, OFF_ROAD_LANE_MAX
-		)
-	else:
-		steer += clampf(-lane_error * LANE_STEER_GAIN, -LANE_STEER_MAX, LANE_STEER_MAX)
-
-	steer += clampf(_steer_avoidance, -0.5, 0.5)
-
-	# PIT maneuver: steer toward player when close in pursuit
-	if _ai_state == AIState.PURSUE and _player:
+	if pursuing and _player:
 		var to_player := _get_player_vehicle_pos() - _vehicle.global_position
 		to_player.y = 0.0
 		var dist := to_player.length()
-		if dist < PIT_DISTANCE and dist > 2.0:
-			var pit_steer := forward.cross(to_player.normalized()).y
-			steer += clampf(-pit_steer * PIT_STEER_GAIN, -0.6, 0.6)
+		if dist > 1.0:
+			var cross_y := forward.cross(to_player.normalized()).y
+			var dot_p := forward.dot(to_player.normalized())
+			heading_err = atan2(cross_y, dot_p)
+			steer = _calc_pursuit_steer(heading_err, PURSUIT_STEER_GAIN)
+		else:
+			steer = 0.0
+	else:
+		steer = _compute_patrol_steer(forward)
 
+	# Add obstacle avoidance
+	steer += clampf(_steer_avoidance, -0.5, 0.5)
 	steer = clampf(steer, -1.0, 1.0)
+
+	# Wall evasion: override steer when close to a wall
+	if _hitting_wall and _dist_to_ahead >= 0.0 and _dist_to_ahead < SOFT_BRAKE_DIST:
+		var wall_urgency := 1.0 - (_dist_to_ahead / SOFT_BRAKE_DIST)
+		steer = _calc_wall_steer(wall_urgency, _steer_avoidance, steer)
+
+	# Reduce cruise speed for sharp turns during pursuit
+	if pursuing:
+		cruise = _calc_pursuit_cruise(
+			absf(heading_err), cruise,
+			PURSUIT_TURN_SLOW_ANGLE, PURSUIT_MIN_TURN_SPEED,
+		)
 
 	var speed_kmh := _vehicle.linear_velocity.length() * 3.6
 	var speed_error := cruise - speed_kmh
@@ -289,7 +310,6 @@ func _drive(_delta: float) -> void:
 
 	# Forward obstacle braking (less cautious in pursuit)
 	if _dist_to_ahead >= 0.0:
-		var pursuing := _ai_state == AIState.PURSUE
 		var hard_dist := 1.5 if pursuing else HARD_BRAKE_DIST
 		var soft_dist := 6.0 if pursuing else SOFT_BRAKE_DIST
 		if _dist_to_ahead < hard_dist:
@@ -303,13 +323,78 @@ func _drive(_delta: float) -> void:
 			brake = maxf(brake, 0.3 * (1.0 - t))
 			throttle = lerpf(0.2, throttle, t)
 
-	var min_throttle := 0.35 if _ai_state == AIState.PURSUE else 0.2
-	throttle = maxf(throttle, min_throttle)
+	# Only apply min throttle when not braking (avoid fighting brakes)
+	if brake < 0.1:
+		var min_throttle := 0.35 if pursuing else 0.2
+		throttle = maxf(throttle, min_throttle)
 
 	_vehicle.steering_input = steer
 	_vehicle.throttle_input = throttle
 	_vehicle.brake_input = brake
 	_vehicle.handbrake_input = 0.0
+
+
+func _compute_patrol_steer(forward: Vector3) -> float:
+	var desired_heading := _dir_to_heading(_direction)
+	var lane_error := _get_lane_error()
+	# Use atan2 for heading error — works at all angles including 180 degrees
+	# (cross product alone gives zero at 180, causing the car to drive straight)
+	var cross_y := forward.cross(desired_heading).y
+	var dot := forward.dot(desired_heading)
+	var heading_error := atan2(cross_y, dot)
+	var steer := clampf(-heading_error * HEADING_STEER_GAIN, -1.0, 1.0)
+	if absf(lane_error) > OFF_ROAD_THRESHOLD:
+		steer += clampf(
+			-lane_error * OFF_ROAD_LANE_GAIN,
+			-OFF_ROAD_LANE_MAX, OFF_ROAD_LANE_MAX,
+		)
+	else:
+		steer += clampf(
+			-lane_error * LANE_STEER_GAIN,
+			-LANE_STEER_MAX, LANE_STEER_MAX,
+		)
+	return steer
+
+
+static func _calc_pursuit_steer(heading_err: float, gain: float) -> float:
+	return clampf(-heading_err * gain, -1.0, 1.0)
+
+
+static func _calc_pursuit_cruise(
+	heading_err_abs: float, base_cruise: float,
+	slow_angle: float, min_speed: float,
+) -> float:
+	if heading_err_abs <= slow_angle:
+		return base_cruise
+	var max_err := PI
+	var t := (heading_err_abs - slow_angle) / (max_err - slow_angle)
+	return lerpf(base_cruise, min_speed, t)
+
+
+static func _calc_wall_steer(
+	wall_urgency: float, steer_avoidance: float, current_steer: float,
+) -> float:
+	var wall_steer: float
+	if absf(steer_avoidance) > 0.1:
+		wall_steer = signf(steer_avoidance)
+	else:
+		wall_steer = signf(current_steer) if absf(current_steer) > 0.1 else 1.0
+	if wall_urgency > 0.8:
+		return wall_steer
+	return lerpf(current_steer, wall_steer, wall_urgency * 0.7)
+
+
+static func _calc_escape_steer(
+	ai_state: int, steer_avoidance: float, lane_err: float,
+) -> float:
+	if ai_state == AIState.PURSUE:
+		if absf(steer_avoidance) > 0.1:
+			return signf(steer_avoidance)
+		return 0.0
+	# Patrol (or unknown state): steer toward lane center
+	if absf(lane_err) > 1.0:
+		return -signf(lane_err)
+	return 0.0
 
 
 func _begin_escape() -> void:
@@ -330,7 +415,14 @@ func _process_escape(delta: float) -> void:
 	_escape_timer += delta
 	var back_dir := _vehicle.global_transform.basis.z
 	_vehicle.apply_central_force(back_dir * 6000.0)
-	_vehicle.steering_input = 0.5
+
+	# During pursuit: use raycast avoidance; during patrol: use lane error
+	var lane_err := _get_lane_error() if _ai_state != AIState.PURSUE else 0.0
+	var escape_steer := _calc_escape_steer(
+		_ai_state, _steer_avoidance, lane_err,
+	)
+
+	_vehicle.steering_input = escape_steer
 	_vehicle.throttle_input = 0.0
 	_vehicle.brake_input = 0.0
 	_vehicle.handbrake_input = 0.0
@@ -432,19 +524,6 @@ func _dir_to_heading(d: int) -> Vector3:
 	return Vector3(0, 0, -1)
 
 
-func _get_desired_heading() -> Vector3:
-	if _ai_state == AIState.PURSUE and _player:
-		var to_player := _get_player_vehicle_pos() - _vehicle.global_position
-		to_player.y = 0.0
-		if to_player.length_squared() > 1.0:
-			# Blend road heading with direct pursuit heading
-			var road_heading := _dir_to_heading(_direction)
-			return road_heading.lerp(
-				to_player.normalized(), PURSUIT_BLEND
-			).normalized()
-	return _dir_to_heading(_direction)
-
-
 func _get_lane_error() -> float:
 	var pos := _vehicle.global_position
 	var is_ns := _direction == Direction.NORTH or _direction == Direction.SOUTH
@@ -508,10 +587,7 @@ func _find_next_road_coord(current: float, sign_dir: int) -> float:
 
 
 func _pick_next_direction() -> void:
-	if _ai_state == AIState.PURSUE and _player:
-		_pick_pursuit_direction()
-	else:
-		_pick_random_direction()
+	_pick_random_direction()
 
 
 func _pick_random_direction() -> void:
@@ -522,23 +598,6 @@ func _pick_random_direction() -> void:
 			options.append(d)
 	var new_dir: int = options[_rng.randi() % options.size()]
 	_update_direction(new_dir)
-
-
-func _pick_pursuit_direction() -> void:
-	var to_player := _get_player_vehicle_pos() - _vehicle.global_position
-	to_player.y = 0.0
-	var reverse := _get_reverse(_direction)
-	var best_dir := _direction
-	var best_dot := -2.0
-	for d in [Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST]:
-		if d == reverse:
-			continue
-		var heading := _dir_to_heading(d)
-		var dot := to_player.normalized().dot(heading)
-		if dot > best_dot:
-			best_dot = dot
-			best_dir = d
-	_update_direction(best_dir)
 
 
 func _update_direction(new_dir: int) -> void:
