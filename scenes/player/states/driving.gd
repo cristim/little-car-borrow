@@ -30,6 +30,9 @@ func enter(msg: Dictionary = {}) -> void:
 	if vcam:
 		vcam.make_active()
 
+	# Listen for forced ejection (vehicle destroyed, mission completion, etc.)
+	EventBus.force_exit_vehicle.connect(_on_force_exit)
+
 	# Stealing an NPC vehicle is a crime
 	if _vehicle.get_node_or_null("NPCVehicleController"):
 		EventBus.crime_committed.emit("vehicle_theft", 30)
@@ -38,6 +41,9 @@ func enter(msg: Dictionary = {}) -> void:
 
 
 func exit() -> void:
+	if EventBus.force_exit_vehicle.is_connected(_on_force_exit):
+		EventBus.force_exit_vehicle.disconnect(_on_force_exit)
+
 	if _vehicle:
 		_vehicle.collision_layer = _original_collision_layer
 		_vehicle.steering_input = 0.0
@@ -55,6 +61,17 @@ func exit() -> void:
 	owner.current_vehicle = null
 
 
+func physics_update(_delta: float) -> void:
+	# Keep player position synced so managers spawn entities near the vehicle
+	if _vehicle and is_instance_valid(_vehicle):
+		owner.global_position = (_vehicle as Node3D).global_position
+
+
 func handle_input(event: InputEvent) -> void:
 	if event.is_action_pressed("interact"):
+		state_machine.transition_to("ExitingVehicle", {"vehicle": _vehicle})
+
+
+func _on_force_exit(vehicle: Node) -> void:
+	if vehicle == _vehicle:
 		state_machine.transition_to("ExitingVehicle", {"vehicle": _vehicle})
