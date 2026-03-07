@@ -18,8 +18,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	current_hour += delta * HOURS_PER_SECOND * time_speed
-	if current_hour >= 24.0:
-		current_hour -= 24.0
+	current_hour = fmod(current_hour, 24.0)
 
 	var quantized := snappedf(current_hour, EMIT_INTERVAL)
 	if not is_equal_approx(quantized, _last_emitted_hour):

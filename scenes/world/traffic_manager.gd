@@ -64,7 +64,6 @@ var _car_colors: Array[Color] = [
 
 
 func _ready() -> void:
-	_rng.randomize()
 	EventBus.vehicle_entered.connect(_on_vehicle_stolen)
 	EventBus.time_of_day_changed.connect(_on_time_changed)
 	for v in VARIANTS:

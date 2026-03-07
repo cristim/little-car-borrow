@@ -87,7 +87,6 @@ func initialize(vehicle: RigidBody3D, road_idx: int, direction: int) -> void:
 	_vehicle = vehicle
 	_road_index = road_idx
 	_direction = direction
-	_rng.randomize()
 	_find_next_intersection()
 
 

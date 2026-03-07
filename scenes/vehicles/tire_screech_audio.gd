@@ -25,7 +25,6 @@ var _filter_state2 := 0.0
 
 func _ready() -> void:
 	_vehicle = get_parent()
-	_rng.randomize()
 	var gen := AudioStreamGenerator.new()
 	gen.mix_rate = SAMPLE_RATE
 	gen.buffer_length = 0.1

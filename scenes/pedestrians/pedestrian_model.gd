@@ -23,7 +23,6 @@ var _rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
-	_rng.randomize()
 	var clothing := CLOTHING_COLORS[_rng.randi() % CLOTHING_COLORS.size()]
 	var skin := SKIN_COLORS[_rng.randi() % SKIN_COLORS.size()]
 

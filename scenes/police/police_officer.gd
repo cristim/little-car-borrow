@@ -24,7 +24,6 @@ var _rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
-	_rng.randomize()
 	add_to_group("police_officer")
 	collision_layer = 4  # NPC layer
 	collision_mask = 3   # Static + Ground

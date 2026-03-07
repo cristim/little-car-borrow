@@ -16,7 +16,6 @@ var _grid = preload("res://src/road_grid.gd").new()
 
 
 func _ready() -> void:
-	_rng.randomize()
 	EventBus.mission_marker_reached.connect(_on_marker_reached)
 	EventBus.vehicle_entered.connect(_on_vehicle_entered)
 
