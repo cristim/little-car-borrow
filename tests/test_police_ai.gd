@@ -52,22 +52,22 @@ func test_pursuit_steer_zero_heading() -> void:
 
 func test_pursuit_steer_90_left_clamped() -> void:
 	var result := PoliceAIScript._calc_pursuit_steer(PI / 2.0, 1.5)
-	assert_eq(result, -1.0)
+	assert_eq(result, 1.0)
 
 
 func test_pursuit_steer_90_right_clamped() -> void:
 	var result := PoliceAIScript._calc_pursuit_steer(-PI / 2.0, 1.5)
-	assert_eq(result, 1.0)
+	assert_eq(result, -1.0)
 
 
 func test_pursuit_steer_nearly_behind() -> void:
 	var result := PoliceAIScript._calc_pursuit_steer(PI * 0.99, 1.5)
-	assert_eq(result, -1.0)
+	assert_eq(result, 1.0)
 
 
 func test_pursuit_steer_30_right_not_clamped() -> void:
 	var result := PoliceAIScript._calc_pursuit_steer(-0.52, 1.5)
-	assert_almost_eq(result, 0.78, 0.01)
+	assert_almost_eq(result, -0.78, 0.01)
 
 
 # ==========================================================================

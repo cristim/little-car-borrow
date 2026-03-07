@@ -357,7 +357,7 @@ func _compute_patrol_steer(forward: Vector3) -> float:
 
 
 static func _calc_pursuit_steer(heading_err: float, gain: float) -> float:
-	return clampf(-heading_err * gain, -1.0, 1.0)
+	return clampf(heading_err * gain, -1.0, 1.0)
 
 
 static func _calc_pursuit_cruise(
