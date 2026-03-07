@@ -34,8 +34,25 @@ const LOD_MID_DIST := 60.0
 const LOD_FAR_DIST := 100.0
 const LOD_FREEZE_DIST := 140.0
 const STEER_AVOID_GAIN := 0.6
-# Static | PlayerVehicle | NPC | Police
-const RAY_MASK := 90
+# Static | PlayerVehicle | NPC | Pedestrians | Police
+const RAY_MASK := 122
+
+# Pursuit braking (shorter distances for aggressive chase)
+const PURSUIT_HARD_BRAKE_DIST := 1.5
+const PURSUIT_SOFT_BRAKE_DIST := 6.0
+const PURSUIT_HARD_BRAKE := 0.4
+const PURSUIT_HARD_THROTTLE := 0.3
+const PATROL_HARD_BRAKE := 0.6
+const PATROL_HARD_THROTTLE := 0.1
+const SOFT_BRAKE_FACTOR := 0.3
+const SOFT_THROTTLE_MIN := 0.2
+
+# Cross-traffic detection
+const CROSS_RAY_LENGTH := 10.0
+const MAX_YIELD_TIME := 1.0
+const PURSUIT_YIELD_TIME := 0.5
+const YIELD_BRAKE := 0.3
+const YIELD_THROTTLE_MAX := 0.15
 
 # Line-of-sight
 const LOS_RANGE := 100.0
@@ -68,7 +85,10 @@ var _player: Node3D = null
 var _ray_cooldown := 0
 var _dist_to_ahead := -1.0
 var _hitting_wall := false
+var _hitting_pedestrian := false
 var _steer_avoidance := 0.0
+var _cross_traffic := false
+var _yield_timer := 0.0
 
 # Stuck
 var _stuck_timer := 0.0
@@ -139,6 +159,11 @@ func _physics_process(delta: float) -> void:
 		if speed_kmh > 10.0:
 			_escape_attempts = 0
 
+	if _cross_traffic:
+		_yield_timer += delta
+	else:
+		_yield_timer = 0.0
+
 	# Only check intersections during patrol (pursuit uses direct steering)
 	if _ai_state == AIState.PATROL and _past_intersection():
 		_pick_next_direction()
@@ -159,6 +184,8 @@ func _update_ai_state(delta: float) -> void:
 			_escaping = false
 			_escape_timer = 0.0
 			_escape_attempts = 0
+			_yield_timer = 0.0
+			_cross_traffic = false
 		return
 
 	# Wanted level > 0: pursue immediately
@@ -170,6 +197,8 @@ func _update_ai_state(delta: float) -> void:
 		_escaping = false
 		_escape_timer = 0.0
 		_escape_attempts = 0
+		_yield_timer = 0.0
+		_cross_traffic = false
 
 	# Throttle LOS raycasts to track if player is visible
 	_los_check_timer += delta
@@ -192,6 +221,8 @@ func _update_ai_state(delta: float) -> void:
 			_escaping = false
 			_escape_timer = 0.0
 			_escape_attempts = 0
+			_yield_timer = 0.0
+			_cross_traffic = false
 
 
 func _check_los() -> bool:
@@ -308,20 +339,25 @@ func _drive(_delta: float) -> void:
 	if speed_kmh > cruise + 15.0:
 		brake = clampf((speed_kmh - cruise) * 0.05, 0.0, 1.0)
 
-	# Forward obstacle braking (less cautious in pursuit)
+	# Forward obstacle braking
 	if _dist_to_ahead >= 0.0:
-		var hard_dist := 1.5 if pursuing else HARD_BRAKE_DIST
-		var soft_dist := 6.0 if pursuing else SOFT_BRAKE_DIST
-		if _dist_to_ahead < hard_dist:
-			brake = 0.4 if pursuing else 0.6
-			throttle = 0.3 if pursuing else 0.1
-		elif _dist_to_ahead < soft_dist:
-			var t := (
-				(_dist_to_ahead - hard_dist)
-				/ (soft_dist - hard_dist)
+		var bp := _calc_brake_params(pursuing, _hitting_pedestrian)
+		if _dist_to_ahead < bp.hard_dist:
+			brake = bp.hard_brake
+			throttle = bp.hard_throttle
+		elif _dist_to_ahead < bp.soft_dist:
+			var t: float = (
+				(_dist_to_ahead - bp.hard_dist)
+				/ (bp.soft_dist - bp.hard_dist)
 			)
-			brake = maxf(brake, 0.3 * (1.0 - t))
-			throttle = lerpf(0.2, throttle, t)
+			brake = maxf(brake, SOFT_BRAKE_FACTOR * (1.0 - t))
+			throttle = lerpf(SOFT_THROTTLE_MIN, throttle, t)
+
+	# Cross-traffic yield
+	var max_yield := PURSUIT_YIELD_TIME if pursuing else MAX_YIELD_TIME
+	if _should_yield(_cross_traffic, _yield_timer, max_yield):
+		brake = maxf(brake, YIELD_BRAKE)
+		throttle = minf(throttle, YIELD_THROTTLE_MAX)
 
 	# Only apply min throttle when not braking (avoid fighting brakes)
 	if brake < 0.1:
@@ -382,6 +418,32 @@ static func _calc_wall_steer(
 	if wall_urgency > 0.8:
 		return wall_steer
 	return lerpf(current_steer, wall_steer, wall_urgency * 0.7)
+
+
+static func _calc_brake_params(
+	pursuing: bool, hitting_pedestrian: bool,
+) -> Dictionary:
+	if pursuing and not hitting_pedestrian:
+		return {
+			hard_dist = PURSUIT_HARD_BRAKE_DIST,
+			soft_dist = PURSUIT_SOFT_BRAKE_DIST,
+			hard_brake = PURSUIT_HARD_BRAKE,
+			hard_throttle = PURSUIT_HARD_THROTTLE,
+		}
+	return {
+		hard_dist = HARD_BRAKE_DIST,
+		soft_dist = SOFT_BRAKE_DIST,
+		hard_brake = PATROL_HARD_BRAKE,
+		hard_throttle = PATROL_HARD_THROTTLE,
+	}
+
+
+static func _should_yield(
+	cross_traffic: bool, yield_timer: float, max_yield: float,
+) -> bool:
+	if not cross_traffic:
+		return false
+	return yield_timer < max_yield
 
 
 static func _calc_escape_steer(
@@ -465,9 +527,11 @@ func _cast_rays() -> void:
 	if result:
 		_dist_to_ahead = from.distance_to(result.position)
 		_hitting_wall = result.collider is StaticBody3D
+		_hitting_pedestrian = result.collider is CharacterBody3D
 	else:
 		_dist_to_ahead = -1.0
 		_hitting_wall = false
+		_hitting_pedestrian = false
 
 	# Side rays
 	var angle_rad := deg_to_rad(SIDE_RAY_ANGLE)
@@ -501,6 +565,34 @@ func _cast_rays() -> void:
 		)
 	else:
 		_steer_avoidance = 0.0
+
+	# Cross-traffic rays — perpendicular to travel direction
+	var travel_dir: Vector3
+	var speed_kmh := _vehicle.linear_velocity.length() * 3.6
+	if _ai_state == AIState.PURSUE and speed_kmh > 5.0:
+		travel_dir = vehicle_fwd
+	else:
+		travel_dir = _dir_to_heading(_direction)
+	var cross_left := travel_dir.rotated(Vector3.UP, PI * 0.5)
+	var cross_right := travel_dir.rotated(Vector3.UP, -PI * 0.5)
+	# NPC(16) | Pedestrians(32) | Police(64) = 112
+	var cross_mask := 112
+
+	var clq := PhysicsRayQueryParameters3D.create(
+		from, from + cross_left * CROSS_RAY_LENGTH
+	)
+	clq.collision_mask = cross_mask
+	clq.exclude = exclude
+	var clr := space.intersect_ray(clq)
+
+	var crq := PhysicsRayQueryParameters3D.create(
+		from, from + cross_right * CROSS_RAY_LENGTH
+	)
+	crq.collision_mask = cross_mask
+	crq.exclude = exclude
+	var crr := space.intersect_ray(crq)
+
+	_cross_traffic = not clr.is_empty() or not crr.is_empty()
 
 
 func _get_vehicle_forward() -> Vector3:

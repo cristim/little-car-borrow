@@ -321,6 +321,136 @@ func test_patrol_pick_direction_covers_all_non_reverse() -> void:
 	)
 
 
+# ==========================================================================
+# _calc_brake_params
+# ==========================================================================
+
+func test_brake_params_pursuit_vehicle() -> void:
+	var bp := PoliceAIScript._calc_brake_params(true, false)
+	assert_eq(bp.hard_dist, PoliceAIScript.PURSUIT_HARD_BRAKE_DIST)
+	assert_eq(bp.soft_dist, PoliceAIScript.PURSUIT_SOFT_BRAKE_DIST)
+	assert_eq(bp.hard_brake, PoliceAIScript.PURSUIT_HARD_BRAKE)
+	assert_eq(bp.hard_throttle, PoliceAIScript.PURSUIT_HARD_THROTTLE)
+
+
+func test_brake_params_pursuit_pedestrian() -> void:
+	var bp := PoliceAIScript._calc_brake_params(true, true)
+	assert_eq(bp.hard_dist, PoliceAIScript.HARD_BRAKE_DIST)
+	assert_eq(bp.soft_dist, PoliceAIScript.SOFT_BRAKE_DIST)
+	assert_eq(bp.hard_brake, PoliceAIScript.PATROL_HARD_BRAKE)
+	assert_eq(bp.hard_throttle, PoliceAIScript.PATROL_HARD_THROTTLE)
+
+
+func test_brake_params_patrol_vehicle() -> void:
+	var bp := PoliceAIScript._calc_brake_params(false, false)
+	assert_eq(bp.hard_dist, PoliceAIScript.HARD_BRAKE_DIST)
+	assert_eq(bp.soft_dist, PoliceAIScript.SOFT_BRAKE_DIST)
+	assert_eq(bp.hard_brake, PoliceAIScript.PATROL_HARD_BRAKE)
+	assert_eq(bp.hard_throttle, PoliceAIScript.PATROL_HARD_THROTTLE)
+
+
+func test_brake_params_patrol_pedestrian() -> void:
+	var bp := PoliceAIScript._calc_brake_params(false, true)
+	assert_eq(bp.hard_dist, PoliceAIScript.HARD_BRAKE_DIST)
+	assert_eq(bp.soft_dist, PoliceAIScript.SOFT_BRAKE_DIST)
+	assert_eq(bp.hard_brake, PoliceAIScript.PATROL_HARD_BRAKE)
+	assert_eq(bp.hard_throttle, PoliceAIScript.PATROL_HARD_THROTTLE)
+
+
+# ==========================================================================
+# _should_yield
+# ==========================================================================
+
+func test_yield_no_cross_traffic() -> void:
+	assert_false(PoliceAIScript._should_yield(false, 0.0, 1.0))
+
+
+func test_yield_under_threshold() -> void:
+	var t := PoliceAIScript.PURSUIT_YIELD_TIME - 0.2
+	assert_true(PoliceAIScript._should_yield(
+		true, t, PoliceAIScript.PURSUIT_YIELD_TIME,
+	))
+
+
+func test_yield_over_threshold() -> void:
+	var t := PoliceAIScript.PURSUIT_YIELD_TIME + 0.1
+	assert_false(PoliceAIScript._should_yield(
+		true, t, PoliceAIScript.PURSUIT_YIELD_TIME,
+	))
+
+
+func test_yield_at_exact_threshold() -> void:
+	assert_false(PoliceAIScript._should_yield(
+		true, PoliceAIScript.PURSUIT_YIELD_TIME,
+		PoliceAIScript.PURSUIT_YIELD_TIME,
+	))
+
+
+func test_yield_just_under_threshold() -> void:
+	var t := PoliceAIScript.PURSUIT_YIELD_TIME - 0.001
+	assert_true(PoliceAIScript._should_yield(
+		true, t, PoliceAIScript.PURSUIT_YIELD_TIME,
+	))
+
+
+func test_yield_patrol_under_threshold() -> void:
+	var t := PoliceAIScript.MAX_YIELD_TIME - 0.2
+	assert_true(PoliceAIScript._should_yield(
+		true, t, PoliceAIScript.MAX_YIELD_TIME,
+	))
+
+
+func test_yield_patrol_at_threshold() -> void:
+	assert_false(PoliceAIScript._should_yield(
+		true, PoliceAIScript.MAX_YIELD_TIME,
+		PoliceAIScript.MAX_YIELD_TIME,
+	))
+
+
+# ==========================================================================
+# State transition yield resets
+# ==========================================================================
+
+func test_pursue_to_patrol_resets_yield() -> void:
+	_ai._ai_state = PoliceAIScript.AIState.PURSUE
+	_ai._yield_timer = 0.3
+	_ai._cross_traffic = true
+
+	WantedLevelManager.wanted_level = 0
+	_ai._update_ai_state(0.1)
+
+	assert_eq(_ai._yield_timer, 0.0)
+	assert_false(_ai._cross_traffic)
+
+
+func test_patrol_to_pursue_resets_yield() -> void:
+	_ai._ai_state = PoliceAIScript.AIState.PATROL
+	_ai._yield_timer = 0.5
+	_ai._cross_traffic = true
+
+	WantedLevelManager.wanted_level = 2
+	_ai._update_ai_state(0.1)
+
+	assert_eq(_ai._yield_timer, 0.0)
+	assert_false(_ai._cross_traffic)
+
+
+func test_pursue_to_patrol_los_timeout_resets_yield() -> void:
+	_ai._ai_state = PoliceAIScript.AIState.PURSUE
+	_ai._pursuit_locked = true
+	_ai._los_cached = false
+	_ai._los_lost_timer = PoliceAIScript.LOS_LOST_TIMEOUT - 0.05
+	_ai._yield_timer = 0.4
+	_ai._cross_traffic = true
+
+	WantedLevelManager.wanted_level = 3
+	_ai._update_ai_state(0.1)
+
+	assert_eq(_ai._ai_state, PoliceAIScript.AIState.PATROL)
+	assert_eq(_ai._yield_timer, 0.0)
+	assert_false(_ai._cross_traffic)
+
+
 func test_patrol_state_after_pursue_ends() -> void:
 	# After PURSUE→PATROL, the AI should be in a valid patrol state
 	_ai._ai_state = PoliceAIScript.AIState.PURSUE
