@@ -24,7 +24,12 @@ const SIDE_RAY_LENGTH := 15.0
 const SIDE_RAY_ANGLE := 20.0
 const HARD_BRAKE_DIST := 3.0
 const SOFT_BRAKE_DIST := 12.0
-const RAY_INTERVAL := 3
+const RAY_INTERVAL_NEAR := 3
+const RAY_INTERVAL_MID := 8
+const RAY_INTERVAL_FAR := 15
+const LOD_MID_DIST := 60.0
+const LOD_FAR_DIST := 100.0
+const LOD_FREEZE_DIST := 140.0
 const STEER_AVOID_GAIN := 0.6
 const CROSS_RAY_LENGTH := 10.0
 const MAX_YIELD_TIME := 2.0  # max seconds to wait for cross traffic
@@ -95,15 +100,24 @@ func _physics_process(delta: float) -> void:
 	if not active or not _vehicle:
 		return
 
+	# Distance-based LOD — skip AI entirely for very far vehicles
+	var cam := get_viewport().get_camera_3d()
+	if cam:
+		var cam_dist := _vehicle.global_position.distance_to(
+			cam.global_position
+		)
+		if cam_dist > LOD_FREEZE_DIST:
+			return
+
 	# --- Escape maneuver phases ---
 	if _escape_phase != EscapePhase.NONE:
 		_process_escape(delta)
 		return
 
-	# --- Collision detection (throttled) ---
+	# --- Collision detection (distance-throttled) ---
 	_ray_cooldown -= 1
 	if _ray_cooldown <= 0:
-		_ray_cooldown = RAY_INTERVAL
+		_ray_cooldown = _get_ray_interval()
 		_cast_rays()
 
 	# --- Stuck detection ---
@@ -278,7 +292,7 @@ func _process_escape(delta: float) -> void:
 
 	_ray_cooldown -= 1
 	if _ray_cooldown <= 0:
-		_ray_cooldown = RAY_INTERVAL
+		_ray_cooldown = _get_ray_interval()
 		_cast_rays()
 
 	# Commit recovery target once (idempotent guard inside)
@@ -378,6 +392,18 @@ func deactivate() -> void:
 		_vehicle.throttle_input = 0.0
 		_vehicle.brake_input = 1.0
 		_vehicle.handbrake_input = 1.0
+
+
+func _get_ray_interval() -> int:
+	var cam := get_viewport().get_camera_3d()
+	if not cam:
+		return RAY_INTERVAL_NEAR
+	var d := _vehicle.global_position.distance_to(cam.global_position)
+	if d > LOD_FAR_DIST:
+		return RAY_INTERVAL_FAR
+	if d > LOD_MID_DIST:
+		return RAY_INTERVAL_MID
+	return RAY_INTERVAL_NEAR
 
 
 func _cast_rays() -> void:
