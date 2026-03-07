@@ -2,8 +2,8 @@ extends Node
 ## Manages mission lifecycle: generation, acceptance, tracking, completion.
 ## Missions are plain Dictionaries — no class_name.
 
-const REFRESH_INTERVAL := 30.0
-const MAX_AVAILABLE := 5
+const REFRESH_INTERVAL := 20.0
+const MAX_AVAILABLE := 8
 const SIDEWALK_OFFSET := 1.5
 
 var _available_missions: Array[Dictionary] = []
@@ -223,7 +223,7 @@ func _on_vehicle_entered(vehicle: Node) -> void:
 
 func _generate_delivery() -> Dictionary:
 	var pp := _player.global_position
-	var start := _gen_sidewalk_pos(pp, 80.0, 200.0)
+	var start := _gen_sidewalk_pos(pp, 40.0, 150.0)
 	var pickup := _gen_sidewalk_pos(start, 40.0, 120.0)
 	var dropoff := _gen_sidewalk_pos(pickup, 150.0, 400.0)
 	var tl := _rng.randf_range(90.0, 150.0)
@@ -245,7 +245,7 @@ func _generate_delivery() -> Dictionary:
 
 func _generate_taxi() -> Dictionary:
 	var pp := _player.global_position
-	var start := _gen_sidewalk_pos(pp, 80.0, 200.0)
+	var start := _gen_sidewalk_pos(pp, 40.0, 150.0)
 	var dropoff := _gen_sidewalk_pos(start, 100.0, 300.0)
 	var tl := _rng.randf_range(60.0, 120.0)
 	var reward := _rng.randi_range(200, 500)
@@ -273,7 +273,7 @@ func _generate_theft() -> Dictionary:
 		_rng.randi() % variants.size()
 	]
 	var pp := _player.global_position
-	var start := _gen_sidewalk_pos(pp, 80.0, 200.0)
+	var start := _gen_sidewalk_pos(pp, 40.0, 150.0)
 	var dropoff := _gen_sidewalk_pos(start, 200.0, 400.0)
 	var reward := _rng.randi_range(500, 1500)
 	return {

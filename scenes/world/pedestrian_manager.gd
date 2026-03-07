@@ -2,14 +2,13 @@ extends Node
 ## Spawns and despawns pedestrians on sidewalks around the player.
 ## Follows TrafficManager pattern with road_grid for positioning.
 
-const SPAWN_RADIUS := 120.0
-const DESPAWN_RADIUS := 150.0
-const DESPAWN_BEHIND_RADIUS := 60.0
-const MIN_SPAWN_DIST := 40.0
-const MIN_PED_DIST := 5.0
-const MAX_PEDESTRIANS := 20
-const SPAWN_INTERVAL := 0.5
-const SPAWNS_PER_TICK := 3
+const SPAWN_RADIUS := 80.0
+const DESPAWN_RADIUS := 100.0
+const DESPAWN_BEHIND_RADIUS := 50.0
+const MIN_SPAWN_DIST := 35.0
+const MIN_PED_DIST := 8.0
+const SPAWN_INTERVAL := 1.0
+const SPAWNS_PER_TICK := 2
 const SIDEWALK_OFFSET := 1.5
 
 var _grid = preload("res://src/road_grid.gd").new()
@@ -43,20 +42,12 @@ func _process(delta: float) -> void:
 	if _spawn_timer >= SPAWN_INTERVAL:
 		_spawn_timer = 0.0
 		_despawn_far()
-		var effective_max := int(MAX_PEDESTRIANS * _time_multiplier)
-		var deficit := effective_max - _pedestrians.size()
-		var count := SPAWNS_PER_TICK
-		if deficit > effective_max / 2:
-			count = 8
-		elif deficit > effective_max / 4:
-			count = 5
-		for _i in range(count):
+		for _i in range(SPAWNS_PER_TICK):
 			_try_spawn()
 
 
 func _try_spawn() -> void:
-	var effective_max := int(MAX_PEDESTRIANS * _time_multiplier)
-	if _pedestrians.size() >= effective_max:
+	if _rng.randf() > _time_multiplier:
 		return
 
 	var player_pos := _player.global_position
