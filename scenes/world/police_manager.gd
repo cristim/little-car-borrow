@@ -4,10 +4,11 @@ extends Node
 
 const SPAWN_RADIUS := 180.0
 const DESPAWN_RADIUS := 250.0
-const MIN_SPAWN_DIST := 60.0
+const MIN_SPAWN_DIST := 40.0
 const MIN_VEHICLE_DIST := 20.0
 const SPAWN_INTERVAL := 1.0
 const DESPAWN_FADE_TIME := 10.0
+const LOD_FREEZE_DIST := 140.0
 
 var _grid = preload("res://src/road_grid.gd").new()
 var _police_scene: PackedScene = preload("res://scenes/vehicles/police_vehicle.tscn")
@@ -76,10 +77,11 @@ func _process(delta: float) -> void:
 
 func _get_max_police() -> int:
 	var level := WantedLevelManager.wanted_level
-	# 1 star=2, 2=4, 3=7, 4=10, 5=14
-	if level <= 2:
-		return level * 2
-	return level * 3 - 1
+	# L0=0, L1=3, L2=5, L3=8, L4=12, L5=16
+	var caps := [0, 3, 5, 8, 12, 16]
+	if level < 0 or level >= caps.size():
+		return 0
+	return caps[level]
 
 
 func _on_wanted_level_changed(level: int) -> void:
@@ -186,8 +188,12 @@ func _despawn_far() -> void:
 		if not is_instance_valid(v):
 			to_remove.append(v)
 			continue
-		if (v as Node3D).global_position.distance_to(player_pos) > DESPAWN_RADIUS:
+		var d := (v as Node3D).global_position.distance_to(player_pos)
+		if d > DESPAWN_RADIUS:
 			to_remove.append(v)
+		# Freeze/unfreeze GEVP physics by distance
+		if "freeze" in v:
+			v.freeze = d >= LOD_FREEZE_DIST
 	for v in to_remove:
 		_police.erase(v)
 		if is_instance_valid(v):

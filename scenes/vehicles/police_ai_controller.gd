@@ -25,7 +25,12 @@ const SIDE_RAY_LENGTH := 15.0
 const SIDE_RAY_ANGLE := 20.0
 const HARD_BRAKE_DIST := 3.0
 const SOFT_BRAKE_DIST := 12.0
-const RAY_INTERVAL := 3
+const RAY_INTERVAL_NEAR := 3
+const RAY_INTERVAL_MID := 8
+const RAY_INTERVAL_FAR := 15
+const LOD_MID_DIST := 60.0
+const LOD_FAR_DIST := 100.0
+const LOD_FREEZE_DIST := 140.0
 const STEER_AVOID_GAIN := 0.6
 # Static | PlayerVehicle | NPC | Police
 const RAY_MASK := 90
@@ -34,6 +39,7 @@ const RAY_MASK := 90
 const LOS_RANGE := 100.0
 const LOS_LOCK_TIME := 1.0
 const LOS_LOST_TIMEOUT := 20.0
+const LOS_CHECK_INTERVAL := 0.2
 
 # Stuck detection
 const STUCK_TIMEOUT := 0.8
@@ -73,6 +79,8 @@ var _escape_attempts := 0
 var _los_timer := 0.0
 var _los_lost_timer := 0.0
 var _pursuit_locked := false
+var _los_check_timer := 0.0
+var _los_cached := false
 
 # Officer spawning
 var _officer_script: GDScript = preload(
@@ -97,14 +105,23 @@ func _physics_process(delta: float) -> void:
 	if not _player:
 		_player = get_tree().get_first_node_in_group("player") as Node3D
 
+	# Distance-based LOD — skip AI entirely for very far vehicles
+	var cam := get_viewport().get_camera_3d()
+	if cam:
+		var cam_dist := _vehicle.global_position.distance_to(
+			cam.global_position
+		)
+		if cam_dist > LOD_FREEZE_DIST:
+			return
+
 	_update_ai_state(delta)
 	_update_lights_and_siren()
 	_try_dismount(delta)
 
-	# Collision detection (throttled)
+	# Collision detection (distance-throttled)
 	_ray_cooldown -= 1
 	if _ray_cooldown <= 0:
-		_ray_cooldown = RAY_INTERVAL
+		_ray_cooldown = _get_ray_interval()
 		_cast_rays()
 
 	# Stuck detection
@@ -139,8 +156,14 @@ func _update_ai_state(delta: float) -> void:
 			_los_lost_timer = 0.0
 		return
 
+	# Throttle LOS raycasts
+	_los_check_timer += delta
+	if _los_check_timer >= LOS_CHECK_INTERVAL:
+		_los_check_timer = 0.0
+		_los_cached = _check_los()
+
 	if _ai_state == AIState.PATROL:
-		if _check_los():
+		if _los_cached:
 			_los_timer += delta
 			_los_lost_timer = 0.0
 			if _los_timer >= LOS_LOCK_TIME:
@@ -149,7 +172,7 @@ func _update_ai_state(delta: float) -> void:
 		else:
 			_los_timer = maxf(_los_timer - delta, 0.0)
 	elif _ai_state == AIState.PURSUE:
-		if _check_los():
+		if _los_cached:
 			_los_lost_timer = 0.0
 		else:
 			_los_lost_timer += delta
@@ -322,6 +345,18 @@ func deactivate() -> void:
 		_vehicle.throttle_input = 0.0
 		_vehicle.brake_input = 1.0
 		_vehicle.handbrake_input = 1.0
+
+
+func _get_ray_interval() -> int:
+	var cam := get_viewport().get_camera_3d()
+	if not cam:
+		return RAY_INTERVAL_NEAR
+	var d := _vehicle.global_position.distance_to(cam.global_position)
+	if d > LOD_FAR_DIST:
+		return RAY_INTERVAL_FAR
+	if d > LOD_MID_DIST:
+		return RAY_INTERVAL_MID
+	return RAY_INTERVAL_NEAR
 
 
 func _cast_rays() -> void:
