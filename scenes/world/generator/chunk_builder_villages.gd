@@ -7,12 +7,12 @@ const MIN_VILLAGE_BUILDINGS := 3
 const VILLAGE_SEARCH_ATTEMPTS := 10
 const FLATNESS_THRESHOLD := 2.0  # max height variance within village footprint
 const VILLAGE_RADIUS := 30.0  # meters
-const CITY_RADIUS_CONST := 3  # must match city.gd
 
 var _grid: RefCounted
 var _noise: FastNoiseLite
 var _building_mats: Array[StandardMaterial3D] = []
 var _window_mat: StandardMaterial3D  # reserved for future village windows
+var _boundary: RefCounted
 
 var _city_script: GDScript = preload("res://scenes/world/city.gd")
 
@@ -22,11 +22,13 @@ func init(
 	noise: FastNoiseLite,
 	building_mats: Array[StandardMaterial3D],
 	window_mat: StandardMaterial3D,
+	boundary: RefCounted = null,
 ) -> void:
 	_grid = grid
 	_noise = noise
 	_building_mats = building_mats
 	_window_mat = window_mat
+	_boundary = boundary
 
 
 func build(
@@ -156,20 +158,17 @@ func _sample_height(wx: float, wz: float) -> float:
 	var raw: float = _noise.get_noise_2d(wx, wz)
 	var n: float = (raw + 1.0) * 0.5
 	var grid_span: float = _grid.get_grid_span()
-	var city_edge: float = (float(CITY_RADIUS_CONST) + 0.5) * grid_span
-	# Chebyshev distance: matches the square city tile layout
-	var dist: float = maxf(absf(wx), absf(wz))
 
-	if dist < city_edge:
-		return 0.0
+	var edge_dist: float = _boundary.get_signed_distance(wx, wz)
+	if edge_dist < 0.0:
+		return 0.0  # inside city
 
 	var fade: float = clampf(
-		(dist - city_edge) / (grid_span * 3.0), 0.0, 1.0
+		edge_dist / (grid_span * 3.0), 0.0, 1.0
 	)
 	var max_h: float = lerpf(20.0, 80.0, fade)
 	var h: float = n * max_h - 2.0
 
-	var edge_dist: float = dist - city_edge
 	if edge_dist < 40.0:
 		var edge_blend: float = edge_dist / 40.0
 		h = lerpf(0.0, h, edge_blend)

@@ -6,11 +6,13 @@ const VillageScript = preload(
 	"res://scenes/world/generator/chunk_builder_villages.gd"
 )
 const RoadGridScript = preload("res://src/road_grid.gd")
+const BoundaryScript = preload("res://src/city_boundary.gd")
 
 
 var _grid: RefCounted
 var _noise: FastNoiseLite
 var _builder: RefCounted
+var _boundary: RefCounted
 var _mats: Array[StandardMaterial3D]
 
 
@@ -25,6 +27,9 @@ func before_each() -> void:
 	_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
 	_noise.seed = 42
 
+	_boundary = BoundaryScript.new()
+	_boundary.init(_grid.get_grid_span())
+
 	_mats = []
 	for _i in 3:
 		var mat := StandardMaterial3D.new()
@@ -34,7 +39,7 @@ func before_each() -> void:
 	var win_mat := StandardMaterial3D.new()
 
 	_builder = VillageScript.new()
-	_builder.init(_grid, _noise, _mats, win_mat)
+	_builder.init(_grid, _noise, _mats, win_mat, _boundary)
 
 
 # ================================================================

@@ -385,7 +385,7 @@ func _init_builders() -> void:
 	_light_builder.init(_grid, _pole_mat)
 	_terrain_builder.init(_grid, _terrain_noise, _terrain_mat, _boundary)
 	_village_builder.init(
-		_grid, _terrain_noise, _building_mats, _window_mats[0]
+		_grid, _terrain_noise, _building_mats, _window_mats[0], _boundary
 	)
 
 
