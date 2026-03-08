@@ -6,11 +6,13 @@ const TerrainScript = preload(
 	"res://scenes/world/generator/chunk_builder_terrain.gd"
 )
 const RoadGridScript = preload("res://src/road_grid.gd")
+const BoundaryScript = preload("res://src/city_boundary.gd")
 
 
 var _grid: RefCounted
 var _noise: FastNoiseLite
 var _builder: RefCounted
+var _boundary: RefCounted
 
 
 func before_each() -> void:
@@ -24,11 +26,14 @@ func before_each() -> void:
 	_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
 	_noise.seed = 42
 
+	_boundary = BoundaryScript.new()
+	_boundary.init(_grid.get_grid_span())
+
 	var mat := StandardMaterial3D.new()
 	mat.vertex_color_use_as_albedo = true
 
 	_builder = TerrainScript.new()
-	_builder.init(_grid, _noise, mat)
+	_builder.init(_grid, _noise, mat, _boundary)
 
 
 # ================================================================
@@ -56,8 +61,8 @@ func test_height_nonzero_outside_city() -> void:
 
 
 func test_height_smooth_transition_near_city_edge() -> void:
-	var span: float = _grid.get_grid_span()
-	var city_edge: float = (3.0 + 0.5) * span
+	# Use boundary radius at angle 0 as the edge reference
+	var city_edge: float = _boundary.get_boundary_radius_at_angle(0.0)
 	# Just 10m beyond city edge — should be small height
 	var h: float = _builder._sample_height(city_edge + 10.0, 0.0)
 	assert_true(

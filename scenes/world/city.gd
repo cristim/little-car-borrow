@@ -383,7 +383,7 @@ func _init_builders() -> void:
 	_marking_builder.init(_grid, _marking_mat)
 	_ramp_builder.init(_grid, _ramp_mat)
 	_light_builder.init(_grid, _pole_mat)
-	_terrain_builder.init(_grid, _terrain_noise, _terrain_mat)
+	_terrain_builder.init(_grid, _terrain_noise, _terrain_mat, _boundary)
 	_village_builder.init(
 		_grid, _terrain_noise, _building_mats, _window_mats[0]
 	)
