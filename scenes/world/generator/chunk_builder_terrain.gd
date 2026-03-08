@@ -142,12 +142,13 @@ func _sample_height(wx: float, wz: float) -> float:
 	var max_h: float = lerpf(20.0, 80.0, fade)
 	var h: float = n * max_h - 2.0
 
-	# Smooth blend from city ground (y=0) over one full tile span.
-	# Uses smoothstep so terrain on the first tile outside the city
-	# starts nearly flat and ramps up gradually — no cliff at tile edge.
-	if edge_dist < grid_span:
-		var t: float = edge_dist / grid_span
-		t = t * t * (3.0 - 2.0 * t)  # smoothstep
+	# Cubic ease-in blend from city ground (y=0) over two tile spans.
+	# Keeps terrain nearly flat for the first tile outside the city
+	# (where the city-terrain tile boundary falls), then rises gradually.
+	var blend_range: float = grid_span * 2.0
+	if edge_dist < blend_range:
+		var t: float = edge_dist / blend_range
+		t = t * t * t  # cubic — very flat near city
 		h = lerpf(0.0, maxf(h, 0.0), t)
 
 	return h
