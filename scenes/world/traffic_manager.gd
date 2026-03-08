@@ -43,6 +43,9 @@ var _npc_controller_script: GDScript = preload(
 var _vehicle_health_script: GDScript = preload(
 	"res://scenes/vehicles/vehicle_health.gd"
 )
+var _vehicle_lights_script: GDScript = preload(
+	"res://scenes/vehicles/vehicle_lights.gd"
+)
 var _spawn_timer := 0.0
 var _player: Node3D = null
 var _rng := RandomNumberGenerator.new()
@@ -238,6 +241,12 @@ func _try_spawn() -> void:
 
 		get_tree().current_scene.add_child(vehicle)
 		vehicle.add_to_group("npc_vehicle")
+
+		var lights: Node3D = _vehicle_lights_script.new()
+		lights.name = "VehicleLights"
+		vehicle.get_node("Body").add_child(lights)
+		lights.initialize(vehicle)
+
 		npc.initialize(vehicle, road_idx, direction)
 
 		_vehicles.append(vehicle)
