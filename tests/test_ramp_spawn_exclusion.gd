@@ -78,3 +78,19 @@ func test_tiling_far_chunk() -> void:
 		_grid.is_on_ramp(-240.0 + ox, 0.0 + oz),
 		"Road 0 in chunk (3,-2) far from ramps should not be excluded",
 	)
+
+
+func test_traffic_manager_calls_is_on_ramp() -> void:
+	var script: GDScript = load("res://scenes/world/traffic_manager.gd")
+	assert_true(
+		script.source_code.contains("is_on_ramp"),
+		"traffic_manager should call is_on_ramp to skip ramp positions",
+	)
+
+
+func test_police_manager_calls_is_on_ramp() -> void:
+	var script: GDScript = load("res://scenes/world/police_manager.gd")
+	assert_true(
+		script.source_code.contains("is_on_ramp"),
+		"police_manager should call is_on_ramp to skip ramp positions",
+	)

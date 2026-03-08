@@ -166,6 +166,9 @@ func _try_spawn() -> void:
 		if dist < MIN_SPAWN_DIST or dist > SPAWN_RADIUS:
 			continue
 
+		if _grid.is_on_ramp(spawn_pos.x, spawn_pos.z):
+			continue
+
 		var too_close := false
 		for v in _police:
 			if is_instance_valid(v) and spawn_pos.distance_to(
