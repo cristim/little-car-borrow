@@ -1,10 +1,38 @@
 extends Node
 ## Handles player shooting via raycast from the active camera center.
+## Supports multiple weapon types with switching, spread, and auto-fire.
 ## Works both on foot and from inside a vehicle.
 
-const SHOOT_RANGE := 50.0
-const SHOOT_COOLDOWN := 0.3
-const SHOOT_DAMAGE := 25.0
+const WEAPONS := [
+	{
+		"name": "Pistol", "range": 50.0, "damage": 25.0, "cooldown": 0.3,
+		"auto": false, "spread": 0.0, "pellets": 1, "crime_mult": 1.0,
+		"body": Vector3(0.06, 0.06, 0.2), "muzzle_z": -0.2,
+		"snap_dur": 0.005, "body_dur": 0.06, "tail_decay": 6.0,
+		"base_freq": 200.0, "end_freq": 60.0,
+	},
+	{
+		"name": "SMG", "range": 40.0, "damage": 12.0, "cooldown": 0.08,
+		"auto": true, "spread": 0.03, "pellets": 1, "crime_mult": 1.0,
+		"body": Vector3(0.06, 0.08, 0.25), "muzzle_z": -0.25,
+		"snap_dur": 0.003, "body_dur": 0.03, "tail_decay": 10.0,
+		"base_freq": 280.0, "end_freq": 100.0,
+	},
+	{
+		"name": "Shotgun", "range": 25.0, "damage": 60.0, "cooldown": 0.8,
+		"auto": false, "spread": 0.08, "pellets": 6, "crime_mult": 1.5,
+		"body": Vector3(0.08, 0.06, 0.3), "muzzle_z": -0.3,
+		"snap_dur": 0.008, "body_dur": 0.08, "tail_decay": 4.0,
+		"base_freq": 160.0, "end_freq": 40.0,
+	},
+	{
+		"name": "Rifle", "range": 100.0, "damage": 40.0, "cooldown": 0.5,
+		"auto": false, "spread": 0.005, "pellets": 1, "crime_mult": 1.2,
+		"body": Vector3(0.04, 0.04, 0.4), "muzzle_z": -0.4,
+		"snap_dur": 0.004, "body_dur": 0.05, "tail_decay": 5.0,
+		"base_freq": 240.0, "end_freq": 50.0,
+	},
+]
 const VEHICLE_IMPULSE := 80.0
 const MAX_WORLD_DECALS := 30
 const WORLD_DECAL_LIFETIME := 15.0
@@ -16,16 +44,26 @@ const AIM_POSE_TIME := 0.3
 var _ragdoll_script: GDScript = preload(
 	"res://scenes/pedestrians/pedestrian_ragdoll.gd"
 )
+var _current_idx := 0
+var _unlocked: Array[bool] = [true, false, false, false]
+var _rng := RandomNumberGenerator.new()
 var _cooldown := 0.0
 var _flash_timer := 0.0
 var _muzzle_flash: MeshInstance3D = null
+var _gun_mesh: MeshInstance3D = null
+var _elbow: Node3D = null
 var _player_model: Node3D = null
 var _world_decals: Array[MeshInstance3D] = []
 var _blood_decals: Array[MeshInstance3D] = []
 
 
 func _ready() -> void:
+	_rng.randomize()
 	_player_model = owner.get_node_or_null("PlayerModel")
+	if _player_model:
+		_elbow = _player_model.get_node_or_null(
+			"RightShoulderPivot/RightElbowPivot"
+		)
 	_setup_gun_mesh()
 
 
@@ -38,13 +76,73 @@ func _process(delta: float) -> void:
 		if _flash_timer <= 0.0 and _muzzle_flash:
 			_muzzle_flash.visible = false
 
-
-func _unhandled_input(event: InputEvent) -> void:
 	if GameManager.is_dead:
 		return
-	if event.is_action_pressed("shoot") and _cooldown <= 0.0:
+
+	for i in range(WEAPONS.size()):
+		var action: String = "weapon_%d" % (i + 1)
+		if Input.is_action_just_pressed(action) and _unlocked[i]:
+			_switch_weapon(i)
+			return
+
+	if Input.is_action_just_pressed("weapon_next"):
+		_cycle_weapon(1)
+		return
+	if Input.is_action_just_pressed("weapon_prev"):
+		_cycle_weapon(-1)
+		return
+
+	if _cooldown > 0.0:
+		return
+
+	var w: Dictionary = WEAPONS[_current_idx]
+	var is_auto: bool = w.get("auto", false)
+	var should_fire := false
+	if is_auto:
+		should_fire = Input.is_action_pressed("shoot")
+	else:
+		should_fire = Input.is_action_just_pressed("shoot")
+
+	if should_fire:
 		_shoot()
-		_cooldown = SHOOT_COOLDOWN
+		var cd: float = w.get("cooldown", 0.3)
+		_cooldown = cd
+
+
+func _switch_weapon(idx: int) -> void:
+	if idx == _current_idx:
+		return
+	if idx < 0 or idx >= WEAPONS.size():
+		return
+	if not _unlocked[idx]:
+		return
+	_current_idx = idx
+	_setup_gun_mesh()
+	EventBus.weapon_switched.emit(idx)
+
+
+func _cycle_weapon(direction: int) -> void:
+	var idx := _current_idx
+	for _i in range(WEAPONS.size()):
+		idx = (idx + direction) % WEAPONS.size()
+		if idx < 0:
+			idx += WEAPONS.size()
+		if _unlocked[idx]:
+			_switch_weapon(idx)
+			return
+
+
+func unlock_weapon(idx: int) -> void:
+	if idx < 0 or idx >= WEAPONS.size():
+		return
+	if _unlocked[idx]:
+		return
+	_unlocked[idx] = true
+	EventBus.weapon_unlocked.emit(idx)
+	var wname: String = WEAPONS[idx]["name"]
+	EventBus.show_notification.emit(
+		"%s unlocked! Press %d to equip" % [wname, idx + 1], 3.0
+	)
 
 
 func _shoot() -> void:
@@ -52,66 +150,91 @@ func _shoot() -> void:
 	if not camera:
 		return
 
-	# Project ray from crosshair screen position (centered horizontally, 35% from top)
+	var w: Dictionary = WEAPONS[_current_idx]
+	var shoot_range: float = w.get("range", 50.0)
+	var shoot_damage: float = w.get("damage", 25.0)
+	var spread: float = w.get("spread", 0.0)
+	var pellets: int = w.get("pellets", 1)
+	var crime_mult: float = w.get("crime_mult", 1.0)
+
 	var vp_size := get_viewport().get_visible_rect().size
 	var crosshair_screen := Vector2(vp_size.x * 0.5, vp_size.y * 0.35)
 	var from := camera.project_ray_origin(crosshair_screen)
-	var dir := camera.project_ray_normal(crosshair_screen)
-	var to := from + dir * SHOOT_RANGE
+	var base_dir := camera.project_ray_normal(crosshair_screen)
 
-	var space: PhysicsDirectSpaceState3D = owner.get_world_3d().direct_space_state
-	var query := PhysicsRayQueryParameters3D.create(from, to)
-	# Layers 1-7 (Ground, Static, PlayerFoot, PlayerVehicle, NPCVehicle,
-	# Pedestrian, Police)
-	query.collision_mask = 0b01111111
-	query.exclude = [owner.get_rid()]
-	# Also exclude current vehicle if driving
-	if owner.current_vehicle and is_instance_valid(owner.current_vehicle):
-		query.exclude.append(
-			(owner.current_vehicle as CollisionObject3D).get_rid()
-		)
+	var space: PhysicsDirectSpaceState3D = (
+		owner.get_world_3d().direct_space_state
+	)
 
-	var result: Dictionary = space.intersect_ray(query)
-
-	# Show muzzle flash
 	if _muzzle_flash:
 		_muzzle_flash.visible = true
 		_flash_timer = MUZZLE_FLASH_TIME
 
-	# Aiming pose on player model
 	if _player_model and _player_model.has_method("set_aiming"):
 		_player_model.set_aiming(AIM_POSE_TIME)
 
-	# Gunshot sound
 	_play_gunshot()
 
-	if result.is_empty():
-		return
+	for _p in range(pellets):
+		var dir := base_dir
+		if spread > 0.0:
+			dir = _apply_spread(dir, spread)
 
-	var body: Node = result["collider"]
-	var hit_pos: Vector3 = result["position"]
-	var hit_normal: Vector3 = result["normal"]
+		var to := from + dir * shoot_range
 
-	if body.is_in_group("pedestrian"):
-		_spawn_ragdoll(body, dir)
-		_spawn_blood(hit_pos)
-		EventBus.pedestrian_killed.emit(body)
-		EventBus.crime_committed.emit("shoot_pedestrian", 35)
-		body.queue_free()
-	elif body.is_in_group("police_officer"):
-		_spawn_ragdoll(body, dir)
-		_spawn_blood(hit_pos)
-		EventBus.crime_committed.emit("shoot_police", 60)
-		body.queue_free()
-	elif body is RigidBody3D:
-		var impulse := dir * VEHICLE_IMPULSE
-		(body as RigidBody3D).apply_impulse(impulse, hit_pos - body.global_position)
-		var vh := body.get_node_or_null("VehicleHealth")
-		if vh:
-			vh.take_damage(SHOOT_DAMAGE, hit_pos, hit_normal)
-		EventBus.crime_committed.emit("shoot_vehicle", 15)
-	elif body is StaticBody3D:
-		_spawn_world_decal(hit_pos, hit_normal)
+		var query := PhysicsRayQueryParameters3D.create(from, to)
+		query.collision_mask = 0b01111111
+		query.exclude = [owner.get_rid()]
+		if (
+			owner.current_vehicle
+			and is_instance_valid(owner.current_vehicle)
+		):
+			query.exclude.append(
+				(owner.current_vehicle as CollisionObject3D).get_rid()
+			)
+
+		var result: Dictionary = space.intersect_ray(query)
+		if result.is_empty():
+			continue
+
+		var body: Node = result["collider"]
+		var hit_pos: Vector3 = result["position"]
+		var hit_normal: Vector3 = result["normal"]
+		var pellet_dmg: float = shoot_damage / float(pellets)
+
+		if body.is_in_group("pedestrian"):
+			_spawn_ragdoll(body, dir)
+			_spawn_blood(hit_pos)
+			EventBus.pedestrian_killed.emit(body)
+			var heat: int = roundi(35.0 * crime_mult)
+			EventBus.crime_committed.emit("shoot_pedestrian", heat)
+			body.queue_free()
+		elif body.is_in_group("police_officer"):
+			_spawn_ragdoll(body, dir)
+			_spawn_blood(hit_pos)
+			var heat: int = roundi(60.0 * crime_mult)
+			EventBus.crime_committed.emit("shoot_police", heat)
+			body.queue_free()
+		elif body is RigidBody3D:
+			var impulse := dir * VEHICLE_IMPULSE
+			(body as RigidBody3D).apply_impulse(
+				impulse, hit_pos - body.global_position
+			)
+			var vh := body.get_node_or_null("VehicleHealth")
+			if vh:
+				vh.take_damage(pellet_dmg, hit_pos, hit_normal)
+			var heat: int = roundi(15.0 * crime_mult)
+			EventBus.crime_committed.emit("shoot_vehicle", heat)
+		elif body is StaticBody3D:
+			_spawn_world_decal(hit_pos, hit_normal)
+
+
+func _apply_spread(dir: Vector3, spread: float) -> Vector3:
+	var right := dir.cross(Vector3.UP).normalized()
+	var up := right.cross(dir).normalized()
+	var offset_x: float = _rng.randf_range(-spread, spread)
+	var offset_y: float = _rng.randf_range(-spread, spread)
+	return (dir + right * offset_x + up * offset_y).normalized()
 
 
 func _spawn_ragdoll(target: Node, shoot_dir: Vector3) -> void:
@@ -121,7 +244,6 @@ func _spawn_ragdoll(target: Node, shoot_dir: Vector3) -> void:
 	ragdoll.rotation = (target as Node3D).global_rotation
 	ragdoll.copy_visual_from(target)
 	get_tree().current_scene.add_child(ragdoll)
-	# Gentle nudge so body drops near where it stood
 	var impulse := shoot_dir * 15.0
 	impulse.y = 0.0
 	ragdoll.apply_central_impulse(impulse)
@@ -186,27 +308,63 @@ func _spawn_blood(hit_pos: Vector3) -> void:
 
 
 func _setup_gun_mesh() -> void:
-	if not _player_model:
-		return
-	var elbow := _player_model.get_node_or_null(
-		"RightShoulderPivot/RightElbowPivot"
-	)
-	if not elbow:
+	if not _elbow:
 		return
 
-	# Gun body
-	var gun := MeshInstance3D.new()
-	gun.name = "GunMesh"
-	var gun_mesh := BoxMesh.new()
-	gun_mesh.size = Vector3(0.06, 0.06, 0.2)
+	if _gun_mesh and is_instance_valid(_gun_mesh):
+		_gun_mesh.queue_free()
+		_gun_mesh = null
+	if _muzzle_flash and is_instance_valid(_muzzle_flash):
+		_muzzle_flash.queue_free()
+		_muzzle_flash = null
+
+	var w: Dictionary = WEAPONS[_current_idx]
+	var body_size: Vector3 = w.get("body", Vector3(0.06, 0.06, 0.2))
+	var muzzle_z: float = w.get("muzzle_z", -0.2)
+	var weapon_name: String = w.get("name", "Pistol")
+
 	var gun_mat := StandardMaterial3D.new()
 	gun_mat.albedo_color = Color(0.1, 0.1, 0.1)
-	gun_mesh.material = gun_mat
-	gun.mesh = gun_mesh
-	gun.position = Vector3(0.0, -0.2, -0.08)
-	elbow.add_child(gun)
 
-	# Muzzle flash
+	_gun_mesh = MeshInstance3D.new()
+	_gun_mesh.name = "GunMesh"
+	var gun_box := BoxMesh.new()
+	gun_box.size = body_size
+	gun_box.material = gun_mat
+	_gun_mesh.mesh = gun_box
+	_gun_mesh.position = Vector3(0.0, -0.2, -0.08)
+	_elbow.add_child(_gun_mesh)
+
+	match weapon_name:
+		"SMG":
+			var mag := MeshInstance3D.new()
+			var mag_mesh := BoxMesh.new()
+			mag_mesh.size = Vector3(0.04, 0.08, 0.05)
+			mag_mesh.material = gun_mat
+			mag.mesh = mag_mesh
+			mag.position = Vector3(0.0, -0.06, 0.02)
+			_gun_mesh.add_child(mag)
+		"Shotgun":
+			var stock := MeshInstance3D.new()
+			var stock_mesh := BoxMesh.new()
+			stock_mesh.size = Vector3(0.04, 0.06, 0.15)
+			stock_mesh.material = gun_mat
+			stock.mesh = stock_mesh
+			stock.position = Vector3(
+				0.0, 0.0, body_size.z * 0.5 + 0.075
+			)
+			_gun_mesh.add_child(stock)
+		"Rifle":
+			var scope := MeshInstance3D.new()
+			var scope_mesh := BoxMesh.new()
+			scope_mesh.size = Vector3(0.025, 0.03, 0.1)
+			scope_mesh.material = gun_mat
+			scope.mesh = scope_mesh
+			scope.position = Vector3(
+				0.0, body_size.y * 0.5 + 0.015, -0.05
+			)
+			_gun_mesh.add_child(scope)
+
 	_muzzle_flash = MeshInstance3D.new()
 	_muzzle_flash.name = "MuzzleFlash"
 	var flash_mesh := SphereMesh.new()
@@ -221,12 +379,19 @@ func _setup_gun_mesh() -> void:
 	flash_mat.emission_energy_multiplier = 3.0
 	flash_mesh.material = flash_mat
 	_muzzle_flash.mesh = flash_mesh
-	_muzzle_flash.position = Vector3(0.0, -0.2, -0.2)
+	_muzzle_flash.position = Vector3(0.0, -0.2, muzzle_z)
 	_muzzle_flash.visible = false
-	elbow.add_child(_muzzle_flash)
+	_elbow.add_child(_muzzle_flash)
 
 
 func _play_gunshot() -> void:
+	var w: Dictionary = WEAPONS[_current_idx]
+	var snap_dur: float = w.get("snap_dur", 0.005)
+	var body_dur: float = w.get("body_dur", 0.06)
+	var tail_decay: float = w.get("tail_decay", 6.0)
+	var base_freq: float = w.get("base_freq", 200.0)
+	var end_freq: float = w.get("end_freq", 60.0)
+
 	var asp := AudioStreamPlayer3D.new()
 	var gen := AudioStreamGenerator.new()
 	gen.mix_rate = 22050.0
@@ -238,13 +403,11 @@ func _play_gunshot() -> void:
 	asp.play()
 
 	var playback: AudioStreamGeneratorPlayback = asp.get_stream_playback()
-	var rng := RandomNumberGenerator.new()
-	rng.randomize()
 
 	var rate := 22050.0
 	var total_frames := int(rate * 0.4)
-	var snap_end := int(rate * 0.005)
-	var body_end := int(rate * 0.06)
+	var snap_end := int(rate * snap_dur)
+	var body_end := int(rate * body_dur)
 	var phase := 0.0
 	var filter_state := 0.0
 
@@ -253,25 +416,23 @@ func _play_gunshot() -> void:
 		var sample := 0.0
 
 		if i < snap_end:
-			# Sharp transient snap — full-band noise burst
 			var snap_env := 1.0 - float(i) / float(snap_end)
-			sample += (rng.randf() - 0.5) * 0.7 * snap_env * snap_env
+			sample += (_rng.randf() - 0.5) * 0.7 * snap_env * snap_env
 		if i < body_end:
-			# Low-frequency body thump — sine sweep downward
 			var body_t := float(i) / float(body_end)
 			var body_env := (1.0 - body_t) * (1.0 - body_t)
-			var freq := lerpf(200.0, 60.0, body_t)
+			var freq := lerpf(base_freq, end_freq, body_t)
 			phase += freq / rate
 			if phase > 1.0:
 				phase -= 1.0
 			sample += sin(phase * TAU) * 0.5 * body_env
 
-		# Reverb tail — filtered decaying noise
 		if i >= snap_end:
-			var tail_t := float(i - snap_end) / float(total_frames - snap_end)
-			var tail_env := exp(-tail_t * 6.0)
-			var noise := (rng.randf() - 0.5) * 0.25 * tail_env
-			# Simple low-pass filter for muffled echo
+			var tail_t := float(i - snap_end) / float(
+				total_frames - snap_end
+			)
+			var tail_env := exp(-tail_t * tail_decay)
+			var noise := (_rng.randf() - 0.5) * 0.25 * tail_env
 			filter_state += 0.08 * (noise - filter_state)
 			sample += filter_state
 
