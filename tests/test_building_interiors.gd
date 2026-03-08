@@ -166,3 +166,54 @@ func test_door_building_all_faces_produce_geometry() -> void:
 			verts.size(), 42,
 			"Face %d should emit 42 exterior vertices" % face_idx,
 		)
+
+
+# --- Interior room tests ---
+
+func test_interior_room_vertex_count() -> void:
+	# Interior: floor (6) + ceiling (6) + 3 solid walls (6 each = 18) +
+	# 1 door wall (18) = 48 vertices total
+	var builder = _make_builder()
+	var ext_st := SurfaceTool.new()
+	ext_st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var int_st := SurfaceTool.new()
+	int_st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	builder._add_building_with_door(
+		ext_st, int_st,
+		Vector3(0, 5, 0), Vector3(10, 10, 10), 0,
+	)
+	int_st.generate_normals()
+	var mesh := int_st.commit()
+	var arrays := mesh.surface_get_arrays(0)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	assert_eq(
+		verts.size(), 48,
+		"Interior room should emit 48 vertices",
+	)
+
+
+func test_interior_floor_above_ground() -> void:
+	# Verify interior floor Y is above building bottom (z-fight avoidance)
+	var builder = _make_builder()
+	var ext_st := SurfaceTool.new()
+	ext_st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var int_st := SurfaceTool.new()
+	int_st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var center := Vector3(0, 5, 0)
+	var size := Vector3(10, 10, 10)
+	builder._add_building_with_door(
+		ext_st, int_st, center, size, 0,
+	)
+	int_st.generate_normals()
+	var mesh := int_st.commit()
+	var arrays := mesh.surface_get_arrays(0)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var building_bottom: float = center.y - size.y * 0.5
+	var min_y := 999.0
+	for v in verts:
+		if v.y < min_y:
+			min_y = v.y
+	assert_gt(
+		min_y, building_bottom,
+		"Interior floor should be above building bottom (z-fight)",
+	)

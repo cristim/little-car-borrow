@@ -322,13 +322,81 @@ func _st_add_top_face(
 
 
 func _add_interior_room(
-	_int_st: SurfaceTool,
-	_center: Vector3,
-	_size: Vector3,
-	_door_face: int,
+	int_st: SurfaceTool,
+	center: Vector3,
+	size: Vector3,
+	door_face: int,
 ) -> void:
-	# Stub: interior geometry added in next commit
-	pass
+	var by := center.y - size.y * 0.5  # building bottom Y
+	var inset := INTERIOR_INSET
+	var room_w := size.x - inset * 2.0
+	var room_d := size.z - inset * 2.0
+	var floor_y := by + INTERIOR_FLOOR_Y
+	var ceil_y := by + INTERIOR_FLOOR_Y + INTERIOR_HEIGHT
+
+	var room_center := Vector3(
+		center.x, (floor_y + ceil_y) * 0.5, center.z,
+	)
+	var room_hx := room_w * 0.5
+	var room_hz := room_d * 0.5
+
+	# Floor quad (facing +Y)
+	var f0 := Vector3(center.x - room_hx, floor_y, center.z - room_hz)
+	var f1 := Vector3(center.x + room_hx, floor_y, center.z - room_hz)
+	var f2 := Vector3(center.x + room_hx, floor_y, center.z + room_hz)
+	var f3 := Vector3(center.x - room_hx, floor_y, center.z + room_hz)
+	int_st.add_vertex(f0); int_st.add_vertex(f3); int_st.add_vertex(f1)
+	int_st.add_vertex(f1); int_st.add_vertex(f3); int_st.add_vertex(f2)
+
+	# Ceiling quad (facing -Y)
+	var c0 := Vector3(center.x - room_hx, ceil_y, center.z - room_hz)
+	var c1 := Vector3(center.x + room_hx, ceil_y, center.z - room_hz)
+	var c2 := Vector3(center.x + room_hx, ceil_y, center.z + room_hz)
+	var c3 := Vector3(center.x - room_hx, ceil_y, center.z + room_hz)
+	int_st.add_vertex(c0); int_st.add_vertex(c1); int_st.add_vertex(c3)
+	int_st.add_vertex(c1); int_st.add_vertex(c2); int_st.add_vertex(c3)
+
+	# Interior walls -- normals point INWARD
+	var int_faces: Array[Array] = [
+		# 0: Front wall (at -Z side), inward normal = +Z
+		[Vector3(0, 0, -room_hz), room_w,
+			Vector3(0, 0, 1), Vector3(-1, 0, 0)],
+		# 1: Back wall (at +Z side), inward normal = -Z
+		[Vector3(0, 0, room_hz), room_w,
+			Vector3(0, 0, -1), Vector3(1, 0, 0)],
+		# 2: Left wall (at -X side), inward normal = +X
+		[Vector3(-room_hx, 0, 0), room_d,
+			Vector3(1, 0, 0), Vector3(0, 0, 1)],
+		# 3: Right wall (at +X side), inward normal = -X
+		[Vector3(room_hx, 0, 0), room_d,
+			Vector3(-1, 0, 0), Vector3(0, 0, -1)],
+	]
+
+	var wall_height := ceil_y - floor_y
+	for i in range(4):
+		var wall_offset: Vector3 = int_faces[i][0]
+		var wall_width: float = int_faces[i][1]
+		var wall_normal: Vector3 = int_faces[i][2]
+		var wall_right: Vector3 = int_faces[i][3]
+		var wall_center := room_center + wall_offset
+
+		if i == door_face:
+			_city_script.st_add_face_with_door(
+				int_st, wall_center,
+				wall_width, wall_height,
+				wall_normal, wall_right,
+				DOOR_WIDTH, DOOR_HEIGHT,
+			)
+		else:
+			var hw := wall_width * 0.5
+			var hh := wall_height * 0.5
+			_city_script.st_add_quad(
+				int_st,
+				wall_center - wall_right * hw - Vector3.UP * hh,
+				wall_center + wall_right * hw - Vector3.UP * hh,
+				wall_center + wall_right * hw + Vector3.UP * hh,
+				wall_center - wall_right * hw + Vector3.UP * hh,
+			)
 
 
 func _add_building_collision_with_door(
