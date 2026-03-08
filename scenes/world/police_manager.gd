@@ -16,6 +16,9 @@ var _ai_script: GDScript = preload("res://scenes/vehicles/police_ai_controller.g
 var _vehicle_health_script: GDScript = preload(
 	"res://scenes/vehicles/vehicle_health.gd"
 )
+var _vehicle_lights_script: GDScript = preload(
+	"res://scenes/vehicles/vehicle_lights.gd"
+)
 
 var _police: Array[Node] = []
 var _player: Node3D = null
@@ -182,6 +185,12 @@ func _try_spawn() -> void:
 
 		get_tree().current_scene.add_child(vehicle)
 		vehicle.add_to_group("police_vehicle")
+
+		var lights: Node3D = _vehicle_lights_script.new()
+		lights.name = "VehicleLights"
+		vehicle.get_node("Body").add_child(lights)
+		lights.initialize(vehicle)
+
 		ai.initialize(vehicle, road_idx, direction)
 
 		_police.append(vehicle)
