@@ -48,7 +48,7 @@ func test_builder_init_accepts_material_array() -> void:
 	var win_mats: Array[StandardMaterial3D] = []
 	for _i in 4:
 		win_mats.append(StandardMaterial3D.new())
-	builder.init(grid, mats, win_mats)
+	builder.init(grid, mats, win_mats, StandardMaterial3D.new())
 	assert_eq(
 		builder._window_mats.size(), 4,
 		"Builder should store 4 window materials",
@@ -62,7 +62,7 @@ func test_builder_stores_window_mats_reference() -> void:
 	var win_mats: Array[StandardMaterial3D] = []
 	var expected := StandardMaterial3D.new()
 	win_mats.append(expected)
-	builder.init(grid, mats, win_mats)
+	builder.init(grid, mats, win_mats, StandardMaterial3D.new())
 	assert_eq(
 		builder._window_mats[0], expected,
 		"Builder should store the exact material references",
@@ -78,7 +78,7 @@ func test_build_creates_window_mesh_instances() -> void:
 	var win_mats: Array[StandardMaterial3D] = []
 	for _i in 4:
 		win_mats.append(StandardMaterial3D.new())
-	builder.init(grid, mats, win_mats)
+	builder.init(grid, mats, win_mats, StandardMaterial3D.new())
 
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
@@ -110,7 +110,7 @@ func test_build_deterministic_with_same_tile() -> void:
 	var win_mats: Array[StandardMaterial3D] = []
 	for _i in 4:
 		win_mats.append(StandardMaterial3D.new())
-	builder.init(grid, mats, win_mats)
+	builder.init(grid, mats, win_mats, StandardMaterial3D.new())
 
 	# Build same tile twice, check same window distribution
 	var chunk1 := Node3D.new()
@@ -152,7 +152,7 @@ func test_window_meshes_use_correct_materials() -> void:
 		var wm := StandardMaterial3D.new()
 		wm.albedo_color = Color(0.18, 0.22, 0.28)
 		win_mats.append(wm)
-	builder.init(grid, mats, win_mats)
+	builder.init(grid, mats, win_mats, StandardMaterial3D.new())
 
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)

@@ -5,6 +5,7 @@ extends RefCounted
 var _grid: RefCounted
 var _building_mats: Array[StandardMaterial3D] = []
 var _window_mats: Array[StandardMaterial3D] = []
+var _interior_mat: StandardMaterial3D
 var _city_script: GDScript = preload("res://scenes/world/city.gd")
 
 
@@ -12,10 +13,12 @@ func init(
 	grid: RefCounted,
 	building_mats: Array[StandardMaterial3D],
 	window_mats: Array[StandardMaterial3D],
+	interior_mat: StandardMaterial3D,
 ) -> void:
 	_grid = grid
 	_building_mats = building_mats
 	_window_mats = window_mats
+	_interior_mat = interior_mat
 
 
 func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:

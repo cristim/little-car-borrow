@@ -11,6 +11,7 @@ const CHUNK_UNLOAD_RADIUS := 2.5
 const UPDATE_INTERVAL := 0.5
 const SCAN_RANGE := 3  # check -3..+3 tiles around player
 const LOOKAHEAD_TIME := 3.0  # seconds of velocity prediction
+const CITY_RADIUS := 3  # tiles from origin — city is a 7x7 grid (tiles -3..+3)
 
 var _grid = preload("res://src/road_grid.gd").new()
 
@@ -25,6 +26,9 @@ var _building_mats: Array[StandardMaterial3D] = []
 var _trunk_mats: Array[StandardMaterial3D] = []
 var _canopy_mats: Array[StandardMaterial3D] = []
 var _pole_mat: StandardMaterial3D
+var _interior_mat: StandardMaterial3D
+var _terrain_noise: FastNoiseLite
+var _terrain_mat: StandardMaterial3D
 
 # Canonical tree meshes for MultiMesh (created once in _ready)
 var _trunk_mesh: CylinderMesh
@@ -37,6 +41,12 @@ var _tree_builder = preload("res://scenes/world/generator/chunk_builder_trees.gd
 var _marking_builder = preload("res://scenes/world/generator/chunk_builder_markings.gd").new()
 var _ramp_builder = preload("res://scenes/world/generator/chunk_builder_ramps.gd").new()
 var _light_builder = preload("res://scenes/world/generator/chunk_builder_lights.gd").new()
+var _terrain_builder = preload(
+	"res://scenes/world/generator/chunk_builder_terrain.gd"
+).new()
+var _village_builder = preload(
+	"res://scenes/world/generator/chunk_builder_villages.gd"
+).new()
 
 var _chunks: Dictionary = {}
 var _update_timer := 0.0
@@ -45,8 +55,10 @@ var _player_found := false
 
 
 func _ready() -> void:
+	add_to_group("city_manager")
 	_init_materials()
 	_init_tree_meshes()
+	_init_terrain_noise()
 	_init_builders()
 	_build_safety_ground()
 	_load_chunks_around(Vector3.ZERO, Vector3.ZERO)
@@ -140,6 +152,7 @@ func _get_player_velocity() -> Vector3:
 func _build_chunk(tile: Vector2i) -> Node3D:
 	var chunk := Node3D.new()
 	chunk.name = "Chunk_%d_%d" % [tile.x, tile.y]
+	chunk.set_meta("tile", tile)
 	add_child(chunk)
 
 	var origin := _grid.get_chunk_origin(tile)
@@ -147,12 +160,18 @@ func _build_chunk(tile: Vector2i) -> Node3D:
 	var oz := origin.y
 	var span: float = _grid.get_grid_span()
 
-	_road_builder.build(chunk, ox, oz, span)
-	_building_builder.build(chunk, tile, ox, oz)
-	_tree_builder.build(chunk, tile, ox, oz)
-	_marking_builder.build(chunk, ox, oz, span)
-	_ramp_builder.build(chunk, ox, oz)
-	_light_builder.build(chunk, ox, oz)
+	if _is_city_tile(tile):
+		chunk.set_meta("chunk_type", "city")
+		_road_builder.build(chunk, ox, oz, span)
+		_building_builder.build(chunk, tile, ox, oz)
+		_tree_builder.build(chunk, tile, ox, oz)
+		_marking_builder.build(chunk, ox, oz, span)
+		_ramp_builder.build(chunk, ox, oz)
+		_light_builder.build(chunk, ox, oz)
+	else:
+		chunk.set_meta("chunk_type", "terrain")
+		_terrain_builder.build(chunk, tile, ox, oz)
+		_village_builder.build(chunk, tile, ox, oz)
 
 	return chunk
 
@@ -282,6 +301,15 @@ func _init_materials() -> void:
 	_pole_mat = StandardMaterial3D.new()
 	_pole_mat.albedo_color = Color(0.25, 0.25, 0.25)
 
+	_interior_mat = StandardMaterial3D.new()
+	_interior_mat.albedo_color = Color(0.25, 0.25, 0.25)
+	_interior_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_interior_mat.roughness = 0.9
+
+	_terrain_mat = StandardMaterial3D.new()
+	_terrain_mat.vertex_color_use_as_albedo = true
+	_terrain_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+
 
 func _init_tree_meshes() -> void:
 	# Canonical trunk cylinder (unit size — scaled per instance via transform)
@@ -330,13 +358,33 @@ func _init_tree_meshes() -> void:
 	_canopy_meshes.append(sphere2)
 
 
+func _init_terrain_noise() -> void:
+	_terrain_noise = FastNoiseLite.new()
+	_terrain_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	_terrain_noise.frequency = 0.003
+	_terrain_noise.fractal_octaves = 4
+	_terrain_noise.fractal_lacunarity = 2.0
+	_terrain_noise.fractal_gain = 0.5
+	_terrain_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+	_terrain_noise.seed = 42
+
+
+## Returns true if tile should be built as city, false for terrain.
+func _is_city_tile(tile: Vector2i) -> bool:
+	return absi(tile.x) <= CITY_RADIUS and absi(tile.y) <= CITY_RADIUS
+
+
 func _init_builders() -> void:
 	_road_builder.init(_grid, _road_mat, _sidewalk_mat, _ground_mat)
-	_building_builder.init(_grid, _building_mats, _window_mats)
+	_building_builder.init(_grid, _building_mats, _window_mats, _interior_mat)
 	_tree_builder.init(_grid, _trunk_mats, _canopy_mats, _trunk_mesh, _canopy_meshes)
 	_marking_builder.init(_grid, _marking_mat)
 	_ramp_builder.init(_grid, _ramp_mat)
 	_light_builder.init(_grid, _pole_mat)
+	_terrain_builder.init(_grid, _terrain_noise, _terrain_mat)
+	_village_builder.init(
+		_grid, _terrain_noise, _building_mats, _window_mats[0]
+	)
 
 
 func _build_safety_ground() -> void:
