@@ -64,6 +64,9 @@ var _city: Node3D
 var _sky_mat: ProceduralSkyMaterial
 var _last_lights_visible := false
 var _last_window_night := false
+var _mat_active: Array[bool] = [true, true, true, true]
+var _rng := RandomNumberGenerator.new()
+var _window_toggle_timer: Timer
 
 
 func _ready() -> void:
@@ -75,6 +78,12 @@ func _ready() -> void:
 		var sky: Sky = _env.environment.sky
 		if sky:
 			_sky_mat = sky.sky_material as ProceduralSkyMaterial
+
+	_rng.randomize()
+	_window_toggle_timer = Timer.new()
+	_window_toggle_timer.one_shot = true
+	_window_toggle_timer.timeout.connect(_on_window_toggle)
+	add_child(_window_toggle_timer)
 
 
 func _process(_delta: float) -> void:
@@ -138,19 +147,62 @@ func _update_ambient(h: float) -> void:
 func _update_windows(h: float) -> void:
 	if not _city:
 		return
-	var win_mat = _city.get("_window_mat") as StandardMaterial3D
-	if not win_mat:
+	var mats: Array = _city.get("_window_mats")
+	if mats == null or mats.is_empty():
 		return
 	var night := h < 6.0 or h > 19.0
 	if night == _last_window_night:
 		return
 	_last_window_night = night
 	if night:
-		win_mat.emission_enabled = true
-		win_mat.emission = Color(0.9, 0.8, 0.5)
-		win_mat.emission_energy_multiplier = 0.6
+		for i in mats.size():
+			var mat: StandardMaterial3D = mats[i]
+			mat.emission_enabled = _mat_active[i]
+			mat.emission = Color(0.9, 0.8, 0.5)
+			mat.emission_energy_multiplier = 0.6
+		if _window_toggle_timer.is_stopped():
+			_window_toggle_timer.wait_time = _rng.randf_range(30.0, 60.0)
+			_window_toggle_timer.start()
 	else:
-		win_mat.emission_enabled = false
+		for mat in mats:
+			(mat as StandardMaterial3D).emission_enabled = false
+		_window_toggle_timer.stop()
+		_mat_active.fill(true)
+
+
+func _on_window_toggle() -> void:
+	if not _city:
+		return
+	var mats: Array = _city.get("_window_mats")
+	if mats == null or mats.is_empty():
+		return
+	# Don't toggle if it's no longer night
+	var h: float = DayNightManager.current_hour
+	if not (h < 6.0 or h > 19.0):
+		return
+
+	var on_indices: Array[int] = []
+	var off_indices: Array[int] = []
+	for i in _mat_active.size():
+		if _mat_active[i]:
+			on_indices.append(i)
+		else:
+			off_indices.append(i)
+
+	if _rng.randf() < 0.5 and on_indices.size() > 1:
+		# Turn one off (keep at least 1 group on)
+		var pick: int = on_indices[_rng.randi_range(0, on_indices.size() - 1)]
+		_mat_active[pick] = false
+		(mats[pick] as StandardMaterial3D).emission_enabled = false
+	elif off_indices.size() > 0:
+		# Turn one back on
+		var pick: int = off_indices[_rng.randi_range(0, off_indices.size() - 1)]
+		_mat_active[pick] = true
+		(mats[pick] as StandardMaterial3D).emission_enabled = true
+
+	# Restart timer with new random interval
+	_window_toggle_timer.wait_time = _rng.randf_range(30.0, 60.0)
+	_window_toggle_timer.start()
 
 
 func _update_streetlights() -> void:
