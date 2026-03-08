@@ -432,6 +432,59 @@ static func st_add_box_no_bottom(
 	st.add_vertex(v2); st.add_vertex(v7); st.add_vertex(v6)
 
 
+## Emit a quad as 2 CCW triangles. Vertices must be given in
+## bottom-left, bottom-right, top-right, top-left order as seen
+## from the outside (outward-facing side).
+static func st_add_quad(
+	st: SurfaceTool, bl: Vector3, br: Vector3, tr: Vector3, tl: Vector3,
+) -> void:
+	st.add_vertex(bl); st.add_vertex(tr); st.add_vertex(br)
+	st.add_vertex(bl); st.add_vertex(tl); st.add_vertex(tr)
+
+
+## Emit a face with a rectangular door hole cut out at the bottom-center.
+## face_center: world center of the face (at face_height/2 above ground).
+## face_width, face_height: dimensions.
+## normal: face normal (unused -- kept for API symmetry).
+## right: rightward direction along face.
+## door_width, door_height: opening dimensions.
+static func st_add_face_with_door(
+	st: SurfaceTool,
+	face_center: Vector3,
+	face_width: float, face_height: float,
+	_normal: Vector3, right: Vector3,
+	door_width: float, door_height: float,
+) -> void:
+	var up := Vector3.UP
+	var hw := face_width * 0.5
+	var hh := face_height * 0.5
+	var hdw := door_width * 0.5
+
+	# Door top in face-local v (measured from face center)
+	var dt := door_height - hh  # offset from face center
+
+	# Left strip (full height)
+	var bl := face_center - right * hw - up * hh
+	var br := face_center - right * hdw - up * hh
+	var tr := face_center - right * hdw + up * hh
+	var tl := face_center - right * hw + up * hh
+	st_add_quad(st, bl, br, tr, tl)
+
+	# Right strip (full height)
+	bl = face_center + right * hdw - up * hh
+	br = face_center + right * hw - up * hh
+	tr = face_center + right * hw + up * hh
+	tl = face_center + right * hdw + up * hh
+	st_add_quad(st, bl, br, tr, tl)
+
+	# Above-door strip (door-width, from door_top to face_top)
+	bl = face_center - right * hdw + up * dt
+	br = face_center + right * hdw + up * dt
+	tr = face_center + right * hdw + up * hh
+	tl = face_center - right * hdw + up * hh
+	st_add_quad(st, bl, br, tr, tl)
+
+
 ## Emit a flat quad on the XZ plane (for road markings).
 static func st_add_quad_xz(
 	st: SurfaceTool, cx: float, cz: float,
