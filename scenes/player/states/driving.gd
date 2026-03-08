@@ -37,6 +37,15 @@ func enter(msg: Dictionary = {}) -> void:
 	if _vehicle.get_node_or_null("NPCVehicleController"):
 		EventBus.crime_committed.emit("vehicle_theft", 30)
 
+	# Ensure vehicle has lights (starting vehicle doesn't get them from a spawner)
+	var body := _vehicle.get_node_or_null("Body")
+	if body and not body.get_node_or_null("VehicleLights"):
+		var LightsScript: GDScript = preload("res://scenes/vehicles/vehicle_lights.gd")
+		var lights: Node3D = LightsScript.new()
+		lights.name = "VehicleLights"
+		body.add_child(lights)
+		lights.initialize(_vehicle)
+
 	EventBus.vehicle_entered.emit(_vehicle)
 
 
