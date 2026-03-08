@@ -28,10 +28,19 @@ var _player: Node3D = null
 var _frame_count := 0
 var _boundary_polygon := PackedVector2Array()
 var _boundary_cached := false
+var _clip_circle := PackedVector2Array()
 
 
 func _ready() -> void:
 	custom_minimum_size = Vector2(MAP_SIZE, MAP_SIZE)
+	# Pre-compute circle polygon used to clip drawn shapes to minimap bounds
+	var center := Vector2(MAP_CENTER, MAP_CENTER)
+	_clip_circle.resize(64)
+	for i in range(64):
+		var angle: float = float(i) * TAU / 64.0
+		_clip_circle[i] = center + Vector2(
+			cos(angle), sin(angle)
+		) * MAP_RADIUS
 
 
 func _process(_delta: float) -> void:
@@ -119,15 +128,15 @@ func _draw_city_boundary(ppos: Vector3, yaw: float) -> void:
 			Vector3(wp.x, 0.0, wp.y), ppos, yaw
 		)
 
-	draw_colored_polygon(map_pts, CITY_BOUNDARY_COLOR)
-
-	# Close the polyline by appending the first point
-	var line_pts := PackedVector2Array()
-	line_pts.resize(map_pts.size() + 1)
-	for i in range(map_pts.size()):
-		line_pts[i] = map_pts[i]
-	line_pts[map_pts.size()] = map_pts[0]
-	draw_polyline(line_pts, CITY_BOUNDARY_LINE_COLOR, 1.5)
+	# Clip polygon to minimap circle
+	var clipped: Array[PackedVector2Array] = (
+		Geometry2D.intersect_polygons(map_pts, _clip_circle)
+	)
+	for poly in clipped:
+		draw_colored_polygon(poly, CITY_BOUNDARY_COLOR)
+		# Close the polyline by appending the first point
+		poly.append(poly[0])
+		draw_polyline(poly, CITY_BOUNDARY_LINE_COLOR, 1.5)
 
 
 func _draw_roads(ppos: Vector3, yaw: float) -> void:
