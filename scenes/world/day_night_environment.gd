@@ -147,8 +147,11 @@ func _update_ambient(h: float) -> void:
 func _update_windows(h: float) -> void:
 	if not _city:
 		return
-	var mats: Array = _city.get("_window_mats")
-	if mats == null or mats.is_empty():
+	var mats_v: Variant = _city.get("_window_mats")
+	if mats_v == null:
+		return
+	var mats: Array = mats_v
+	if mats.is_empty():
 		return
 	var night := h < 6.0 or h > 19.0
 	if night == _last_window_night:
@@ -173,8 +176,11 @@ func _update_windows(h: float) -> void:
 func _on_window_toggle() -> void:
 	if not _city:
 		return
-	var mats: Array = _city.get("_window_mats")
-	if mats == null or mats.is_empty():
+	var mats_v: Variant = _city.get("_window_mats")
+	if mats_v == null:
+		return
+	var mats: Array = mats_v
+	if mats.is_empty():
 		return
 	# Don't toggle if it's no longer night
 	var h: float = DayNightManager.current_hour
