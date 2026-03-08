@@ -217,3 +217,65 @@ func test_interior_floor_above_ground() -> void:
 		min_y, building_bottom,
 		"Interior floor should be above building bottom (z-fight)",
 	)
+
+
+# --- Collision shape tests ---
+
+func test_door_building_collision_shape_count() -> void:
+	# Door building collision: 3 solid walls + 3 split door wall pieces
+	# + 1 ceiling + 1 floor = 8 CollisionShape3D nodes
+	var builder = _make_builder()
+	var body := StaticBody3D.new()
+	add_child_autofree(body)
+	var center := Vector3(0, 5, 0)
+	var size := Vector3(10, 10, 10)
+	builder._add_building_collision_with_door(body, center, size, 0)
+	var shape_count := 0
+	for i in body.get_child_count():
+		if body.get_child(i) is CollisionShape3D:
+			shape_count += 1
+	assert_eq(
+		shape_count, 8,
+		"Door building should have 8 collision shapes",
+	)
+
+
+func test_build_creates_interiors_mesh() -> void:
+	# Building a full chunk should create an Interiors MeshInstance3D
+	var builder = _make_builder()
+	var chunk := Node3D.new()
+	add_child_autofree(chunk)
+	builder.build(chunk, Vector2i(0, 0), 0.0, 0.0)
+	var body: Node = chunk.get_child(0)
+	var found_interiors := false
+	for i in body.get_child_count():
+		if body.get_child(i).name == &"Interiors":
+			found_interiors = true
+			break
+	assert_true(
+		found_interiors,
+		"Chunk should have an Interiors MeshInstance3D",
+	)
+
+
+func test_build_deterministic_with_interiors() -> void:
+	var builder = _make_builder()
+	var chunk1 := Node3D.new()
+	add_child_autofree(chunk1)
+	builder.build(chunk1, Vector2i(3, 7), 0.0, 0.0)
+	var chunk2 := Node3D.new()
+	add_child_autofree(chunk2)
+	builder.build(chunk2, Vector2i(3, 7), 0.0, 0.0)
+
+	var body1: Node = chunk1.get_child(0)
+	var body2: Node = chunk2.get_child(0)
+	var names1: Array[String] = []
+	var names2: Array[String] = []
+	for i in body1.get_child_count():
+		names1.append(body1.get_child(i).name)
+	for i in body2.get_child_count():
+		names2.append(body2.get_child(i).name)
+	assert_eq(
+		names1, names2,
+		"Same tile should produce deterministic child list",
+	)

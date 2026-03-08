@@ -403,10 +403,118 @@ func _add_building_collision_with_door(
 	body: StaticBody3D,
 	center: Vector3,
 	size: Vector3,
-	_door_face: int,
+	door_face: int,
 ) -> void:
-	# Stub: use single box collision until decomposition is implemented
-	_city_script.add_box_collision(body, center, size)
+	var hx := size.x * 0.5
+	var hz := size.z * 0.5
+	var wt := WALL_THICKNESS
+
+	# Ceiling collision (thin box at top)
+	var ceil_center := Vector3(
+		center.x,
+		center.y + size.y * 0.5 - wt * 0.5,
+		center.z,
+	)
+	_city_script.add_box_collision(
+		body, ceil_center, Vector3(size.x, wt, size.z),
+	)
+
+	# Wall collision shapes -- 3 solid walls + 1 split wall
+	var walls: Array[Array] = [
+		# 0: Front (-Z)
+		[Vector3(0, 0, -hz + wt * 0.5),
+			Vector3(size.x, size.y, wt)],
+		# 1: Back (+Z)
+		[Vector3(0, 0, hz - wt * 0.5),
+			Vector3(size.x, size.y, wt)],
+		# 2: Left (-X)
+		[Vector3(-hx + wt * 0.5, 0, 0),
+			Vector3(wt, size.y, size.z)],
+		# 3: Right (+X)
+		[Vector3(hx - wt * 0.5, 0, 0),
+			Vector3(wt, size.y, size.z)],
+	]
+
+	for i in range(4):
+		var wall_offset: Vector3 = walls[i][0]
+		var wall_size: Vector3 = walls[i][1]
+		var wall_center := center + wall_offset
+		if i == door_face:
+			_add_door_wall_collision(
+				body, wall_center, wall_size, i,
+			)
+		else:
+			_city_script.add_box_collision(
+				body, wall_center, wall_size,
+			)
+
+	# Interior floor collision
+	var floor_y := (
+		center.y - size.y * 0.5 + INTERIOR_FLOOR_Y - 0.05
+	)
+	var floor_center := Vector3(center.x, floor_y, center.z)
+	_city_script.add_box_collision(
+		body, floor_center,
+		Vector3(size.x - wt * 2.0, 0.1, size.z - wt * 2.0),
+	)
+
+
+func _add_door_wall_collision(
+	body: StaticBody3D,
+	wall_center: Vector3,
+	wall_size: Vector3,
+	face_idx: int,
+) -> void:
+	var is_x_wall: bool = face_idx <= 1
+	var wall_span: float = wall_size.x if is_x_wall else wall_size.z
+	var hw := wall_span * 0.5
+	var hdw := DOOR_WIDTH * 0.5
+	var hy := wall_size.y * 0.5
+
+	# Left segment: from wall left edge to door left edge
+	var left_width := hw - hdw
+	if left_width > 0.01:
+		var left_offset := -(hw - left_width * 0.5)
+		var left_size := wall_size
+		var left_center := wall_center
+		if is_x_wall:
+			left_size.x = left_width
+			left_center.x += left_offset
+		else:
+			left_size.z = left_width
+			left_center.z += left_offset
+		_city_script.add_box_collision(body, left_center, left_size)
+
+	# Right segment: from door right edge to wall right edge
+	var right_width := hw - hdw
+	if right_width > 0.01:
+		var right_offset := hw - right_width * 0.5
+		var right_size := wall_size
+		var right_center := wall_center
+		if is_x_wall:
+			right_size.x = right_width
+			right_center.x += right_offset
+		else:
+			right_size.z = right_width
+			right_center.z += right_offset
+		_city_script.add_box_collision(
+			body, right_center, right_size,
+		)
+
+	# Above-door segment
+	var above_height := wall_size.y - DOOR_HEIGHT
+	if above_height > 0.01:
+		var above_center := wall_center
+		above_center.y += hy - above_height * 0.5
+		var above_size := wall_size
+		if is_x_wall:
+			above_size.x = DOOR_WIDTH
+		else:
+			above_size.z = DOOR_WIDTH
+		above_size.y = above_height
+		_city_script.add_box_collision(
+			body, above_center, above_size,
+		)
 
 
 func _get_block_center_local(bx: int, bz: int) -> Vector2:
