@@ -33,7 +33,10 @@ func _process(delta: float) -> void:
 		if not _player:
 			return
 
-	if "velocity" in _player:
+	var vehicle = _player.get("current_vehicle")
+	if vehicle and vehicle is RigidBody3D:
+		_player_velocity = (vehicle as RigidBody3D).linear_velocity
+	elif "velocity" in _player:
 		_player_velocity = _player.velocity
 	else:
 		_player_velocity = Vector3.ZERO
