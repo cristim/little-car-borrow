@@ -26,6 +26,10 @@ var _rng := RandomNumberGenerator.new()
 var _spawn_timer := 0.0
 var _despawn_timer := 0.0
 var _despawning := false
+var _helicopter: CharacterBody3D = null
+var _heli_script: GDScript = preload(
+	"res://scenes/vehicles/helicopter_ai.gd"
+)
 
 
 func _ready() -> void:
@@ -38,6 +42,10 @@ func _process(delta: float) -> void:
 		_player = get_tree().get_first_node_in_group("player") as Node3D
 		if not _player:
 			return
+
+	# Clean stale helicopter reference
+	if _helicopter and not is_instance_valid(_helicopter):
+		_helicopter = null
 
 	var max_police := _get_max_police()
 
@@ -93,6 +101,14 @@ func _on_wanted_level_changed(level: int) -> void:
 		_despawn_timer = 0.0
 	else:
 		_despawning = false
+
+	# Helicopter management (clean stale ref first)
+	if _helicopter and not is_instance_valid(_helicopter):
+		_helicopter = null
+	if level >= 5 and not _helicopter:
+		_spawn_helicopter()
+	elif level < 5 and _helicopter:
+		_despawn_helicopter()
 
 
 func _try_spawn() -> void:
@@ -224,3 +240,36 @@ func _despawn_one() -> void:
 	var v: Node = _police.pop_back()
 	if is_instance_valid(v):
 		v.queue_free()
+
+
+func _spawn_helicopter() -> void:
+	if _helicopter and is_instance_valid(_helicopter):
+		return
+	# Check group in case a despawning helicopter is still flying away
+	if not get_tree().get_nodes_in_group(
+		"police_helicopter"
+	).is_empty():
+		return
+	if not _player:
+		return
+
+	var heli := CharacterBody3D.new()
+	heli.set_script(_heli_script)
+
+	var angle := _rng.randf_range(0.0, TAU)
+	var offset := Vector3(
+		sin(angle) * 200.0, 50.0, cos(angle) * 200.0
+	)
+	heli.position = _player.global_position + offset
+
+	get_tree().current_scene.add_child(heli)
+	_helicopter = heli
+
+
+func _despawn_helicopter() -> void:
+	if not _helicopter or not is_instance_valid(_helicopter):
+		_helicopter = null
+		return
+	if _helicopter.has_method("begin_despawn"):
+		_helicopter.begin_despawn()
+	_helicopter = null
