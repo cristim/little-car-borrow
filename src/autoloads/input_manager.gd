@@ -4,10 +4,22 @@ extends Node
 enum Context { FOOT, VEHICLE, MENU }
 
 var current_context: Context = Context.FOOT
+var _is_touch := false
+
+
+func _ready() -> void:
+	_is_touch = DisplayServer.is_touchscreen_available()
+
+
+func is_touch() -> bool:
+	return _is_touch
 
 
 func set_context(ctx: Context) -> void:
 	current_context = ctx
+	if _is_touch:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		return
 	match ctx:
 		Context.MENU:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -19,6 +31,8 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("toggle_fullscreen"):
 		_toggle_fullscreen()
 		get_viewport().set_input_as_handled()
+		return
+	if _is_touch:
 		return
 	if event is InputEventMouseButton and event.pressed:
 		if current_context != Context.MENU and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
