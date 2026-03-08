@@ -16,6 +16,9 @@ const MARKER_START_COLOR := Color(0.2, 0.9, 0.2)
 const MARKER_PICKUP_COLOR := Color(0.3, 0.5, 1.0)
 const MARKER_DROPOFF_COLOR := Color(1.0, 0.9, 0.2)
 const HELI_COLOR := Color(1.0, 0.3, 0.3)
+const TERRAIN_COLOR := Color(0.22, 0.45, 0.18, 0.5)
+const WATER_COLOR := Color(0.15, 0.35, 0.65, 0.5)
+const VILLAGE_COLOR := Color(0.55, 0.40, 0.25, 0.8)
 
 var _grid = preload("res://src/road_grid.gd").new()
 var _player: Node3D = null
@@ -47,6 +50,9 @@ func _draw() -> void:
 	# Background circle
 	var center := Vector2(MAP_CENTER, MAP_CENTER)
 	draw_circle(center, MAP_RADIUS, BG_COLOR)
+
+	# Terrain under roads
+	_draw_terrain(player_pos, yaw)
 
 	# Roads
 	_draw_roads(player_pos, yaw)
@@ -105,6 +111,79 @@ func _draw_roads(ppos: Vector3, yaw: float) -> void:
 			Vector3(ppos.x + view_range, 0.0, rz), ppos, yaw
 		)
 		_draw_clipped_line(left, right, ROAD_COLOR, 1.5)
+
+
+func _draw_terrain(ppos: Vector3, yaw: float) -> void:
+	var city_node := get_tree().get_first_node_in_group(
+		"city_manager"
+	)
+	if not city_node:
+		return
+
+	var grid_span: float = _grid.get_grid_span()
+
+	for child in city_node.get_children():
+		if not child is Node3D:
+			continue
+		if not child.has_meta("chunk_type"):
+			continue
+		if child.get_meta("chunk_type") != "terrain":
+			continue
+
+		var chunk_node: Node3D = child as Node3D
+		var tile: Vector2i = chunk_node.get_meta("tile")
+		var origin: Vector2 = _grid.get_chunk_origin(tile)
+		var chunk_ox: float = origin.x
+		var chunk_oz: float = origin.y
+		var hs := grid_span * 0.5
+
+		# Quick distance cull: skip chunks too far to overlap minimap
+		var world_dx: float = chunk_ox - ppos.x
+		var world_dz: float = chunk_oz - ppos.z
+		var world_dist: float = sqrt(
+			world_dx * world_dx + world_dz * world_dz
+		)
+		if world_dist > MAP_RADIUS / SCALE + hs * 1.42:
+			continue
+
+		var corners: Array[Vector3] = [
+			Vector3(chunk_ox - hs, 0.0, chunk_oz - hs),
+			Vector3(chunk_ox + hs, 0.0, chunk_oz - hs),
+			Vector3(chunk_ox + hs, 0.0, chunk_oz + hs),
+			Vector3(chunk_ox - hs, 0.0, chunk_oz + hs),
+		]
+
+		var map_pts: PackedVector2Array = []
+		for c in corners:
+			var mp := _world_to_minimap(c, ppos, yaw)
+			map_pts.append(mp)
+
+		var has_water: bool = chunk_node.get_meta(
+			"has_water", false
+		)
+		var base_color := TERRAIN_COLOR
+		if has_water:
+			base_color = WATER_COLOR
+		draw_colored_polygon(map_pts, base_color)
+
+		var has_village: bool = chunk_node.get_meta(
+			"has_village", false
+		)
+		if has_village:
+			var vc: Vector2 = chunk_node.get_meta(
+				"village_center",
+				Vector2(chunk_ox, chunk_oz),
+			)
+			var vpos := Vector3(vc.x, 0.0, vc.y)
+			var vmp := _world_to_minimap(vpos, ppos, yaw)
+			if _in_circle(vmp):
+				draw_rect(
+					Rect2(
+						vmp - Vector2(3, 3),
+						Vector2(6, 6),
+					),
+					VILLAGE_COLOR,
+				)
 
 
 func _draw_group_dots(
