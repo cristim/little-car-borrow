@@ -82,6 +82,9 @@ var _escape_timer := 0.0
 var _escape_steer := 0.0
 var _escape_attempts := 0
 
+# Spawn grace — suppress stuck detection for newly spawned vehicles
+var _spawn_grace := 0.0
+
 # Recovery target state (commit-once)
 var _recovery_active := false
 var _recovery_road_index := 0
@@ -94,11 +97,15 @@ func initialize(vehicle: RigidBody3D, road_idx: int, direction: int) -> void:
 	_direction = direction
 	_rng.randomize()
 	_find_next_intersection()
+	_spawn_grace = 2.0
 
 
 func _physics_process(delta: float) -> void:
 	if not active or not _vehicle:
 		return
+
+	if _spawn_grace > 0.0:
+		_spawn_grace -= delta
 
 	# Distance-based LOD — skip AI entirely for very far vehicles
 	var cam := get_viewport().get_camera_3d()
@@ -128,8 +135,11 @@ func _physics_process(delta: float) -> void:
 
 	if going_backwards and speed_kmh > STUCK_SPEED:
 		_reverse_timer += delta
-		if _reverse_timer > REVERSE_TIMEOUT:
-			_begin_escape()
+		if _reverse_timer > REVERSE_TIMEOUT and _spawn_grace <= 0.0:
+			if absf(_vehicle.linear_velocity.y) > 2.0:
+				_reverse_timer = 0.0
+			else:
+				_begin_escape()
 	else:
 		_reverse_timer = 0.0
 
@@ -140,8 +150,11 @@ func _physics_process(delta: float) -> void:
 
 	if speed_kmh < STUCK_SPEED:
 		_stuck_timer += delta
-		if _stuck_timer > stuck_timeout:
-			_begin_escape()
+		if _stuck_timer > stuck_timeout and _spawn_grace <= 0.0:
+			if absf(_vehicle.linear_velocity.y) > 2.0:
+				_stuck_timer = 0.0
+			else:
+				_begin_escape()
 	else:
 		_stuck_timer = 0.0
 		if speed_kmh > 10.0:
@@ -313,8 +326,9 @@ func _process_escape(delta: float) -> void:
 			_vehicle.throttle_input = 0.0
 			_vehicle.brake_input = 0.0
 			_vehicle.handbrake_input = 0.0
-			var back_dir := _vehicle.global_transform.basis.z
-			_vehicle.apply_central_force(back_dir * 6000.0)
+			if absf(_vehicle.linear_velocity.y) <= 2.0:
+				var back_dir := _vehicle.global_transform.basis.z
+				_vehicle.apply_central_force(back_dir * 2000.0)
 			if _escape_timer >= ESCAPE_REVERSE_DURATION:
 				_escape_phase = EscapePhase.STEER
 				_escape_timer = 0.0
