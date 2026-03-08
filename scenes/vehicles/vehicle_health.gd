@@ -265,7 +265,7 @@ func _explode() -> void:
 	EventBus.force_exit_vehicle.emit(_vehicle)
 
 	# Small upward pop, not a launch
-	_vehicle.apply_central_impulse(Vector3(0, 1500.0, 0))
+	_vehicle.apply_central_impulse(Vector3(0, 500.0, 0))
 
 	EventBus.vehicle_destroyed.emit(_vehicle)
 
