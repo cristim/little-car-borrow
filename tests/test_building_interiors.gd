@@ -107,3 +107,62 @@ func test_face_with_door_leaves_opening() -> void:
 			in_door_x and in_door_y,
 			"No vertex should be strictly inside the door opening",
 		)
+
+
+# --- _add_building_with_door exterior tests ---
+
+func _make_builder() -> RefCounted:
+	var builder = BuilderScript.new()
+	var grid = RoadGridScript.new()
+	var mats: Array[StandardMaterial3D] = []
+	for _i in 3:
+		mats.append(StandardMaterial3D.new())
+	var win_mats: Array[StandardMaterial3D] = []
+	for _i in 4:
+		win_mats.append(StandardMaterial3D.new())
+	builder.init(grid, mats, win_mats, StandardMaterial3D.new())
+	return builder
+
+
+func test_door_building_exterior_vertex_count() -> void:
+	# Door building exterior: 3 solid faces (6 verts each = 18) +
+	# 1 door face (18 verts) + top face (6 verts) = 42 verts total
+	var builder = _make_builder()
+	var ext_st := SurfaceTool.new()
+	ext_st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var int_st := SurfaceTool.new()
+	int_st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var center := Vector3(0, 5, 0)
+	var size := Vector3(10, 10, 10)
+	builder._add_building_with_door(ext_st, int_st, center, size, 0)
+	ext_st.generate_normals()
+	var mesh := ext_st.commit()
+	var arrays := mesh.surface_get_arrays(0)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	assert_eq(
+		verts.size(), 42,
+		"Door building exterior should emit 42 vertices",
+	)
+
+
+func test_door_building_all_faces_produce_geometry() -> void:
+	# Test that all 4 door face indices produce valid geometry
+	var builder = _make_builder()
+	for face_idx in range(4):
+		var ext_st := SurfaceTool.new()
+		ext_st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		var int_st := SurfaceTool.new()
+		int_st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		builder._add_building_with_door(
+			ext_st, int_st,
+			Vector3(0, 5, 0), Vector3(10, 10, 10),
+			face_idx,
+		)
+		ext_st.generate_normals()
+		var mesh := ext_st.commit()
+		var arrays := mesh.surface_get_arrays(0)
+		var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		assert_eq(
+			verts.size(), 42,
+			"Face %d should emit 42 exterior vertices" % face_idx,
+		)

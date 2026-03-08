@@ -236,13 +236,99 @@ func _add_building_windows(
 
 func _add_building_with_door(
 	ext_st: SurfaceTool,
-	_int_st: SurfaceTool,
+	int_st: SurfaceTool,
 	center: Vector3,
 	size: Vector3,
+	door_face: int,
+) -> void:
+	var hx := size.x * 0.5
+	var hz := size.z * 0.5
+
+	# Face definitions: [face_center_offset, face_width, normal, right]
+	var faces: Array[Array] = [
+		# 0: Front (-Z)
+		[Vector3(0, 0, -hz), size.x,
+			Vector3(0, 0, -1), Vector3(1, 0, 0)],
+		# 1: Back (+Z)
+		[Vector3(0, 0, hz), size.x,
+			Vector3(0, 0, 1), Vector3(-1, 0, 0)],
+		# 2: Left (-X)
+		[Vector3(-hx, 0, 0), size.z,
+			Vector3(-1, 0, 0), Vector3(0, 0, -1)],
+		# 3: Right (+X)
+		[Vector3(hx, 0, 0), size.z,
+			Vector3(1, 0, 0), Vector3(0, 0, 1)],
+	]
+
+	# Emit 4 exterior faces (3 solid + 1 with door hole)
+	for i in range(4):
+		var face_offset: Vector3 = faces[i][0]
+		var face_width: float = faces[i][1]
+		var face_normal: Vector3 = faces[i][2]
+		var face_right: Vector3 = faces[i][3]
+		var face_center := center + face_offset
+
+		if i == door_face:
+			_city_script.st_add_face_with_door(
+				ext_st, face_center,
+				face_width, size.y,
+				face_normal, face_right,
+				DOOR_WIDTH, DOOR_HEIGHT,
+			)
+		else:
+			_st_add_solid_face(
+				ext_st, face_center, face_width, size.y,
+				face_right,
+			)
+
+	# Top face (+Y) -- always solid
+	_st_add_top_face(ext_st, center, size)
+
+	# Interior room
+	_add_interior_room(int_st, center, size, door_face)
+
+
+func _st_add_solid_face(
+	st: SurfaceTool,
+	face_center: Vector3,
+	face_width: float, face_height: float,
+	right: Vector3,
+) -> void:
+	var up := Vector3.UP
+	var hw := face_width * 0.5
+	var hh := face_height * 0.5
+	var bl := face_center - right * hw - up * hh
+	var br := face_center + right * hw - up * hh
+	var tr := face_center + right * hw + up * hh
+	var tl := face_center - right * hw + up * hh
+	_city_script.st_add_quad(st, bl, br, tr, tl)
+
+
+func _st_add_top_face(
+	st: SurfaceTool, center: Vector3, size: Vector3,
+) -> void:
+	var hx := size.x * 0.5
+	var hz := size.z * 0.5
+	var ty := center.y + size.y * 0.5
+	var cx := center.x
+	var cz := center.z
+	# Top (+Y): CCW when viewed from above
+	var v0 := Vector3(cx - hx, ty, cz - hz)
+	var v1 := Vector3(cx + hx, ty, cz - hz)
+	var v2 := Vector3(cx + hx, ty, cz + hz)
+	var v3 := Vector3(cx - hx, ty, cz + hz)
+	st.add_vertex(v0); st.add_vertex(v3); st.add_vertex(v1)
+	st.add_vertex(v1); st.add_vertex(v3); st.add_vertex(v2)
+
+
+func _add_interior_room(
+	_int_st: SurfaceTool,
+	_center: Vector3,
+	_size: Vector3,
 	_door_face: int,
 ) -> void:
-	# Stub: render as normal building until door geometry is implemented
-	_city_script.st_add_box_no_bottom(ext_st, center, size)
+	# Stub: interior geometry added in next commit
+	pass
 
 
 func _add_building_collision_with_door(
