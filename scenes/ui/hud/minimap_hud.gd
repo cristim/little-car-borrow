@@ -19,10 +19,15 @@ const HELI_COLOR := Color(1.0, 0.3, 0.3)
 const TERRAIN_COLOR := Color(0.22, 0.45, 0.18, 0.5)
 const WATER_COLOR := Color(0.15, 0.35, 0.65, 0.5)
 const VILLAGE_COLOR := Color(0.55, 0.40, 0.25, 0.8)
+const CITY_BOUNDARY_COLOR := Color(0.25, 0.25, 0.35, 0.25)
+const CITY_BOUNDARY_LINE_COLOR := Color(0.6, 0.6, 0.7, 0.5)
+const BOUNDARY_SEGMENTS := 72
 
 var _grid = preload("res://src/road_grid.gd").new()
 var _player: Node3D = null
 var _frame_count := 0
+var _boundary_polygon := PackedVector2Array()
+var _boundary_cached := false
 
 
 func _ready() -> void:
@@ -50,6 +55,9 @@ func _draw() -> void:
 	# Background circle
 	var center := Vector2(MAP_CENTER, MAP_CENTER)
 	draw_circle(center, MAP_RADIUS, BG_COLOR)
+
+	# City boundary outline
+	_draw_city_boundary(player_pos, yaw)
 
 	# Terrain under roads
 	_draw_terrain(player_pos, yaw)
@@ -82,6 +90,44 @@ func _draw() -> void:
 		center, MAP_RADIUS, 0.0, TAU, 64,
 		BORDER_COLOR, 2.0
 	)
+
+
+func _draw_city_boundary(ppos: Vector3, yaw: float) -> void:
+	if not _boundary_cached:
+		var city_node := get_tree().get_first_node_in_group(
+			"city_manager"
+		)
+		if not city_node or not city_node.has_meta("city_boundary"):
+			return
+		var boundary: RefCounted = city_node.get_meta(
+			"city_boundary"
+		)
+		_boundary_polygon = boundary.get_boundary_polygon(
+			BOUNDARY_SEGMENTS
+		)
+		_boundary_cached = true
+
+	if _boundary_polygon.is_empty():
+		return
+
+	# Transform world XZ polygon to minimap space
+	var map_pts := PackedVector2Array()
+	map_pts.resize(_boundary_polygon.size())
+	for i in range(_boundary_polygon.size()):
+		var wp := _boundary_polygon[i]
+		map_pts[i] = _world_to_minimap(
+			Vector3(wp.x, 0.0, wp.y), ppos, yaw
+		)
+
+	draw_colored_polygon(map_pts, CITY_BOUNDARY_COLOR)
+
+	# Close the polyline by appending the first point
+	var line_pts := PackedVector2Array()
+	line_pts.resize(map_pts.size() + 1)
+	for i in range(map_pts.size()):
+		line_pts[i] = map_pts[i]
+	line_pts[map_pts.size()] = map_pts[0]
+	draw_polyline(line_pts, CITY_BOUNDARY_LINE_COLOR, 1.5)
 
 
 func _draw_roads(ppos: Vector3, yaw: float) -> void:
