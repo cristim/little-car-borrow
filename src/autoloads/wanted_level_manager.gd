@@ -42,6 +42,8 @@ func _update_level() -> void:
 	if new_level != wanted_level:
 		wanted_level = new_level
 		EventBus.wanted_level_changed.emit(wanted_level)
+		if wanted_level >= 4:
+			_try_unlock_rifle()
 
 
 func clear() -> void:
@@ -49,3 +51,12 @@ func clear() -> void:
 	wanted_level = 0
 	_decay_cooldown = 0.0
 	EventBus.wanted_level_changed.emit(0)
+
+
+func _try_unlock_rifle() -> void:
+	var players := get_tree().get_nodes_in_group("player")
+	if players.is_empty():
+		return
+	var weapon := players[0].get_node_or_null("PlayerWeapon")
+	if weapon and weapon.has_method("unlock_weapon"):
+		weapon.unlock_weapon(3)

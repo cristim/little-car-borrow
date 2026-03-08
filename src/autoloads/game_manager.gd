@@ -22,6 +22,8 @@ func add_money(amount: int) -> void:
 	if amount > 0:
 		total_earnings += amount
 	EventBus.player_money_changed.emit(money)
+	if money >= 500:
+		_try_unlock_shotgun()
 	save_progress()
 
 
@@ -84,3 +86,12 @@ func load_progress() -> void:
 func _on_mission_completed(_mission_id: String) -> void:
 	missions_completed += 1
 	save_progress()
+
+
+func _try_unlock_shotgun() -> void:
+	var players := get_tree().get_nodes_in_group("player")
+	if players.is_empty():
+		return
+	var weapon := players[0].get_node_or_null("PlayerWeapon")
+	if weapon and weapon.has_method("unlock_weapon"):
+		weapon.unlock_weapon(2)

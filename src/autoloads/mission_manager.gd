@@ -133,6 +133,7 @@ func complete_mission() -> void:
 	GameManager.add_money(reward)
 	EventBus.mission_completed.emit(mid)
 	EventBus.mission_objective_updated.emit("")
+	_try_unlock_smg()
 	_active_mission = {}
 	_refresh_timer = 0.0
 
@@ -345,3 +346,12 @@ func _identify_variant(body_scale: Vector3) -> String:
 			best_dist = d
 			best_name = entry[0]
 	return best_name
+
+
+func _try_unlock_smg() -> void:
+	var players := get_tree().get_nodes_in_group("player")
+	if players.is_empty():
+		return
+	var weapon := players[0].get_node_or_null("PlayerWeapon")
+	if weapon and weapon.has_method("unlock_weapon"):
+		weapon.unlock_weapon(1)
