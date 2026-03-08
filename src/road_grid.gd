@@ -87,3 +87,30 @@ func get_chunk_coord(world_pos: Vector2) -> Vector2i:
 ## World-space origin (center) of a chunk.
 func get_chunk_origin(chunk: Vector2i) -> Vector2:
 	return Vector2(chunk.x * _grid_span, chunk.y * _grid_span)
+
+
+## Returns true if world position (x, z) falls within a ramp exclusion zone.
+## Ramp positions are deterministic per chunk -- 4 ramps per chunk at fixed offsets.
+func is_on_ramp(world_x: float, world_z: float) -> bool:
+	const HALF_X := 5.0
+	const HALF_Z := 6.0
+
+	var chunk := get_chunk_coord(Vector2(world_x, world_z))
+	var origin := get_chunk_origin(chunk)
+	var ox: float = origin.x
+	var oz: float = origin.y
+
+	var blvd_x: float = _road_centers[BOULEVARD_INDEX] + ox
+	var road7_z: float = _road_centers[7] + oz
+	var road3_z: float = _road_centers[3] + oz
+
+	if absf(world_x - blvd_x) < HALF_X and absf(world_z - (-80.0 + oz)) < HALF_Z:
+		return true
+	if absf(world_x - blvd_x) < HALF_X and absf(world_z - (80.0 + oz)) < HALF_Z:
+		return true
+	if absf(world_x - (-60.0 + ox)) < HALF_X and absf(world_z - road7_z) < HALF_Z:
+		return true
+	if absf(world_x - (60.0 + ox)) < HALF_X and absf(world_z - road3_z) < HALF_Z:
+		return true
+
+	return false
