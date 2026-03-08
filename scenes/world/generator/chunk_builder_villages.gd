@@ -173,4 +173,8 @@ func _sample_height(wx: float, wz: float) -> float:
 		var edge_blend: float = edge_dist / 40.0
 		h = lerpf(0.0, h, edge_blend)
 
+	# Never go below 0 near city edge — prevents water/fallthrough
+	if edge_dist < 80.0:
+		h = maxf(h, 0.0)
+
 	return h
