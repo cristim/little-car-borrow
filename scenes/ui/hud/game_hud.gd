@@ -22,6 +22,7 @@ var _reward_timer := 0.0
 @onready var death_label: Label = $DeathLabel
 @onready var restart_prompt: Label = $RestartPrompt
 @onready var crosshair: Label = $Crosshair
+@onready var weapon_slots: HBoxContainer = $BottomRight
 
 
 func _ready() -> void:
@@ -36,6 +37,8 @@ func _ready() -> void:
 	EventBus.player_died.connect(_on_died)
 	EventBus.vehicle_entered.connect(_on_vehicle_entered)
 	EventBus.vehicle_exited.connect(_on_vehicle_exited)
+	EventBus.weapon_switched.connect(_on_weapon_switched)
+	EventBus.weapon_unlocked.connect(_on_weapon_unlocked)
 
 	money_label.text = "$%d" % GameManager.money
 	objective_label.visible = false
@@ -44,6 +47,7 @@ func _ready() -> void:
 	death_label.visible = false
 	restart_prompt.visible = false
 	_update_stars()
+	call_deferred("_update_weapon_slots")
 
 
 func _process(delta: float) -> void:
@@ -174,3 +178,45 @@ func _update_stars() -> void:
 		else:
 			star.color = Color(0.3, 0.3, 0.3)
 			star.modulate.a = 0.4
+
+
+func _on_weapon_switched(_idx: int) -> void:
+	_update_weapon_slots()
+
+
+func _on_weapon_unlocked(_idx: int) -> void:
+	_update_weapon_slots()
+
+
+func _update_weapon_slots() -> void:
+	var players := get_tree().get_nodes_in_group("player")
+	if players.is_empty():
+		return
+	var pw := players[0].get_node_or_null("PlayerWeapon")
+	if not pw:
+		return
+
+	var weapons: Array = pw.WEAPONS
+	var unlocked: Array = pw._unlocked
+	var current: int = pw._current_idx
+
+	for i in range(weapon_slots.get_child_count()):
+		var slot := weapon_slots.get_child(i) as ColorRect
+		if i >= weapons.size():
+			slot.visible = false
+			continue
+
+		var w: Dictionary = weapons[i]
+		var label := slot.get_child(0) as Label
+		var wname: String = w.get("name", "?")
+		label.text = "%d %s" % [i + 1, wname]
+
+		if not unlocked[i]:
+			slot.color = Color(0.1, 0.1, 0.1, 0.3)
+			label.modulate = Color(0.4, 0.4, 0.4, 0.5)
+		elif i == current:
+			slot.color = Color(0.3, 0.5, 0.8, 0.8)
+			label.modulate = Color(1.0, 1.0, 1.0, 1.0)
+		else:
+			slot.color = Color(0.15, 0.15, 0.15, 0.6)
+			label.modulate = Color(0.8, 0.8, 0.8, 0.8)
