@@ -9,11 +9,11 @@ extends Node3D
 const CHUNK_LOAD_RADIUS := 1.5  # in grid_span units — loads full 3x3 grid
 const CHUNK_UNLOAD_RADIUS := 2.5
 const UPDATE_INTERVAL := 0.5
-const SCAN_RANGE := 3  # check -3..+3 tiles around player
+const SCAN_RANGE := 5  # check -5..+5 tiles around player (boundary can extend ~4.6 tiles)
 const LOOKAHEAD_TIME := 3.0  # seconds of velocity prediction
-const CITY_RADIUS := 3  # tiles from origin — city is a 7x7 grid (tiles -3..+3)
 
 var _grid = preload("res://src/road_grid.gd").new()
+var _boundary = preload("res://src/city_boundary.gd").new()
 
 # Shared material palette — initialized once, reused across all chunks
 var _road_mat: StandardMaterial3D
@@ -59,6 +59,8 @@ func _ready() -> void:
 	_init_materials()
 	_init_tree_meshes()
 	_init_terrain_noise()
+	_boundary.init(_grid.get_grid_span())
+	set_meta("city_boundary", _boundary)
 	_init_builders()
 	_build_safety_ground()
 	_load_chunks_around(Vector3.ZERO, Vector3.ZERO)
@@ -371,7 +373,7 @@ func _init_terrain_noise() -> void:
 
 ## Returns true if tile should be built as city, false for terrain.
 func _is_city_tile(tile: Vector2i) -> bool:
-	return absi(tile.x) <= CITY_RADIUS and absi(tile.y) <= CITY_RADIUS
+	return _boundary.is_city_tile(tile)
 
 
 func _init_builders() -> void:
