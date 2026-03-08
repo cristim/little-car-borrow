@@ -45,7 +45,7 @@ var _ragdoll_script: GDScript = preload(
 	"res://scenes/pedestrians/pedestrian_ragdoll.gd"
 )
 var _current_idx := 0
-var _unlocked: Array[bool] = [true, false, false, false]
+var _unlocked: Array[bool] = [true, true, true, true]
 var _rng := RandomNumberGenerator.new()
 var _cooldown := 0.0
 var _flash_timer := 0.0
