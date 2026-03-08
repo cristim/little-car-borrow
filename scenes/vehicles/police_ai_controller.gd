@@ -96,6 +96,9 @@ var _escape_timer := 0.0
 var _escaping := false
 var _escape_attempts := 0
 
+# Spawn grace — suppress stuck detection for newly spawned vehicles
+var _spawn_grace := 0.0
+
 # LOS tracking
 var _los_lost_timer := 0.0
 var _pursuit_locked := false
@@ -116,11 +119,15 @@ func initialize(vehicle: RigidBody3D, road_idx: int, direction: int) -> void:
 	_direction = direction
 	_rng.randomize()
 	_find_next_intersection()
+	_spawn_grace = 2.0
 
 
 func _physics_process(delta: float) -> void:
 	if not active or not _vehicle:
 		return
+
+	if _spawn_grace > 0.0:
+		_spawn_grace -= delta
 
 	if not _player:
 		_player = get_tree().get_first_node_in_group("player") as Node3D
@@ -152,8 +159,11 @@ func _physics_process(delta: float) -> void:
 	var speed_kmh := _vehicle.linear_velocity.length() * 3.6
 	if speed_kmh < STUCK_SPEED:
 		_stuck_timer += delta
-		if _stuck_timer > STUCK_TIMEOUT:
-			_begin_escape()
+		if _stuck_timer > STUCK_TIMEOUT and _spawn_grace <= 0.0:
+			if absf(_vehicle.linear_velocity.y) > 2.0:
+				_stuck_timer = 0.0
+			else:
+				_begin_escape()
 	else:
 		_stuck_timer = 0.0
 		if speed_kmh > 10.0:
@@ -475,8 +485,10 @@ func _begin_escape() -> void:
 
 func _process_escape(delta: float) -> void:
 	_escape_timer += delta
-	var back_dir := _vehicle.global_transform.basis.z
-	_vehicle.apply_central_force(back_dir * 6000.0)
+
+	if absf(_vehicle.linear_velocity.y) <= 2.0:
+		var back_dir := _vehicle.global_transform.basis.z
+		_vehicle.apply_central_force(back_dir * 2000.0)
 
 	# During pursuit: use raycast avoidance; during patrol: use lane error
 	var lane_err := _get_lane_error() if _ai_state != AIState.PURSUE else 0.0

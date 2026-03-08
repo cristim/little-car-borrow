@@ -470,3 +470,35 @@ func test_patrol_state_after_pursue_ends() -> void:
 		dir >= 0 and dir <= 3,
 		"Direction should be valid enum value, got %d" % dir,
 	)
+
+
+# ==========================================================================
+# Spawn grace and airborne guard (flying car fix)
+# ==========================================================================
+
+func test_spawn_grace_set_after_initialize() -> void:
+	var vehicle := RigidBody3D.new()
+	add_child_autofree(vehicle)
+	_ai.initialize(vehicle, 0, PoliceAIScript.Direction.NORTH)
+	assert_eq(_ai._spawn_grace, 2.0)
+
+
+func test_spawn_grace_default_zero() -> void:
+	assert_eq(_ai._spawn_grace, 0.0)
+
+
+func test_spawn_grace_not_reset_on_state_transition() -> void:
+	var vehicle := RigidBody3D.new()
+	add_child_autofree(vehicle)
+	_ai.initialize(vehicle, 0, PoliceAIScript.Direction.NORTH)
+	_ai._spawn_grace = 1.5
+
+	# Transition PATROL -> PURSUE should NOT touch _spawn_grace
+	WantedLevelManager.wanted_level = 2
+	_ai._update_ai_state(0.1)
+	assert_eq(_ai._spawn_grace, 1.5)
+
+	# Transition PURSUE -> PATROL should NOT touch _spawn_grace
+	WantedLevelManager.wanted_level = 0
+	_ai._update_ai_state(0.1)
+	assert_eq(_ai._spawn_grace, 1.5)
