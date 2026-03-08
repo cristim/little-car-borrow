@@ -20,7 +20,7 @@ var _sidewalk_mat: StandardMaterial3D
 var _ground_mat: StandardMaterial3D
 var _marking_mat: StandardMaterial3D
 var _ramp_mat: StandardMaterial3D
-var _window_mat: StandardMaterial3D
+var _window_mats: Array[StandardMaterial3D] = []
 var _building_mats: Array[StandardMaterial3D] = []
 var _trunk_mats: Array[StandardMaterial3D] = []
 var _canopy_mats: Array[StandardMaterial3D] = []
@@ -229,9 +229,11 @@ func _init_materials() -> void:
 	_ramp_mat = StandardMaterial3D.new()
 	_ramp_mat.albedo_color = Color(0.6, 0.55, 0.2)
 
-	_window_mat = StandardMaterial3D.new()
-	_window_mat.albedo_color = Color(0.18, 0.22, 0.28)
-	_window_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	for i in 4:
+		var wmat := StandardMaterial3D.new()
+		wmat.albedo_color = Color(0.18, 0.22, 0.28)
+		wmat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		_window_mats.append(wmat)
 
 	# 12 building colors — cool-toned skyscraper schemes
 	var bld_colors: Array[Color] = [
@@ -330,7 +332,7 @@ func _init_tree_meshes() -> void:
 
 func _init_builders() -> void:
 	_road_builder.init(_grid, _road_mat, _sidewalk_mat, _ground_mat)
-	_building_builder.init(_grid, _building_mats, _window_mat)
+	_building_builder.init(_grid, _building_mats, _window_mats)
 	_tree_builder.init(_grid, _trunk_mats, _canopy_mats, _trunk_mesh, _canopy_meshes)
 	_marking_builder.init(_grid, _marking_mat)
 	_ramp_builder.init(_grid, _ramp_mat)

@@ -4,18 +4,18 @@ extends RefCounted
 
 var _grid: RefCounted
 var _building_mats: Array[StandardMaterial3D] = []
-var _window_mat: StandardMaterial3D
+var _window_mats: Array[StandardMaterial3D] = []
 var _city_script: GDScript = preload("res://scenes/world/city.gd")
 
 
 func init(
 	grid: RefCounted,
 	building_mats: Array[StandardMaterial3D],
-	window_mat: StandardMaterial3D,
+	window_mats: Array[StandardMaterial3D],
 ) -> void:
 	_grid = grid
 	_building_mats = building_mats
-	_window_mat = window_mat
+	_window_mats = window_mats
 
 
 func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
@@ -32,10 +32,13 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 		sts.append(st)
 		st_used.append(false)
 
-	# Separate SurfaceTool for all window quads
-	var win_st := SurfaceTool.new()
-	win_st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var has_windows := false
+	# One SurfaceTool per window material group
+	var win_count := _window_mats.size()
+	var win_sts: Array[SurfaceTool] = []
+	var win_st_has_data: Array[bool] = []
+	for _i in range(win_count):
+		win_sts.append(SurfaceTool.new())
+		win_st_has_data.append(false)
 
 	# Single compound collision body for all buildings
 	var body := StaticBody3D.new()
@@ -80,8 +83,13 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 
 				# Add windows on buildings taller than 6m
 				if bh > 6.0:
-					has_windows = true
-					_add_building_windows(win_st, center, size, rng)
+					var win_idx := rng.randi() % win_count
+					if not win_st_has_data[win_idx]:
+						win_sts[win_idx].begin(Mesh.PRIMITIVE_TRIANGLES)
+						win_st_has_data[win_idx] = true
+					_add_building_windows(
+						win_sts[win_idx], center, size, rng,
+					)
 
 	# Create one MeshInstance3D per used palette color
 	for i in range(mat_count):
@@ -95,14 +103,16 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 		mesh_inst.material_override = _building_mats[i]
 		body.add_child(mesh_inst)
 
-	# Single MeshInstance3D for all window quads
-	if has_windows:
-		win_st.generate_normals()
-		var win_mesh := win_st.commit()
+	# One MeshInstance3D per used window material group
+	for i in range(win_count):
+		if not win_st_has_data[i]:
+			continue
+		win_sts[i].generate_normals()
+		var win_mesh := win_sts[i].commit()
 		var win_inst := MeshInstance3D.new()
-		win_inst.name = "Windows"
+		win_inst.name = "Windows_%d" % i
 		win_inst.mesh = win_mesh
-		win_inst.material_override = _window_mat
+		win_inst.material_override = _window_mats[i]
 		body.add_child(win_inst)
 
 	chunk.add_child(body)
