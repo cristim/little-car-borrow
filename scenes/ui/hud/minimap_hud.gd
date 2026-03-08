@@ -219,7 +219,13 @@ func _draw_terrain(ppos: Vector3, yaw: float) -> void:
 		var base_color := TERRAIN_COLOR
 		if has_water:
 			base_color = WATER_COLOR
-		draw_colored_polygon(map_pts, base_color)
+
+		# Clip terrain rectangle to minimap circle
+		var clipped: Array[PackedVector2Array] = (
+			Geometry2D.intersect_polygons(map_pts, _clip_circle)
+		)
+		for poly in clipped:
+			draw_colored_polygon(poly, base_color)
 
 		var has_village: bool = chunk_node.get_meta(
 			"has_village", false
