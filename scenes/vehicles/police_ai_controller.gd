@@ -70,6 +70,12 @@ const DISMOUNT_RANGE := 12.0
 const DISMOUNT_COOLDOWN := 15.0
 const MAX_OFFICERS_PER_CAR := 2
 
+# A* path following
+const PATH_REFRESH_INTERVAL := 2.0
+const WAYPOINT_ARRIVAL_DIST := 12.0
+const DIRECT_CHASE_DIST := 30.0
+const PATH_MIN_LENGTH := 2
+
 var active := true
 
 var _grid = preload("res://src/road_grid.gd").new()
@@ -112,6 +118,12 @@ var _officer_script: GDScript = preload(
 var _officers_spawned := 0
 var _dismount_timer := 0.0
 
+# A* path following
+var _road_graph = preload("res://src/road_graph.gd").new()
+var _path_waypoints: Array[Vector3] = []
+var _path_idx := 0
+var _path_refresh_timer := 0.0
+
 
 func initialize(vehicle: RigidBody3D, road_idx: int, direction: int) -> void:
 	_vehicle = vehicle
@@ -120,6 +132,7 @@ func initialize(vehicle: RigidBody3D, road_idx: int, direction: int) -> void:
 	_rng.randomize()
 	_find_next_intersection()
 	_spawn_grace = 2.0
+	_path_refresh_timer = _rng.randf() * PATH_REFRESH_INTERVAL
 
 
 func _physics_process(delta: float) -> void:
@@ -142,6 +155,8 @@ func _physics_process(delta: float) -> void:
 			return
 
 	_update_ai_state(delta)
+	if _ai_state == AIState.PURSUE:
+		_update_path(delta)
 	_update_lights_and_siren()
 	_try_dismount(delta)
 
@@ -196,6 +211,9 @@ func _update_ai_state(delta: float) -> void:
 			_escape_attempts = 0
 			_yield_timer = 0.0
 			_cross_traffic = false
+			_path_waypoints.clear()
+			_path_idx = 0
+			_path_refresh_timer = 0.0
 		return
 
 	# Wanted level > 0: pursue immediately
@@ -209,6 +227,8 @@ func _update_ai_state(delta: float) -> void:
 		_escape_attempts = 0
 		_yield_timer = 0.0
 		_cross_traffic = false
+		# Trigger immediate path computation on next frame
+		_path_refresh_timer = PATH_REFRESH_INTERVAL
 
 	# Throttle LOS raycasts to track if player is visible
 	_los_check_timer += delta
@@ -233,6 +253,9 @@ func _update_ai_state(delta: float) -> void:
 			_escape_attempts = 0
 			_yield_timer = 0.0
 			_cross_traffic = false
+			_path_waypoints.clear()
+			_path_idx = 0
+			_path_refresh_timer = 0.0
 
 
 func _check_los() -> bool:
@@ -259,6 +282,34 @@ func _get_player_vehicle_pos() -> Vector3:
 	if _player:
 		return _player.global_position
 	return _vehicle.global_position
+
+
+func _update_path(delta: float) -> void:
+	_path_refresh_timer += delta
+	if _path_refresh_timer < PATH_REFRESH_INTERVAL:
+		return
+	_path_refresh_timer = 0.0
+
+	if not _player or not _vehicle:
+		return
+
+	var from := _vehicle.global_position
+	var to := _get_player_vehicle_pos()
+
+	# Skip pathfinding at short range -- direct chase is better
+	if from.distance_to(to) < DIRECT_CHASE_DIST:
+		_path_waypoints.clear()
+		_path_idx = 0
+		return
+
+	var path: Array[Vector3] = _road_graph.find_path(from, to, _grid)
+	if path.size() >= PATH_MIN_LENGTH:
+		_path_waypoints = path
+		# Skip first waypoint (our snapped starting intersection)
+		_path_idx = 1 if path.size() > 1 else 0
+	else:
+		_path_waypoints.clear()
+		_path_idx = 0
 
 
 func _update_lights_and_siren() -> void:
@@ -316,11 +367,43 @@ func _drive(_delta: float) -> void:
 		var to_player := _get_player_vehicle_pos() - _vehicle.global_position
 		to_player.y = 0.0
 		var dist := to_player.length()
-		if dist > 1.0:
+
+		# Path-following when waypoints available and player is far
+		if (
+			_path_waypoints.size() > 0
+			and _path_idx < _path_waypoints.size()
+			and dist > DIRECT_CHASE_DIST
+		):
+			var wp: Vector3 = _path_waypoints[_path_idx]
+			var to_wp := wp - _vehicle.global_position
+			to_wp.y = 0.0
+			var wp_dist := to_wp.length()
+
+			# Advance waypoint when close enough
+			if wp_dist < WAYPOINT_ARRIVAL_DIST:
+				_path_idx += 1
+				if _path_idx < _path_waypoints.size():
+					wp = _path_waypoints[_path_idx]
+					to_wp = wp - _vehicle.global_position
+					to_wp.y = 0.0
+
+			if to_wp.length() > 1.0:
+				var cross_y := forward.cross(to_wp.normalized()).y
+				var dot_p := forward.dot(to_wp.normalized())
+				heading_err = atan2(cross_y, dot_p)
+				steer = _calc_pursuit_steer(
+					heading_err, PURSUIT_STEER_GAIN
+				)
+			else:
+				steer = 0.0
+		elif dist > 1.0:
+			# Direct chase: close range or no path
 			var cross_y := forward.cross(to_player.normalized()).y
 			var dot_p := forward.dot(to_player.normalized())
 			heading_err = atan2(cross_y, dot_p)
-			steer = _calc_pursuit_steer(heading_err, PURSUIT_STEER_GAIN)
+			steer = _calc_pursuit_steer(
+				heading_err, PURSUIT_STEER_GAIN
+			)
 		else:
 			steer = 0.0
 	else:
