@@ -15,6 +15,7 @@ const POLICE_COLOR := Color(1.0, 0.2, 0.2)
 const MARKER_START_COLOR := Color(0.2, 0.9, 0.2)
 const MARKER_PICKUP_COLOR := Color(0.3, 0.5, 1.0)
 const MARKER_DROPOFF_COLOR := Color(1.0, 0.9, 0.2)
+const HELI_COLOR := Color(1.0, 0.3, 0.3)
 
 var _grid = preload("res://src/road_grid.gd").new()
 var _player: Node3D = null
@@ -57,6 +58,9 @@ func _draw() -> void:
 	_draw_group_dots(
 		"police_vehicle", player_pos, yaw, POLICE_COLOR, 3.0
 	)
+
+	# Police helicopter (distinct icon)
+	_draw_heli_icons(player_pos, yaw)
 
 	# Mission markers (colored diamonds)
 	_draw_mission_markers(player_pos, yaw)
@@ -140,6 +144,37 @@ func _draw_mission_markers(ppos: Vector3, yaw: float) -> void:
 		elif mtype == "dropoff":
 			color = MARKER_DROPOFF_COLOR
 		_draw_diamond(mp, 5.0, color)
+
+
+func _draw_heli_icons(ppos: Vector3, yaw: float) -> void:
+	var helis := get_tree().get_nodes_in_group(
+		"police_helicopter"
+	)
+	var view_sq := (MAP_RADIUS / SCALE) * (MAP_RADIUS / SCALE)
+	for heli in helis:
+		if not is_instance_valid(heli):
+			continue
+		var hpos: Vector3 = (heli as Node3D).global_position
+		var dx := hpos.x - ppos.x
+		var dz := hpos.z - ppos.z
+		if dx * dx + dz * dz > view_sq:
+			continue
+		var mp := _world_to_minimap(hpos, ppos, yaw)
+		if not _in_circle(mp):
+			continue
+		# Circle with two crossed lines (rotor blades)
+		draw_circle(mp, 4.0, HELI_COLOR)
+		var blade_len := 6.0
+		draw_line(
+			mp + Vector2(-blade_len, 0.0),
+			mp + Vector2(blade_len, 0.0),
+			HELI_COLOR, 1.5,
+		)
+		draw_line(
+			mp + Vector2(0.0, -blade_len),
+			mp + Vector2(0.0, blade_len),
+			HELI_COLOR, 1.5,
+		)
 
 
 func _draw_player_arrow(_yaw: float) -> void:
