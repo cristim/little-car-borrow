@@ -328,7 +328,10 @@ func _process_escape(delta: float) -> void:
 			_vehicle.handbrake_input = 0.0
 			if absf(_vehicle.linear_velocity.y) <= 2.0:
 				var back_dir := _vehicle.global_transform.basis.z
-				_vehicle.apply_central_force(back_dir * 2000.0)
+				back_dir.y = 0.0
+				if back_dir.length_squared() > 0.001:
+					back_dir = back_dir.normalized()
+					_vehicle.apply_central_force(back_dir * 2000.0)
 			if _escape_timer >= ESCAPE_REVERSE_DURATION:
 				_escape_phase = EscapePhase.STEER
 				_escape_timer = 0.0

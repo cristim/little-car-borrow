@@ -502,3 +502,31 @@ func test_spawn_grace_not_reset_on_state_transition() -> void:
 	WantedLevelManager.wanted_level = 0
 	_ai._update_ai_state(0.1)
 	assert_eq(_ai._spawn_grace, 1.5)
+
+
+# ==========================================================================
+# Horizontal force flattening — source code verification
+# ==========================================================================
+
+func test_escape_force_zeroes_y_component() -> void:
+	var src: String = PoliceAIScript.source_code
+	assert_true(
+		src.contains("back_dir.y = 0.0"),
+		"Escape force should zero Y component to prevent vertical launch",
+	)
+
+
+func test_escape_force_has_length_guard() -> void:
+	var src: String = PoliceAIScript.source_code
+	assert_true(
+		src.contains("back_dir.length_squared() > 0.001"),
+		"Escape force should guard against near-zero length after flattening",
+	)
+
+
+func test_escape_force_renormalizes_after_flattening() -> void:
+	var src: String = PoliceAIScript.source_code
+	assert_true(
+		src.contains("back_dir = back_dir.normalized()"),
+		"Escape force should re-normalize after zeroing Y",
+	)

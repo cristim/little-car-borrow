@@ -571,7 +571,10 @@ func _process_escape(delta: float) -> void:
 
 	if absf(_vehicle.linear_velocity.y) <= 2.0:
 		var back_dir := _vehicle.global_transform.basis.z
-		_vehicle.apply_central_force(back_dir * 2000.0)
+		back_dir.y = 0.0
+		if back_dir.length_squared() > 0.001:
+			back_dir = back_dir.normalized()
+			_vehicle.apply_central_force(back_dir * 2000.0)
 
 	# During pursuit: use raycast avoidance; during patrol: use lane error
 	var lane_err := _get_lane_error() if _ai_state != AIState.PURSUE else 0.0
