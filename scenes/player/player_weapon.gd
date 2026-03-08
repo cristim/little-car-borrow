@@ -39,12 +39,12 @@ const WORLD_DECAL_LIFETIME := 15.0
 const MAX_BLOOD_DECALS := 20
 const BLOOD_DECAL_LIFETIME := 20.0
 const MUZZLE_FLASH_TIME := 0.06
-const AIM_POSE_TIME := 0.3
 
 var _ragdoll_script: GDScript = preload(
 	"res://scenes/pedestrians/pedestrian_ragdoll.gd"
 )
 var _current_idx := 0
+var _armed := false
 var _unlocked: Array[bool] = [true, true, true, true]
 var _rng := RandomNumberGenerator.new()
 var _cooldown := 0.0
@@ -62,9 +62,8 @@ func _ready() -> void:
 	_player_model = owner.get_node_or_null("PlayerModel")
 	if _player_model:
 		_elbow = _player_model.get_node_or_null(
-			"RightShoulderPivot/RightElbowPivot"
+			"LeftShoulderPivot/LeftElbowPivot"
 		)
-	_setup_gun_mesh()
 
 
 func _process(delta: float) -> void:
@@ -79,10 +78,14 @@ func _process(delta: float) -> void:
 	if GameManager.is_dead:
 		return
 
+	# Weapon key: draw weapon or switch; press same key again to holster
 	for i in range(WEAPONS.size()):
 		var action: String = "weapon_%d" % (i + 1)
 		if Input.is_action_just_pressed(action) and _unlocked[i]:
-			_switch_weapon(i)
+			if _armed and i == _current_idx:
+				_holster()
+			else:
+				_draw_weapon(i)
 			return
 
 	if Input.is_action_just_pressed("weapon_next"):
@@ -90,6 +93,9 @@ func _process(delta: float) -> void:
 		return
 	if Input.is_action_just_pressed("weapon_prev"):
 		_cycle_weapon(-1)
+		return
+
+	if not _armed:
 		return
 
 	if _cooldown > 0.0:
@@ -109,16 +115,32 @@ func _process(delta: float) -> void:
 		_cooldown = cd
 
 
-func _switch_weapon(idx: int) -> void:
-	if idx == _current_idx:
-		return
+func _draw_weapon(idx: int) -> void:
 	if idx < 0 or idx >= WEAPONS.size():
 		return
 	if not _unlocked[idx]:
 		return
 	_current_idx = idx
+	_armed = true
 	_setup_gun_mesh()
 	EventBus.weapon_switched.emit(idx)
+
+
+func _holster() -> void:
+	_armed = false
+	if _gun_mesh and is_instance_valid(_gun_mesh):
+		_gun_mesh.queue_free()
+		_gun_mesh = null
+	if _muzzle_flash and is_instance_valid(_muzzle_flash):
+		_muzzle_flash.queue_free()
+		_muzzle_flash = null
+	EventBus.weapon_switched.emit(-1)
+
+
+func _switch_weapon(idx: int) -> void:
+	if idx == _current_idx and _armed:
+		return
+	_draw_weapon(idx)
 
 
 func _cycle_weapon(direction: int) -> void:
@@ -169,9 +191,6 @@ func _shoot() -> void:
 	if _muzzle_flash:
 		_muzzle_flash.visible = true
 		_flash_timer = MUZZLE_FLASH_TIME
-
-	if _player_model and _player_model.has_method("set_aiming"):
-		_player_model.set_aiming(AIM_POSE_TIME)
 
 	_play_gunshot()
 

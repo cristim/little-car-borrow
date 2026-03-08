@@ -10,9 +10,9 @@ const RUN_THRESHOLD := 6.0  # m/s — above this, use run amplitude
 const ELBOW_RATIO := 0.5
 const KNEE_RATIO := 0.7
 const AIM_SHOULDER_X := -PI / 2.0
+const FLASHLIGHT_SHOULDER_X := -1.0  # ~57° forward, natural flashlight hold
 
 var _phase := 0.0
-var _aim_timer := 0.0
 
 @onready var _left_shoulder: Node3D = $LeftShoulderPivot
 @onready var _right_shoulder: Node3D = $RightShoulderPivot
@@ -24,14 +24,7 @@ var _aim_timer := 0.0
 @onready var _right_knee: Node3D = $RightHipPivot/RightKneePivot
 
 
-func set_aiming(duration: float) -> void:
-	_aim_timer = duration
-
-
 func _process(delta: float) -> void:
-	if _aim_timer > 0.0:
-		_aim_timer -= delta
-
 	var parent := get_parent()
 	if not parent:
 		return
@@ -85,7 +78,22 @@ func _process(delta: float) -> void:
 		)
 		_phase = 0.0
 
-	# Override right arm to aim pose when shooting
-	if _aim_timer > 0.0:
-		_right_shoulder.rotation.x = AIM_SHOULDER_X
+	# Override left arm: keep raised when armed (gun in left hand)
+	if _is_armed():
+		_left_shoulder.rotation.x = AIM_SHOULDER_X
+		_left_elbow.rotation.x = 0.0
+
+	# Override right arm for flashlight hold
+	if _is_flashlight_on():
+		_right_shoulder.rotation.x = FLASHLIGHT_SHOULDER_X
 		_right_elbow.rotation.x = 0.0
+
+
+func _is_armed() -> bool:
+	var pw := get_parent().get_node_or_null("PlayerWeapon")
+	return pw != null and pw._armed
+
+
+func _is_flashlight_on() -> bool:
+	var fl := _right_elbow.get_node_or_null("Forearm/Flashlight")
+	return fl != null and fl.visible
