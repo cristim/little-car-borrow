@@ -82,15 +82,25 @@ func test_tiling_far_chunk() -> void:
 
 func test_traffic_manager_calls_is_on_ramp() -> void:
 	var script: GDScript = load("res://scenes/world/traffic_manager.gd")
+	var src: String = script.source_code
 	assert_true(
-		script.source_code.contains("is_on_ramp"),
+		src.contains("is_on_ramp"),
 		"traffic_manager should call is_on_ramp to skip ramp positions",
+	)
+	assert_true(
+		src.contains("_spawn_grace > 0.0"),
+		"traffic_manager should skip freeze when spawn grace is active",
 	)
 
 
 func test_police_manager_calls_is_on_ramp() -> void:
 	var script: GDScript = load("res://scenes/world/police_manager.gd")
+	var src: String = script.source_code
 	assert_true(
-		script.source_code.contains("is_on_ramp"),
+		src.contains("is_on_ramp"),
 		"police_manager should call is_on_ramp to skip ramp positions",
+	)
+	assert_true(
+		src.contains("_spawn_grace > 0.0"),
+		"police_manager should skip freeze when spawn grace is active",
 	)

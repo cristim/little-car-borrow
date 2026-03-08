@@ -228,9 +228,13 @@ func _despawn_far() -> void:
 		var d := (v as Node3D).global_position.distance_to(player_pos)
 		if d > DESPAWN_RADIUS:
 			to_remove.append(v)
-		# Freeze/unfreeze GEVP physics by distance
+		# Freeze/unfreeze GEVP physics by distance (skip during spawn grace)
 		if "freeze" in v:
-			v.freeze = d >= LOD_FREEZE_DIST
+			var ai: Node = v.get_node_or_null("PoliceAIController")
+			if ai and ai._spawn_grace > 0.0:
+				v.freeze = false
+			else:
+				v.freeze = d >= LOD_FREEZE_DIST
 	for v in to_remove:
 		_police.erase(v)
 		if is_instance_valid(v):

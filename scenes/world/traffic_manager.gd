@@ -279,9 +279,13 @@ func _despawn_far() -> void:
 			offset.y = 0.0
 			if vel_dir.dot(offset.normalized()) < -0.5:
 				to_remove.append(v)
-		# Freeze/unfreeze GEVP physics by distance
+		# Freeze/unfreeze GEVP physics by distance (skip during spawn grace)
 		if is_instance_valid(v) and "freeze" in v:
-			v.freeze = d >= LOD_FREEZE_DIST
+			var npc_ai: Node = v.get_node_or_null("NPCVehicleController")
+			if npc_ai and npc_ai._spawn_grace > 0.0:
+				v.freeze = false
+			else:
+				v.freeze = d >= LOD_FREEZE_DIST
 
 	for v in to_remove:
 		_vehicles.erase(v)
