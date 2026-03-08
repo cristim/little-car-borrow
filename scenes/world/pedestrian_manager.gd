@@ -24,7 +24,7 @@ var _time_multiplier := 1.0
 
 func _ready() -> void:
 	_rng.randomize()
-	_boundary.init(_grid.get_grid_span())
+	_boundary.init(_grid.get_grid_span(), _make_terrain_noise())
 	EventBus.pedestrian_killed.connect(_on_pedestrian_killed)
 	EventBus.time_of_day_changed.connect(_on_time_changed)
 
@@ -87,8 +87,11 @@ func _try_spawn() -> void:
 		if dist < MIN_SPAWN_DIST or dist > SPAWN_RADIUS:
 			continue
 
-		if _boundary.get_signed_distance(spawn_pos.x, spawn_pos.z) > 0.0:
-			continue
+		# Adjust spawn height to terrain level outside city
+		var ground_y: float = _boundary.get_ground_height(
+			spawn_pos.x, spawn_pos.z
+		)
+		spawn_pos.y = ground_y + 0.15
 
 		# Bias spawns ahead of player movement
 		var h_vel := Vector3(_player_velocity.x, 0.0, _player_velocity.z)
@@ -151,6 +154,18 @@ func _despawn_far() -> void:
 
 func _on_pedestrian_killed(pedestrian: Node) -> void:
 	_pedestrians.erase(pedestrian)
+
+
+static func _make_terrain_noise() -> FastNoiseLite:
+	var n := FastNoiseLite.new()
+	n.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	n.frequency = 0.003
+	n.fractal_octaves = 4
+	n.fractal_lacunarity = 2.0
+	n.fractal_gain = 0.5
+	n.fractal_type = FastNoiseLite.FRACTAL_FBM
+	n.seed = 42
+	return n
 
 
 func _on_time_changed(hour: float) -> void:

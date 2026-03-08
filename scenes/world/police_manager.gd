@@ -35,7 +35,7 @@ var _heli_script: GDScript = preload(
 
 func _ready() -> void:
 	_rng.randomize()
-	_boundary.init(_grid.get_grid_span())
+	_boundary.init(_grid.get_grid_span(), _make_terrain_noise())
 	EventBus.wanted_level_changed.connect(_on_wanted_level_changed)
 
 
@@ -171,8 +171,11 @@ func _try_spawn() -> void:
 		if _grid.is_on_ramp(spawn_pos.x, spawn_pos.z):
 			continue
 
-		if _boundary.get_signed_distance(spawn_pos.x, spawn_pos.z) > 0.0:
-			continue
+		# Adjust spawn height to terrain level outside city
+		var ground_y: float = _boundary.get_ground_height(
+			spawn_pos.x, spawn_pos.z
+		)
+		spawn_pos.y = ground_y + 0.5
 
 		var too_close := false
 		for v in _police:
@@ -276,6 +279,18 @@ func _spawn_helicopter() -> void:
 
 	get_tree().current_scene.add_child(heli)
 	_helicopter = heli
+
+
+static func _make_terrain_noise() -> FastNoiseLite:
+	var n := FastNoiseLite.new()
+	n.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	n.frequency = 0.003
+	n.fractal_octaves = 4
+	n.fractal_lacunarity = 2.0
+	n.fractal_gain = 0.5
+	n.fractal_type = FastNoiseLite.FRACTAL_FBM
+	n.seed = 42
+	return n
 
 
 func _despawn_helicopter() -> void:
