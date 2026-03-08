@@ -26,6 +26,7 @@ const GLASS_COLOR := Color(0.6, 0.75, 0.85, 0.4)
 const INTERIOR_COLOR := Color(0.12, 0.12, 0.12, 1)
 
 var _grid = preload("res://src/road_grid.gd").new()
+var _boundary = preload("res://src/city_boundary.gd").new()
 var _builder = preload("res://scenes/vehicles/car_body_builder.gd").new()
 var _total_weight := 0
 var _body_mesh_cache := {}      # variant_name -> ArrayMesh
@@ -76,6 +77,7 @@ var _car_colors: Array[Color] = [
 
 func _ready() -> void:
 	_rng.randomize()
+	_boundary.init(_grid.get_grid_span())
 	_init_materials()
 	EventBus.vehicle_entered.connect(_on_vehicle_stolen)
 	EventBus.time_of_day_changed.connect(_on_time_changed)
@@ -196,6 +198,10 @@ func _try_spawn() -> void:
 			continue
 
 		if _grid.is_on_ramp(spawn_pos.x, spawn_pos.z):
+			continue
+
+		# Only spawn on actual city roads, not the mathematical grid outside
+		if _boundary.get_signed_distance(spawn_pos.x, spawn_pos.z) > 0.0:
 			continue
 
 		var too_close := false

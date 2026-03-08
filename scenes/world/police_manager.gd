@@ -11,6 +11,7 @@ const DESPAWN_FADE_TIME := 10.0
 const LOD_FREEZE_DIST := 140.0
 
 var _grid = preload("res://src/road_grid.gd").new()
+var _boundary = preload("res://src/city_boundary.gd").new()
 var _police_scene: PackedScene = preload("res://scenes/vehicles/police_vehicle.tscn")
 var _ai_script: GDScript = preload("res://scenes/vehicles/police_ai_controller.gd")
 var _vehicle_health_script: GDScript = preload(
@@ -34,6 +35,7 @@ var _heli_script: GDScript = preload(
 
 func _ready() -> void:
 	_rng.randomize()
+	_boundary.init(_grid.get_grid_span())
 	EventBus.wanted_level_changed.connect(_on_wanted_level_changed)
 
 
@@ -167,6 +169,9 @@ func _try_spawn() -> void:
 			continue
 
 		if _grid.is_on_ramp(spawn_pos.x, spawn_pos.z):
+			continue
+
+		if _boundary.get_signed_distance(spawn_pos.x, spawn_pos.z) > 0.0:
 			continue
 
 		var too_close := false

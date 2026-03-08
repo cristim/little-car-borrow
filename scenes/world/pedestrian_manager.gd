@@ -12,6 +12,7 @@ const SPAWNS_PER_TICK := 2
 const SIDEWALK_OFFSET := 1.5
 
 var _grid = preload("res://src/road_grid.gd").new()
+var _boundary = preload("res://src/city_boundary.gd").new()
 var _ped_scene: PackedScene = preload("res://scenes/pedestrians/pedestrian.tscn")
 var _pedestrians: Array[Node] = []
 var _player: Node3D = null
@@ -23,6 +24,7 @@ var _time_multiplier := 1.0
 
 func _ready() -> void:
 	_rng.randomize()
+	_boundary.init(_grid.get_grid_span())
 	EventBus.pedestrian_killed.connect(_on_pedestrian_killed)
 	EventBus.time_of_day_changed.connect(_on_time_changed)
 
@@ -83,6 +85,9 @@ func _try_spawn() -> void:
 
 		var dist := spawn_pos.distance_to(player_pos)
 		if dist < MIN_SPAWN_DIST or dist > SPAWN_RADIUS:
+			continue
+
+		if _boundary.get_signed_distance(spawn_pos.x, spawn_pos.z) > 0.0:
 			continue
 
 		# Bias spawns ahead of player movement
