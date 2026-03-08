@@ -31,6 +31,10 @@ signal mission_marker_reached(mission_id: String, marker_type: String)
 signal missions_refreshed
 signal mission_timer_updated(time_remaining: float)
 
+# Weapon signals
+signal weapon_switched(weapon_idx: int)
+signal weapon_unlocked(weapon_idx: int)
+
 # UI signals
 signal show_notification(text: String, duration: float)
 signal show_interaction_prompt(text: String)
