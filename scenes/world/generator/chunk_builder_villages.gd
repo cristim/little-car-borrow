@@ -169,12 +169,10 @@ func _sample_height(wx: float, wz: float) -> float:
 	var max_h: float = lerpf(20.0, 80.0, fade)
 	var h: float = n * max_h - 2.0
 
-	if edge_dist < 40.0:
-		var edge_blend: float = edge_dist / 40.0
-		h = lerpf(0.0, h, edge_blend)
-
-	# Never go below 0 near city edge — prevents water/fallthrough
-	if edge_dist < 80.0:
-		h = maxf(h, 0.0)
+	# Smooth blend from city ground (y=0) over one full tile span.
+	if edge_dist < grid_span:
+		var t: float = edge_dist / grid_span
+		t = t * t * (3.0 - 2.0 * t)  # smoothstep
+		h = lerpf(0.0, maxf(h, 0.0), t)
 
 	return h
