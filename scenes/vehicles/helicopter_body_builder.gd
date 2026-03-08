@@ -112,7 +112,7 @@ func build_fuselage() -> ArrayMesh:
 		Vector3(FIN_THICKNESS, TAIL_HH + FIN_HEIGHT, tz))
 
 	# Landing skids (two parallel rails + two vertical struts each)
-	for x_sign in [-1.0, 1.0]:
+	for x_sign: float in [-1.0, 1.0]:
 		var sx := x_sign * SKID_SPREAD
 		var sy := -FUSE_HH - SKID_DROP
 		var szf := -FUSE_HL * 0.8
