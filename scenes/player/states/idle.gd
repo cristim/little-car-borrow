@@ -2,6 +2,9 @@ extends "res://src/state_machine/state.gd"
 ## Player idle state: applies gravity, waits for movement or interaction input.
 
 
+const SEA_LEVEL := -2.0
+
+
 func physics_update(delta: float) -> void:
 	var player := owner as CharacterBody3D
 	player.velocity.x = move_toward(player.velocity.x, 0.0, player.walk_speed)
@@ -9,6 +12,11 @@ func physics_update(delta: float) -> void:
 	if not player.is_on_floor():
 		player.velocity.y -= player.gravity * delta
 	player.move_and_slide()
+
+	# Water entry check
+	if player.global_position.y < SEA_LEVEL + 0.5 and _is_over_water(player.global_position):
+		state_machine.transition_to("Swimming")
+		return
 
 	var move_input := _get_move_input()
 	if move_input.length() > 0.1:
@@ -36,3 +44,14 @@ func handle_input(event: InputEvent) -> void:
 
 func _get_move_input() -> Vector2:
 	return Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
+
+
+func _is_over_water(pos: Vector3) -> bool:
+	var city_nodes := owner.get_tree().get_nodes_in_group("city_manager")
+	if city_nodes.is_empty():
+		return false
+	var boundary: RefCounted = city_nodes[0].get_meta("city_boundary")
+	if not boundary:
+		return false
+	var ground_h: float = boundary.get_ground_height(pos.x, pos.z)
+	return ground_h < SEA_LEVEL

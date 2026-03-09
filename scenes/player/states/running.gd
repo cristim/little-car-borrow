@@ -1,6 +1,8 @@
 extends "res://src/state_machine/state.gd"
 ## Player running state: same as walking but at run_speed.
 
+const SEA_LEVEL := -2.0
+
 
 func physics_update(delta: float) -> void:
 	var player := owner as CharacterBody3D
@@ -21,7 +23,10 @@ func physics_update(delta: float) -> void:
 		player.velocity.y -= player.gravity * delta
 	player.move_and_slide()
 
-	_rotate_toward_direction(player, direction, delta)
+	# Water entry check
+	if player.global_position.y < SEA_LEVEL + 0.5 and _is_over_water(player.global_position):
+		state_machine.transition_to("Swimming")
+		return
 
 
 func enter(_msg: Dictionary = {}) -> void:
@@ -45,13 +50,19 @@ func _get_camera_relative_direction(input: Vector2) -> Vector3:
 	return direction
 
 
-func _rotate_toward_direction(player: CharacterBody3D, direction: Vector3, delta: float) -> void:
-	var target_angle := atan2(direction.x, direction.z)
-	player.rotation.y = lerp_angle(player.rotation.y, target_angle, player.rotation_speed * delta)
-
-
 func _update_prompt() -> void:
 	if owner.nearest_vehicle:
 		EventBus.show_interaction_prompt.emit("Hold F to steal")
 	else:
 		EventBus.hide_interaction_prompt.emit()
+
+
+func _is_over_water(pos: Vector3) -> bool:
+	var city_nodes := owner.get_tree().get_nodes_in_group("city_manager")
+	if city_nodes.is_empty():
+		return false
+	var boundary: RefCounted = city_nodes[0].get_meta("city_boundary")
+	if not boundary:
+		return false
+	var ground_h: float = boundary.get_ground_height(pos.x, pos.z)
+	return ground_h < SEA_LEVEL

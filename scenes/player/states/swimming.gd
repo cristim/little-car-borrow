@@ -1,0 +1,78 @@
+extends "res://src/state_machine/state.gd"
+## Player swimming state: buoyancy at water surface, WASD movement.
+
+const SEA_LEVEL := -2.0
+const SWIM_SPEED := 2.5
+const SPRINT_SWIM_SPEED := 4.0
+const BUOYANCY_FORCE := 12.0
+const SURFACE_OFFSET := 0.3  # how far above SEA_LEVEL to float (capsule center)
+
+
+func enter(_msg: Dictionary = {}) -> void:
+	owner.is_swimming = true
+	EventBus.player_entered_water.emit()
+	EventBus.hide_interaction_prompt.emit()
+
+
+func exit() -> void:
+	owner.is_swimming = false
+	EventBus.player_exited_water.emit()
+
+
+func physics_update(delta: float) -> void:
+	var player := owner as CharacterBody3D
+
+	# Buoyancy: push player toward water surface
+	var target_y: float = SEA_LEVEL + SURFACE_OFFSET
+	if player.global_position.y < target_y:
+		player.velocity.y = BUOYANCY_FORCE * delta * 60.0
+		if player.global_position.y + player.velocity.y * delta > target_y:
+			player.velocity.y = (target_y - player.global_position.y) / delta
+	else:
+		# Gentle pull down if above surface
+		player.velocity.y = lerpf(player.velocity.y, 0.0, delta * 5.0)
+
+	# Horizontal movement
+	var move_input := Input.get_vector(
+		"move_left", "move_right", "move_forward", "move_backward"
+	)
+	var speed: float = SPRINT_SWIM_SPEED if Input.is_action_pressed("sprint") else SWIM_SPEED
+
+	if move_input.length() > 0.1:
+		var direction := _get_camera_relative_direction(move_input)
+		player.velocity.x = direction.x * speed
+		player.velocity.z = direction.z * speed
+	else:
+		player.velocity.x = lerpf(player.velocity.x, 0.0, delta * 5.0)
+		player.velocity.z = lerpf(player.velocity.z, 0.0, delta * 5.0)
+
+	player.move_and_slide()
+
+	# Exit: on floor and above water line
+	if player.is_on_floor() and player.global_position.y > SEA_LEVEL + 0.5:
+		state_machine.transition_to("Idle")
+		return
+
+	# Also exit if ground below is above water (walked onto shore ramp)
+	if not _is_over_water(player.global_position) and player.is_on_floor():
+		state_machine.transition_to("Idle")
+		return
+
+
+func _get_camera_relative_direction(input: Vector2) -> Vector3:
+	var cam_yaw: float = owner.player_camera.get_yaw()
+	var forward := Vector3(-sin(cam_yaw), 0, -cos(cam_yaw))
+	var right := Vector3(-forward.z, 0, forward.x)
+	var direction := (forward * -input.y + right * input.x).normalized()
+	return direction
+
+
+func _is_over_water(pos: Vector3) -> bool:
+	var city_nodes := owner.get_tree().get_nodes_in_group("city_manager")
+	if city_nodes.is_empty():
+		return false
+	var boundary: RefCounted = city_nodes[0].get_meta("city_boundary")
+	if not boundary:
+		return false
+	var ground_h: float = boundary.get_ground_height(pos.x, pos.z)
+	return ground_h < SEA_LEVEL
