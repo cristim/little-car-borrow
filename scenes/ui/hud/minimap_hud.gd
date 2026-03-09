@@ -22,12 +22,16 @@ const VILLAGE_COLOR := Color(0.55, 0.40, 0.25, 0.8)
 const CITY_BOUNDARY_COLOR := Color(0.25, 0.25, 0.35, 0.25)
 const CITY_BOUNDARY_LINE_COLOR := Color(0.6, 0.6, 0.7, 0.5)
 const BOUNDARY_SEGMENTS := 72
+const TERRAIN_SUBCELLS := 4
+const SEA_LEVEL := -2.0
+const HIGHWAY_INDICES := [0, 5]
 
 var _grid = preload("res://src/road_grid.gd").new()
 var _player: Node3D = null
 var _frame_count := 0
 var _boundary_polygon := PackedVector2Array()
 var _boundary_cached := false
+var _boundary: RefCounted = null
 var _clip_circle := PackedVector2Array()
 
 
@@ -108,10 +112,8 @@ func _draw_city_boundary(ppos: Vector3, yaw: float) -> void:
 		)
 		if not city_node or not city_node.has_meta("city_boundary"):
 			return
-		var boundary: RefCounted = city_node.get_meta(
-			"city_boundary"
-		)
-		_boundary_polygon = boundary.get_boundary_polygon(
+		_boundary = city_node.get_meta("city_boundary")
+		_boundary_polygon = _boundary.get_boundary_polygon(
 			BOUNDARY_SEGMENTS
 		)
 		_boundary_cached = true
@@ -143,29 +145,44 @@ func _draw_roads(ppos: Vector3, yaw: float) -> void:
 	var view_range := MAP_RADIUS / SCALE
 	# Draw nearby road segments as lines
 	for ri in range(_grid.GRID_SIZE + 1):
+		var is_highway: bool = ri in HIGHWAY_INDICES
+		var width := 2.0 if is_highway else 1.5
+
 		# N-S roads (along Z axis)
 		var rx: float = _grid.get_road_center_near(
 			ri, ppos.x
 		)
-		var top := _world_to_minimap(
-			Vector3(rx, 0.0, ppos.z - view_range), ppos, yaw
-		)
-		var bot := _world_to_minimap(
-			Vector3(rx, 0.0, ppos.z + view_range), ppos, yaw
-		)
-		_draw_clipped_line(top, bot, ROAD_COLOR, 1.5)
+		var draw_ns := true
+		if not is_highway and _boundary:
+			draw_ns = _boundary.get_signed_distance(
+				rx, ppos.z
+			) < 0.0
+		if draw_ns:
+			var top := _world_to_minimap(
+				Vector3(rx, 0.0, ppos.z - view_range), ppos, yaw
+			)
+			var bot := _world_to_minimap(
+				Vector3(rx, 0.0, ppos.z + view_range), ppos, yaw
+			)
+			_draw_clipped_line(top, bot, ROAD_COLOR, width)
 
 		# E-W roads (along X axis)
 		var rz: float = _grid.get_road_center_near(
 			ri, ppos.z
 		)
-		var left := _world_to_minimap(
-			Vector3(ppos.x - view_range, 0.0, rz), ppos, yaw
-		)
-		var right := _world_to_minimap(
-			Vector3(ppos.x + view_range, 0.0, rz), ppos, yaw
-		)
-		_draw_clipped_line(left, right, ROAD_COLOR, 1.5)
+		var draw_ew := true
+		if not is_highway and _boundary:
+			draw_ew = _boundary.get_signed_distance(
+				ppos.x, rz
+			) < 0.0
+		if draw_ew:
+			var left := _world_to_minimap(
+				Vector3(ppos.x - view_range, 0.0, rz), ppos, yaw
+			)
+			var right := _world_to_minimap(
+				Vector3(ppos.x + view_range, 0.0, rz), ppos, yaw
+			)
+			_draw_clipped_line(left, right, ROAD_COLOR, width)
 
 
 func _draw_terrain(ppos: Vector3, yaw: float) -> void:
@@ -201,31 +218,67 @@ func _draw_terrain(ppos: Vector3, yaw: float) -> void:
 		if world_dist > MAP_RADIUS / SCALE + hs * 1.42:
 			continue
 
-		var corners: Array[Vector3] = [
-			Vector3(chunk_ox - hs, 0.0, chunk_oz - hs),
-			Vector3(chunk_ox + hs, 0.0, chunk_oz - hs),
-			Vector3(chunk_ox + hs, 0.0, chunk_oz + hs),
-			Vector3(chunk_ox - hs, 0.0, chunk_oz + hs),
-		]
+		if _boundary:
+			# Height-based sub-cell coloring
+			var sub_size: float = grid_span / TERRAIN_SUBCELLS
+			for sy in range(TERRAIN_SUBCELLS):
+				for sx in range(TERRAIN_SUBCELLS):
+					var x0: float = chunk_ox - hs + sx * sub_size
+					var z0: float = chunk_oz - hs + sy * sub_size
+					var x1: float = x0 + sub_size
+					var z1: float = z0 + sub_size
+					var cx: float = (x0 + x1) * 0.5
+					var cz: float = (z0 + z1) * 0.5
+					var h: float = _boundary.get_ground_height(
+						cx, cz
+					)
+					var col := _height_to_minimap_color(h)
 
-		var map_pts: PackedVector2Array = []
-		for c in corners:
-			var mp := _world_to_minimap(c, ppos, yaw)
-			map_pts.append(mp)
-
-		var has_water: bool = chunk_node.get_meta(
-			"has_water", false
-		)
-		var base_color := TERRAIN_COLOR
-		if has_water:
-			base_color = WATER_COLOR
-
-		# Clip terrain rectangle to minimap circle
-		var clipped: Array[PackedVector2Array] = (
-			Geometry2D.intersect_polygons(map_pts, _clip_circle)
-		)
-		for poly in clipped:
-			draw_colored_polygon(poly, base_color)
+					var quad: PackedVector2Array = [
+						_world_to_minimap(
+							Vector3(x0, 0.0, z0), ppos, yaw
+						),
+						_world_to_minimap(
+							Vector3(x1, 0.0, z0), ppos, yaw
+						),
+						_world_to_minimap(
+							Vector3(x1, 0.0, z1), ppos, yaw
+						),
+						_world_to_minimap(
+							Vector3(x0, 0.0, z1), ppos, yaw
+						),
+					]
+					var clipped: Array[PackedVector2Array] = (
+						Geometry2D.intersect_polygons(
+							quad, _clip_circle
+						)
+					)
+					for poly in clipped:
+						draw_colored_polygon(poly, col)
+		else:
+			# Fallback: flat color per chunk
+			var corners: Array[Vector3] = [
+				Vector3(chunk_ox - hs, 0.0, chunk_oz - hs),
+				Vector3(chunk_ox + hs, 0.0, chunk_oz - hs),
+				Vector3(chunk_ox + hs, 0.0, chunk_oz + hs),
+				Vector3(chunk_ox - hs, 0.0, chunk_oz + hs),
+			]
+			var map_pts: PackedVector2Array = []
+			for c in corners:
+				map_pts.append(_world_to_minimap(c, ppos, yaw))
+			var has_water: bool = chunk_node.get_meta(
+				"has_water", false
+			)
+			var base_color := TERRAIN_COLOR
+			if has_water:
+				base_color = WATER_COLOR
+			var clipped: Array[PackedVector2Array] = (
+				Geometry2D.intersect_polygons(
+					map_pts, _clip_circle
+				)
+			)
+			for poly in clipped:
+				draw_colored_polygon(poly, base_color)
 
 		var has_village: bool = chunk_node.get_meta(
 			"has_village", false
@@ -240,8 +293,8 @@ func _draw_terrain(ppos: Vector3, yaw: float) -> void:
 			if _in_circle(vmp):
 				draw_rect(
 					Rect2(
-						vmp - Vector2(3, 3),
-						Vector2(6, 6),
+						vmp - Vector2(4, 4),
+						Vector2(8, 8),
 					),
 					VILLAGE_COLOR,
 				)
@@ -363,6 +416,31 @@ func _draw_diamond(
 		Vector2(pos.x - size, pos.y),
 	]
 	draw_colored_polygon(pts, color)
+
+
+func _height_to_minimap_color(h: float) -> Color:
+	var col: Color
+	if h < SEA_LEVEL:
+		col = Color(0.15, 0.35, 0.65)
+	elif h < 0.0:
+		var t := clampf((h - SEA_LEVEL) / -SEA_LEVEL, 0.0, 1.0)
+		col = Color(0.76, 0.70, 0.50).lerp(
+			Color(0.22, 0.45, 0.18), t
+		)
+	elif h < 30.0:
+		var t := clampf((h - 20.0) / 10.0, 0.0, 1.0)
+		col = Color(0.22, 0.45, 0.18).lerp(
+			Color(0.45, 0.42, 0.38), t
+		)
+	elif h < 50.0:
+		var t := clampf((h - 40.0) / 10.0, 0.0, 1.0)
+		col = Color(0.45, 0.42, 0.38).lerp(
+			Color(0.90, 0.90, 0.92), t
+		)
+	else:
+		col = Color(0.90, 0.90, 0.92)
+	col.a = 0.5
+	return col
 
 
 func _draw_clipped_line(
