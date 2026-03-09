@@ -47,6 +47,9 @@ var _terrain_builder = preload(
 var _village_builder = preload(
 	"res://scenes/world/generator/chunk_builder_villages.gd"
 ).new()
+var _rural_road_builder = preload(
+	"res://scenes/world/generator/chunk_builder_rural_roads.gd"
+).new()
 
 var _chunks: Dictionary = {}
 var _update_timer := 0.0
@@ -59,7 +62,7 @@ func _ready() -> void:
 	_init_materials()
 	_init_tree_meshes()
 	_init_terrain_noise()
-	_boundary.init(_grid.get_grid_span())
+	_boundary.init(_grid.get_grid_span(), _terrain_noise)
 	set_meta("city_boundary", _boundary)
 	_init_builders()
 	_build_safety_ground()
@@ -174,6 +177,7 @@ func _build_chunk(tile: Vector2i) -> Node3D:
 		chunk.set_meta("chunk_type", "terrain")
 		_terrain_builder.build(chunk, tile, ox, oz)
 		_village_builder.build(chunk, tile, ox, oz)
+		_rural_road_builder.build(chunk, tile, ox, oz)
 
 	return chunk
 
@@ -387,12 +391,13 @@ func _init_builders() -> void:
 	_village_builder.init(
 		_grid, _terrain_noise, _building_mats, _window_mats[0], _boundary
 	)
+	_rural_road_builder.init(_grid, _road_mat, _boundary)
 
 
 func _build_safety_ground() -> void:
 	var body := StaticBody3D.new()
 	body.name = "SafetyGround"
-	body.position = Vector3(0.0, -5.0, 0.0)
+	body.position = Vector3(0.0, -20.0, 0.0)
 	body.collision_layer = 1
 	body.collision_mask = 0
 	body.add_to_group("Road")
