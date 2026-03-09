@@ -50,6 +50,9 @@ var _village_builder = preload(
 var _rural_road_builder = preload(
 	"res://scenes/world/generator/chunk_builder_rural_roads.gd"
 ).new()
+var _rural_tree_builder = preload(
+	"res://scenes/world/generator/chunk_builder_rural_trees.gd"
+).new()
 
 var _chunks: Dictionary = {}
 var _update_timer := 0.0
@@ -178,6 +181,7 @@ func _build_chunk(tile: Vector2i) -> Node3D:
 		_terrain_builder.build(chunk, tile, ox, oz)
 		_village_builder.build(chunk, tile, ox, oz)
 		_rural_road_builder.build(chunk, tile, ox, oz)
+		_rural_tree_builder.build(chunk, tile, ox, oz)
 
 	return chunk
 
@@ -392,6 +396,9 @@ func _init_builders() -> void:
 		_grid, _terrain_noise, _building_mats, _window_mats[0], _boundary
 	)
 	_rural_road_builder.init(_grid, _road_mat, _boundary)
+	_rural_tree_builder.init(
+		_grid, _trunk_mats, _canopy_mats, _trunk_mesh, _canopy_meshes, _boundary
+	)
 
 
 func _build_safety_ground() -> void:
