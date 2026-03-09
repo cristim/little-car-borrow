@@ -22,7 +22,7 @@ const VILLAGE_COLOR := Color(0.55, 0.40, 0.25, 0.8)
 const CITY_BOUNDARY_COLOR := Color(0.25, 0.25, 0.35, 0.25)
 const CITY_BOUNDARY_LINE_COLOR := Color(0.6, 0.6, 0.7, 0.5)
 const BOUNDARY_SEGMENTS := 72
-const TERRAIN_SUBCELLS := 4
+const TERRAIN_SUBCELLS := 8
 const SEA_LEVEL := -2.0
 const HIGHWAY_INDICES := [0, 5]
 
