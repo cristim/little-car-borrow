@@ -7,10 +7,18 @@ const RUN_AMPLITUDE := 0.65
 const FREQUENCY := 8.0
 const DECAY_SPEED := 8.0
 const RUN_THRESHOLD := 6.0  # m/s — above this, use run amplitude
+const SWIM_FREQUENCY := 3.0
+const SWIM_ARM_AMPLITUDE := 1.2
+const SWIM_LEG_AMPLITUDE := 0.4
+const SWIM_ELBOW_MIN := 0.3
+const SWIM_ELBOW_MAX := 1.5
 const ELBOW_RATIO := 0.5
 const KNEE_RATIO := 0.7
-const AIM_SHOULDER_X := -PI / 2.0
-const FLASHLIGHT_SHOULDER_X := -1.0  # ~57° forward, natural flashlight hold
+const FLASH_ELBOW_UP := -0.3       # slight bend when looking up
+const FLASH_ELBOW_DOWN := -1.0     # deep bend when looking down
+const PITCH_UP := 0.8              # camera max pitch
+const PITCH_DOWN := -1.2           # camera min pitch
+const DEFAULT_GUN_ELBOW := -0.05   # fallback if weapon data unavailable
 
 var _phase := 0.0
 
@@ -27,6 +35,11 @@ var _phase := 0.0
 func _process(delta: float) -> void:
 	var parent := get_parent()
 	if not parent:
+		return
+
+	# Swimming animation override
+	if "is_swimming" in parent and parent.is_swimming:
+		_animate_swimming(delta)
 		return
 
 	var vel: Vector3 = parent.velocity if "velocity" in parent else Vector3.ZERO
@@ -78,15 +91,49 @@ func _process(delta: float) -> void:
 		)
 		_phase = 0.0
 
-	# Override left arm: keep raised when armed (gun in left hand)
-	if _is_armed():
-		_left_shoulder.rotation.x = AIM_SHOULDER_X
-		_left_elbow.rotation.x = 0.0
+	# Aim arms at crosshair using camera pitch (skip when hidden, e.g. driving)
+	if (parent as Node3D).visible:
+		var pitch := _get_camera_pitch()
 
-	# Override right arm for flashlight hold
-	if _is_flashlight_on():
-		_right_shoulder.rotation.x = FLASHLIGHT_SHOULDER_X
-		_right_elbow.rotation.x = 0.0
+		if _is_armed():
+			_aim_gun_arm(pitch)
+
+		if _is_flashlight_on():
+			_aim_flashlight_arm(pitch)
+
+
+func _aim_gun_arm(pitch: float) -> void:
+	var elbow_angle := _get_gun_elbow_angle()
+	var total: float = -(PI / 2.0 + pitch)
+	_right_shoulder.rotation.x = total - elbow_angle
+	_right_elbow.rotation.x = elbow_angle
+
+
+func _aim_flashlight_arm(pitch: float) -> void:
+	var t: float = clampf(
+		(pitch - PITCH_UP) / (PITCH_DOWN - PITCH_UP), 0.0, 1.0
+	)
+	var elbow: float = lerpf(FLASH_ELBOW_UP, FLASH_ELBOW_DOWN, t)
+	var total: float = -(PI / 2.0 + pitch)
+	_left_shoulder.rotation.x = total - elbow
+	_left_elbow.rotation.x = elbow
+
+
+func _get_gun_elbow_angle() -> float:
+	var pw := get_parent().get_node_or_null("PlayerWeapon")
+	if pw == null:
+		return DEFAULT_GUN_ELBOW
+	var w: Dictionary = pw.WEAPONS[pw._current_idx]
+	var angle: float = w.get("elbow", DEFAULT_GUN_ELBOW)
+	return angle
+
+
+func _get_camera_pitch() -> float:
+	var camera := get_viewport().get_camera_3d()
+	if not camera:
+		return 0.0
+	var fwd: Vector3 = -camera.global_transform.basis.z
+	return asin(clampf(fwd.y, -1.0, 1.0))
 
 
 func _is_armed() -> bool:
@@ -95,5 +142,36 @@ func _is_armed() -> bool:
 
 
 func _is_flashlight_on() -> bool:
-	var fl := _right_elbow.get_node_or_null("Forearm/Flashlight")
+	var fl := _left_elbow.get_node_or_null("Forearm/Flashlight")
 	return fl != null and fl.visible
+
+
+func _animate_swimming(delta: float) -> void:
+	_phase += delta * SWIM_FREQUENCY * TAU
+
+	# Front crawl arms
+	var left_swing := sin(_phase) * SWIM_ARM_AMPLITUDE
+	_left_shoulder.rotation.x = -PI * 0.3 + left_swing
+	_right_shoulder.rotation.x = -PI * 0.3 - left_swing
+
+	# Elbow: nearly straight when reaching forward, deeply bent during pull
+	var left_pull_t := clampf(
+		-left_swing / SWIM_ARM_AMPLITUDE, 0.0, 1.0
+	)
+	var right_pull_t := clampf(
+		left_swing / SWIM_ARM_AMPLITUDE, 0.0, 1.0
+	)
+	_left_elbow.rotation.x = lerpf(
+		SWIM_ELBOW_MIN, SWIM_ELBOW_MAX, left_pull_t
+	)
+	_right_elbow.rotation.x = lerpf(
+		SWIM_ELBOW_MIN, SWIM_ELBOW_MAX, right_pull_t
+	)
+
+	# Flutter kick (alternating, not frog)
+	var kick := sin(_phase) * SWIM_LEG_AMPLITUDE
+	_left_hip.rotation.x = kick
+	_right_hip.rotation.x = -kick
+
+	_left_knee.rotation.x = maxf(0.0, -kick) * 0.5
+	_right_knee.rotation.x = maxf(0.0, kick) * 0.5

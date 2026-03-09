@@ -8,8 +8,14 @@ extends CharacterBody3D
 
 var nearest_vehicle: Node = null
 var current_vehicle: Node = null
+var is_swimming := false
 
 @onready var player_camera: Node3D = $PlayerCamera
+
+
+func _physics_process(_delta: float) -> void:
+	if InputManager.is_foot():
+		rotation.y = player_camera.get_yaw() + PI
 
 
 func _ready() -> void:
