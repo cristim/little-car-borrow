@@ -46,6 +46,13 @@ func enter(msg: Dictionary = {}) -> void:
 		body.add_child(lights)
 		lights.initialize(_vehicle)
 
+	# Ensure vehicle has water detector (NPC vehicles get it from traffic_manager)
+	if not _vehicle.get_node_or_null("VehicleWaterDetector"):
+		var WDScript: GDScript = preload("res://scenes/vehicles/vehicle_water_detector.gd")
+		var wd: Node = WDScript.new()
+		wd.name = "VehicleWaterDetector"
+		_vehicle.add_child(wd)
+
 	EventBus.vehicle_entered.emit(_vehicle)
 
 
