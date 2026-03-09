@@ -43,5 +43,10 @@ signal hide_interaction_prompt
 # Pedestrian signals
 signal pedestrian_killed(pedestrian: Node)
 
+# Water signals
+signal player_entered_water
+signal player_exited_water
+signal vehicle_entered_water(vehicle: Node)
+
 # World signals
 signal time_of_day_changed(hour: float)
