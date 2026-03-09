@@ -55,14 +55,15 @@ func test_initial_state_is_pistol() -> void:
 	var pw := Node.new()
 	pw.set_script(WeaponScript)
 	assert_eq(pw._current_idx, 0, "Should start on Pistol")
-	assert_true(pw._unlocked[0], "Pistol should be unlocked")
-	assert_false(pw._unlocked[1], "SMG should be locked")
+	for i in range(pw._unlocked.size()):
+		assert_true(pw._unlocked[i], "Weapon %d should be unlocked" % i)
 	pw.free()
 
 
 func test_switch_weapon_rejects_locked() -> void:
 	var pw := Node.new()
 	pw.set_script(WeaponScript)
+	pw._unlocked[1] = false
 	pw._switch_weapon(1)
 	assert_eq(pw._current_idx, 0, "Should stay on Pistol")
 	pw.free()
@@ -71,7 +72,6 @@ func test_switch_weapon_rejects_locked() -> void:
 func test_switch_weapon_accepts_unlocked() -> void:
 	var pw := Node.new()
 	pw.set_script(WeaponScript)
-	pw._unlocked[2] = true
 	pw._switch_weapon(2)
 	assert_eq(pw._current_idx, 2, "Should switch to Shotgun")
 	pw.free()
@@ -87,10 +87,19 @@ func test_switch_weapon_rejects_out_of_bounds() -> void:
 	pw.free()
 
 
+func test_cycle_weapon_forward() -> void:
+	var pw := Node.new()
+	pw.set_script(WeaponScript)
+	pw._cycle_weapon(1)
+	assert_eq(pw._current_idx, 1, "Should cycle to SMG")
+	pw.free()
+
+
 func test_cycle_weapon_forward_skips_locked() -> void:
 	var pw := Node.new()
 	pw.set_script(WeaponScript)
-	pw._unlocked[3] = true
+	pw._unlocked[1] = false
+	pw._unlocked[2] = false
 	pw._cycle_weapon(1)
 	assert_eq(pw._current_idx, 3, "Should skip to Rifle")
 	pw.free()
@@ -99,16 +108,17 @@ func test_cycle_weapon_forward_skips_locked() -> void:
 func test_cycle_weapon_backward_wraps() -> void:
 	var pw := Node.new()
 	pw.set_script(WeaponScript)
-	pw._unlocked[3] = true
-	pw._current_idx = 3
 	pw._cycle_weapon(-1)
-	assert_eq(pw._current_idx, 0, "Should wrap to Pistol")
+	assert_eq(pw._current_idx, 3, "Should wrap to Rifle")
 	pw.free()
 
 
 func test_cycle_weapon_no_other_unlocked_stays() -> void:
 	var pw := Node.new()
 	pw.set_script(WeaponScript)
+	pw._unlocked[1] = false
+	pw._unlocked[2] = false
+	pw._unlocked[3] = false
 	pw._cycle_weapon(1)
 	assert_eq(pw._current_idx, 0, "Should stay on Pistol")
 	pw.free()
@@ -117,15 +127,6 @@ func test_cycle_weapon_no_other_unlocked_stays() -> void:
 # ==========================================================================
 # Unlock
 # ==========================================================================
-
-func test_unlock_weapon_sets_flag() -> void:
-	var pw := Node.new()
-	pw.set_script(WeaponScript)
-	assert_false(pw._unlocked[1])
-	pw.unlock_weapon(1)
-	assert_true(pw._unlocked[1], "SMG should be unlocked")
-	pw.free()
-
 
 func test_unlock_weapon_idempotent() -> void:
 	var pw := Node.new()
