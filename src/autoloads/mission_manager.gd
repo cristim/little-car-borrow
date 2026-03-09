@@ -13,6 +13,7 @@ var _mission_timer := 0.0
 var _player: Node3D = null
 var _rng := RandomNumberGenerator.new()
 var _grid = preload("res://src/road_grid.gd").new()
+var _boundary = null  # lazy-cached city boundary
 
 
 func _ready() -> void:
@@ -294,6 +295,16 @@ func _generate_theft() -> Dictionary:
 
 # --- Helpers ---
 
+func _get_boundary():
+	if _boundary:
+		return _boundary
+	var city_nodes := get_tree().get_nodes_in_group("city_manager")
+	if city_nodes.is_empty():
+		return null
+	_boundary = city_nodes[0].get_meta("city_boundary", null)
+	return _boundary
+
+
 func _gen_sidewalk_pos(
 	near: Vector3, min_dist: float, max_dist: float,
 ) -> Vector3:
@@ -313,9 +324,15 @@ func _gen_sidewalk_pos(
 		)
 		var rw: float = _grid.get_road_width(road_idx)
 		var sw := rc + rw * 0.5 + SIDEWALK_OFFSET
+		var pos: Vector3
 		if is_ns:
-			return Vector3(sw, 0.15, raw.z)
-		return Vector3(raw.x, 0.15, sw)
+			pos = Vector3(sw, 0.15, raw.z)
+		else:
+			pos = Vector3(raw.x, 0.15, sw)
+		var b = _get_boundary()
+		if b and b.get_signed_distance(pos.x, pos.z) >= 0.0:
+			continue
+		return pos
 	# Fallback: offset from near position
 	return near + Vector3(min_dist, 0.0, 0.0)
 

@@ -101,3 +101,38 @@ func test_is_city_tile_deterministic() -> void:
 				b2.is_city_tile(tile),
 				"Tile (%d,%d) should be deterministic" % [x, y],
 			)
+
+
+func test_ground_height_zero_inside_city() -> void:
+	var b: RefCounted = BoundaryScript.new()
+	b.init(_grid_span, _make_terrain_noise())
+	var h: float = b.get_ground_height(0.0, 0.0)
+	assert_eq(h, 0.0, "Ground height at origin (inside city) should be 0.0")
+
+
+func test_ground_height_below_sea_level_west_ocean() -> void:
+	var b: RefCounted = BoundaryScript.new()
+	b.init(_grid_span, _make_terrain_noise())
+	var found_below := false
+	for i in range(5, 15):
+		var wx: float = -_grid_span * float(i)
+		var h: float = b.get_ground_height(wx, 0.0)
+		if h < -2.0:
+			found_below = true
+			break
+	assert_true(
+		found_below,
+		"At least one far-west sample should be below sea level (-2.0)",
+	)
+
+
+static func _make_terrain_noise() -> FastNoiseLite:
+	var n := FastNoiseLite.new()
+	n.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	n.frequency = 0.003
+	n.fractal_octaves = 4
+	n.fractal_lacunarity = 2.0
+	n.fractal_gain = 0.5
+	n.fractal_type = FastNoiseLite.FRACTAL_FBM
+	n.seed = 42
+	return n

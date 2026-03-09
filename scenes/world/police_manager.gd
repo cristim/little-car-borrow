@@ -9,6 +9,7 @@ const MIN_VEHICLE_DIST := 20.0
 const SPAWN_INTERVAL := 1.0
 const DESPAWN_FADE_TIME := 10.0
 const LOD_FREEZE_DIST := 140.0
+const SEA_LEVEL := -2.0
 
 var _grid = preload("res://src/road_grid.gd").new()
 var _boundary = preload("res://src/city_boundary.gd").new()
@@ -19,6 +20,9 @@ var _vehicle_health_script: GDScript = preload(
 )
 var _vehicle_lights_script: GDScript = preload(
 	"res://scenes/vehicles/vehicle_lights.gd"
+)
+var _water_detector_script: GDScript = preload(
+	"res://scenes/vehicles/vehicle_water_detector.gd"
 )
 
 var _police: Array[Node] = []
@@ -175,6 +179,8 @@ func _try_spawn() -> void:
 		var ground_y: float = _boundary.get_ground_height(
 			spawn_pos.x, spawn_pos.z
 		)
+		if ground_y < SEA_LEVEL:
+			continue
 		spawn_pos.y = ground_y + 0.5
 
 		var too_close := false
@@ -217,6 +223,10 @@ func _try_spawn() -> void:
 		lights.name = "VehicleLights"
 		vehicle.get_node("Body").add_child(lights)
 		lights.initialize(vehicle)
+
+		var wd: Node = _water_detector_script.new()
+		wd.name = "VehicleWaterDetector"
+		vehicle.add_child(wd)
 
 		ai.initialize(vehicle, road_idx, direction)
 
