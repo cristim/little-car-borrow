@@ -170,8 +170,8 @@ func _sample_height(wx: float, wz: float) -> float:
 	var h: float = n * max_h - 6.0
 
 	# West ocean: terrain descends below sea level westward
-	var west_t: float = clampf(-wx / (grid_span * 3.0), 0.0, 1.0)
-	h -= west_t * west_t * 20.0
+	var west_t: float = clampf(-wx / (grid_span * 1.5), 0.0, 1.0)
+	h -= west_t * west_t * 30.0
 
 	# Cubic ease-in blend from city ground (y=0) over two tile spans.
 	# Negative heights allowed for beach slopes and underwater seabed.

@@ -1,1 +1,2 @@
 max-file-lines: 1200
+max-public-methods: 25
