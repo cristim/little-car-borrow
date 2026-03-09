@@ -206,6 +206,9 @@ func _collect_tree(
 	canopy_colors: Array,
 	body: StaticBody3D,
 ) -> void:
+	# Sink tree base slightly to compensate for terrain mesh interpolation
+	pos = Vector3(pos.x, pos.y - 0.5, pos.z)
+
 	var trunk_h := rng.randf_range(2.0, 5.0)
 	var trunk_r := rng.randf_range(0.12, 0.3)
 
