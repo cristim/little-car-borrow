@@ -24,21 +24,26 @@ func _build_mesh() -> void:
 	var WeaponScript: GDScript = preload(
 		"res://scenes/player/player_weapon.gd"
 	)
+	var BuilderScript: GDScript = preload(
+		"res://src/weapon_mesh_builder.gd"
+	)
 	if weapon_idx < 0 or weapon_idx >= WeaponScript.WEAPONS.size():
 		return
 	var w: Dictionary = WeaponScript.WEAPONS[weapon_idx]
-	var body_size: Vector3 = w.get("body", Vector3(0.06, 0.06, 0.2))
+	var weapon_name: String = w.get("name", "Pistol")
 
-	var gun := MeshInstance3D.new()
-	var box := BoxMesh.new()
-	box.size = body_size * 3.0
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.15, 0.15, 0.15)
-	mat.emission_enabled = true
-	mat.emission = Color(0.4, 0.6, 1.0)
-	mat.emission_energy_multiplier = 0.5
-	box.material = mat
-	gun.mesh = box
+	var builder: RefCounted = BuilderScript.new()
+	var gun: Node3D = builder.build(weapon_name, 3.0)
+
+	# Add emission glow to all mesh materials (safe — fresh instances)
+	for child in gun.get_children():
+		var mi: MeshInstance3D = child as MeshInstance3D
+		if mi and mi.mesh and mi.mesh.material:
+			var m: StandardMaterial3D = mi.mesh.material
+			m.emission_enabled = true
+			m.emission = Color(0.4, 0.6, 1.0)
+			m.emission_energy_multiplier = 0.5
+
 	mesh_pivot.add_child(gun)
 
 

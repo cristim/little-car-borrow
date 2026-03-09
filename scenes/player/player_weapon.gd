@@ -9,28 +9,28 @@ const WEAPONS := [
 		"auto": false, "spread": 0.0, "pellets": 1, "crime_mult": 1.0,
 		"body": Vector3(0.06, 0.06, 0.2), "muzzle_z": -0.2,
 		"snap_dur": 0.005, "body_dur": 0.06, "tail_decay": 6.0,
-		"base_freq": 200.0, "end_freq": 60.0,
+		"base_freq": 200.0, "end_freq": 60.0, "elbow": -0.05,
 	},
 	{
 		"name": "SMG", "range": 40.0, "damage": 12.0, "cooldown": 0.08,
 		"auto": true, "spread": 0.03, "pellets": 1, "crime_mult": 1.0,
 		"body": Vector3(0.06, 0.08, 0.25), "muzzle_z": -0.25,
 		"snap_dur": 0.003, "body_dur": 0.03, "tail_decay": 10.0,
-		"base_freq": 280.0, "end_freq": 100.0,
+		"base_freq": 280.0, "end_freq": 100.0, "elbow": -0.05,
 	},
 	{
 		"name": "Shotgun", "range": 25.0, "damage": 60.0, "cooldown": 0.8,
 		"auto": false, "spread": 0.08, "pellets": 6, "crime_mult": 1.5,
 		"body": Vector3(0.08, 0.06, 0.3), "muzzle_z": -0.3,
 		"snap_dur": 0.008, "body_dur": 0.08, "tail_decay": 4.0,
-		"base_freq": 160.0, "end_freq": 40.0,
+		"base_freq": 160.0, "end_freq": 40.0, "elbow": -0.4,
 	},
 	{
 		"name": "Rifle", "range": 100.0, "damage": 40.0, "cooldown": 0.5,
 		"auto": false, "spread": 0.005, "pellets": 1, "crime_mult": 1.2,
 		"body": Vector3(0.04, 0.04, 0.4), "muzzle_z": -0.4,
 		"snap_dur": 0.004, "body_dur": 0.05, "tail_decay": 5.0,
-		"base_freq": 240.0, "end_freq": 50.0,
+		"base_freq": 240.0, "end_freq": 50.0, "elbow": -0.3,
 	},
 ]
 const VEHICLE_IMPULSE := 80.0
@@ -43,6 +43,9 @@ const MUZZLE_FLASH_TIME := 0.06
 var _ragdoll_script: GDScript = preload(
 	"res://scenes/pedestrians/pedestrian_ragdoll.gd"
 )
+var _builder_script: GDScript = preload(
+	"res://src/weapon_mesh_builder.gd"
+)
 var _current_idx := 0
 var _armed := false
 var _unlocked: Array[bool] = [true, true, true, true]
@@ -50,7 +53,7 @@ var _rng := RandomNumberGenerator.new()
 var _cooldown := 0.0
 var _flash_timer := 0.0
 var _muzzle_flash: MeshInstance3D = null
-var _gun_mesh: MeshInstance3D = null
+var _gun_mesh: Node3D = null
 var _elbow: Node3D = null
 var _player_model: Node3D = null
 var _world_decals: Array[MeshInstance3D] = []
@@ -62,7 +65,7 @@ func _ready() -> void:
 	_player_model = owner.get_node_or_null("PlayerModel")
 	if _player_model:
 		_elbow = _player_model.get_node_or_null(
-			"LeftShoulderPivot/LeftElbowPivot"
+			"RightShoulderPivot/RightElbowPivot"
 		)
 
 
@@ -338,51 +341,18 @@ func _setup_gun_mesh() -> void:
 		_muzzle_flash = null
 
 	var w: Dictionary = WEAPONS[_current_idx]
-	var body_size: Vector3 = w.get("body", Vector3(0.06, 0.06, 0.2))
-	var muzzle_z: float = w.get("muzzle_z", -0.2)
 	var weapon_name: String = w.get("name", "Pistol")
 
-	var gun_mat := StandardMaterial3D.new()
-	gun_mat.albedo_color = Color(0.1, 0.1, 0.1)
-
-	_gun_mesh = MeshInstance3D.new()
-	_gun_mesh.name = "GunMesh"
-	var gun_box := BoxMesh.new()
-	gun_box.size = body_size
-	gun_box.material = gun_mat
-	_gun_mesh.mesh = gun_box
+	var builder: RefCounted = _builder_script.new()
+	_gun_mesh = builder.build(weapon_name)
 	_gun_mesh.position = Vector3(0.0, -0.2, -0.08)
+	# Barrel is built along -Z; forearm points along -Y of elbow pivot
+	_gun_mesh.rotation.x = -PI / 2.0
 	_elbow.add_child(_gun_mesh)
 
-	match weapon_name:
-		"SMG":
-			var mag := MeshInstance3D.new()
-			var mag_mesh := BoxMesh.new()
-			mag_mesh.size = Vector3(0.04, 0.08, 0.05)
-			mag_mesh.material = gun_mat
-			mag.mesh = mag_mesh
-			mag.position = Vector3(0.0, -0.06, 0.02)
-			_gun_mesh.add_child(mag)
-		"Shotgun":
-			var stock := MeshInstance3D.new()
-			var stock_mesh := BoxMesh.new()
-			stock_mesh.size = Vector3(0.04, 0.06, 0.15)
-			stock_mesh.material = gun_mat
-			stock.mesh = stock_mesh
-			stock.position = Vector3(
-				0.0, 0.0, body_size.z * 0.5 + 0.075
-			)
-			_gun_mesh.add_child(stock)
-		"Rifle":
-			var scope := MeshInstance3D.new()
-			var scope_mesh := BoxMesh.new()
-			scope_mesh.size = Vector3(0.025, 0.03, 0.1)
-			scope_mesh.material = gun_mat
-			scope.mesh = scope_mesh
-			scope.position = Vector3(
-				0.0, body_size.y * 0.5 + 0.015, -0.05
-			)
-			_gun_mesh.add_child(scope)
+	var muzzle_local: Vector3 = _gun_mesh.get_meta("muzzle_local_pos")
+	# Transform muzzle offset by gun root's rotation into elbow space
+	var flash_pos := _gun_mesh.position + _gun_mesh.transform.basis * muzzle_local
 
 	_muzzle_flash = MeshInstance3D.new()
 	_muzzle_flash.name = "MuzzleFlash"
@@ -398,7 +368,7 @@ func _setup_gun_mesh() -> void:
 	flash_mat.emission_energy_multiplier = 3.0
 	flash_mesh.material = flash_mat
 	_muzzle_flash.mesh = flash_mesh
-	_muzzle_flash.position = Vector3(0.0, -0.2, muzzle_z)
+	_muzzle_flash.position = flash_pos
 	_muzzle_flash.visible = false
 	_elbow.add_child(_muzzle_flash)
 
