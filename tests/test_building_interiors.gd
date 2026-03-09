@@ -272,10 +272,19 @@ func test_build_deterministic_with_interiors() -> void:
 	var names1: Array[String] = []
 	var names2: Array[String] = []
 	for i in body1.get_child_count():
-		names1.append(body1.get_child(i).name)
+		names1.append(_strip_id(body1.get_child(i).name))
 	for i in body2.get_child_count():
-		names2.append(body2.get_child(i).name)
+		names2.append(_strip_id(body2.get_child(i).name))
 	assert_eq(
 		names1, names2,
 		"Same tile should produce deterministic child list",
 	)
+
+
+## Strip Godot's auto-appended @ID suffix from node names for comparison.
+static func _strip_id(n: StringName) -> String:
+	var s := String(n)
+	var at := s.rfind("@")
+	if at > 0:
+		return s.left(at)
+	return s

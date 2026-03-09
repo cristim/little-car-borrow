@@ -52,4 +52,5 @@ func test_transition_to_invalid_state_does_not_crash() -> void:
 
 	# Should log error but not crash
 	sm.transition_to("NonExistent")
+	assert_push_error_count(1, "Should emit exactly one push_error for missing state")
 	assert_eq(sm.current_state, state_a, "Should remain in current state")

@@ -37,8 +37,9 @@ func test_boundary_radius_positive() -> void:
 
 
 func test_boundary_radius_within_expected_range() -> void:
-	var min_expected: float = (3.8 - 0.8 + 0.5) * _grid_span  # 3.5 * span
-	var max_expected: float = (3.8 + 0.8 + 0.5) * _grid_span  # 5.1 * span
+	# Use actual constants from city_boundary.gd (BASE_RADIUS=0.76, VARIATION=0.16)
+	var min_expected: float = (0.76 - 0.16 + 0.5) * _grid_span  # 1.1 * span
+	var max_expected: float = (0.76 + 0.16 + 0.5) * _grid_span  # 1.42 * span
 	for i in range(72):
 		var angle: float = float(i) * TAU / 72.0
 		var r: float = _boundary.get_boundary_radius_at_angle(angle)
