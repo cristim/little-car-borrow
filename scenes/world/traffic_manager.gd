@@ -22,6 +22,8 @@ const VARIANTS := [
 	{"name": "van", "weight": 1, "mass_mult": 1.6},
 	{"name": "pickup", "weight": 1, "mass_mult": 1.5},
 ]
+const SEA_LEVEL := -2.0
+const HIGHWAY_INDICES := [0, 5]
 const GLASS_COLOR := Color(0.6, 0.75, 0.85, 0.4)
 const INTERIOR_COLOR := Color(0.12, 0.12, 0.12, 1)
 
@@ -46,6 +48,9 @@ var _vehicle_health_script: GDScript = preload(
 )
 var _vehicle_lights_script: GDScript = preload(
 	"res://scenes/vehicles/vehicle_lights.gd"
+)
+var _water_detector_script: GDScript = preload(
+	"res://scenes/vehicles/vehicle_water_detector.gd"
 )
 var _spawn_timer := 0.0
 var _player: Node3D = null
@@ -77,7 +82,7 @@ var _car_colors: Array[Color] = [
 
 func _ready() -> void:
 	_rng.randomize()
-	_boundary.init(_grid.get_grid_span())
+	_boundary.init(_grid.get_grid_span(), _make_terrain_noise())
 	_init_materials()
 	EventBus.vehicle_entered.connect(_on_vehicle_stolen)
 	EventBus.time_of_day_changed.connect(_on_time_changed)
@@ -145,10 +150,17 @@ func _try_spawn() -> void:
 		return
 
 	var player_pos := _player.global_position
+	var player_outside: bool = _boundary.get_signed_distance(
+		player_pos.x, player_pos.z
+	) > 0.0
 
 	for _attempt in range(5):
 		var is_ns := _rng.randi() % 2 == 0
-		var road_idx := _rng.randi_range(0, _grid.GRID_SIZE)
+		var road_idx: int
+		if player_outside:
+			road_idx = HIGHWAY_INDICES[_rng.randi() % HIGHWAY_INDICES.size()]
+		else:
+			road_idx = _rng.randi_range(0, _grid.GRID_SIZE)
 
 		var road_center: float
 		if is_ns:
@@ -200,9 +212,13 @@ func _try_spawn() -> void:
 		if _grid.is_on_ramp(spawn_pos.x, spawn_pos.z):
 			continue
 
-		# Only spawn on actual city roads, not the mathematical grid outside
-		if _boundary.get_signed_distance(spawn_pos.x, spawn_pos.z) > 0.0:
+		# Adjust spawn height to terrain level outside city
+		var ground_y: float = _boundary.get_ground_height(
+			spawn_pos.x, spawn_pos.z
+		)
+		if ground_y < SEA_LEVEL:
 			continue
+		spawn_pos.y = ground_y + 0.5
 
 		var too_close := false
 		for v in _vehicles:
@@ -257,6 +273,10 @@ func _try_spawn() -> void:
 		lights.initialize(vehicle)
 
 		npc.initialize(vehicle, road_idx, direction)
+
+		var wd: Node = _water_detector_script.new()
+		wd.name = "VehicleWaterDetector"
+		vehicle.add_child(wd)
 
 		_vehicles.append(vehicle)
 		return
@@ -444,3 +464,16 @@ func _on_time_changed(hour: float) -> void:
 		_time_multiplier = 0.7  # dawn/dusk
 	else:
 		_time_multiplier = 1.0  # day
+
+
+## Creates a terrain noise matching city.gd _init_terrain_noise().
+static func _make_terrain_noise() -> FastNoiseLite:
+	var n := FastNoiseLite.new()
+	n.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	n.frequency = 0.003
+	n.fractal_octaves = 4
+	n.fractal_lacunarity = 2.0
+	n.fractal_gain = 0.5
+	n.fractal_type = FastNoiseLite.FRACTAL_FBM
+	n.seed = 42
+	return n

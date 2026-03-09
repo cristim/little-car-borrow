@@ -49,6 +49,7 @@ const ESCAPE_RETURN_LANE_GAIN := 1.2
 const ESCAPE_RETURN_HEADING_GAIN := 3.0
 const MAX_ESCAPE_ATTEMPTS := 3
 const ON_LANE_THRESHOLD := 3.0
+const HIGHWAY_INDICES := [0, 5]
 const HEADING_ALIGN_DOT := 0.85  # ~30° — consider heading aligned with lane
 
 # Recovery target (commit-once system)
@@ -588,12 +589,21 @@ func _pick_next_direction() -> void:
 		if d != reverse:
 			options.append(d)
 
-	var new_dir: int = options[_rng.randi() % options.size()]
+	var in_city := _is_in_city()
+	var new_dir: int
+
+	if not in_city and _rng.randf() < 0.8:
+		new_dir = _direction  # rural: mostly go straight
+	else:
+		new_dir = options[_rng.randi() % options.size()]
 
 	var is_new_ns := new_dir == Direction.NORTH or new_dir == Direction.SOUTH
 	var was_ns := _direction == Direction.NORTH or _direction == Direction.SOUTH
 	if is_new_ns != was_ns:
-		_road_index = _find_nearest_road_index()
+		if in_city:
+			_road_index = _find_nearest_road_index()
+		else:
+			_road_index = _find_nearest_highway_index()
 
 	_direction = new_dir
 
@@ -679,6 +689,33 @@ func _get_recovery_lane_error() -> float:
 		Direction.WEST:
 			return pos.z - (road_center - lane_offset)
 	return 0.0
+
+
+func _is_in_city() -> bool:
+	var city_nodes := get_tree().get_nodes_in_group("city_manager")
+	if city_nodes.is_empty():
+		return true
+	var boundary: RefCounted = city_nodes[0].get_meta("city_boundary")
+	if not boundary:
+		return true
+	return boundary.get_signed_distance(
+		_vehicle.global_position.x, _vehicle.global_position.z
+	) < 0.0
+
+
+func _find_nearest_highway_index() -> int:
+	var pos := _vehicle.global_position
+	var was_ns := _direction == Direction.NORTH or _direction == Direction.SOUTH
+	var coord := pos.z if was_ns else pos.x
+	var best_idx := 0
+	var best_dist := INF
+	for hi in HIGHWAY_INDICES:
+		var c := _grid.get_road_center_near(hi, coord)
+		var d := absf(coord - c)
+		if d < best_dist:
+			best_dist = d
+			best_idx = hi
+	return best_idx
 
 
 func _get_reverse(dir: int) -> int:
