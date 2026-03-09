@@ -3,7 +3,7 @@ extends RefCounted
 ## One MeshInstance3D with vertex colors + one StaticBody3D with trimesh collision.
 
 const SUBDIVISIONS := 16  # 16x16 grid = 512 triangles per chunk
-const SEA_LEVEL := 0.3
+const SEA_LEVEL := -2.0
 
 var _noise: FastNoiseLite
 var _grid: RefCounted
@@ -102,16 +102,27 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 	mesh_inst.material_override = _terrain_mat
 	chunk.add_child(mesh_inst)
 
-	# Trimesh collision from same mesh (drivable terrain)
+	# HeightMap collision (reliable for GEVP raycasts and CharacterBody3D)
 	var body := StaticBody3D.new()
 	body.name = "TerrainBody"
 	body.collision_layer = 1  # Ground layer
 	body.collision_mask = 0
 	body.add_to_group("Road")  # GEVP tire friction
+	# Position at chunk center; scale X/Z so each cell = step meters
+	body.position = Vector3(ox, 0.0, oz)
+	body.scale = Vector3(step, 1.0, step)
+
+	var hmap := HeightMapShape3D.new()
+	hmap.map_width = SUBDIVISIONS + 1
+	hmap.map_depth = SUBDIVISIONS + 1
+	var map_data := PackedFloat32Array()
+	map_data.resize((SUBDIVISIONS + 1) * (SUBDIVISIONS + 1))
+	for i in range(heights.size()):
+		map_data[i] = heights[i]
+	hmap.map_data = map_data
 
 	var col := CollisionShape3D.new()
-	var trimesh: ConcavePolygonShape3D = mesh.create_trimesh_shape()
-	col.shape = trimesh
+	col.shape = hmap
 	body.add_child(col)
 
 	chunk.add_child(body)
@@ -140,33 +151,40 @@ func _sample_height(wx: float, wz: float) -> float:
 		edge_dist / (grid_span * 3.0), 0.0, 1.0
 	)
 	var max_h: float = lerpf(20.0, 80.0, fade)
-	var h: float = n * max_h - 2.0
+	var h: float = n * max_h - 6.0
+
+	# West ocean: terrain descends below sea level westward
+	var west_t: float = clampf(-wx / (grid_span * 3.0), 0.0, 1.0)
+	h -= west_t * west_t * 20.0
 
 	# Cubic ease-in blend from city ground (y=0) over two tile spans.
 	# Keeps terrain nearly flat for the first tile outside the city
 	# (where the city-terrain tile boundary falls), then rises gradually.
+	# Negative heights allowed for beach slopes and underwater seabed.
 	var blend_range: float = grid_span * 2.0
 	if edge_dist < blend_range:
 		var t: float = edge_dist / blend_range
 		t = t * t * t  # cubic — very flat near city
-		h = lerpf(0.0, maxf(h, 0.0), t)
+		h = lerpf(0.0, h, t)
 
 	return h
 
 
 func _height_to_color(h: float) -> Color:
 	if h < SEA_LEVEL:
-		return _color_water
-	if h < 2.0:
-		var t: float = clampf(
-			(h - SEA_LEVEL) / (2.0 - SEA_LEVEL), 0.0, 1.0
-		)
+		# Depth gradient: deeper water is darker blue
+		var depth_t: float = clampf((SEA_LEVEL - h) / 5.0, 0.0, 1.0)
+		var deep := Color(0.08, 0.18, 0.45)
+		return deep.lerp(_color_water, 1.0 - depth_t)
+	if h < 0.0:
+		# Beach: sand to grass between water line and city ground
+		var t: float = clampf((h - SEA_LEVEL) / (0.0 - SEA_LEVEL), 0.0, 1.0)
 		return _color_sand.lerp(_color_grass, t)
-	if h < 40.0:
-		var t: float = clampf((h - 30.0) / 10.0, 0.0, 1.0)
+	if h < 30.0:
+		var t: float = clampf((h - 20.0) / 10.0, 0.0, 1.0)
 		return _color_grass.lerp(_color_rock, t)
-	if h < 60.0:
-		var t: float = clampf((h - 50.0) / 10.0, 0.0, 1.0)
+	if h < 50.0:
+		var t: float = clampf((h - 40.0) / 10.0, 0.0, 1.0)
 		return _color_rock.lerp(_color_snow, t)
 	return _color_snow
 
@@ -196,7 +214,7 @@ func _build_sea_plane(
 	var mesh := st.commit()
 
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.1, 0.3, 0.6, 0.7)
+	mat.albedo_color = Color(0.1, 0.3, 0.6, 0.55)
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL

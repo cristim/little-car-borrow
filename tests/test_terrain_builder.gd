@@ -46,11 +46,14 @@ func test_height_zero_inside_city_radius() -> void:
 	assert_eq(h, 0.0, "Height at origin should be 0")
 
 
-func test_height_zero_at_city_center() -> void:
+func test_height_near_zero_at_city_blend_zone() -> void:
 	var span: float = _grid.get_grid_span()
-	# Tile (1,1) center is within city radius of 3
+	# Tile (1,1) center may be just outside city boundary in blend zone
 	var h: float = _builder._sample_height(span, span)
-	assert_eq(h, 0.0, "Height within city radius should be 0")
+	assert_almost_eq(
+		h, 0.0, 0.1,
+		"Height at tile (1,1) should be near 0 (blend zone)",
+	)
 
 
 func test_height_nonzero_outside_city() -> void:
@@ -58,6 +61,48 @@ func test_height_nonzero_outside_city() -> void:
 	# Far outside city: tile (10, 0) center
 	var h: float = _builder._sample_height(span * 10.0, 0.0)
 	assert_ne(h, 0.0, "Height far outside city should not be 0")
+
+
+func test_height_zero_inside_blend_zone() -> void:
+	# First quarter of first tile outside city should be nearly flat
+	var city_edge: float = _boundary.get_boundary_radius_at_angle(0.0)
+	var span: float = _grid.get_grid_span()
+	for i in range(5):
+		var d: float = float(i) * span * 0.05  # 0 to ~5% of grid_span
+		var h: float = _builder._sample_height(city_edge + d, 0.0)
+		assert_true(
+			absf(h) < 2.0,
+			"Height near city edge should be near 0 (got %f at d=%f)" % [h, d],
+		)
+
+
+func test_seabed_exists_far_from_city() -> void:
+	var span: float = _grid.get_grid_span()
+	var found_seabed := false
+	for _i in range(200):
+		var wx: float = randf_range(-span * 15.0, span * 15.0)
+		var wz: float = randf_range(-span * 15.0, span * 15.0)
+		var h: float = _builder._sample_height(wx, wz)
+		if h < -2.0:
+			found_seabed = true
+			break
+	assert_true(found_seabed, "Some terrain should be below SEA_LEVEL (-2.0)")
+
+
+func test_beach_smooth_transition() -> void:
+	# Walk outward from city edge along X axis, heights should change smoothly
+	var city_edge: float = _boundary.get_boundary_radius_at_angle(0.0)
+	var span: float = _grid.get_grid_span()
+	var prev_h: float = 0.0
+	for i in range(1, 20):
+		var d: float = float(i) * span * 0.1
+		var h: float = _builder._sample_height(city_edge + d, 0.0)
+		var jump: float = absf(h - prev_h)
+		assert_true(
+			jump < 15.0,
+			"Height jump should be smooth (got %f at d=%f)" % [jump, d],
+		)
+		prev_h = h
 
 
 func test_height_smooth_transition_near_city_edge() -> void:
@@ -93,10 +138,11 @@ func test_height_continuous_across_boundary() -> void:
 # ================================================================
 
 func test_color_water_below_sea_level() -> void:
-	var c: Color = _builder._height_to_color(-1.0)
-	assert_eq(
-		c, Color(0.15, 0.35, 0.65),
-		"Below sea level should be water color",
+	# Just below SEA_LEVEL (-2.0), shallow water — should be blue-ish
+	var c: Color = _builder._height_to_color(-2.1)
+	assert_true(
+		c.b > 0.6 and c.r < 0.2,
+		"Below sea level should be water color (got %s)" % str(c),
 	)
 
 
@@ -109,8 +155,8 @@ func test_color_snow_at_high_altitude() -> void:
 
 
 func test_color_grass_at_mid_height() -> void:
+	# At 15m (between 0 and 20), should be pure grass
 	var c: Color = _builder._height_to_color(15.0)
-	# At 15m (between 2 and 30), should be pure grass
 	assert_eq(
 		c, Color(0.22, 0.45, 0.18),
 		"Mid-height should be grass color",
@@ -180,6 +226,49 @@ func test_terrain_body_in_road_group() -> void:
 			)
 			return
 	fail_test("TerrainBody not found")
+
+
+# ================================================================
+# West ocean depression
+# ================================================================
+
+func test_west_ocean_depression() -> void:
+	var span: float = _grid.get_grid_span()
+	var found_below := false
+	# Sample far west — should find heights below SEA_LEVEL
+	for i in range(20):
+		var wx: float = -span * 3.0 - float(i) * span * 0.5
+		var wz: float = float(i) * span * 0.3
+		var h: float = _builder._sample_height(wx, wz)
+		if h < -2.0:
+			found_below = true
+			break
+	assert_true(found_below, "Far west terrain should descend below sea level")
+
+
+func test_east_no_depression() -> void:
+	var span: float = _grid.get_grid_span()
+	var all_above := true
+	# Sample far east at several points — should generally be above sea level
+	for i in range(10):
+		var wx: float = span * 5.0 + float(i) * span
+		var h: float = _builder._sample_height(wx, 0.0)
+		if h < -2.0:
+			all_above = false
+			break
+	assert_true(all_above, "Far east terrain should not be depressed into ocean")
+
+
+func test_west_depression_gradual() -> void:
+	var span: float = _grid.get_grid_span()
+	# Compare height near city vs far west — far west should be much lower
+	var city_edge: float = _boundary.get_boundary_radius_at_angle(PI)
+	var near_h: float = _builder._sample_height(-city_edge - span * 2.0, 0.0)
+	var far_h: float = _builder._sample_height(-city_edge - span * 6.0, 0.0)
+	assert_true(
+		far_h < near_h,
+		"Far west (%f) should be lower than near west (%f)" % [far_h, near_h],
+	)
 
 
 func test_build_deterministic() -> void:

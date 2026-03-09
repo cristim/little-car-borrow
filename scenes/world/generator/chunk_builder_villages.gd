@@ -167,13 +167,18 @@ func _sample_height(wx: float, wz: float) -> float:
 		edge_dist / (grid_span * 3.0), 0.0, 1.0
 	)
 	var max_h: float = lerpf(20.0, 80.0, fade)
-	var h: float = n * max_h - 2.0
+	var h: float = n * max_h - 6.0
+
+	# West ocean: terrain descends below sea level westward
+	var west_t: float = clampf(-wx / (grid_span * 3.0), 0.0, 1.0)
+	h -= west_t * west_t * 20.0
 
 	# Cubic ease-in blend from city ground (y=0) over two tile spans.
+	# Negative heights allowed for beach slopes and underwater seabed.
 	var blend_range: float = grid_span * 2.0
 	if edge_dist < blend_range:
 		var t: float = edge_dist / blend_range
 		t = t * t * t  # cubic — very flat near city
-		h = lerpf(0.0, maxf(h, 0.0), t)
+		h = lerpf(0.0, h, t)
 
 	return h

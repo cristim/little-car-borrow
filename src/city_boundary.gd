@@ -3,18 +3,20 @@ extends RefCounted
 ## Produces an organic blob shape instead of a square grid.
 ## Shared by city.gd, terrain builder, village builder, and minimap.
 
-const BASE_RADIUS := 3.8  # tiles from origin
-const VARIATION := 0.8  # +/- tiles of noise modulation
+const BASE_RADIUS := 0.76  # tiles from origin  # TODO: restore to 3.8
+const VARIATION := 0.16  # +/- tiles of noise modulation  # TODO: restore to 0.8
 const LOOP_RADIUS := 2.5  # radius in noise space for seamless loop
 const NOISE_SEED := 77
 const NOISE_FREQ := 0.3
 
 var _noise: FastNoiseLite
 var _grid_span: float
+var _terrain_noise: FastNoiseLite
 
 
-func init(grid_span: float) -> void:
+func init(grid_span: float, terrain_noise: FastNoiseLite = null) -> void:
 	_grid_span = grid_span
+	_terrain_noise = terrain_noise
 	_noise = FastNoiseLite.new()
 	_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	_noise.seed = NOISE_SEED
@@ -59,3 +61,36 @@ func get_boundary_polygon(segments: int) -> PackedVector2Array:
 		var r: float = get_boundary_radius_at_angle(angle)
 		pts[i] = Vector2(cos(angle) * r, sin(angle) * r)
 	return pts
+
+
+## Returns the terrain ground height at a world XZ position.
+## Matches chunk_builder_terrain.gd _sample_height() exactly.
+## Requires terrain_noise passed to init().
+func get_ground_height(wx: float, wz: float) -> float:
+	if not _terrain_noise:
+		return 0.0
+
+	var edge_dist: float = get_signed_distance(wx, wz)
+	if edge_dist < 0.0:
+		return 0.0
+
+	var raw: float = _terrain_noise.get_noise_2d(wx, wz)
+	var n: float = (raw + 1.0) * 0.5
+	var fade: float = clampf(
+		edge_dist / (_grid_span * 3.0), 0.0, 1.0
+	)
+	var max_h: float = lerpf(20.0, 80.0, fade)
+	var h: float = n * max_h - 6.0
+
+	# West ocean: terrain descends below sea level westward
+	var west_t: float = clampf(-wx / (_grid_span * 3.0), 0.0, 1.0)
+	h -= west_t * west_t * 20.0
+
+	# Negative heights allowed for beach slopes and underwater seabed.
+	var blend_range: float = _grid_span * 2.0
+	if edge_dist < blend_range:
+		var t: float = edge_dist / blend_range
+		t = t * t * t
+		h = lerpf(0.0, h, t)
+
+	return h

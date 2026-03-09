@@ -57,6 +57,31 @@ func test_height_nonzero_outside_city() -> void:
 	assert_ne(h, 0.0, "Height far outside city should not be 0")
 
 
+func test_height_zero_inside_blend_zone() -> void:
+	var city_edge: float = _boundary.get_boundary_radius_at_angle(0.0)
+	var span: float = _grid.get_grid_span()
+	for i in range(5):
+		var d: float = float(i) * span * 0.05
+		var h: float = _builder._sample_height(city_edge + d, 0.0)
+		assert_true(
+			absf(h) < 2.0,
+			"Height near city edge should be near 0 (got %f at d=%f)" % [h, d],
+		)
+
+
+func test_seabed_exists_far_from_city() -> void:
+	var span: float = _grid.get_grid_span()
+	var found_seabed := false
+	for _i in range(200):
+		var wx: float = randf_range(-span * 15.0, span * 15.0)
+		var wz: float = randf_range(-span * 15.0, span * 15.0)
+		var h: float = _builder._sample_height(wx, wz)
+		if h < -2.0:
+			found_seabed = true
+			break
+	assert_true(found_seabed, "Some terrain should be below SEA_LEVEL (-2.0)")
+
+
 # ================================================================
 # Flatness check
 # ================================================================
@@ -120,6 +145,27 @@ func test_city_tile_produces_no_village() -> void:
 	assert_false(
 		has_village,
 		"City-radius tile should not get a village (heights are 0)",
+	)
+
+
+func test_no_village_in_ocean() -> void:
+	var span: float = _grid.get_grid_span()
+	# Far west tiles should not produce villages (terrain is underwater)
+	var any_underwater_village := false
+	for tx in range(-8, -4):
+		var chunk := Node3D.new()
+		add_child_autofree(chunk)
+		var tile := Vector2i(tx, 0)
+		_builder.build(chunk, tile, span * float(tx), 0.0)
+		var has_village: bool = chunk.get_meta("has_village")
+		if has_village:
+			var vc: Vector2 = chunk.get_meta("village_center")
+			var vh: float = _builder._sample_height(vc.x, vc.y)
+			if vh <= 1.0:
+				any_underwater_village = true
+	assert_false(
+		any_underwater_village,
+		"No village should spawn with center height <= 1.0 in ocean area",
 	)
 
 
