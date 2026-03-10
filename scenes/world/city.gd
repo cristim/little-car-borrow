@@ -192,7 +192,7 @@ func _build_chunk(tile: Vector2i) -> Node3D:
 		_light_builder.build(chunk, ox, oz)
 	else:
 		chunk.set_meta("chunk_type", "terrain")
-		_terrain_builder.build(chunk, tile, ox, oz)
+		_terrain_builder.build(chunk, tile, ox, oz, tile_data)
 		_village_builder.build(chunk, tile, ox, oz)
 		_rural_road_builder.build(chunk, tile, ox, oz)
 		_rural_tree_builder.build(chunk, tile, ox, oz)

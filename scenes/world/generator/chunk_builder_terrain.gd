@@ -4,6 +4,7 @@ extends RefCounted
 
 const SUBDIVISIONS := 16  # 16x16 grid = 512 triangles per chunk
 const SEA_LEVEL := -2.0
+const BLEND_CELLS := 3  # blend edge constraints over this many cells
 
 var _noise: FastNoiseLite
 var _grid: RefCounted
@@ -31,9 +32,15 @@ func init(
 	_boundary = boundary
 
 
-func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
+func build(
+	chunk: Node3D, tile: Vector2i, ox: float, oz: float,
+	tile_data: Dictionary = {},
+) -> void:
 	var span: float = _grid.get_grid_span()
 	var step: float = span / float(SUBDIVISIONS)
+
+	# Parse edge height constraints from tile_data
+	var edge_heights: Dictionary = _parse_edge_heights(tile_data)
 
 	# Sample heights into a (SUBDIVISIONS+1) x (SUBDIVISIONS+1) grid
 	var heights: Array[float] = []
@@ -46,6 +53,9 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 			var wx: float = ox - span * 0.5 + float(ix) * step
 			var wz: float = oz - span * 0.5 + float(iz) * step
 			var h: float = _sample_height(wx, wz)
+			h = _apply_edge_constraints(
+				h, ix, iz, edge_heights,
+			)
 			var idx: int = iz * (SUBDIVISIONS + 1) + ix
 			heights[idx] = h
 			min_height = minf(min_height, h)
@@ -265,3 +275,85 @@ func _build_boats(
 		boat.position = Vector3(bx, SEA_LEVEL + 0.1, bz)
 		boat.rotation.y = rng.randf() * TAU
 		chunk.add_child(boat)
+
+
+## Extract edge height arrays from tile_data edges.
+## Returns dict mapping direction -> PackedFloat32Array.
+func _parse_edge_heights(tile_data: Dictionary) -> Dictionary:
+	var result: Dictionary = {}
+	var edges: Dictionary = tile_data.get("edges", {})
+	for dir: int in edges:
+		var edge: Dictionary = edges[dir]
+		var h: PackedFloat32Array = edge.get(
+			"heights", PackedFloat32Array(),
+		)
+		if h.size() > 0:
+			result[dir] = h
+	return result
+
+
+## Blend a height sample toward edge constraints when near chunk edges.
+## NORTH=0 is iz=0, SOUTH=2 is iz=SUBDIVISIONS,
+## WEST=3 is ix=0, EAST=1 is ix=SUBDIVISIONS.
+func _apply_edge_constraints(
+	h: float, ix: int, iz: int,
+	edge_heights: Dictionary,
+) -> float:
+	if edge_heights.is_empty():
+		return h
+
+	var result := h
+	var total_weight := 0.0
+
+	# Check each edge: if we have constraints and are within blend range
+	# NORTH (iz=0)
+	if edge_heights.has(0) and iz <= BLEND_CELLS:
+		var edge_h: float = _sample_edge_array(
+			edge_heights[0], ix,
+		)
+		var t: float = 1.0 - float(iz) / float(BLEND_CELLS)
+		result = lerpf(result, edge_h, t)
+		total_weight += t
+
+	# SOUTH (iz=SUBDIVISIONS)
+	if edge_heights.has(2) and iz >= SUBDIVISIONS - BLEND_CELLS:
+		var edge_h: float = _sample_edge_array(
+			edge_heights[2], ix,
+		)
+		var dist: int = SUBDIVISIONS - iz
+		var t: float = 1.0 - float(dist) / float(BLEND_CELLS)
+		if total_weight > 0.0:
+			result = lerpf(result, edge_h, t * 0.5)
+		else:
+			result = lerpf(result, edge_h, t)
+
+	# WEST (ix=0)
+	if edge_heights.has(3) and ix <= BLEND_CELLS:
+		var edge_h: float = _sample_edge_array(
+			edge_heights[3], iz,
+		)
+		var t: float = 1.0 - float(ix) / float(BLEND_CELLS)
+		result = lerpf(result, edge_h, t)
+
+	# EAST (ix=SUBDIVISIONS)
+	if edge_heights.has(1) and ix >= SUBDIVISIONS - BLEND_CELLS:
+		var edge_h: float = _sample_edge_array(
+			edge_heights[1], iz,
+		)
+		var dist: int = SUBDIVISIONS - ix
+		var t: float = 1.0 - float(dist) / float(BLEND_CELLS)
+		result = lerpf(result, edge_h, t)
+
+	return result
+
+
+## Sample a height from an edge array, mapping grid index to edge sample.
+func _sample_edge_array(
+	edge_arr: PackedFloat32Array, grid_idx: int,
+) -> float:
+	var t: float = float(grid_idx) / float(SUBDIVISIONS)
+	var fi: float = t * float(edge_arr.size() - 1)
+	var i0: int = int(fi)
+	var i1: int = mini(i0 + 1, edge_arr.size() - 1)
+	var frac: float = fi - float(i0)
+	return lerpf(edge_arr[i0], edge_arr[i1], frac)
