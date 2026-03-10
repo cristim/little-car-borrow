@@ -542,6 +542,7 @@ func _init_builders() -> void:
 	_farmland_builder.init(_grid, _boundary)
 	_mountain_builder.init(_grid, _boundary)
 	_river_map.init(_grid.get_grid_span(), _boundary)
+	set_meta("river_map", _river_map)
 	_river_builder.init(_grid, _boundary)
 	_bridge_builder.init(_grid, _boundary, _road_mat)
 	_tile_resolver.init(

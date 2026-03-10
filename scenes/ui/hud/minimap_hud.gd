@@ -26,12 +26,18 @@ const FOREST_COLOR := Color(0.12, 0.38, 0.10, 0.5)
 const OCEAN_COLOR := Color(0.10, 0.25, 0.55, 0.6)
 const CITY_BOUNDARY_COLOR := Color(0.25, 0.25, 0.35, 0.25)
 const CITY_BOUNDARY_LINE_COLOR := Color(0.6, 0.6, 0.7, 0.5)
+const BUILDING_COLOR := Color(0.45, 0.42, 0.48, 0.6)
+const BUILDING_TALL_COLOR := Color(0.55, 0.50, 0.58, 0.7)
+const RIVER_COLOR := Color(0.2, 0.45, 0.8, 0.7)
+const RURAL_ROAD_COLOR := Color(0.4, 0.38, 0.35, 0.6)
 const BOUNDARY_SEGMENTS := 72
 const TERRAIN_SUBCELLS := 8
 const SEA_LEVEL := -2.0
 const HIGHWAY_INDICES := [0, 5]
 
 var _grid = preload("res://src/road_grid.gd").new()
+var _river_map: RefCounted = null
+var _biome_map_ref: RefCounted = null
 var _player: Node3D = null
 var _frame_count := 0
 var _boundary_polygon := PackedVector2Array()
@@ -80,6 +86,15 @@ func _draw() -> void:
 	# Terrain under roads
 	_draw_terrain(player_pos, yaw)
 
+	# City building blocks
+	_draw_city_blocks(player_pos, yaw)
+
+	# Rivers on terrain
+	_draw_rivers(player_pos, yaw)
+
+	# Rural roads on terrain
+	_draw_rural_roads(player_pos, yaw)
+
 	# Roads
 	_draw_roads(player_pos, yaw)
 
@@ -121,6 +136,10 @@ func _draw_city_boundary(ppos: Vector3, yaw: float) -> void:
 		_boundary_polygon = _boundary.get_boundary_polygon(
 			BOUNDARY_SEGMENTS
 		)
+		if city_node.has_meta("river_map"):
+			_river_map = city_node.get_meta("river_map")
+		if city_node.has_meta("biome_map"):
+			_biome_map_ref = city_node.get_meta("biome_map")
 		_boundary_cached = true
 
 	if _boundary_polygon.is_empty():
@@ -301,6 +320,156 @@ func _draw_terrain(ppos: Vector3, yaw: float) -> void:
 					),
 					VILLAGE_COLOR,
 				)
+
+
+func _draw_city_blocks(ppos: Vector3, yaw: float) -> void:
+	if not _boundary:
+		return
+	var view_range := MAP_RADIUS / SCALE
+
+	# Draw filled blocks between road grid lines inside the city
+	for rx_i in range(_grid.GRID_SIZE):
+		var rx0: float = _grid.get_road_center_near(rx_i, ppos.x)
+		var rx1: float = _grid.get_road_center_near(rx_i + 1, ppos.x)
+		var rwx0: float = _grid.get_road_width(rx_i) * 0.5
+		var rwx1: float = _grid.get_road_width(rx_i + 1) * 0.5
+		var bx0: float = rx0 + rwx0
+		var bx1: float = rx1 - rwx1
+		var mid_x: float = (bx0 + bx1) * 0.5
+		if absf(mid_x - ppos.x) > view_range + 50.0:
+			continue
+		for rz_i in range(_grid.GRID_SIZE):
+			var rz0: float = _grid.get_road_center_near(
+				rz_i, ppos.z
+			)
+			var rz1: float = _grid.get_road_center_near(
+				rz_i + 1, ppos.z
+			)
+			var rwz0: float = _grid.get_road_width(rz_i) * 0.5
+			var rwz1: float = _grid.get_road_width(rz_i + 1) * 0.5
+			var bz0: float = rz0 + rwz0
+			var bz1: float = rz1 - rwz1
+			var mid_z: float = (bz0 + bz1) * 0.5
+			if absf(mid_z - ppos.z) > view_range + 50.0:
+				continue
+			# Only inside city boundary
+			if _boundary.get_signed_distance(mid_x, mid_z) > 0:
+				continue
+			var quad: PackedVector2Array = [
+				_world_to_minimap(
+					Vector3(bx0, 0.0, bz0), ppos, yaw
+				),
+				_world_to_minimap(
+					Vector3(bx1, 0.0, bz0), ppos, yaw
+				),
+				_world_to_minimap(
+					Vector3(bx1, 0.0, bz1), ppos, yaw
+				),
+				_world_to_minimap(
+					Vector3(bx0, 0.0, bz1), ppos, yaw
+				),
+			]
+			var clipped: Array[PackedVector2Array] = (
+				Geometry2D.intersect_polygons(
+					quad, _clip_circle
+				)
+			)
+			for poly in clipped:
+				draw_colored_polygon(poly, BUILDING_COLOR)
+
+
+func _draw_rivers(ppos: Vector3, yaw: float) -> void:
+	if not _river_map:
+		return
+	var grid_span: float = _grid.get_grid_span()
+	var view_range := MAP_RADIUS / SCALE
+	var center_tile := _grid.get_chunk_coord(
+		Vector2(ppos.x, ppos.z)
+	)
+	var scan := int(ceilf(view_range / grid_span)) + 1
+	for dy in range(-scan, scan + 1):
+		for dx in range(-scan, scan + 1):
+			var tile := Vector2i(
+				center_tile.x + dx, center_tile.y + dy
+			)
+			var rd: Dictionary = _river_map.get_river_at(tile)
+			if rd.is_empty():
+				continue
+			var origin: Vector2 = _grid.get_chunk_origin(tile)
+			var hs: float = grid_span * 0.5
+			var entry := _river_edge_pt(
+				origin.x, origin.y, hs,
+				rd.get("entry_dir", 0),
+				rd.get("position", 0.5),
+			)
+			var exit_pt := _river_edge_pt(
+				origin.x, origin.y, hs,
+				rd.get("exit_dir", 2),
+				rd.get("position", 0.5),
+			)
+			var width: float = rd.get("width", 6.0) * SCALE
+			width = maxf(width, 2.0)
+			var mp_a := _world_to_minimap(entry, ppos, yaw)
+			var mp_b := _world_to_minimap(exit_pt, ppos, yaw)
+			if _in_circle(mp_a) or _in_circle(mp_b):
+				draw_line(mp_a, mp_b, RIVER_COLOR, width)
+
+
+func _draw_rural_roads(ppos: Vector3, yaw: float) -> void:
+	if not _boundary:
+		return
+	var view_range := MAP_RADIUS / SCALE
+	var grid_span: float = _grid.get_grid_span()
+	for hi in HIGHWAY_INDICES:
+		# N-S rural roads
+		var rx: float = _grid.get_road_center_near(hi, ppos.x)
+		if _boundary.get_signed_distance(rx, ppos.z) > 0.0:
+			var h: float = _boundary.get_ground_height(rx, ppos.z)
+			if h >= SEA_LEVEL:
+				var top := _world_to_minimap(
+					Vector3(rx, 0.0, ppos.z - view_range),
+					ppos, yaw,
+				)
+				var bot := _world_to_minimap(
+					Vector3(rx, 0.0, ppos.z + view_range),
+					ppos, yaw,
+				)
+				_draw_clipped_line(
+					top, bot, RURAL_ROAD_COLOR, 1.5
+				)
+		# E-W rural roads
+		var rz: float = _grid.get_road_center_near(hi, ppos.z)
+		if _boundary.get_signed_distance(ppos.x, rz) > 0.0:
+			var h: float = _boundary.get_ground_height(ppos.x, rz)
+			if h >= SEA_LEVEL:
+				var left := _world_to_minimap(
+					Vector3(ppos.x - view_range, 0.0, rz),
+					ppos, yaw,
+				)
+				var right := _world_to_minimap(
+					Vector3(ppos.x + view_range, 0.0, rz),
+					ppos, yaw,
+				)
+				_draw_clipped_line(
+					left, right, RURAL_ROAD_COLOR, 1.5
+				)
+
+
+func _river_edge_pt(
+	ox: float, oz: float, hs: float,
+	dir: int, pos: float,
+) -> Vector3:
+	var offset: float = (pos - 0.5) * hs * 2.0
+	match dir:
+		0:
+			return Vector3(ox + offset, 0.0, oz - hs)
+		1:
+			return Vector3(ox + hs, 0.0, oz + offset)
+		2:
+			return Vector3(ox + offset, 0.0, oz + hs)
+		3:
+			return Vector3(ox - hs, 0.0, oz + offset)
+	return Vector3(ox, 0.0, oz)
 
 
 func _draw_group_dots(
