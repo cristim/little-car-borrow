@@ -1,11 +1,13 @@
 extends Control
 ## Minimap drawn via _draw() — roads, vehicles, markers, compass.
-## Custom minimum size 300x300, call queue_redraw() every frame.
+## Supports zoom (+/-) and fullscreen map toggle (M).
+## In fullscreen mode, arrow keys pan the view.
 
-const MAP_SIZE := 300.0
-const MAP_CENTER := 150.0
-const MAP_RADIUS := 140.0
-const SCALE := 0.5  # 1px = 2m, 140px radius = 280m view range
+const MINI_SIZE := 300.0
+const MINI_CENTER := 150.0
+const MINI_RADIUS := 140.0
+const ZOOM_LEVELS: Array[float] = [0.15, 0.25, 0.5, 0.75, 1.0]
+const DEFAULT_ZOOM_IDX := 2
 const BG_COLOR := Color(0.08, 0.08, 0.12, 0.85)
 const BORDER_COLOR := Color(0.7, 0.7, 0.7, 0.8)
 const ROAD_COLOR := Color(0.35, 0.35, 0.4, 0.7)
@@ -46,40 +48,124 @@ var _boundary_cached := false
 var _boundary: RefCounted = null
 var _clip_circle := PackedVector2Array()
 
+# Dynamic map state
+var _zoom_idx: int = DEFAULT_ZOOM_IDX
+var _scale: float = 0.5
+var _fullscreen := false
+var _map_size: float = MINI_SIZE
+var _map_center: float = MINI_CENTER
+var _map_radius: float = MINI_RADIUS
+var _pan_offset := Vector3.ZERO  # world-space pan in fullscreen
+
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(MAP_SIZE, MAP_SIZE)
-	# Pre-compute circle polygon used to clip drawn shapes to minimap bounds
-	var center := Vector2(MAP_CENTER, MAP_CENTER)
+	custom_minimum_size = Vector2(MINI_SIZE, MINI_SIZE)
+	_scale = ZOOM_LEVELS[_zoom_idx]
+	_rebuild_clip_circle()
+
+
+func _rebuild_clip_circle() -> void:
+	if _fullscreen:
+		# Use rectangular clip for fullscreen
+		_clip_circle = PackedVector2Array([
+			Vector2(0, 0),
+			Vector2(size.x, 0),
+			Vector2(size.x, size.y),
+			Vector2(0, size.y),
+		])
+		return
+	var center := Vector2(_map_center, _map_center)
 	_clip_circle.resize(64)
 	for i in range(64):
 		var angle: float = float(i) * TAU / 64.0
 		_clip_circle[i] = center + Vector2(
 			cos(angle), sin(angle)
-		) * MAP_RADIUS
+		) * _map_radius
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if not _player:
 		_player = (
 			get_tree().get_first_node_in_group("player")
 			as Node3D
 		)
+	# Fullscreen pan with arrow keys
+	if _fullscreen:
+		var pan_speed: float = 200.0 / _scale
+		if Input.is_action_pressed("move_forward"):
+			_pan_offset.z -= pan_speed * delta
+		if Input.is_action_pressed("move_backward"):
+			_pan_offset.z += pan_speed * delta
+		if Input.is_action_pressed("move_left"):
+			_pan_offset.x -= pan_speed * delta
+		if Input.is_action_pressed("move_right"):
+			_pan_offset.x += pan_speed * delta
 	_frame_count += 1
 	if _frame_count % 5 == 0:
 		queue_redraw()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("map_toggle"):
+		_toggle_fullscreen()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("map_zoom_in"):
+		_change_zoom(1)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("map_zoom_out"):
+		_change_zoom(-1)
+		get_viewport().set_input_as_handled()
+
+
+func _change_zoom(direction: int) -> void:
+	_zoom_idx = clampi(
+		_zoom_idx + direction, 0, ZOOM_LEVELS.size() - 1
+	)
+	_scale = ZOOM_LEVELS[_zoom_idx]
+	_rebuild_clip_circle()
+
+
+func _toggle_fullscreen() -> void:
+	_fullscreen = not _fullscreen
+	if _fullscreen:
+		var vp_size := get_viewport_rect().size
+		_map_size = minf(vp_size.x, vp_size.y)
+		_map_center = _map_size * 0.5
+		_map_radius = _map_center - 10.0
+		custom_minimum_size = vp_size
+		size = vp_size
+		anchor_left = 0.0
+		anchor_top = 0.0
+		anchor_right = 1.0
+		anchor_bottom = 1.0
+		_pan_offset = Vector3.ZERO
+	else:
+		_map_size = MINI_SIZE
+		_map_center = MINI_CENTER
+		_map_radius = MINI_RADIUS
+		custom_minimum_size = Vector2(MINI_SIZE, MINI_SIZE)
+		size = Vector2(MINI_SIZE, MINI_SIZE)
+		anchor_left = 1.0
+		anchor_top = 0.0
+		anchor_right = 1.0
+		anchor_bottom = 0.0
+		_pan_offset = Vector3.ZERO
+	_rebuild_clip_circle()
 
 
 func _draw() -> void:
 	if not _player:
 		return
 
-	var player_pos := _get_tracking_position()
-	var yaw := _get_heading_yaw()
+	var player_pos := _get_tracking_position() + _pan_offset
+	var yaw: float = 0.0 if _fullscreen else _get_heading_yaw()
 
-	# Background circle
-	var center := Vector2(MAP_CENTER, MAP_CENTER)
-	draw_circle(center, MAP_RADIUS, BG_COLOR)
+	# Background
+	var center := Vector2(_map_center, _map_center)
+	if _fullscreen:
+		draw_rect(Rect2(Vector2.ZERO, size), BG_COLOR)
+	else:
+		draw_circle(center, _map_radius, BG_COLOR)
 
 	# City boundary outline
 	_draw_city_boundary(player_pos, yaw)
@@ -119,11 +205,26 @@ func _draw() -> void:
 	# Compass letters
 	_draw_compass(yaw)
 
-	# Border ring
-	draw_arc(
-		center, MAP_RADIUS, 0.0, TAU, 64,
-		BORDER_COLOR, 2.0
-	)
+	# Border
+	if _fullscreen:
+		draw_rect(
+			Rect2(Vector2.ZERO, size), BORDER_COLOR, false, 2.0
+		)
+		# Zoom level indicator
+		var zoom_text := "Zoom: %dx  [+/-] zoom  [M] close" % (
+			_zoom_idx + 1
+		)
+		draw_string(
+			ThemeDB.fallback_font,
+			Vector2(10, size.y - 10),
+			zoom_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14,
+			Color(0.8, 0.8, 0.8, 0.7),
+		)
+	else:
+		draw_arc(
+			center, _map_radius, 0.0, TAU, 64,
+			BORDER_COLOR, 2.0
+		)
 
 
 func _draw_city_boundary(ppos: Vector3, yaw: float) -> void:
@@ -167,7 +268,7 @@ func _draw_city_boundary(ppos: Vector3, yaw: float) -> void:
 
 
 func _draw_roads(ppos: Vector3, yaw: float) -> void:
-	var view_range := MAP_RADIUS / SCALE
+	var view_range := _map_radius / _scale
 	# Draw nearby road segments as lines
 	for ri in range(_grid.GRID_SIZE + 1):
 		var is_highway: bool = ri in HIGHWAY_INDICES
@@ -240,7 +341,7 @@ func _draw_terrain(ppos: Vector3, yaw: float) -> void:
 		var world_dist: float = sqrt(
 			world_dx * world_dx + world_dz * world_dz
 		)
-		if world_dist > MAP_RADIUS / SCALE + hs * 1.42:
+		if world_dist > _map_radius / _scale + hs * 1.42:
 			continue
 
 		if _boundary:
@@ -340,7 +441,7 @@ func _draw_terrain(ppos: Vector3, yaw: float) -> void:
 func _draw_city_blocks(ppos: Vector3, yaw: float) -> void:
 	if not _boundary:
 		return
-	var view_range := MAP_RADIUS / SCALE
+	var view_range := _map_radius / _scale
 
 	# Draw filled blocks between road grid lines inside the city
 	for rx_i in range(_grid.GRID_SIZE):
@@ -397,7 +498,7 @@ func _draw_rivers(ppos: Vector3, yaw: float) -> void:
 	if not _river_map:
 		return
 	var grid_span: float = _grid.get_grid_span()
-	var view_range := MAP_RADIUS / SCALE
+	var view_range := _map_radius / _scale
 	var center_tile := _grid.get_chunk_coord(
 		Vector2(ppos.x, ppos.z)
 	)
@@ -422,7 +523,7 @@ func _draw_rivers(ppos: Vector3, yaw: float) -> void:
 				rd.get("exit_dir", 2),
 				rd.get("position", 0.5),
 			)
-			var width: float = rd.get("width", 6.0) * SCALE
+			var width: float = rd.get("width", 6.0) * _scale
 			width = maxf(width, 2.0)
 			var mp_a := _world_to_minimap(entry, ppos, yaw)
 			var mp_b := _world_to_minimap(exit_pt, ppos, yaw)
@@ -433,7 +534,7 @@ func _draw_rivers(ppos: Vector3, yaw: float) -> void:
 func _draw_rural_roads(ppos: Vector3, yaw: float) -> void:
 	if not _boundary:
 		return
-	var view_range := MAP_RADIUS / SCALE
+	var view_range := _map_radius / _scale
 	var grid_span: float = _grid.get_grid_span()
 	for hi in HIGHWAY_INDICES:
 		# N-S rural roads
@@ -492,7 +593,7 @@ func _draw_group_dots(
 	color: Color, radius: float,
 ) -> void:
 	var nodes := get_tree().get_nodes_in_group(group_name)
-	var view_sq := (MAP_RADIUS / SCALE) * (MAP_RADIUS / SCALE)
+	var view_sq := (_map_radius / _scale) * (_map_radius / _scale)
 	for node in nodes:
 		if not is_instance_valid(node):
 			continue
@@ -530,7 +631,7 @@ func _draw_heli_icons(ppos: Vector3, yaw: float) -> void:
 	var helis := get_tree().get_nodes_in_group(
 		"police_helicopter"
 	)
-	var view_sq := (MAP_RADIUS / SCALE) * (MAP_RADIUS / SCALE)
+	var view_sq := (_map_radius / _scale) * (_map_radius / _scale)
 	for heli in helis:
 		if not is_instance_valid(heli):
 			continue
@@ -558,7 +659,7 @@ func _draw_heli_icons(ppos: Vector3, yaw: float) -> void:
 
 
 func _draw_player_arrow(_yaw: float) -> void:
-	var center := Vector2(MAP_CENTER, MAP_CENTER)
+	var center := Vector2(_map_center, _map_center)
 	# Arrow points up (north) then rotated by negative yaw
 	var points: PackedVector2Array = [
 		Vector2(0, -8), Vector2(5, 6), Vector2(0, 3),
@@ -572,7 +673,7 @@ func _draw_player_arrow(_yaw: float) -> void:
 
 
 func _draw_compass(yaw: float) -> void:
-	var center := Vector2(MAP_CENTER, MAP_CENTER)
+	var center := Vector2(_map_center, _map_center)
 	var dirs := [
 		["N", Vector2(0, -1)], ["S", Vector2(0, 1)],
 		["E", Vector2(1, 0)], ["W", Vector2(-1, 0)],
@@ -584,7 +685,7 @@ func _draw_compass(yaw: float) -> void:
 		var rot_x := dir.x * cos(yaw) - dir.y * sin(yaw)
 		var rot_y := dir.x * sin(yaw) + dir.y * cos(yaw)
 		var pos := center + Vector2(rot_x, rot_y) * (
-			MAP_RADIUS - 12.0
+			_map_radius - 12.0
 		)
 		draw_string(
 			ThemeDB.fallback_font, pos, label,
@@ -645,13 +746,15 @@ func _world_to_minimap(
 	var dz := world_pos.z - player_pos.z
 	var rx := dx * cos(yaw) - dz * sin(yaw)
 	var ry := dx * sin(yaw) + dz * cos(yaw)
-	return Vector2(MAP_CENTER + rx * SCALE, MAP_CENTER + ry * SCALE)
+	return Vector2(_map_center + rx * _scale, _map_center + ry * _scale)
 
 
 func _in_circle(p: Vector2) -> bool:
-	var dx := p.x - MAP_CENTER
-	var dy := p.y - MAP_CENTER
-	return dx * dx + dy * dy <= MAP_RADIUS * MAP_RADIUS
+	if _fullscreen:
+		return p.x >= 0 and p.x <= size.x and p.y >= 0 and p.y <= size.y
+	var dx := p.x - _map_center
+	var dy := p.y - _map_center
+	return dx * dx + dy * dy <= _map_radius * _map_radius
 
 
 func _get_tracking_position() -> Vector3:
