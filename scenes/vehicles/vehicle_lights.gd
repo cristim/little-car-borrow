@@ -21,6 +21,9 @@ var _headlight_fixtures: Array[MeshInstance3D] = []
 var _taillight_fixtures: Array[MeshInstance3D] = []
 var _reverse_fixtures: Array[MeshInstance3D] = []
 var _is_night := false
+var _manual_on := false
+var _manual_off := false
+var _player_driving := false
 
 
 func _ready() -> void:
@@ -157,17 +160,42 @@ func _on_time_changed(_hour: float) -> void:
 	_set_night_mode(DayNightManager.is_night() or DayNightManager.is_dusk_or_dawn())
 
 
+## Called by driving state to enable/disable player toggle control.
+func set_player_driving(driving: bool) -> void:
+	_player_driving = driving
+	if not driving:
+		_manual_on = false
+		_manual_off = false
+		_apply_light_state()
+
+
+## Toggle lights manually (called via L key while driving).
+func toggle_lights() -> void:
+	if _is_night:
+		_manual_off = not _manual_off
+		_manual_on = false
+	else:
+		_manual_on = not _manual_on
+		_manual_off = false
+	_apply_light_state()
+
+
 func _set_night_mode(night: bool) -> void:
 	_is_night = night
+	_apply_light_state()
+
+
+func _apply_light_state() -> void:
+	var on: bool = _is_night or _manual_on
+	if _manual_off:
+		on = false
 	for light in _headlights:
-		light.visible = night
+		light.visible = on
 	for light in _taillights:
-		light.visible = night
-	_set_fixture_emissive(_headlight_fixtures, night)
-	_set_fixture_emissive(_taillight_fixtures, night)
-	# When transitioning to day, also turn off reverse lights
-	# (they'll re-evaluate next physics frame if still reversing)
-	if not night:
+		light.visible = on
+	_set_fixture_emissive(_headlight_fixtures, on)
+	_set_fixture_emissive(_taillight_fixtures, on)
+	if not on:
 		for light in _reverse_lights:
 			light.visible = false
 		_set_fixture_emissive(_reverse_fixtures, false)

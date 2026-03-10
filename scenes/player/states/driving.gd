@@ -53,6 +53,11 @@ func enter(msg: Dictionary = {}) -> void:
 		wd.name = "VehicleWaterDetector"
 		_vehicle.add_child(wd)
 
+	# Enable player light control on the vehicle
+	var lights_node := _vehicle.get_node_or_null("Body/VehicleLights")
+	if lights_node:
+		lights_node.set_player_driving(true)
+
 	EventBus.vehicle_entered.emit(_vehicle)
 
 
@@ -66,6 +71,9 @@ func exit() -> void:
 		_vehicle.throttle_input = 0.0
 		_vehicle.brake_input = 0.0
 		_vehicle.handbrake_input = 0.0
+		var lights_node := _vehicle.get_node_or_null("Body/VehicleLights")
+		if lights_node:
+			lights_node.set_player_driving(false)
 
 	# Restore player visibility and physics (safety net)
 	owner.visible = true
@@ -86,6 +94,10 @@ func physics_update(_delta: float) -> void:
 func handle_input(event: InputEvent) -> void:
 	if event.is_action_pressed("interact"):
 		state_machine.transition_to("ExitingVehicle", {"vehicle": _vehicle})
+	elif event.is_action_pressed("toggle_flashlight"):
+		var lights_node := _vehicle.get_node_or_null("Body/VehicleLights")
+		if lights_node:
+			lights_node.toggle_lights()
 
 
 func _on_force_exit(vehicle: Node) -> void:
