@@ -246,18 +246,38 @@ func _build_chunk(tile: Vector2i) -> Node3D:
 		_light_builder.build(chunk, ox, oz)
 	else:
 		chunk.set_meta("chunk_type", "terrain")
-		_terrain_builder.build(chunk, tile, ox, oz, tile_data)
-		_build_terrain_biome(chunk, tile, ox, oz, biome)
+		var river_data: Dictionary = _river_map.get_river_at(tile)
+		var actual_edges: Dictionary = _terrain_builder.build(
+			chunk, tile, ox, oz, tile_data, river_data,
+		)
+		_update_tile_edges(tile, tile_data, actual_edges)
+		_build_terrain_biome(
+			chunk, tile, ox, oz, biome, river_data, tile_data,
+		)
 
 	return chunk
 
 
+## Update tile cache with actual edge heights from the terrain builder.
+## This ensures neighbors read the exact heights the terrain was built with.
+func _update_tile_edges(
+	tile: Vector2i, tile_data: Dictionary,
+	actual_edges: Dictionary,
+) -> void:
+	var edges: Dictionary = tile_data.get("edges", {})
+	for dir: int in actual_edges:
+		if edges.has(dir):
+			edges[dir]["heights"] = actual_edges[dir]
+	tile_data["edges"] = edges
+	_tile_cache.set_tile_data(tile, tile_data)
+
+
 func _build_terrain_biome(
 	chunk: Node3D, tile: Vector2i, ox: float, oz: float,
-	biome: String,
+	biome: String, river_data: Dictionary = {},
+	tile_data: Dictionary = {},
 ) -> void:
 	# River overlay (any non-ocean biome can have a river)
-	var river_data: Dictionary = _river_map.get_river_at(tile)
 	if not river_data.is_empty() and biome != "ocean":
 		_river_builder.build(chunk, tile, ox, oz, river_data)
 		_bridge_builder.build(chunk, tile, ox, oz, river_data)
@@ -265,7 +285,7 @@ func _build_terrain_biome(
 	match biome:
 		"village":
 			_village_builder.build(chunk, tile, ox, oz)
-			_rural_road_builder.build(chunk, tile, ox, oz)
+			_rural_road_builder.build(chunk, tile, ox, oz, tile_data)
 			_rural_tree_builder.build(chunk, tile, ox, oz, biome)
 		"forest":
 			_rural_tree_builder.build(chunk, tile, ox, oz, biome)
@@ -280,7 +300,7 @@ func _build_terrain_biome(
 		_:
 			# Default: roads + village + trees (backward compat)
 			_village_builder.build(chunk, tile, ox, oz)
-			_rural_road_builder.build(chunk, tile, ox, oz)
+			_rural_road_builder.build(chunk, tile, ox, oz, tile_data)
 			_rural_tree_builder.build(chunk, tile, ox, oz, biome)
 
 
