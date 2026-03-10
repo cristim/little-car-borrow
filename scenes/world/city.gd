@@ -219,22 +219,22 @@ func _build_terrain_biome(
 		"village":
 			_village_builder.build(chunk, tile, ox, oz)
 			_rural_road_builder.build(chunk, tile, ox, oz)
-			_rural_tree_builder.build(chunk, tile, ox, oz)
+			_rural_tree_builder.build(chunk, tile, ox, oz, biome)
 		"forest":
-			_rural_tree_builder.build(chunk, tile, ox, oz)
+			_rural_tree_builder.build(chunk, tile, ox, oz, biome)
 		"mountain":
 			_mountain_builder.build(chunk, tile, ox, oz)
-			_rural_tree_builder.build(chunk, tile, ox, oz)
+			_rural_tree_builder.build(chunk, tile, ox, oz, biome)
 		"farmland":
 			_farmland_builder.build(chunk, tile, ox, oz)
-			_rural_tree_builder.build(chunk, tile, ox, oz)
+			_rural_tree_builder.build(chunk, tile, ox, oz, biome)
 		"ocean":
 			pass  # sea plane already handled by terrain builder
 		_:
 			# Default: roads + village + trees (backward compat)
 			_village_builder.build(chunk, tile, ox, oz)
 			_rural_road_builder.build(chunk, tile, ox, oz)
-			_rural_tree_builder.build(chunk, tile, ox, oz)
+			_rural_tree_builder.build(chunk, tile, ox, oz, biome)
 
 
 # --- Material palette ---
@@ -348,11 +348,13 @@ func _init_materials() -> void:
 		mat.albedo_color = c
 		_trunk_mats.append(mat)
 
-	# 6 canopy colors — vertex_color_use_as_albedo used on MultiMesh material
+	# 10 canopy colors — greens + seasonal autumn variants
 	var canopy_colors: Array[Color] = [
 		Color(0.15, 0.42, 0.12), Color(0.12, 0.48, 0.10),
 		Color(0.18, 0.38, 0.14), Color(0.10, 0.45, 0.08),
 		Color(0.20, 0.40, 0.15), Color(0.14, 0.50, 0.12),
+		Color(0.85, 0.55, 0.10), Color(0.80, 0.70, 0.15),
+		Color(0.65, 0.25, 0.10), Color(0.70, 0.45, 0.12),
 	]
 	for c in canopy_colors:
 		var mat := StandardMaterial3D.new()
@@ -427,6 +429,15 @@ func _init_tree_meshes() -> void:
 	sphere2.radial_segments = 8
 	sphere2.rings = 4
 	_canopy_meshes.append(sphere2)
+
+	# 5: Pine — narrow tall cone for mountain/forest biomes
+	var pine := CylinderMesh.new()
+	pine.bottom_radius = 1.0
+	pine.top_radius = 0.05
+	pine.height = 2.0
+	pine.radial_segments = 6
+	pine.rings = 1
+	_canopy_meshes.append(pine)
 
 
 func _init_terrain_noise() -> void:

@@ -2,7 +2,7 @@ extends RefCounted
 ## Builds trees in rural terrain chunks using MultiMesh.
 ## Two categories: roadside trees along highways and forest clusters.
 
-const CANOPY_VARIANTS := 5
+const CANOPY_VARIANTS := 6  # 0=sphere, 1=cone, 2=tall, 3=flat, 4=sphere2, 5=pine
 const HIGHWAY_INDICES := [0, 5]
 const ROADSIDE_SPACING_MIN := 20.0
 const ROADSIDE_SPACING_MAX := 30.0
@@ -44,6 +44,7 @@ func init(
 
 func build(
 	chunk: Node3D, tile: Vector2i, ox: float, oz: float,
+	biome: String = "",
 ) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(tile) ^ 0x7B3E
@@ -116,8 +117,11 @@ func build(
 					canopy_transforms, canopy_colors, body,
 				)
 
-	# B) Forest clusters
-	var cluster_count := rng.randi_range(2, 4)
+	# B) Forest clusters — density varies by biome
+	var density := _get_biome_density(biome)
+	var cluster_count := rng.randi_range(
+		density["min_clusters"], density["max_clusters"],
+	)
 	for _ci in range(cluster_count):
 		var cx: float = ox + rng.randf_range(-span * 0.4, span * 0.4)
 		var cz: float = oz + rng.randf_range(-span * 0.4, span * 0.4)
@@ -134,7 +138,9 @@ func build(
 			continue
 
 		var cluster_r: float = rng.randf_range(CLUSTER_RADIUS_MIN, CLUSTER_RADIUS_MAX)
-		var tree_count := rng.randi_range(CLUSTER_TREES_MIN, CLUSTER_TREES_MAX)
+		var tree_count := rng.randi_range(
+			density["min_trees"], density["max_trees"],
+		)
 		for _ti in range(tree_count):
 			var angle: float = rng.randf() * TAU
 			var dist: float = rng.randf() * cluster_r
@@ -197,6 +203,36 @@ func _near_highway(wx: float, wz: float, ox: float, oz: float) -> bool:
 	return false
 
 
+## Biome-specific tree density parameters.
+static func _get_biome_density(biome: String) -> Dictionary:
+	match biome:
+		"forest":
+			return {
+				"min_clusters": 4, "max_clusters": 7,
+				"min_trees": 15, "max_trees": 30,
+			}
+		"mountain":
+			return {
+				"min_clusters": 2, "max_clusters": 4,
+				"min_trees": 6, "max_trees": 15,
+			}
+		"farmland":
+			return {
+				"min_clusters": 1, "max_clusters": 2,
+				"min_trees": 3, "max_trees": 8,
+			}
+		"suburb":
+			return {
+				"min_clusters": 1, "max_clusters": 3,
+				"min_trees": 4, "max_trees": 10,
+			}
+		_:
+			return {
+				"min_clusters": 2, "max_clusters": 4,
+				"min_trees": 8, "max_trees": 20,
+			}
+
+
 func _collect_tree(
 	rng: RandomNumberGenerator,
 	pos: Vector3,
@@ -221,7 +257,7 @@ func _collect_tree(
 
 	_city_script.add_cylinder_collision(body, t_pos, trunk_r, trunk_h)
 
-	var shape_type := rng.randi() % 5
+	var shape_type := rng.randi() % mini(CANOPY_VARIANTS, _canopy_meshes.size())
 	var canopy_color := _canopy_mats[rng.randi() % _canopy_mats.size()].albedo_color
 	var trunk_top := pos.y + trunk_h
 
@@ -285,6 +321,25 @@ func _collect_tree(
 					Vector3(cx, y + h * 0.4, cz),
 					Vector3(r, h / 2.0, r), canopy_color)
 				y += gap
+		5:
+			# Pine: 2-3 stacked cones, narrowing upward
+			var tiers := rng.randi_range(2, 3)
+			var base_r := rng.randf_range(1.0, 1.8)
+			var tier_h := rng.randf_range(1.5, 2.5)
+			var y := trunk_top - tier_h * 0.3
+			# Blue-green tint for pine
+			var pine_color := Color(
+				canopy_color.r * 0.7,
+				canopy_color.g * 0.85,
+				canopy_color.b * 1.3,
+			)
+			for ci in range(tiers):
+				var frac := 1.0 - float(ci) / float(tiers) * 0.6
+				var r := base_r * frac
+				_add_canopy(canopy_transforms, canopy_colors, 5,
+					Vector3(pos.x, y + tier_h * 0.5, pos.z),
+					Vector3(r, tier_h / 2.0, r), pine_color)
+				y += tier_h * 0.5
 
 
 func _add_canopy(
