@@ -59,6 +59,15 @@ var _rural_road_builder = preload(
 var _rural_tree_builder = preload(
 	"res://scenes/world/generator/chunk_builder_rural_trees.gd"
 ).new()
+var _suburb_builder = preload(
+	"res://scenes/world/generator/chunk_builder_suburb.gd"
+).new()
+var _farmland_builder = preload(
+	"res://scenes/world/generator/chunk_builder_farmland.gd"
+).new()
+var _mountain_builder = preload(
+	"res://scenes/world/generator/chunk_builder_mountain.gd"
+).new()
 
 var _chunks: Dictionary = {}
 var _update_timer := 0.0
@@ -186,7 +195,10 @@ func _build_chunk(tile: Vector2i) -> Node3D:
 	if _biome_map.is_city_biome(biome):
 		chunk.set_meta("chunk_type", "city")
 		_road_builder.build(chunk, ox, oz, span)
-		_building_builder.build(chunk, tile, ox, oz)
+		if biome == "suburb":
+			_suburb_builder.build(chunk, tile, ox, oz)
+		else:
+			_building_builder.build(chunk, tile, ox, oz)
 		_tree_builder.build(chunk, tile, ox, oz)
 		_marking_builder.build(chunk, ox, oz, span)
 		_ramp_builder.build(chunk, ox, oz)
@@ -194,11 +206,35 @@ func _build_chunk(tile: Vector2i) -> Node3D:
 	else:
 		chunk.set_meta("chunk_type", "terrain")
 		_terrain_builder.build(chunk, tile, ox, oz, tile_data)
-		_village_builder.build(chunk, tile, ox, oz)
-		_rural_road_builder.build(chunk, tile, ox, oz)
-		_rural_tree_builder.build(chunk, tile, ox, oz)
+		_build_terrain_biome(chunk, tile, ox, oz, biome)
 
 	return chunk
+
+
+func _build_terrain_biome(
+	chunk: Node3D, tile: Vector2i, ox: float, oz: float,
+	biome: String,
+) -> void:
+	match biome:
+		"village":
+			_village_builder.build(chunk, tile, ox, oz)
+			_rural_road_builder.build(chunk, tile, ox, oz)
+			_rural_tree_builder.build(chunk, tile, ox, oz)
+		"forest":
+			_rural_tree_builder.build(chunk, tile, ox, oz)
+		"mountain":
+			_mountain_builder.build(chunk, tile, ox, oz)
+			_rural_tree_builder.build(chunk, tile, ox, oz)
+		"farmland":
+			_farmland_builder.build(chunk, tile, ox, oz)
+			_rural_tree_builder.build(chunk, tile, ox, oz)
+		"ocean":
+			pass  # sea plane already handled by terrain builder
+		_:
+			# Default: roads + village + trees (backward compat)
+			_village_builder.build(chunk, tile, ox, oz)
+			_rural_road_builder.build(chunk, tile, ox, oz)
+			_rural_tree_builder.build(chunk, tile, ox, oz)
 
 
 # --- Material palette ---
@@ -422,6 +458,11 @@ func _init_builders() -> void:
 	_rural_tree_builder.init(
 		_grid, _trunk_mats, _canopy_mats, _trunk_mesh, _canopy_meshes, _boundary
 	)
+	_suburb_builder.init(
+		_grid, _building_mats, _roof_mats, _building_builder,
+	)
+	_farmland_builder.init(_grid, _boundary)
+	_mountain_builder.init(_grid, _boundary)
 
 
 func _build_safety_ground() -> void:
