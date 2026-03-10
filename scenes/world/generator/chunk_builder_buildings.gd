@@ -8,11 +8,13 @@ const INTERIOR_HEIGHT := 3.0
 const INTERIOR_FLOOR_Y := 0.05
 const INTERIOR_INSET := 0.15
 const WALL_THICKNESS := 0.25
+const PITCHED_ROOF_THRESHOLD := 8.0  # buildings under this height get pitched roofs
 
 var _grid: RefCounted
 var _building_mats: Array[StandardMaterial3D] = []
 var _window_mats: Array[StandardMaterial3D] = []
 var _interior_mat: StandardMaterial3D
+var _roof_mats: Array[StandardMaterial3D] = []
 var _city_script: GDScript = preload("res://scenes/world/city.gd")
 
 
@@ -21,11 +23,13 @@ func init(
 	building_mats: Array[StandardMaterial3D],
 	window_mats: Array[StandardMaterial3D],
 	interior_mat: StandardMaterial3D,
+	roof_mats: Array[StandardMaterial3D] = [],
 ) -> void:
 	_grid = grid
 	_building_mats = building_mats
 	_window_mats = window_mats
 	_interior_mat = interior_mat
+	_roof_mats = roof_mats
 
 
 func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
@@ -56,6 +60,16 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 	body.collision_layer = 2
 	body.collision_mask = 0
 	body.add_to_group("Static")
+
+	# Roof SurfaceTool (one per roof material)
+	var roof_count := _roof_mats.size()
+	var roof_sts: Array[SurfaceTool] = []
+	var roof_st_used: Array[bool] = []
+	for _i in range(roof_count):
+		var rst := SurfaceTool.new()
+		rst.begin(Mesh.PRIMITIVE_TRIANGLES)
+		roof_sts.append(rst)
+		roof_st_used.append(false)
 
 	# Interior SurfaceTool (single material for all interiors)
 	var int_st := SurfaceTool.new()
@@ -155,6 +169,17 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 						win_sts[win_idx], c, s, rng,
 					)
 
+				# Add pitched roof to short buildings
+				if (
+					s.y < PITCHED_ROOF_THRESHOLD
+					and roof_count > 0
+				):
+					var ri := rng.randi() % roof_count
+					_st_add_pitched_roof(
+						roof_sts[ri], c, s, rng,
+					)
+					roof_st_used[ri] = true
+
 	# Create one MeshInstance3D per used palette color
 	for i in range(mat_count):
 		if not st_used[i]:
@@ -178,6 +203,18 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 		win_inst.mesh = win_mesh
 		win_inst.material_override = _window_mats[i]
 		body.add_child(win_inst)
+
+	# Roof meshes
+	for i in range(roof_count):
+		if not roof_st_used[i]:
+			continue
+		roof_sts[i].generate_normals()
+		var roof_mesh := roof_sts[i].commit()
+		var roof_inst := MeshInstance3D.new()
+		roof_inst.name = "Roofs_%d" % i
+		roof_inst.mesh = roof_mesh
+		roof_inst.material_override = _roof_mats[i]
+		body.add_child(roof_inst)
 
 	# Interior mesh (single draw call for all interiors in chunk)
 	if has_interiors:
@@ -515,6 +552,107 @@ func _add_door_wall_collision(
 		_city_script.add_box_collision(
 			body, above_center, above_size,
 		)
+
+
+## Add a pitched roof (gable or hip) on top of a building.
+## center/size = building box center and size (roof sits on top face).
+func _st_add_pitched_roof(
+	st: SurfaceTool, center: Vector3, size: Vector3,
+	rng: RandomNumberGenerator,
+) -> void:
+	var hx := size.x * 0.5
+	var hz := size.z * 0.5
+	var top_y := center.y + size.y * 0.5
+	var cx := center.x
+	var cz := center.z
+	# Roof height proportional to shorter dimension
+	var roof_h: float = minf(size.x, size.z) * rng.randf_range(0.3, 0.5)
+
+	var style := rng.randi_range(0, 1)  # 0=gable, 1=hip
+	if style == 0:
+		_st_add_gable_roof(st, cx, cz, top_y, hx, hz, roof_h)
+	else:
+		_st_add_hip_roof(st, cx, cz, top_y, hx, hz, roof_h)
+
+
+## Gable roof: ridge along longer axis, two sloped faces + two triangular gable ends.
+func _st_add_gable_roof(
+	st: SurfaceTool,
+	cx: float, cz: float, top_y: float,
+	hx: float, hz: float, roof_h: float,
+) -> void:
+	var ridge_y := top_y + roof_h
+	# Ridge runs along X if building is wider, else along Z
+	if hx >= hz:
+		# Ridge along X axis
+		var r0 := Vector3(cx - hx, ridge_y, cz)
+		var r1 := Vector3(cx + hx, ridge_y, cz)
+		var e0 := Vector3(cx - hx, top_y, cz - hz)
+		var e1 := Vector3(cx + hx, top_y, cz - hz)
+		var e2 := Vector3(cx + hx, top_y, cz + hz)
+		var e3 := Vector3(cx - hx, top_y, cz + hz)
+		# Front slope (-Z side)
+		_city_script.st_add_quad(st, e0, e1, r1, r0)
+		# Back slope (+Z side)
+		_city_script.st_add_quad(st, e2, e3, r0, r1)
+		# Gable ends (triangles)
+		st.add_vertex(e0); st.add_vertex(r0); st.add_vertex(e3)
+		st.add_vertex(e1); st.add_vertex(e2); st.add_vertex(r1)
+	else:
+		# Ridge along Z axis
+		var r0 := Vector3(cx, ridge_y, cz - hz)
+		var r1 := Vector3(cx, ridge_y, cz + hz)
+		var e0 := Vector3(cx - hx, top_y, cz - hz)
+		var e1 := Vector3(cx + hx, top_y, cz - hz)
+		var e2 := Vector3(cx + hx, top_y, cz + hz)
+		var e3 := Vector3(cx - hx, top_y, cz + hz)
+		# Left slope (-X side)
+		_city_script.st_add_quad(st, e3, e0, r0, r1)
+		# Right slope (+X side)
+		_city_script.st_add_quad(st, e1, e2, r1, r0)
+		# Gable ends (triangles)
+		st.add_vertex(e0); st.add_vertex(e1); st.add_vertex(r0)
+		st.add_vertex(e2); st.add_vertex(e3); st.add_vertex(r1)
+
+
+## Hip roof: ridge shorter than building, all 4 sides slope.
+func _st_add_hip_roof(
+	st: SurfaceTool,
+	cx: float, cz: float, top_y: float,
+	hx: float, hz: float, roof_h: float,
+) -> void:
+	var ridge_y := top_y + roof_h
+	# Ridge inset from edges
+	var inset: float = minf(hx, hz) * 0.6
+	var e0 := Vector3(cx - hx, top_y, cz - hz)
+	var e1 := Vector3(cx + hx, top_y, cz - hz)
+	var e2 := Vector3(cx + hx, top_y, cz + hz)
+	var e3 := Vector3(cx - hx, top_y, cz + hz)
+
+	if hx >= hz:
+		# Ridge along X, inset from X ends
+		var r0 := Vector3(cx - hx + inset, ridge_y, cz)
+		var r1 := Vector3(cx + hx - inset, ridge_y, cz)
+		# Front slope (-Z)
+		_city_script.st_add_quad(st, e0, e1, r1, r0)
+		# Back slope (+Z)
+		_city_script.st_add_quad(st, e2, e3, r0, r1)
+		# Left hip triangle
+		st.add_vertex(e0); st.add_vertex(r0); st.add_vertex(e3)
+		# Right hip triangle
+		st.add_vertex(e1); st.add_vertex(e2); st.add_vertex(r1)
+	else:
+		# Ridge along Z, inset from Z ends
+		var r0 := Vector3(cx, ridge_y, cz - hz + inset)
+		var r1 := Vector3(cx, ridge_y, cz + hz - inset)
+		# Left slope (-X)
+		_city_script.st_add_quad(st, e3, e0, r0, r1)
+		# Right slope (+X)
+		_city_script.st_add_quad(st, e1, e2, r1, r0)
+		# Front hip triangle
+		st.add_vertex(e0); st.add_vertex(e1); st.add_vertex(r0)
+		# Back hip triangle
+		st.add_vertex(e2); st.add_vertex(e3); st.add_vertex(r1)
 
 
 func _get_block_center_local(bx: int, bz: int) -> Vector2:

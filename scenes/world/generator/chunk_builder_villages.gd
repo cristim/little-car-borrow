@@ -13,6 +13,8 @@ var _noise: FastNoiseLite
 var _building_mats: Array[StandardMaterial3D] = []
 var _window_mat: StandardMaterial3D  # reserved for future village windows
 var _boundary: RefCounted
+var _roof_mats: Array[StandardMaterial3D] = []
+var _bld_builder: RefCounted  # chunk_builder_buildings.gd for roof helpers
 
 var _city_script: GDScript = preload("res://scenes/world/city.gd")
 
@@ -23,12 +25,16 @@ func init(
 	building_mats: Array[StandardMaterial3D],
 	window_mat: StandardMaterial3D,
 	boundary: RefCounted = null,
+	roof_mats: Array[StandardMaterial3D] = [],
+	bld_builder: RefCounted = null,
 ) -> void:
 	_grid = grid
 	_noise = noise
 	_building_mats = building_mats
 	_window_mat = window_mat
 	_boundary = boundary
+	_roof_mats = roof_mats
+	_bld_builder = bld_builder
 
 
 func build(
@@ -91,6 +97,16 @@ func build(
 		sts.append(st)
 		st_used.append(false)
 
+	# Roof SurfaceTools
+	var roof_count := _roof_mats.size()
+	var roof_sts: Array[SurfaceTool] = []
+	var roof_st_used: Array[bool] = []
+	for _i in range(roof_count):
+		var rst := SurfaceTool.new()
+		rst.begin(Mesh.PRIMITIVE_TRIANGLES)
+		roof_sts.append(rst)
+		roof_st_used.append(false)
+
 	for _b in range(count):
 		var angle: float = rng.randf() * TAU
 		var dist: float = rng.randf_range(5.0, VILLAGE_RADIUS)
@@ -115,6 +131,14 @@ func build(
 		st_used[mat_idx] = true
 		_city_script.add_box_collision(body, center, bsize)
 
+		# All village buildings get pitched roofs
+		if roof_count > 0 and _bld_builder:
+			var ri := rng.randi() % roof_count
+			_bld_builder._st_add_pitched_roof(
+				roof_sts[ri], center, bsize, rng,
+			)
+			roof_st_used[ri] = true
+
 	# Check if any buildings were actually placed
 	var any_placed := false
 	for i in range(mat_count):
@@ -128,6 +152,19 @@ func build(
 		mesh_inst.mesh = mesh
 		mesh_inst.material_override = _building_mats[i]
 		body.add_child(mesh_inst)
+
+	# Roof meshes
+	for i in range(roof_count):
+		if not roof_st_used[i]:
+			continue
+		any_placed = true
+		roof_sts[i].generate_normals()
+		var roof_mesh := roof_sts[i].commit()
+		var roof_inst := MeshInstance3D.new()
+		roof_inst.name = "VillageRoofs_%d" % i
+		roof_inst.mesh = roof_mesh
+		roof_inst.material_override = _roof_mats[i]
+		body.add_child(roof_inst)
 
 	if any_placed:
 		chunk.add_child(body)

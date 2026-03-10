@@ -30,6 +30,7 @@ var _window_mats: Array[StandardMaterial3D] = []
 var _building_mats: Array[StandardMaterial3D] = []
 var _trunk_mats: Array[StandardMaterial3D] = []
 var _canopy_mats: Array[StandardMaterial3D] = []
+var _roof_mats: Array[StandardMaterial3D] = []
 var _pole_mat: StandardMaterial3D
 var _interior_mat: StandardMaterial3D
 var _terrain_noise: FastNoiseLite
@@ -322,6 +323,16 @@ func _init_materials() -> void:
 		mat.albedo_color = c
 		_canopy_mats.append(mat)
 
+	# 4 roof colors: terracotta, dark grey, brown, slate
+	var roof_colors: Array[Color] = [
+		Color(0.72, 0.38, 0.22), Color(0.30, 0.30, 0.32),
+		Color(0.45, 0.30, 0.18), Color(0.40, 0.40, 0.45),
+	]
+	for c in roof_colors:
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = c
+		_roof_mats.append(mat)
+
 	_pole_mat = StandardMaterial3D.new()
 	_pole_mat.albedo_color = Color(0.25, 0.25, 0.25)
 
@@ -395,14 +406,17 @@ func _init_terrain_noise() -> void:
 
 func _init_builders() -> void:
 	_road_builder.init(_grid, _road_mat, _sidewalk_mat, _ground_mat)
-	_building_builder.init(_grid, _building_mats, _window_mats, _interior_mat)
+	_building_builder.init(
+		_grid, _building_mats, _window_mats, _interior_mat, _roof_mats,
+	)
 	_tree_builder.init(_grid, _trunk_mats, _canopy_mats, _trunk_mesh, _canopy_meshes)
 	_marking_builder.init(_grid, _marking_mat)
 	_ramp_builder.init(_grid, _ramp_mat)
 	_light_builder.init(_grid, _pole_mat)
 	_terrain_builder.init(_grid, _terrain_noise, _terrain_mat, _boundary)
 	_village_builder.init(
-		_grid, _terrain_noise, _building_mats, _window_mats[0], _boundary
+		_grid, _terrain_noise, _building_mats, _window_mats[0], _boundary,
+		_roof_mats, _building_builder,
 	)
 	_rural_road_builder.init(_grid, _road_mat, _boundary)
 	_rural_tree_builder.init(
