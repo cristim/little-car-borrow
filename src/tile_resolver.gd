@@ -138,10 +138,12 @@ func _compute_terrain_edge(
 	else:
 		heights = _sample_edge_heights(tile, dir)
 
-	# Roads: inherit from neighbor edge
+	# Roads: inherit from neighbor, or generate for road-bearing biomes
 	var roads: Array = []
 	if not neighbor_edge.is_empty():
 		roads = neighbor_edge.get("roads", [])
+	elif biome in ["village", "suburb"]:
+		roads = _default_highway_roads()
 
 	# River: from river_map if available
 	var river: Dictionary = {}
@@ -196,6 +198,18 @@ func _sample_edge_heights(tile: Vector2i, dir: int) -> PackedFloat32Array:
 		heights[i] = _boundary.get_ground_height(wx, wz)
 
 	return heights
+
+
+## Default road entries at highway grid positions (indices 0 and 5).
+func _default_highway_roads() -> Array:
+	var span: float = _grid.get_grid_span()
+	var roads: Array = []
+	for hi: int in [0, 5]:
+		var center_local: float = _grid.get_road_center_local(hi)
+		var pos: float = (center_local + span * 0.5) / span
+		var width: float = _grid.get_road_width(hi)
+		roads.append({"position": pos, "width": width})
+	return roads
 
 
 ## Deterministic seed for a tile coordinate.

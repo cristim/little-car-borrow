@@ -1,7 +1,8 @@
 extends RefCounted
-## Builds dark asphalt highway strips on terrain chunks along road grid
-## indices 0 and 5 (tile boundaries and centers). Roads follow terrain
-## height and skip underwater segments.
+## Builds dark asphalt highway strips on terrain chunks.
+## Reads road positions from tile edge profiles when available,
+## falls back to fixed highway grid indices 0 and 5.
+## Roads follow terrain height and skip underwater segments.
 
 const SUBDIVISIONS := 16
 const SEA_LEVEL := -2.0
@@ -25,20 +26,34 @@ func init(
 
 func build(
 	chunk: Node3D, _tile: Vector2i, ox: float, oz: float,
+	tile_data: Dictionary = {},
 ) -> void:
 	var span: float = _grid.get_grid_span()
 	var step: float = span / float(SUBDIVISIONS)
+
+	# Collect road positions: N-S roads from N/S edges, E-W from E/W edges
+	var ns_roads: Array = _collect_roads(tile_data, 0, 2)
+	var ew_roads: Array = _collect_roads(tile_data, 3, 1)
+
+	# Fallback to fixed highway positions if no edge data
+	if ns_roads.is_empty() and ew_roads.is_empty():
+		for hi in HIGHWAY_INDICES:
+			var center: float = _grid.get_road_center_local(hi)
+			var width: float = _grid.get_road_width(hi)
+			var pos: float = (center + span * 0.5) / span
+			ns_roads.append({"position": pos, "width": width})
+			ew_roads.append({"position": pos, "width": width})
 
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var has_verts := false
 
-	for hi in HIGHWAY_INDICES:
-		var rw: float = _grid.get_road_width(hi)
+	# N-S road strips
+	for road: Dictionary in ns_roads:
+		var pos: float = road.get("position", 0.5)
+		var rw: float = road.get("width", 8.0)
 		var hw: float = rw * 0.5
-
-		# N-S road strip
-		var road_cx: float = _grid.get_road_center_local(hi) + ox
+		var road_cx: float = ox - span * 0.5 + pos * span
 		for iz in range(SUBDIVISIONS):
 			var z0: float = oz - span * 0.5 + float(iz) * step
 			var z1: float = z0 + step
@@ -57,8 +72,12 @@ func build(
 			)
 			has_verts = true
 
-		# E-W road strip
-		var road_cz: float = _grid.get_road_center_local(hi) + oz
+	# E-W road strips
+	for road: Dictionary in ew_roads:
+		var pos: float = road.get("position", 0.5)
+		var rw: float = road.get("width", 8.0)
+		var hw: float = rw * 0.5
+		var road_cz: float = oz - span * 0.5 + pos * span
 		for ix in range(SUBDIVISIONS):
 			var x0: float = ox - span * 0.5 + float(ix) * step
 			var x1: float = x0 + step
@@ -95,10 +114,10 @@ func build(
 	body.collision_mask = 0
 	body.add_to_group("Road")
 
-	for hi in HIGHWAY_INDICES:
-		var rw: float = _grid.get_road_width(hi)
-		# N-S collision strip
-		var road_cx: float = _grid.get_road_center_local(hi) + ox
+	for road: Dictionary in ns_roads:
+		var pos: float = road.get("position", 0.5)
+		var rw: float = road.get("width", 8.0)
+		var road_cx: float = ox - span * 0.5 + pos * span
 		var ns_h: float = _boundary.get_ground_height(road_cx, oz)
 		if ns_h >= SEA_LEVEL:
 			var col := CollisionShape3D.new()
@@ -109,8 +128,11 @@ func build(
 				road_cx, ns_h + ROAD_Y_OFFSET, oz,
 			)
 			body.add_child(col)
-		# E-W collision strip
-		var road_cz: float = _grid.get_road_center_local(hi) + oz
+
+	for road: Dictionary in ew_roads:
+		var pos: float = road.get("position", 0.5)
+		var rw: float = road.get("width", 8.0)
+		var road_cz: float = oz - span * 0.5 + pos * span
 		var ew_h: float = _boundary.get_ground_height(ox, road_cz)
 		if ew_h >= SEA_LEVEL:
 			var col := CollisionShape3D.new()
@@ -126,6 +148,27 @@ func build(
 		chunk.add_child(body)
 	else:
 		body.queue_free()
+
+
+## Collect unique road positions from two facing edges.
+func _collect_roads(
+	tile_data: Dictionary, dir_a: int, dir_b: int,
+) -> Array:
+	var edges: Dictionary = tile_data.get("edges", {})
+	var seen: Dictionary = {}
+	var result: Array = []
+	for dir: int in [dir_a, dir_b]:
+		if not edges.has(dir):
+			continue
+		var edge: Dictionary = edges[dir]
+		var roads: Array = edge.get("roads", [])
+		for road: Dictionary in roads:
+			var pos: float = road.get("position", 0.5)
+			var key: int = int(pos * 1000.0)
+			if not seen.has(key):
+				seen[key] = true
+				result.append(road)
+	return result
 
 
 func _add_quad(
