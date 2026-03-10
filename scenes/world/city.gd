@@ -132,6 +132,29 @@ func _notification(what: int) -> void:
 		_tile_cache.flush()
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("regenerate_chunk"):
+		var pos := _get_tracking_position()
+		var tile := _grid.get_chunk_coord(Vector2(pos.x, pos.z))
+		_regenerate_chunk(tile)
+
+
+func _regenerate_chunk(tile: Vector2i) -> void:
+	# Remove old chunk node
+	if _chunks.has(tile):
+		var old_node: Node3D = _chunks[tile]
+		_chunks.erase(tile)
+		old_node.queue_free()
+
+	# Clear from cache (keeps neighbor edges intact)
+	_tile_cache.clear_tile(tile)
+
+	# Rebuild with fresh resolution
+	var new_chunk := _build_chunk(tile)
+	_chunks[tile] = new_chunk
+	print("Regenerated chunk at tile %s" % str(tile))
+
+
 func _load_chunks_around(pos: Vector3, velocity: Vector3) -> void:
 	var span: float = _grid.get_grid_span()
 	var load_dist := CHUNK_LOAD_RADIUS * span
