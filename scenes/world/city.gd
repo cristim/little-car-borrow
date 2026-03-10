@@ -68,6 +68,13 @@ var _farmland_builder = preload(
 var _mountain_builder = preload(
 	"res://scenes/world/generator/chunk_builder_mountain.gd"
 ).new()
+var _river_map = preload("res://src/river_map.gd").new()
+var _river_builder = preload(
+	"res://scenes/world/generator/chunk_builder_river.gd"
+).new()
+var _bridge_builder = preload(
+	"res://scenes/world/generator/chunk_builder_bridge.gd"
+).new()
 
 var _chunks: Dictionary = {}
 var _update_timer := 0.0
@@ -83,9 +90,6 @@ func _ready() -> void:
 	_boundary.init(_grid.get_grid_span(), _terrain_noise)
 	set_meta("city_boundary", _boundary)
 	_biome_map.init(_grid.get_grid_span(), _terrain_noise, _boundary)
-	_tile_resolver.init(
-		_tile_cache, _biome_map, _grid, _boundary,
-	)
 	set_meta("biome_map", _biome_map)
 	_init_builders()
 	_build_safety_ground()
@@ -215,6 +219,12 @@ func _build_terrain_biome(
 	chunk: Node3D, tile: Vector2i, ox: float, oz: float,
 	biome: String,
 ) -> void:
+	# River overlay (any non-ocean biome can have a river)
+	var river_data: Dictionary = _river_map.get_river_at(tile)
+	if not river_data.is_empty() and biome != "ocean":
+		_river_builder.build(chunk, tile, ox, oz, river_data)
+		_bridge_builder.build(chunk, tile, ox, oz, river_data)
+
 	match biome:
 		"village":
 			_village_builder.build(chunk, tile, ox, oz)
@@ -474,6 +484,12 @@ func _init_builders() -> void:
 	)
 	_farmland_builder.init(_grid, _boundary)
 	_mountain_builder.init(_grid, _boundary)
+	_river_map.init(_grid.get_grid_span(), _boundary)
+	_river_builder.init(_grid, _boundary)
+	_bridge_builder.init(_grid, _boundary, _road_mat)
+	_tile_resolver.init(
+		_tile_cache, _biome_map, _grid, _boundary, _river_map,
+	)
 
 
 func _build_safety_ground() -> void:
