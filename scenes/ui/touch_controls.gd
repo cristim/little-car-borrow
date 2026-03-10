@@ -36,6 +36,20 @@ const BUTTONS := [
 		"context": "vehicle",
 	},
 	{
+		"name": "toggle_flashlight",
+		"color": Color(0.9, 0.9, 0.3, 0.5),
+		"radius": 30.0,
+		"offset": Vector2(-220, -200),
+		"context": "all",
+	},
+	{
+		"name": "map_toggle",
+		"color": Color(0.3, 0.7, 0.9, 0.5),
+		"radius": 28.0,
+		"offset": Vector2(-60, -130),
+		"context": "all",
+	},
+	{
 		"name": "pause",
 		"color": Color(0.8, 0.8, 0.8, 0.4),
 		"radius": 25.0,
@@ -60,6 +74,8 @@ var _joy_center := Vector2.ZERO  # Default joystick center position
 
 # -- Cached button positions (recomputed on resize) --
 var _button_positions: Array = []  # Array of {name, center, radius, color, context}
+var _last_vehicle_ctx := false
+var _last_dead_state := false
 
 
 func _ready() -> void:
@@ -106,10 +122,8 @@ func _update_layout() -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		_handle_screen_touch(event as InputEventScreenTouch)
-		get_viewport().set_input_as_handled()
 	elif event is InputEventScreenDrag:
 		_handle_screen_drag(event as InputEventScreenDrag)
-		get_viewport().set_input_as_handled()
 
 
 # -- Touch start / end --
@@ -324,6 +338,10 @@ func _draw_buttons() -> void:
 			label = "||"
 		elif bname == "interact":
 			label = "F"
+		elif bname == "toggle_flashlight":
+			label = "L"
+		elif bname == "map_toggle":
+			label = "M"
 		draw_string(
 			ThemeDB.fallback_font,
 			center + Vector2(-6, 6),
@@ -353,6 +371,10 @@ func _draw_restart_button() -> void:
 
 # -- Context change listener --
 func _process(_delta: float) -> void:
-	# Redraw to update button visibility when context changes
-	# (handbrake appears/disappears on enter/exit vehicle, restart on death)
-	queue_redraw()
+	# Redraw only when context or death state changes
+	var is_vehicle := InputManager.is_vehicle()
+	var is_dead: bool = GameManager.is_dead
+	if is_vehicle != _last_vehicle_ctx or is_dead != _last_dead_state:
+		_last_vehicle_ctx = is_vehicle
+		_last_dead_state = is_dead
+		queue_redraw()
