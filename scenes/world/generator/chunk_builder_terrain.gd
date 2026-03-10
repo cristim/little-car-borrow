@@ -35,12 +35,31 @@ func init(
 func build(
 	chunk: Node3D, tile: Vector2i, ox: float, oz: float,
 	tile_data: Dictionary = {},
-) -> void:
+	river_data: Dictionary = {},
+) -> Dictionary:
 	var span: float = _grid.get_grid_span()
 	var step: float = span / float(SUBDIVISIONS)
 
 	# Parse edge height constraints from tile_data
 	var edge_heights: Dictionary = _parse_edge_heights(tile_data)
+
+	# Pre-compute river path for terrain carving
+	var river_entry := Vector3.ZERO
+	var river_exit := Vector3.ZERO
+	var river_width := 0.0
+	var has_river := not river_data.is_empty()
+	if has_river:
+		river_entry = _river_edge_point(
+			ox, oz, span * 0.5,
+			river_data.get("entry_dir", 0),
+			river_data.get("position", 0.5),
+		)
+		river_exit = _river_edge_point(
+			ox, oz, span * 0.5,
+			river_data.get("exit_dir", 2),
+			river_data.get("position", 0.5),
+		)
+		river_width = river_data.get("width", 6.0)
 
 	# Sample heights into a (SUBDIVISIONS+1) x (SUBDIVISIONS+1) grid
 	var heights: Array[float] = []
@@ -56,6 +75,11 @@ func build(
 			h = _apply_edge_constraints(
 				h, ix, iz, edge_heights,
 			)
+			if has_river:
+				h = _apply_river_carving(
+					h, wx, wz, river_entry, river_exit,
+					river_width,
+				)
 			var idx: int = iz * (SUBDIVISIONS + 1) + ix
 			heights[idx] = h
 			min_height = minf(min_height, h)
@@ -146,6 +170,41 @@ func build(
 	chunk.set_meta("terrain_min_height", min_height)
 	chunk.set_meta("terrain_max_height", max_height)
 	chunk.set_meta("has_water", min_height < SEA_LEVEL)
+
+	# Return actual edge heights for storage in tile cache
+	return _extract_edge_heights(heights)
+
+
+## Extract the actual heights along each edge from the built heightmap.
+## Returns { 0: PackedFloat32Array, 1: ..., 2: ..., 3: ... }
+func _extract_edge_heights(heights: Array[float]) -> Dictionary:
+	var s: int = SUBDIVISIONS + 1
+	var result: Dictionary = {}
+	# NORTH (iz=0): first row
+	var north := PackedFloat32Array()
+	north.resize(s)
+	for ix in range(s):
+		north[ix] = heights[ix]
+	result[0] = north
+	# SOUTH (iz=SUBDIVISIONS): last row
+	var south := PackedFloat32Array()
+	south.resize(s)
+	for ix in range(s):
+		south[ix] = heights[SUBDIVISIONS * s + ix]
+	result[2] = south
+	# WEST (ix=0): first column
+	var west := PackedFloat32Array()
+	west.resize(s)
+	for iz in range(s):
+		west[iz] = heights[iz * s]
+	result[3] = west
+	# EAST (ix=SUBDIVISIONS): last column
+	var east := PackedFloat32Array()
+	east.resize(s)
+	for iz in range(s):
+		east[iz] = heights[iz * s + SUBDIVISIONS]
+	result[1] = east
+	return result
 
 
 func _sample_height(wx: float, wz: float) -> float:
@@ -357,3 +416,47 @@ func _sample_edge_array(
 	var i1: int = mini(i0 + 1, edge_arr.size() - 1)
 	var frac: float = fi - float(i0)
 	return lerpf(edge_arr[i0], edge_arr[i1], frac)
+
+
+## Depress terrain height along the river path.
+func _apply_river_carving(
+	h: float, wx: float, wz: float,
+	entry: Vector3, exit_pt: Vector3, width: float,
+) -> float:
+	var river_dir := exit_pt - entry
+	var len_sq: float = river_dir.length_squared()
+	if len_sq < 0.01:
+		return h
+	var to_point := Vector3(wx, 0.0, wz) - entry
+	var t: float = clampf(to_point.dot(river_dir) / len_sq, 0.0, 1.0)
+	var closest := entry + river_dir * t
+	var dist: float = Vector2(
+		wx - closest.x, wz - closest.z,
+	).length()
+	var half_w: float = width * 0.5
+	if dist > half_w + 3.0:
+		return h
+	# Inside river channel: depress to river bed
+	if dist <= half_w:
+		return h - 2.0
+	# Bank slope: blend between terrain and river bed
+	var bank_t: float = (dist - half_w) / 3.0
+	return lerpf(h - 2.0, h, bank_t)
+
+
+## Compute a world point on the chunk edge for a river direction.
+func _river_edge_point(
+	ox: float, oz: float, hs: float,
+	dir: int, pos: float,
+) -> Vector3:
+	var offset: float = (pos - 0.5) * hs * 2.0
+	match dir:
+		0:  # NORTH -Z
+			return Vector3(ox + offset, 0.0, oz - hs)
+		1:  # EAST +X
+			return Vector3(ox + hs, 0.0, oz + offset)
+		2:  # SOUTH +Z
+			return Vector3(ox + offset, 0.0, oz + hs)
+		3:  # WEST -X
+			return Vector3(ox - hs, 0.0, oz + offset)
+	return Vector3(ox, 0.0, oz)
