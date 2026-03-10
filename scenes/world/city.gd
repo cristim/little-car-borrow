@@ -15,6 +15,11 @@ const LOOKAHEAD_TIME := 3.0  # seconds of velocity prediction
 var _grid = preload("res://src/road_grid.gd").new()
 var _boundary = preload("res://src/city_boundary.gd").new()
 
+# Tile-matching subsystem
+var _tile_cache = preload("res://src/tile_cache.gd").new()
+var _biome_map = preload("res://src/biome_map.gd").new()
+var _tile_resolver = preload("res://src/tile_resolver.gd").new()
+
 # Shared material palette — initialized once, reused across all chunks
 var _road_mat: StandardMaterial3D
 var _sidewalk_mat: StandardMaterial3D
@@ -67,6 +72,11 @@ func _ready() -> void:
 	_init_terrain_noise()
 	_boundary.init(_grid.get_grid_span(), _terrain_noise)
 	set_meta("city_boundary", _boundary)
+	_biome_map.init(_grid.get_grid_span(), _terrain_noise, _boundary)
+	_tile_resolver.init(
+		_tile_cache, _biome_map, _grid, _boundary,
+	)
+	set_meta("biome_map", _biome_map)
 	_init_builders()
 	_build_safety_ground()
 	_load_chunks_around(Vector3.ZERO, Vector3.ZERO)
@@ -168,7 +178,11 @@ func _build_chunk(tile: Vector2i) -> Node3D:
 	var oz := origin.y
 	var span: float = _grid.get_grid_span()
 
-	if _is_city_tile(tile):
+	var tile_data: Dictionary = _tile_resolver.resolve(tile)
+	var biome: String = tile_data.get("biome", "")
+	chunk.set_meta("biome", biome)
+
+	if _biome_map.is_city_biome(biome):
 		chunk.set_meta("chunk_type", "city")
 		_road_builder.build(chunk, ox, oz, span)
 		_building_builder.build(chunk, tile, ox, oz)
@@ -377,11 +391,6 @@ func _init_terrain_noise() -> void:
 	_terrain_noise.fractal_gain = 0.5
 	_terrain_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
 	_terrain_noise.seed = 42
-
-
-## Returns true if tile should be built as city, false for terrain.
-func _is_city_tile(tile: Vector2i) -> bool:
-	return _boundary.is_city_tile(tile)
 
 
 func _init_builders() -> void:
