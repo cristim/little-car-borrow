@@ -1,30 +1,58 @@
 extends RefCounted
 ## In-memory cache of resolved tile data (biome, edge profiles, seed).
 ## Maps Vector2i tile coords to Dictionary tile data.
+## Falls through to disk persistence when memory cache misses.
 
 const TileProfile = preload("res://src/tile_profile.gd")
 
 var _cache: Dictionary = {}
+var _persistence: RefCounted
+
+
+func init(persistence: RefCounted = null) -> void:
+	_persistence = persistence
 
 
 ## Get tile data for a tile coordinate. Returns empty dict if missing.
+## Checks memory first, then disk.
 func get_tile_data(tile: Vector2i) -> Dictionary:
-	return _cache.get(tile, {})
+	if _cache.has(tile):
+		return _cache[tile]
+	if _persistence:
+		var disk_data: Dictionary = _persistence.load_tile(tile)
+		if not disk_data.is_empty():
+			_cache[tile] = disk_data
+			return disk_data
+	return {}
 
 
 ## Store tile data for a tile coordinate.
 func set_tile_data(tile: Vector2i, data: Dictionary) -> void:
 	_cache[tile] = data
+	if _persistence:
+		_persistence.mark_dirty(tile, data)
 
 
-## Remove tile data from cache.
+## Remove tile data from cache and disk.
 func clear_tile(tile: Vector2i) -> void:
 	_cache.erase(tile)
+	if _persistence:
+		_persistence.delete_tile(tile)
 
 
-## Check if tile data exists in cache.
+## Check if tile data exists in cache or on disk.
 func has_tile(tile: Vector2i) -> bool:
-	return _cache.has(tile)
+	if _cache.has(tile):
+		return true
+	if _persistence:
+		return _persistence.has_tile(tile)
+	return false
+
+
+## Flush dirty tiles to disk.
+func flush() -> void:
+	if _persistence:
+		_persistence.flush_dirty()
 
 
 ## Get the facing edge of a neighbor tile.
@@ -33,9 +61,9 @@ func has_tile(tile: Vector2i) -> bool:
 func get_neighbor_edge(tile: Vector2i, direction: int) -> Dictionary:
 	var offset := _dir_to_offset(direction)
 	var neighbor := tile + offset
-	if not _cache.has(neighbor):
+	var neighbor_data: Dictionary = get_tile_data(neighbor)
+	if neighbor_data.is_empty():
 		return {}
-	var neighbor_data: Dictionary = _cache[neighbor]
 	var edges: Dictionary = neighbor_data.get("edges", {})
 	var opposite: int = TileProfile.get_opposite(direction)
 	return edges.get(opposite, {})

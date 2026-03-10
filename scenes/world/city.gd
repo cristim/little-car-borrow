@@ -11,11 +11,13 @@ const CHUNK_UNLOAD_RADIUS := 3.5
 const UPDATE_INTERVAL := 0.5
 const SCAN_RANGE := 5  # check -5..+5 tiles around player (boundary can extend ~4.6 tiles)
 const LOOKAHEAD_TIME := 3.0  # seconds of velocity prediction
+const FLUSH_INTERVAL := 5.0  # seconds between disk flushes
 
 var _grid = preload("res://src/road_grid.gd").new()
 var _boundary = preload("res://src/city_boundary.gd").new()
 
 # Tile-matching subsystem
+var _chunk_persistence = preload("res://src/chunk_persistence.gd").new()
 var _tile_cache = preload("res://src/tile_cache.gd").new()
 var _biome_map = preload("res://src/biome_map.gd").new()
 var _tile_resolver = preload("res://src/tile_resolver.gd").new()
@@ -78,6 +80,7 @@ var _bridge_builder = preload(
 
 var _chunks: Dictionary = {}
 var _update_timer := 0.0
+var _flush_timer := 0.0
 var _player: Node3D = null
 var _player_found := false
 
@@ -91,6 +94,7 @@ func _ready() -> void:
 	set_meta("city_boundary", _boundary)
 	_biome_map.init(_grid.get_grid_span(), _terrain_noise, _boundary)
 	set_meta("biome_map", _biome_map)
+	_tile_cache.init(_chunk_persistence)
 	_init_builders()
 	_build_safety_ground()
 	_load_chunks_around(Vector3.ZERO, Vector3.ZERO)
@@ -116,6 +120,16 @@ func _process(delta: float) -> void:
 	var vel := _get_player_velocity()
 	_load_chunks_around(pos, vel)
 	_unload_distant_chunks(pos)
+
+	_flush_timer += UPDATE_INTERVAL
+	if _flush_timer >= FLUSH_INTERVAL:
+		_flush_timer = 0.0
+		_tile_cache.flush()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		_tile_cache.flush()
 
 
 func _load_chunks_around(pos: Vector3, velocity: Vector3) -> void:
