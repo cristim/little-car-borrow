@@ -88,6 +88,45 @@ func build(
 	mesh_inst.material_override = _road_mat
 	chunk.add_child(mesh_inst)
 
+	# Road collision for vehicle physics
+	var body := StaticBody3D.new()
+	body.name = "RuralRoadBody"
+	body.collision_layer = 1  # Ground layer
+	body.collision_mask = 0
+	body.add_to_group("Road")
+
+	for hi in HIGHWAY_INDICES:
+		var rw: float = _grid.get_road_width(hi)
+		# N-S collision strip
+		var road_cx: float = _grid.get_road_center_local(hi) + ox
+		var ns_h: float = _boundary.get_ground_height(road_cx, oz)
+		if ns_h >= SEA_LEVEL:
+			var col := CollisionShape3D.new()
+			var shape := BoxShape3D.new()
+			shape.size = Vector3(rw, 0.3, span)
+			col.shape = shape
+			col.position = Vector3(
+				road_cx, ns_h + ROAD_Y_OFFSET, oz,
+			)
+			body.add_child(col)
+		# E-W collision strip
+		var road_cz: float = _grid.get_road_center_local(hi) + oz
+		var ew_h: float = _boundary.get_ground_height(ox, road_cz)
+		if ew_h >= SEA_LEVEL:
+			var col := CollisionShape3D.new()
+			var shape := BoxShape3D.new()
+			shape.size = Vector3(span, 0.3, rw)
+			col.shape = shape
+			col.position = Vector3(
+				ox, ew_h + ROAD_Y_OFFSET, road_cz,
+			)
+			body.add_child(col)
+
+	if body.get_child_count() > 0:
+		chunk.add_child(body)
+	else:
+		body.queue_free()
+
 
 func _add_quad(
 	st: SurfaceTool,
