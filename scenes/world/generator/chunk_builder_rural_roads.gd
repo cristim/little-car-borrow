@@ -114,34 +114,43 @@ func build(
 	body.collision_mask = 0
 	body.add_to_group("Road")
 
+	# Per-segment collision boxes that follow terrain slope
 	for road: Dictionary in ns_roads:
 		var pos: float = road.get("position", 0.5)
 		var rw: float = road.get("width", 8.0)
 		var road_cx: float = ox - span * 0.5 + pos * span
-		var ns_h: float = _boundary.get_ground_height(road_cx, oz)
-		if ns_h >= SEA_LEVEL:
+		for iz in range(SUBDIVISIONS):
+			var z0: float = oz - span * 0.5 + float(iz) * step
+			var z1: float = z0 + step
+			var h0: float = _boundary.get_ground_height(road_cx, z0)
+			var h1: float = _boundary.get_ground_height(road_cx, z1)
+			if h0 < SEA_LEVEL or h1 < SEA_LEVEL:
+				continue
+			var avg_h: float = (h0 + h1) * 0.5 + ROAD_Y_OFFSET
 			var col := CollisionShape3D.new()
 			var shape := BoxShape3D.new()
-			shape.size = Vector3(rw, 0.3, span)
+			shape.size = Vector3(rw, 0.3, step)
 			col.shape = shape
-			col.position = Vector3(
-				road_cx, ns_h + ROAD_Y_OFFSET, oz,
-			)
+			col.position = Vector3(road_cx, avg_h, (z0 + z1) * 0.5)
 			body.add_child(col)
 
 	for road: Dictionary in ew_roads:
 		var pos: float = road.get("position", 0.5)
 		var rw: float = road.get("width", 8.0)
 		var road_cz: float = oz - span * 0.5 + pos * span
-		var ew_h: float = _boundary.get_ground_height(ox, road_cz)
-		if ew_h >= SEA_LEVEL:
+		for ix in range(SUBDIVISIONS):
+			var x0: float = ox - span * 0.5 + float(ix) * step
+			var x1: float = x0 + step
+			var h0: float = _boundary.get_ground_height(x0, road_cz)
+			var h1: float = _boundary.get_ground_height(x1, road_cz)
+			if h0 < SEA_LEVEL or h1 < SEA_LEVEL:
+				continue
+			var avg_h: float = (h0 + h1) * 0.5 + ROAD_Y_OFFSET
 			var col := CollisionShape3D.new()
 			var shape := BoxShape3D.new()
-			shape.size = Vector3(span, 0.3, rw)
+			shape.size = Vector3(step, 0.3, rw)
 			col.shape = shape
-			col.position = Vector3(
-				ox, ew_h + ROAD_Y_OFFSET, road_cz,
-			)
+			col.position = Vector3((x0 + x1) * 0.5, avg_h, road_cz)
 			body.add_child(col)
 
 	if body.get_child_count() > 0:
