@@ -8,7 +8,7 @@ const EAST := 1   # +X direction
 const SOUTH := 2  # +Z direction
 const WEST := 3   # -X direction
 
-const HEIGHT_SAMPLES := 8  # number of height samples per edge
+const HEIGHT_SAMPLES := 17  # must match chunk_builder_terrain.gd SUBDIVISIONS + 1
 
 const CITY_BIOMES: Array[String] = ["city_center", "residential", "suburb"]
 
