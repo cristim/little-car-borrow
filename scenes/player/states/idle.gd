@@ -14,7 +14,7 @@ func physics_update(delta: float) -> void:
 	player.move_and_slide()
 
 	# Water entry check
-	if player.global_position.y < SEA_LEVEL + 0.5 and _is_over_water(player.global_position):
+	if player.global_position.y < SEA_LEVEL - 0.25 and _is_over_water(player.global_position):
 		state_machine.transition_to("Swimming")
 		return
 
