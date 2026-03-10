@@ -30,6 +30,7 @@ const BUILDING_COLOR := Color(0.45, 0.42, 0.48, 0.6)
 const BUILDING_TALL_COLOR := Color(0.55, 0.50, 0.58, 0.7)
 const RIVER_COLOR := Color(0.2, 0.45, 0.8, 0.7)
 const RURAL_ROAD_COLOR := Color(0.4, 0.38, 0.35, 0.6)
+const RAMP_PARK_COLOR := Color(1.0, 0.6, 0.1, 0.9)
 const BOUNDARY_SEGMENTS := 72
 const TERRAIN_SUBCELLS := 8
 const SEA_LEVEL := -2.0
@@ -320,6 +321,20 @@ func _draw_terrain(ppos: Vector3, yaw: float) -> void:
 					),
 					VILLAGE_COLOR,
 				)
+
+	# Stunt parks can be on any chunk type (suburb = city)
+	for child in city_node.get_children():
+		if not child is Node3D:
+			continue
+		if not child.get_meta("has_stunt_park", false):
+			continue
+		var sc: Vector2 = child.get_meta(
+			"stunt_park_center", Vector2.ZERO,
+		)
+		var spos := Vector3(sc.x, 0.0, sc.y)
+		var smp := _world_to_minimap(spos, ppos, yaw)
+		if _in_circle(smp):
+			_draw_diamond(smp, 5.0, RAMP_PARK_COLOR)
 
 
 func _draw_city_blocks(ppos: Vector3, yaw: float) -> void:

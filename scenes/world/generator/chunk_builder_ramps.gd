@@ -1,8 +1,14 @@
 extends RefCounted
-## Builds fun ramps on boulevards using shared material.
+## Builds a stunt park area with ramps in a fenced-off block.
+## Only placed in ~10% of suburb tiles, occupying one city block.
+
+const FENCE_HEIGHT := 1.5
+const FENCE_THICKNESS := 0.15
+const RAMP_HEIGHT := 0.8
 
 var _grid: RefCounted
 var _ramp_mat: StandardMaterial3D
+var _city_script: GDScript = preload("res://scenes/world/city.gd")
 
 
 func init(grid: RefCounted, ramp_mat: StandardMaterial3D) -> void:
@@ -10,37 +16,120 @@ func init(grid: RefCounted, ramp_mat: StandardMaterial3D) -> void:
 	_ramp_mat = ramp_mat
 
 
-func build(chunk: Node3D, ox: float, oz: float) -> void:
-	var boulevard_x: float = _grid.get_road_center_local(_grid.BOULEVARD_INDEX) + ox
-	var ramp_data := [
-		[Vector3(boulevard_x, 0.4, -80.0 + oz), Vector3(-15.0, 0.0, 0.0)],
-		[Vector3(boulevard_x, 0.4, 80.0 + oz), Vector3(15.0, 0.0, 0.0)],
-		[Vector3(-60.0 + ox, 0.4, _grid.get_road_center_local(7) + oz), Vector3(0.0, 0.0, 15.0)],
-		[Vector3(60.0 + ox, 0.4, _grid.get_road_center_local(3) + oz), Vector3(0.0, 0.0, -15.0)],
-	]
+func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(tile) ^ 0xA44F
 
-	for r_idx in range(ramp_data.size()):
-		var rpos: Vector3 = ramp_data[r_idx][0]
-		var rrot: Vector3 = ramp_data[r_idx][1]
+	# Only ~10% of calls produce a stunt park
+	if rng.randf() > 0.1:
+		return
+
+	# Pick a random block (not on boundary roads)
+	var block_x: int = rng.randi_range(1, _grid.GRID_SIZE - 2)
+	var block_z: int = rng.randi_range(1, _grid.GRID_SIZE - 2)
+
+	# Block center from road edges
+	var rx0: float = _grid.get_road_center_local(block_x)
+	var rx1: float = _grid.get_road_center_local(block_x + 1)
+	var rz0: float = _grid.get_road_center_local(block_z)
+	var rz1: float = _grid.get_road_center_local(block_z + 1)
+	var rw0x: float = _grid.get_road_width(block_x) * 0.5
+	var rw1x: float = _grid.get_road_width(block_x + 1) * 0.5
+	var rw0z: float = _grid.get_road_width(block_z) * 0.5
+	var rw1z: float = _grid.get_road_width(block_z + 1) * 0.5
+
+	var x0: float = rx0 + rw0x + ox
+	var x1: float = rx1 - rw1x + ox
+	var z0: float = rz0 + rw0z + oz
+	var z1: float = rz1 - rw1z + oz
+	var cx: float = (x0 + x1) * 0.5
+	var cz: float = (z0 + z1) * 0.5
+	var bw: float = x1 - x0
+	var bd: float = z1 - z0
+
+	# Fence around the block
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var fence_y: float = FENCE_HEIGHT * 0.5
+	# North fence
+	_city_script.st_add_box(
+		st, Vector3(cx, fence_y, z0),
+		Vector3(bw, FENCE_HEIGHT, FENCE_THICKNESS),
+	)
+	# South fence
+	_city_script.st_add_box(
+		st, Vector3(cx, fence_y, z1),
+		Vector3(bw, FENCE_HEIGHT, FENCE_THICKNESS),
+	)
+	# West fence
+	_city_script.st_add_box(
+		st, Vector3(x0, fence_y, cz),
+		Vector3(FENCE_THICKNESS, FENCE_HEIGHT, bd),
+	)
+	# East fence (gap for entrance)
+	var half_d: float = bd * 0.5 - 4.0
+	if half_d > 1.0:
+		_city_script.st_add_box(
+			st, Vector3(x1, fence_y, z0 + half_d * 0.5),
+			Vector3(FENCE_THICKNESS, FENCE_HEIGHT, half_d),
+		)
+		_city_script.st_add_box(
+			st, Vector3(x1, fence_y, z1 - half_d * 0.5),
+			Vector3(FENCE_THICKNESS, FENCE_HEIGHT, half_d),
+		)
+
+	st.generate_normals()
+	var fence_mesh := st.commit()
+	var fence_mat := StandardMaterial3D.new()
+	fence_mat.albedo_color = Color(0.5, 0.5, 0.5)
+	var fence_inst := MeshInstance3D.new()
+	fence_inst.name = "StuntParkFence"
+	fence_inst.mesh = fence_mesh
+	fence_inst.material_override = fence_mat
+	chunk.add_child(fence_inst)
+
+	# Ramps inside the block
+	var margin := 4.0
+	var inner_x0: float = x0 + margin
+	var inner_x1: float = x1 - margin
+	var inner_z0: float = z0 + margin
+	var inner_z1: float = z1 - margin
+
+	var ramp_count: int = rng.randi_range(3, 6)
+	for i in range(ramp_count):
+		var rx: float = rng.randf_range(inner_x0, inner_x1)
+		var rz: float = rng.randf_range(inner_z0, inner_z1)
+		var rot_y: float = rng.randf_range(0.0, TAU)
+		var ramp_w: float = rng.randf_range(3.0, 5.0)
+		var ramp_d: float = rng.randf_range(5.0, 8.0)
+		var ramp_h: float = rng.randf_range(0.4, RAMP_HEIGHT)
+
 		var body := StaticBody3D.new()
-		body.name = "Ramp_%d" % r_idx
-		body.position = rpos
-		body.rotation_degrees = rrot
+		body.name = "Ramp_%d" % i
+		body.position = Vector3(rx, ramp_h * 0.5, rz)
+		body.rotation.y = rot_y
 		body.collision_layer = 1
 		body.collision_mask = 0
 		body.add_to_group("Road")
 
 		var col := CollisionShape3D.new()
 		var shape := BoxShape3D.new()
-		shape.size = Vector3(4.0, 0.3, 6.0)
+		shape.size = Vector3(ramp_w, ramp_h, ramp_d)
 		col.shape = shape
+		col.rotation.x = deg_to_rad(-15.0)
 		body.add_child(col)
 
 		var mesh_inst := MeshInstance3D.new()
 		var box_mesh := BoxMesh.new()
-		box_mesh.size = Vector3(4.0, 0.3, 6.0)
+		box_mesh.size = Vector3(ramp_w, ramp_h, ramp_d)
 		box_mesh.material = _ramp_mat
+		mesh_inst.rotation.x = deg_to_rad(-15.0)
 		mesh_inst.mesh = box_mesh
 		body.add_child(mesh_inst)
 
 		chunk.add_child(body)
+
+	chunk.set_meta("has_stunt_park", true)
+	chunk.set_meta(
+		"stunt_park_center", Vector2(cx, cz),
+	)

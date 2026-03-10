@@ -238,11 +238,11 @@ func _build_chunk(tile: Vector2i) -> Node3D:
 		_road_builder.build(chunk, ox, oz, span)
 		if biome == "suburb":
 			_suburb_builder.build(chunk, tile, ox, oz)
+			_ramp_builder.build(chunk, tile, ox, oz)
 		else:
 			_building_builder.build(chunk, tile, ox, oz)
 		_tree_builder.build(chunk, tile, ox, oz)
 		_marking_builder.build(chunk, ox, oz, span)
-		_ramp_builder.build(chunk, ox, oz)
 		_light_builder.build(chunk, ox, oz)
 	else:
 		chunk.set_meta("chunk_type", "terrain")
