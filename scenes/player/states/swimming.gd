@@ -53,8 +53,11 @@ func physics_update(delta: float) -> void:
 		state_machine.transition_to("Idle")
 		return
 
-	# Also exit if ground below is above water (walked onto shore ramp)
-	if not _is_over_water(player.global_position) and player.is_on_floor():
+	# Exit if ground below is above water — use ground height directly
+	# instead of requiring is_on_floor(), since buoyancy can keep the
+	# player floating above the rising shore
+	var ground_h := _get_ground_height(player.global_position)
+	if ground_h > SEA_LEVEL and player.global_position.y > ground_h - 0.5:
 		state_machine.transition_to("Idle")
 		return
 
@@ -67,12 +70,15 @@ func _get_camera_relative_direction(input: Vector2) -> Vector3:
 	return direction
 
 
-func _is_over_water(pos: Vector3) -> bool:
+func _get_ground_height(pos: Vector3) -> float:
 	var city_nodes := owner.get_tree().get_nodes_in_group("city_manager")
 	if city_nodes.is_empty():
-		return false
+		return 0.0
 	var boundary: RefCounted = city_nodes[0].get_meta("city_boundary")
 	if not boundary:
-		return false
-	var ground_h: float = boundary.get_ground_height(pos.x, pos.z)
-	return ground_h < SEA_LEVEL
+		return 0.0
+	return boundary.get_ground_height(pos.x, pos.z)
+
+
+func _is_over_water(pos: Vector3) -> bool:
+	return _get_ground_height(pos) < SEA_LEVEL
