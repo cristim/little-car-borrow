@@ -29,6 +29,7 @@ const INTERIOR_COLOR := Color(0.12, 0.12, 0.12, 1)
 
 var _grid = preload("res://src/road_grid.gd").new()
 var _boundary = preload("res://src/city_boundary.gd").new()
+var _biome_map: RefCounted  # fetched from city_manager meta
 var _builder = preload("res://scenes/vehicles/car_body_builder.gd").new()
 var _total_weight := 0
 var _body_mesh_cache := {}      # variant_name -> ArrayMesh
@@ -83,6 +84,7 @@ var _car_colors: Array[Color] = [
 func _ready() -> void:
 	_rng.randomize()
 	_boundary.init(_grid.get_grid_span(), _make_terrain_noise())
+	_fetch_biome_map()
 	_init_materials()
 	EventBus.vehicle_entered.connect(_on_vehicle_stolen)
 	EventBus.time_of_day_changed.connect(_on_time_changed)
@@ -150,14 +152,16 @@ func _try_spawn() -> void:
 		return
 
 	var player_pos := _player.global_position
-	var player_outside: bool = _boundary.get_signed_distance(
-		player_pos.x, player_pos.z
-	) > 0.0
+	var player_tile := _grid.get_chunk_coord(
+		Vector2(player_pos.x, player_pos.z),
+	)
+	var player_biome := _get_biome(player_tile)
+	var player_in_city := _is_road_grid_biome(player_biome)
 
 	for _attempt in range(5):
 		var is_ns := _rng.randi() % 2 == 0
 		var road_idx: int
-		if player_outside:
+		if not player_in_city:
 			road_idx = HIGHWAY_INDICES[_rng.randi() % HIGHWAY_INDICES.size()]
 		else:
 			road_idx = _rng.randi_range(0, _grid.GRID_SIZE)
@@ -464,6 +468,26 @@ func _on_time_changed(hour: float) -> void:
 		_time_multiplier = 0.7  # dawn/dusk
 	else:
 		_time_multiplier = 1.0  # day
+
+
+func _fetch_biome_map() -> void:
+	var cm := get_tree().get_first_node_in_group("city_manager")
+	if cm and cm.has_meta("biome_map"):
+		_biome_map = cm.get_meta("biome_map")
+
+
+func _get_biome(tile: Vector2i) -> String:
+	if _biome_map:
+		return _biome_map.get_biome(tile)
+	# Fallback: use boundary
+	if _boundary.is_city_tile(tile):
+		return "residential"
+	return "farmland"
+
+
+## Returns true for biomes that use the road grid (city, residential, suburb).
+static func _is_road_grid_biome(biome: String) -> bool:
+	return biome in ["city_center", "residential", "suburb"]
 
 
 ## Creates a terrain noise matching city.gd _init_terrain_noise().

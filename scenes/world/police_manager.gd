@@ -13,6 +13,7 @@ const SEA_LEVEL := -2.0
 
 var _grid = preload("res://src/road_grid.gd").new()
 var _boundary = preload("res://src/city_boundary.gd").new()
+var _biome_map: RefCounted  # fetched from city_manager meta
 var _police_scene: PackedScene = preload("res://scenes/vehicles/police_vehicle.tscn")
 var _ai_script: GDScript = preload("res://scenes/vehicles/police_ai_controller.gd")
 var _vehicle_health_script: GDScript = preload(
@@ -40,6 +41,7 @@ var _heli_script: GDScript = preload(
 func _ready() -> void:
 	_rng.randomize()
 	_boundary.init(_grid.get_grid_span(), _make_terrain_noise())
+	_fetch_biome_map()
 	EventBus.wanted_level_changed.connect(_on_wanted_level_changed)
 
 
@@ -301,6 +303,12 @@ static func _make_terrain_noise() -> FastNoiseLite:
 	n.fractal_type = FastNoiseLite.FRACTAL_FBM
 	n.seed = 42
 	return n
+
+
+func _fetch_biome_map() -> void:
+	var cm := get_tree().get_first_node_in_group("city_manager")
+	if cm and cm.has_meta("biome_map"):
+		_biome_map = cm.get_meta("biome_map")
 
 
 func _despawn_helicopter() -> void:

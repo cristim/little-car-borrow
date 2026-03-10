@@ -19,6 +19,11 @@ const HELI_COLOR := Color(1.0, 0.3, 0.3)
 const TERRAIN_COLOR := Color(0.22, 0.45, 0.18, 0.5)
 const WATER_COLOR := Color(0.15, 0.35, 0.65, 0.5)
 const VILLAGE_COLOR := Color(0.55, 0.40, 0.25, 0.8)
+const SUBURB_COLOR := Color(0.35, 0.45, 0.30, 0.5)
+const FARMLAND_COLOR := Color(0.55, 0.50, 0.25, 0.5)
+const MOUNTAIN_COLOR := Color(0.50, 0.48, 0.44, 0.5)
+const FOREST_COLOR := Color(0.12, 0.38, 0.10, 0.5)
+const OCEAN_COLOR := Color(0.10, 0.25, 0.55, 0.6)
 const CITY_BOUNDARY_COLOR := Color(0.25, 0.25, 0.35, 0.25)
 const CITY_BOUNDARY_LINE_COLOR := Color(0.6, 0.6, 0.7, 0.5)
 const BOUNDARY_SEGMENTS := 72
@@ -256,7 +261,7 @@ func _draw_terrain(ppos: Vector3, yaw: float) -> void:
 					for poly in clipped:
 						draw_colored_polygon(poly, col)
 		else:
-			# Fallback: flat color per chunk
+			# Fallback: flat color per chunk, biome-aware
 			var corners: Array[Vector3] = [
 				Vector3(chunk_ox - hs, 0.0, chunk_oz - hs),
 				Vector3(chunk_ox + hs, 0.0, chunk_oz - hs),
@@ -266,12 +271,10 @@ func _draw_terrain(ppos: Vector3, yaw: float) -> void:
 			var map_pts: PackedVector2Array = []
 			for c in corners:
 				map_pts.append(_world_to_minimap(c, ppos, yaw))
-			var has_water: bool = chunk_node.get_meta(
-				"has_water", false
+			var base_color := _biome_to_color(
+				chunk_node.get_meta("biome", ""),
+				chunk_node.get_meta("has_water", false),
 			)
-			var base_color := TERRAIN_COLOR
-			if has_water:
-				base_color = WATER_COLOR
 			var clipped: Array[PackedVector2Array] = (
 				Geometry2D.intersect_polygons(
 					map_pts, _clip_circle
@@ -483,3 +486,19 @@ func _get_heading_yaw() -> float:
 	if cam:
 		return cam.global_rotation.y
 	return 0.0
+
+
+func _biome_to_color(biome: String, has_water: bool) -> Color:
+	var colors: Dictionary = {
+		"forest": FOREST_COLOR,
+		"mountain": MOUNTAIN_COLOR,
+		"farmland": FARMLAND_COLOR,
+		"village": VILLAGE_COLOR,
+		"ocean": OCEAN_COLOR,
+		"suburb": SUBURB_COLOR,
+	}
+	if colors.has(biome):
+		return colors[biome]
+	if has_water:
+		return WATER_COLOR
+	return TERRAIN_COLOR

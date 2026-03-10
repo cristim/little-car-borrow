@@ -14,6 +14,7 @@ const SEA_LEVEL := -2.0
 
 var _grid = preload("res://src/road_grid.gd").new()
 var _boundary = preload("res://src/city_boundary.gd").new()
+var _biome_map: RefCounted  # fetched from city_manager meta
 var _ped_scene: PackedScene = preload("res://scenes/pedestrians/pedestrian.tscn")
 var _pedestrians: Array[Node] = []
 var _player: Node3D = null
@@ -26,6 +27,7 @@ var _time_multiplier := 1.0
 func _ready() -> void:
 	_rng.randomize()
 	_boundary.init(_grid.get_grid_span(), _make_terrain_noise())
+	_fetch_biome_map()
 	EventBus.pedestrian_killed.connect(_on_pedestrian_killed)
 	EventBus.time_of_day_changed.connect(_on_time_changed)
 
@@ -86,6 +88,13 @@ func _try_spawn() -> void:
 
 		var dist := spawn_pos.distance_to(player_pos)
 		if dist < MIN_SPAWN_DIST or dist > SPAWN_RADIUS:
+			continue
+
+		# Only spawn in city biomes (road grid sidewalks)
+		var spawn_tile := _grid.get_chunk_coord(
+			Vector2(spawn_pos.x, spawn_pos.z),
+		)
+		if not _is_city_biome(spawn_tile):
 			continue
 
 		# Adjust spawn height to terrain level outside city
@@ -169,6 +178,19 @@ static func _make_terrain_noise() -> FastNoiseLite:
 	n.fractal_type = FastNoiseLite.FRACTAL_FBM
 	n.seed = 42
 	return n
+
+
+func _fetch_biome_map() -> void:
+	var cm := get_tree().get_first_node_in_group("city_manager")
+	if cm and cm.has_meta("biome_map"):
+		_biome_map = cm.get_meta("biome_map")
+
+
+func _is_city_biome(tile: Vector2i) -> bool:
+	if _biome_map:
+		var biome: String = _biome_map.get_biome(tile)
+		return biome in ["city_center", "residential", "suburb"]
+	return _boundary.is_city_tile(tile)
 
 
 func _on_time_changed(hour: float) -> void:
