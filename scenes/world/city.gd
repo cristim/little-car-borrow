@@ -12,6 +12,13 @@ const UPDATE_INTERVAL := 0.5
 const SCAN_RANGE := 5  # check -5..+5 tiles around player (boundary can extend ~4.6 tiles)
 const LOOKAHEAD_TIME := 3.0  # seconds of velocity prediction
 const FLUSH_INTERVAL := 5.0  # seconds between disk flushes
+const EDGE_MISMATCH_THRESHOLD := 0.5  # meters — triggers neighbor rebuild
+const DIR_OFFSETS := {
+	0: Vector2i(0, -1),  # NORTH
+	1: Vector2i(1, 0),   # EAST
+	2: Vector2i(0, 1),   # SOUTH
+	3: Vector2i(-1, 0),  # WEST
+}
 
 var _grid = preload("res://src/road_grid.gd").new()
 var _boundary = preload("res://src/city_boundary.gd").new()
@@ -83,6 +90,7 @@ var _update_timer := 0.0
 var _flush_timer := 0.0
 var _player: Node3D = null
 var _player_found := false
+var _repairing := false  # prevents recursive neighbor repair
 
 
 func _ready() -> void:
@@ -251,6 +259,8 @@ func _build_chunk(tile: Vector2i) -> Node3D:
 			chunk, tile, ox, oz, tile_data, river_data,
 		)
 		_update_tile_edges(tile, tile_data, actual_edges)
+		if not _repairing:
+			_repair_neighbor_edges(tile, actual_edges)
 		_build_terrain_biome(
 			chunk, tile, ox, oz, biome, river_data, tile_data,
 		)
@@ -270,6 +280,58 @@ func _update_tile_edges(
 			edges[dir]["heights"] = actual_edges[dir]
 	tile_data["edges"] = edges
 	_tile_cache.set_tile_data(tile, tile_data)
+
+
+## After building a terrain chunk, check if already-loaded neighbors have
+## mismatched facing edges. If so, rebuild them with the now-correct
+## edge data from cache. Only one level of repair (no cascading).
+func _repair_neighbor_edges(
+	tile: Vector2i, actual_edges: Dictionary,
+) -> void:
+	for dir: int in actual_edges:
+		var neighbor: Vector2i = tile + DIR_OFFSETS[dir]
+		if not _chunks.has(neighbor):
+			continue
+		var neighbor_node: Node3D = _chunks[neighbor]
+		if neighbor_node.get_meta("chunk_type", "") != "terrain":
+			continue
+
+		var my_edge: PackedFloat32Array = actual_edges[dir]
+		var opposite: int = (dir + 2) % 4
+		var neighbor_data: Dictionary = _tile_cache.get_tile_data(neighbor)
+		var neighbor_edges: Dictionary = neighbor_data.get("edges", {})
+		if not neighbor_edges.has(opposite):
+			continue
+		var their_edge: PackedFloat32Array = neighbor_edges[opposite].get(
+			"heights", PackedFloat32Array(),
+		)
+		if not _edges_mismatch(my_edge, their_edge):
+			continue
+
+		# Mismatch detected — rebuild neighbor with correct edge data
+		_rebuild_neighbor(neighbor)
+
+
+func _edges_mismatch(a: PackedFloat32Array, b: PackedFloat32Array) -> bool:
+	if a.size() != b.size() or a.size() == 0:
+		return a.size() != b.size()
+	for i in range(a.size()):
+		if absf(a[i] - b[i]) > EDGE_MISMATCH_THRESHOLD:
+			return true
+	return false
+
+
+func _rebuild_neighbor(tile: Vector2i) -> void:
+	if _chunks.has(tile):
+		var old_node: Node3D = _chunks[tile]
+		_chunks.erase(tile)
+		old_node.queue_free()
+
+	_tile_cache.clear_tile(tile)
+
+	_repairing = true
+	_chunks[tile] = _build_chunk(tile)
+	_repairing = false
 
 
 func _build_terrain_biome(
