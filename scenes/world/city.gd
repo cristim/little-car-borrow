@@ -12,6 +12,7 @@ const UPDATE_INTERVAL := 0.5
 const SCAN_RANGE := 5  # check -5..+5 tiles around player (boundary can extend ~4.6 tiles)
 const LOOKAHEAD_TIME := 3.0  # seconds of velocity prediction
 const FLUSH_INTERVAL := 5.0  # seconds between disk flushes
+const SEA_LEVEL := -2.0
 const EDGE_MISMATCH_THRESHOLD := 0.5  # meters — triggers neighbor rebuild
 const MAX_CASCADING_REPAIRS := 12  # safety cap to prevent runaway rebuilds
 const DIR_OFFSETS := {
@@ -405,8 +406,10 @@ func _build_terrain_biome(
 		_river_builder.build(chunk, tile, ox, oz, river_data)
 		_bridge_builder.build(chunk, tile, ox, oz, river_data)
 
-	# Piers on coastal terrain tiles (non-ocean with water)
-	if biome != "ocean" and chunk.get_meta("has_water", false):
+	# Piers on coastal terrain tiles (has both water and land above sea level)
+	var has_water: bool = chunk.get_meta("has_water", false)
+	var max_h: float = chunk.get_meta("terrain_max_height", 0.0)
+	if has_water and max_h > SEA_LEVEL:
 		_pier_builder.build(chunk, tile, ox, oz)
 
 	match biome:

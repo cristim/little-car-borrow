@@ -13,8 +13,63 @@ func enter(msg: Dictionary = {}) -> void:
 	_original_collision_layer = _vehicle.collision_layer
 	_vehicle.collision_layer = 8
 
-	# Hide player
-	owner.visible = false
+	# Detect boat vs car
+	var is_boat: bool = _vehicle.get_node_or_null("BoatController") != null
+
+	# Hide player for cars, keep visible for boats (shown sitting)
+	if not is_boat:
+		owner.visible = false
+	else:
+		owner.visible = true
+		var player_model: Node3D = owner.get_node_or_null("PlayerModel")
+		if player_model:
+			# Stop walk/idle animation so it doesn't override seated pose
+			player_model.set_process(false)
+			# Reset any residual walk/run transform (lean, bounce, sway)
+			player_model.rotation = Vector3.ZERO
+			player_model.position = Vector3(
+				player_model.position.x, 0.0, player_model.position.z,
+			)
+			# Reset all joints to neutral first, then apply seated pose
+			for path in [
+				"LeftShoulderPivot", "RightShoulderPivot",
+				"LeftHipPivot", "RightHipPivot",
+				"LeftShoulderPivot/LeftElbowPivot",
+				"RightShoulderPivot/RightElbowPivot",
+				"LeftHipPivot/LeftKneePivot",
+				"RightHipPivot/RightKneePivot",
+			]:
+				var joint: Node3D = player_model.get_node_or_null(path)
+				if joint:
+					joint.rotation = Vector3.ZERO
+			# Seated pose: bend hips and knees
+			var lh: Node3D = player_model.get_node_or_null("LeftHipPivot")
+			var rh: Node3D = player_model.get_node_or_null("RightHipPivot")
+			var lk: Node3D = player_model.get_node_or_null(
+				"LeftHipPivot/LeftKneePivot"
+			)
+			var rk: Node3D = player_model.get_node_or_null(
+				"RightHipPivot/RightKneePivot"
+			)
+			if lh:
+				lh.rotation.x = -1.4
+			if rh:
+				rh.rotation.x = -1.4
+			if lk:
+				lk.rotation.x = 1.4
+			if rk:
+				rk.rotation.x = 1.4
+			# Right arm reaches back toward engine tiller (behind player)
+			var rs: Node3D = player_model.get_node_or_null(
+				"RightShoulderPivot"
+			)
+			if rs:
+				rs.rotation.x = -0.8  # arm extends behind (toward stern)
+			var re: Node3D = player_model.get_node_or_null(
+				"RightShoulderPivot/RightElbowPivot"
+			)
+			if re:
+				re.rotation.x = 0.6  # slight bend at elbow
 	owner.set_physics_process(false)
 	owner.collision_layer = 0
 	owner.collision_mask = 0
@@ -38,6 +93,12 @@ func enter(msg: Dictionary = {}) -> void:
 		vcam = CamScene.instantiate()
 		vcam.set("target_path", NodePath(".."))
 		_vehicle.add_child(vcam)
+	# Pull camera back for boats so player and engine are visible
+	if is_boat:
+		vcam.set("min_distance", 8.0)
+		vcam.set("max_distance", 12.0)
+		vcam.set("min_height", 3.0)
+		vcam.set("max_height", 5.0)
 	vcam.make_active()
 
 	# Listen for forced ejection (vehicle destroyed, mission completion, etc.)
@@ -48,7 +109,6 @@ func enter(msg: Dictionary = {}) -> void:
 		EventBus.crime_committed.emit("vehicle_theft", 30)
 
 	# Skip lights and water detector for boats
-	var is_boat: bool = _vehicle.get_node_or_null("BoatController") != null
 	if not is_boat:
 		# Ensure vehicle has lights (starting vehicle doesn't get them from a spawner)
 		var body := _vehicle.get_node_or_null("Body")
@@ -89,6 +149,32 @@ func exit() -> void:
 		var boat_ctrl := _vehicle.get_node_or_null("BoatController")
 		if boat_ctrl:
 			boat_ctrl.active = false
+			# Re-enable walk animation and reset seated pose
+			var player_model: Node3D = owner.get_node_or_null("PlayerModel")
+			if player_model:
+				player_model.set_process(true)
+				for path in ["LeftHipPivot", "RightHipPivot"]:
+					var hip: Node3D = player_model.get_node_or_null(path)
+					if hip:
+						hip.rotation.x = 0.0
+				for path_k in [
+					"LeftHipPivot/LeftKneePivot",
+					"RightHipPivot/RightKneePivot",
+				]:
+					var knee: Node3D = player_model.get_node_or_null(path_k)
+					if knee:
+						knee.rotation.x = 0.0
+				var rs: Node3D = player_model.get_node_or_null(
+					"RightShoulderPivot"
+				)
+				if rs:
+					rs.rotation.x = 0.0
+					rs.rotation.y = 0.0
+				var re: Node3D = player_model.get_node_or_null(
+					"RightShoulderPivot/RightElbowPivot"
+				)
+				if re:
+					re.rotation.x = 0.0
 		var lights_node := _vehicle.get_node_or_null("Body/VehicleLights")
 		if lights_node:
 			lights_node.set_player_driving(false)
@@ -107,6 +193,33 @@ func physics_update(_delta: float) -> void:
 	# Keep player position synced so managers spawn entities near the vehicle
 	if _vehicle and is_instance_valid(_vehicle):
 		owner.global_position = (_vehicle as Node3D).global_position
+		# If in boat, position player at seat near engine and animate tiller
+		if _vehicle.get_node_or_null("BoatController"):
+			# Sit on port (left) side near engine so right arm reaches tiller
+			var sz: float = _vehicle.get_meta("stern_z", 2.5)
+			var seat_offset := Vector3(-0.4, 0.35, sz - 0.5)
+			owner.global_position = (
+				(_vehicle as Node3D).to_global(seat_offset)
+			)
+			# Player model faces +Z, boat forward is -Z — add PI to face bow
+			owner.global_rotation = Vector3(
+				0.0,
+				(_vehicle as Node3D).global_rotation.y + PI,
+				0.0,
+			)
+			# Animate right arm with steering (tiller control)
+			var steer: float = (
+				Input.get_action_strength("move_left")
+				- Input.get_action_strength("move_right")
+			)
+			var pm: Node3D = owner.get_node_or_null("PlayerModel")
+			if pm:
+				var rs: Node3D = pm.get_node_or_null(
+					"RightShoulderPivot"
+				)
+				if rs:
+					# Arm swings left/right with steering (inverted for PI flip)
+					rs.rotation.y = -steer * 0.4
 
 
 func handle_input(event: InputEvent) -> void:

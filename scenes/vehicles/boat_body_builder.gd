@@ -60,10 +60,16 @@ func build(variant: String) -> Dictionary:
 	var windshield := _build_windshield(data)
 	var col_size: Vector3 = data["collision_size"]
 
+	var engine := _build_engine(profiles)
+	# Stern Z for engine placement
+	var stern_z: float = float(profiles[profiles.size() - 1]["z"])
+
 	return {
 		"hull": hull,
 		"cabin": cabin,
 		"windshield": windshield,
+		"engine": engine,
+		"stern_z": stern_z,
 		"collision_size": col_size,
 	}
 
@@ -93,7 +99,7 @@ func _build_hull(profiles: Array) -> ArrayMesh:
 		ring.append(Vector3(hw, 0.0, z))
 		rings.append(ring)
 
-	# Loft between adjacent rings
+	# Loft between adjacent rings — exterior hull
 	for i in range(rings.size() - 1):
 		var ra: PackedVector3Array = rings[i]
 		var rb: PackedVector3Array = rings[i + 1]
@@ -105,15 +111,111 @@ func _build_hull(profiles: Array) -> ArrayMesh:
 		_add_loft_quad(st, ra[3], ra[4], rb[3], rb[4])
 		# Starboard bottom (starboard waterline -> keel)
 		_add_loft_quad(st, ra[4], ra[0], rb[4], rb[0])
-		# Deck (port gunwale -> starboard gunwale)
-		_add_loft_quad(st, ra[2], ra[3], rb[2], rb[3])
+		# Deck removed — hull is open-top (hollow)
 
-	# Bow cap
+	# Interior walls (reversed winding so faces point inward)
+	for i in range(rings.size() - 1):
+		var ra: PackedVector3Array = rings[i]
+		var rb: PackedVector3Array = rings[i + 1]
+		# Port interior (gunwale -> waterline, reversed)
+		_add_loft_quad(st, rb[2], ra[2], rb[1], ra[1])
+		# Starboard interior (gunwale -> waterline, reversed)
+		_add_loft_quad(st, ra[3], rb[3], ra[4], rb[4])
+
+	# Interior floor plane raised above waterline so boat doesn't look flooded
+	var floor_y := 0.12
+	for i in range(rings.size() - 1):
+		var pa: Dictionary = profiles[i]
+		var pb: Dictionary = profiles[i + 1]
+		var za: float = pa["z"]
+		var zb: float = pb["z"]
+		var fhw_a: float = float(pa["hw"]) * 0.85
+		var fhw_b: float = float(pb["hw"]) * 0.85
+		_add_quad(
+			st,
+			Vector3(-fhw_a, floor_y, za),
+			Vector3(fhw_a, floor_y, za),
+			Vector3(fhw_b, floor_y, zb),
+			Vector3(-fhw_b, floor_y, zb),
+		)
+
+	# Bow cap (exterior)
 	var bow: PackedVector3Array = rings[0]
 	_add_fan(st, bow)
-	# Stern cap (reversed winding)
+	# Stern cap (exterior)
 	var stern: PackedVector3Array = rings[rings.size() - 1]
 	_add_fan_reversed(st, stern)
+
+	# Interior stern wall (faces inward toward bow)
+	var s_hw: float = float(profiles[profiles.size() - 1]["hw"]) * 0.95
+	var s_fb: float = float(profiles[profiles.size() - 1]["fb"])
+	var s_z: float = float(profiles[profiles.size() - 1]["z"])
+	_add_quad(
+		st,
+		Vector3(s_hw, floor_y, s_z),
+		Vector3(-s_hw, floor_y, s_z),
+		Vector3(-s_hw, s_fb, s_z),
+		Vector3(s_hw, s_fb, s_z),
+	)
+	# Interior bow wall
+	var b_hw: float = float(profiles[0]["hw"]) * 0.95
+	var b_fb: float = float(profiles[0]["fb"])
+	var b_z: float = float(profiles[0]["z"])
+	_add_quad(
+		st,
+		Vector3(-b_hw, floor_y, b_z),
+		Vector3(b_hw, floor_y, b_z),
+		Vector3(b_hw, b_fb, b_z),
+		Vector3(-b_hw, b_fb, b_z),
+	)
+
+	# Seat bench near stern (close to engine tiller)
+	var last_z: float = float(profiles[profiles.size() - 1]["z"])
+	var seat_x: float = 0.40
+	var seat_z_front: float = last_z - 1.0
+	var seat_z_rear: float = last_z - 0.6
+	var seat_y_bottom: float = 0.05
+	var seat_y_top: float = 0.30
+	# Front face
+	_add_quad(
+		st,
+		Vector3(-seat_x, seat_y_bottom, seat_z_front),
+		Vector3(seat_x, seat_y_bottom, seat_z_front),
+		Vector3(seat_x, seat_y_top, seat_z_front),
+		Vector3(-seat_x, seat_y_top, seat_z_front),
+	)
+	# Rear face
+	_add_quad(
+		st,
+		Vector3(seat_x, seat_y_bottom, seat_z_rear),
+		Vector3(-seat_x, seat_y_bottom, seat_z_rear),
+		Vector3(-seat_x, seat_y_top, seat_z_rear),
+		Vector3(seat_x, seat_y_top, seat_z_rear),
+	)
+	# Left face
+	_add_quad(
+		st,
+		Vector3(-seat_x, seat_y_bottom, seat_z_rear),
+		Vector3(-seat_x, seat_y_bottom, seat_z_front),
+		Vector3(-seat_x, seat_y_top, seat_z_front),
+		Vector3(-seat_x, seat_y_top, seat_z_rear),
+	)
+	# Right face
+	_add_quad(
+		st,
+		Vector3(seat_x, seat_y_bottom, seat_z_front),
+		Vector3(seat_x, seat_y_bottom, seat_z_rear),
+		Vector3(seat_x, seat_y_top, seat_z_rear),
+		Vector3(seat_x, seat_y_top, seat_z_front),
+	)
+	# Top face
+	_add_quad(
+		st,
+		Vector3(-seat_x, seat_y_top, seat_z_front),
+		Vector3(seat_x, seat_y_top, seat_z_front),
+		Vector3(seat_x, seat_y_top, seat_z_rear),
+		Vector3(-seat_x, seat_y_top, seat_z_rear),
+	)
 
 	st.generate_normals()
 	return st.commit()
@@ -271,3 +373,98 @@ func _add_fan_reversed(st: SurfaceTool, ring: PackedVector3Array) -> void:
 		st.add_vertex(center)
 		st.add_vertex(ring[next])
 		st.add_vertex(ring[i])
+
+
+## Build outboard motor mesh: cowling (main body) + shaft + tiller handle.
+## Origin at mount point (stern transom, waterline height) so the engine
+## node can be rotated around Y for steering.
+func _build_engine(_profiles: Array) -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+
+	# Motor cowling (the big part that sits above waterline at stern)
+	var cw := 0.15  # half width
+	var cd := 0.12  # half depth
+	var ch := 0.35  # height
+	var cy := 0.0   # bottom at mount point
+	_add_box(st, Vector3(0.0, cy + ch * 0.5, 0.15), Vector3(cw * 2, ch, cd * 2))
+
+	# Shaft going down into water
+	var sw := 0.04
+	var sh := 0.5
+	_add_box(st, Vector3(0.0, -sh * 0.5, 0.15), Vector3(sw * 2, sh, sw * 2))
+
+	# Propeller housing at bottom of shaft
+	var pw := 0.08
+	var ph := 0.1
+	_add_box(st, Vector3(0.0, -sh - ph * 0.5, 0.15), Vector3(pw * 2, ph, pw * 2 + 0.04))
+
+	# Tiller handle extending forward (the part the player grabs)
+	var th := 0.03  # half height
+	var tl := 0.6   # length
+	_add_box(
+		st,
+		Vector3(0.0, cy + ch * 0.7, 0.15 - cd - tl * 0.5),
+		Vector3(th * 2, th * 2, tl),
+	)
+
+	st.generate_normals()
+	return st.commit()
+
+
+func _add_box(st: SurfaceTool, center: Vector3, size: Vector3) -> void:
+	var hx: float = size.x * 0.5
+	var hy: float = size.y * 0.5
+	var hz: float = size.z * 0.5
+	var cx: float = center.x
+	var cy: float = center.y
+	var cz: float = center.z
+	# 6 faces
+	# Front (-Z)
+	_add_quad(
+		st,
+		Vector3(cx - hx, cy - hy, cz - hz),
+		Vector3(cx + hx, cy - hy, cz - hz),
+		Vector3(cx + hx, cy + hy, cz - hz),
+		Vector3(cx - hx, cy + hy, cz - hz),
+	)
+	# Back (+Z)
+	_add_quad(
+		st,
+		Vector3(cx + hx, cy - hy, cz + hz),
+		Vector3(cx - hx, cy - hy, cz + hz),
+		Vector3(cx - hx, cy + hy, cz + hz),
+		Vector3(cx + hx, cy + hy, cz + hz),
+	)
+	# Left (-X)
+	_add_quad(
+		st,
+		Vector3(cx - hx, cy - hy, cz + hz),
+		Vector3(cx - hx, cy - hy, cz - hz),
+		Vector3(cx - hx, cy + hy, cz - hz),
+		Vector3(cx - hx, cy + hy, cz + hz),
+	)
+	# Right (+X)
+	_add_quad(
+		st,
+		Vector3(cx + hx, cy - hy, cz - hz),
+		Vector3(cx + hx, cy - hy, cz + hz),
+		Vector3(cx + hx, cy + hy, cz + hz),
+		Vector3(cx + hx, cy + hy, cz - hz),
+	)
+	# Top (+Y)
+	_add_quad(
+		st,
+		Vector3(cx - hx, cy + hy, cz - hz),
+		Vector3(cx + hx, cy + hy, cz - hz),
+		Vector3(cx + hx, cy + hy, cz + hz),
+		Vector3(cx - hx, cy + hy, cz + hz),
+	)
+	# Bottom (-Y)
+	_add_quad(
+		st,
+		Vector3(cx + hx, cy - hy, cz - hz),
+		Vector3(cx - hx, cy - hy, cz - hz),
+		Vector3(cx - hx, cy - hy, cz + hz),
+		Vector3(cx + hx, cy - hy, cz + hz),
+	)

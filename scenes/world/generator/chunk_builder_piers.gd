@@ -2,7 +2,7 @@ extends RefCounted
 ## Generates piers on coastal terrain tiles and spawns interactive boats.
 
 const SEA_LEVEL := -2.0
-const PIER_CHANCE := 0.25
+const PIER_CHANCE := 0.4
 const PIER_WIDTH := 3.0
 const PIER_LENGTH := 12.0
 const PIER_HEIGHT := 0.5  # above sea level
@@ -32,7 +32,8 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(tile) ^ 0xD13B
 
-	if rng.randf() > PIER_CHANCE:
+	var roll: float = rng.randf()
+	if roll > PIER_CHANCE:
 		return
 
 	# Find a coastal edge: sample along chunk edges to find shore
@@ -53,32 +54,37 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 
 
 func _find_shore_edge(ox: float, oz: float, hs: float) -> Dictionary:
-	# Sample 4 edges to find where terrain transitions above/below sea level
-	var edges := [
-		{"start": Vector2(ox - hs, oz), "end": Vector2(ox + hs, oz), "dir": Vector3(0, 0, -1)},
-		{"start": Vector2(ox - hs, oz), "end": Vector2(ox + hs, oz), "dir": Vector3(0, 0, 1)},
-		{"start": Vector2(ox, oz - hs), "end": Vector2(ox, oz + hs), "dir": Vector3(-1, 0, 0)},
-		{"start": Vector2(ox, oz - hs), "end": Vector2(ox, oz + hs), "dir": Vector3(1, 0, 0)},
+	# Scan a grid across the chunk to find shore: a point above sea level
+	# with water nearby in some direction. Check further out for water
+	# since the shore slope can be gradual.
+	var grid := 8
+	var step: float = (hs * 2.0) / float(grid)
+	var dirs: Array[Vector3] = [
+		Vector3(-1, 0, 0), Vector3(1, 0, 0),
+		Vector3(0, 0, -1), Vector3(0, 0, 1),
 	]
+	var check_dist: float = PIER_LENGTH * 3.0  # look further for water
 
-	# Sample points along chunk center lines
-	var samples := 8
-	for edge in edges:
-		for i in range(samples):
-			var t: float = float(i) / float(samples - 1)
-			var sx: float = lerpf(edge["start"].x, edge["end"].x, t)
-			var sz: float = lerpf(edge["start"].y, edge["end"].y, t)
+	for iz in range(grid + 1):
+		for ix in range(grid + 1):
+			var sx: float = ox - hs + float(ix) * step
+			var sz: float = oz - hs + float(iz) * step
 
 			var h: float = _boundary.get_ground_height(sx, sz)
-			if h > SEA_LEVEL and h < SEA_LEVEL + 3.0:
-				# Check that water is nearby in the pier direction
-				var water_x: float = sx + edge["dir"].x * PIER_LENGTH
-				var water_z: float = sz + edge["dir"].z * PIER_LENGTH
-				var water_h: float = _boundary.get_ground_height(water_x, water_z)
+			if h <= SEA_LEVEL or h > SEA_LEVEL + 30.0:
+				continue
+
+			# Found land — check each direction for water
+			for d: Vector3 in dirs:
+				var water_x: float = sx + d.x * check_dist
+				var water_z: float = sz + d.z * check_dist
+				var water_h: float = _boundary.get_ground_height(
+					water_x, water_z,
+				)
 				if water_h < SEA_LEVEL:
 					return {
 						"position": Vector3(sx, h, sz),
-						"direction": edge["dir"] as Vector3,
+						"direction": d,
 					}
 
 	return {}
@@ -248,9 +254,9 @@ func _build_boat_node(
 	boat.collision_mask = 7    # ground + static + player
 	boat.position = pos
 
-	# Face perpendicular to pier
+	# Bow faces toward water (forward = -Z, so rotate so -Z aligns with facing)
 	if facing.length() > 0.1:
-		boat.rotation.y = atan2(facing.x, facing.z)
+		boat.rotation.y = atan2(-facing.x, -facing.z)
 
 	# Collision shape
 	var col := CollisionShape3D.new()
@@ -278,6 +284,23 @@ func _build_boat_node(
 	windshield.name = "Windshield"
 	body.add_child(windshield)
 	boat.add_child(body)
+
+	# Outboard engine — rotatable pivot at stern
+	var stern_z: float = mesh_data.get("stern_z", 2.5)
+	boat.set_meta("stern_z", stern_z)
+	var engine_pivot := Node3D.new()
+	engine_pivot.name = "EnginePivot"
+	engine_pivot.position = Vector3(0.0, 0.0, stern_z)
+	var engine_mesh := MeshInstance3D.new()
+	engine_mesh.name = "EngineMesh"
+	engine_mesh.mesh = mesh_data.get("engine")
+	var engine_mat := StandardMaterial3D.new()
+	engine_mat.albedo_color = Color(0.2, 0.2, 0.2)  # dark grey metal
+	engine_mat.metallic = 0.6
+	engine_mat.roughness = 0.4
+	engine_mesh.material_override = engine_mat
+	engine_pivot.add_child(engine_mesh)
+	boat.add_child(engine_pivot)
 
 	# Boat controller
 	var BoatCtrlScript: GDScript = preload(
