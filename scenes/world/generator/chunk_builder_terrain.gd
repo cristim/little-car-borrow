@@ -10,7 +10,6 @@ var _noise: FastNoiseLite
 var _grid: RefCounted
 var _terrain_mat: StandardMaterial3D
 var _boundary: RefCounted
-var _boat_mat: StandardMaterial3D
 
 # Color palette for height-based vertex coloring
 var _color_water := Color(0.15, 0.35, 0.65)
@@ -33,7 +32,7 @@ func init(
 
 
 func build(
-	chunk: Node3D, tile: Vector2i, ox: float, oz: float,
+	chunk: Node3D, _tile: Vector2i, ox: float, oz: float,
 	tile_data: Dictionary = {},
 	river_data: Dictionary = {},
 ) -> Dictionary:
@@ -164,7 +163,6 @@ func build(
 	# Sea plane if any part of chunk is below sea level
 	if min_height < SEA_LEVEL:
 		_build_sea_plane(chunk, ox, oz, span)
-		_build_boats(chunk, tile, ox, oz, span)
 
 	# Store minimap summary data on the chunk node
 	chunk.set_meta("terrain_min_height", min_height)
@@ -293,47 +291,6 @@ func _build_sea_plane(
 	mesh_inst.mesh = mesh
 	mesh_inst.material_override = mat
 	chunk.add_child(mesh_inst)
-
-
-func _build_boats(
-	chunk: Node3D, tile: Vector2i,
-	ox: float, oz: float, span: float,
-) -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash(tile) ^ 0xF15F
-
-	var count := rng.randi_range(0, 3)
-	if count == 0:
-		return
-
-	if not _boat_mat:
-		_boat_mat = StandardMaterial3D.new()
-		_boat_mat.albedo_color = Color(0.45, 0.30, 0.15)
-
-	for _i in range(count):
-		var bx: float = ox + rng.randf_range(
-			-span * 0.4, span * 0.4
-		)
-		var bz: float = oz + rng.randf_range(
-			-span * 0.4, span * 0.4
-		)
-		var h: float = _sample_height(bx, bz)
-		if h >= SEA_LEVEL:
-			continue
-
-		var boat := MeshInstance3D.new()
-		boat.name = "Boat"
-		var box := BoxMesh.new()
-		box.size = Vector3(
-			rng.randf_range(2.0, 4.0),
-			0.6,
-			rng.randf_range(4.0, 8.0),
-		)
-		boat.mesh = box
-		boat.material_override = _boat_mat
-		boat.position = Vector3(bx, SEA_LEVEL + 0.1, bz)
-		boat.rotation.y = rng.randf() * TAU
-		chunk.add_child(boat)
 
 
 ## Extract edge height arrays from tile_data edges.

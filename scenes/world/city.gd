@@ -85,6 +85,9 @@ var _river_builder = preload(
 var _bridge_builder = preload(
 	"res://scenes/world/generator/chunk_builder_bridge.gd"
 ).new()
+var _pier_builder = preload(
+	"res://scenes/world/generator/chunk_builder_piers.gd"
+).new()
 
 var _chunks: Dictionary = {}
 var _update_timer := 0.0
@@ -402,6 +405,10 @@ func _build_terrain_biome(
 		_river_builder.build(chunk, tile, ox, oz, river_data)
 		_bridge_builder.build(chunk, tile, ox, oz, river_data)
 
+	# Piers on coastal terrain tiles (non-ocean with water)
+	if biome != "ocean" and chunk.get_meta("has_water", false):
+		_pier_builder.build(chunk, tile, ox, oz)
+
 	match biome:
 		"village":
 			_village_builder.build(chunk, tile, ox, oz)
@@ -665,6 +672,7 @@ func _init_builders() -> void:
 	set_meta("river_map", _river_map)
 	_river_builder.init(_grid, _boundary)
 	_bridge_builder.init(_grid, _boundary, _road_mat)
+	_pier_builder.init(_grid, _boundary)
 	_tile_resolver.init(
 		_tile_cache, _biome_map, _grid, _boundary, _river_map,
 	)
