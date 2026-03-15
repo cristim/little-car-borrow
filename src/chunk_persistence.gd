@@ -30,15 +30,16 @@ func load_tile(tile: Vector2i) -> Dictionary:
 		return {}
 	var bytes: PackedByteArray = file.get_buffer(file.get_length())
 	var result: Variant = bytes_to_var(bytes)
-	if result is Dictionary:
+	if result is Dictionary and (result as Dictionary).has("biome"):
 		return result
-	# Corrupted file — delete and return empty
+	# Corrupted or incomplete file — delete and return empty
 	DirAccess.remove_absolute(path)
 	return {}
 
 
-## Delete tile data from disk.
+## Delete tile data from disk and pending writes.
 func delete_tile(tile: Vector2i) -> void:
+	_dirty.erase(tile)
 	var path: String = _tile_path(tile)
 	if FileAccess.file_exists(path):
 		DirAccess.remove_absolute(path)

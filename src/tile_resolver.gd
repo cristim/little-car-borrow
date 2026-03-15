@@ -29,10 +29,13 @@ func init(
 ## Reads neighbor edges from cache, computes biome, builds edge profiles.
 ## Stores result in cache and returns it.
 func resolve(tile: Vector2i) -> Dictionary:
-	# Return cached if already resolved
+	# Return cached if already resolved and valid
 	var existing: Dictionary = _cache.get_tile_data(tile)
-	if not existing.is_empty():
+	if not existing.is_empty() and existing.has("biome"):
 		return existing
+	# Corrupted or incomplete cache entry — clear and recompute
+	if not existing.is_empty():
+		_cache.clear_tile(tile)
 
 	var biome: String = _biome_map.get_biome(tile)
 	biome = _adjust_biome_for_neighbors(tile, biome)
