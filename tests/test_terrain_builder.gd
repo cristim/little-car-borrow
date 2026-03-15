@@ -271,12 +271,12 @@ func test_west_depression_gradual() -> void:
 	)
 
 
-func test_west_ocean_reachable_within_two_chunks() -> void:
+func test_west_ocean_reachable_within_four_chunks() -> void:
 	var span: float = _grid.get_grid_span()
 	var city_edge: float = _boundary.get_boundary_radius_at_angle(PI)
 	var found_ocean := false
 	var step: float = span * 0.25
-	var limit: float = span * 2.0
+	var limit: float = span * 4.0
 	var d: float = 0.0
 	while d <= limit:
 		var wx: float = -city_edge - d
@@ -287,7 +287,7 @@ func test_west_ocean_reachable_within_two_chunks() -> void:
 		d += step
 	assert_true(
 		found_ocean,
-		"Ocean (h < -2.0) should be reachable within 2 chunks west of city edge",
+		"Ocean (h < -2.0) should be reachable within 4 chunks west of city edge",
 	)
 
 

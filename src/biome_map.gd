@@ -5,8 +5,8 @@ extends RefCounted
 const TileProfile = preload("res://src/tile_profile.gd")
 
 const CITY_CENTER_RATIO := 0.6  # inner 60% of boundary radius = city_center
-const SUBURB_RANGE := 2  # tiles outside boundary that count as suburb
-const OCEAN_WEST_THRESHOLD := -1.5  # grid_span multiplier for ocean start
+const SUBURB_RANGE := 1  # tiles outside boundary that count as suburb
+const OCEAN_WEST_THRESHOLD := -2.5  # grid_span multiplier for ocean start
 
 var _grid_span: float
 var _terrain_noise: FastNoiseLite

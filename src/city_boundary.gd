@@ -82,9 +82,21 @@ func get_ground_height(wx: float, wz: float) -> float:
 	var max_h: float = lerpf(20.0, 80.0, fade)
 	var h: float = n * max_h - 6.0
 
-	# West ocean: terrain descends below sea level westward
-	var west_t: float = clampf(-wx / (_grid_span * 1.5), 0.0, 1.0)
-	h -= west_t * west_t * 30.0
+	# West ocean: terrain descends below sea level westward.
+	# Shore slope starts ~2.5 tiles west (just past suburb ring at ~2.26),
+	# fully submerged by ~3.5 tiles. 100m depression overwhelms terrain noise.
+	var shore_start: float = _grid_span * 2.5
+	var shore_end: float = _grid_span * 3.5
+	var in_ocean := -wx > shore_start
+	if in_ocean:
+		var shore_t: float = clampf(
+			(-wx - shore_start) / (shore_end - shore_start), 0.0, 1.0,
+		)
+		h -= shore_t * shore_t * 100.0
+
+	# Non-ocean terrain stays above sea level (no scattered ponds)
+	if not in_ocean:
+		h = maxf(h, -2.0)
 
 	# Negative heights allowed for beach slopes and underwater seabed.
 	var blend_range: float = _grid_span * 2.0
