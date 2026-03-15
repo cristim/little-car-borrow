@@ -11,7 +11,7 @@ const SURFACE_OFFSET := 0.3  # how far above SEA_LEVEL to float (capsule center)
 func enter(_msg: Dictionary = {}) -> void:
 	owner.is_swimming = true
 	EventBus.player_entered_water.emit()
-	EventBus.hide_interaction_prompt.emit()
+	_update_prompt()
 
 
 func exit() -> void:
@@ -78,6 +78,22 @@ func _get_ground_height(pos: Vector3) -> float:
 	if not boundary:
 		return 0.0
 	return boundary.get_ground_height(pos.x, pos.z)
+
+
+func handle_input(event: InputEvent) -> void:
+	# Allow boarding boats from water (not cars)
+	if event.is_action_pressed("interact") and owner.nearest_vehicle:
+		if owner.nearest_vehicle.get_node_or_null("BoatController"):
+			state_machine.transition_to(
+				"EnteringVehicle", {"vehicle": owner.nearest_vehicle}
+			)
+
+
+func _update_prompt() -> void:
+	if owner.nearest_vehicle and owner.nearest_vehicle.get_node_or_null("BoatController"):
+		EventBus.show_interaction_prompt.emit("Hold F to board")
+	else:
+		EventBus.hide_interaction_prompt.emit()
 
 
 func _is_over_water(pos: Vector3) -> bool:

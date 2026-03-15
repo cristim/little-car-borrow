@@ -30,9 +30,13 @@ func _on_interaction_area_entered(area: Area3D) -> void:
 	if area.is_in_group("vehicle_interaction"):
 		nearest_vehicle = area.get_parent()
 		var sm := $StateMachine
-		var foot_states := ["idle", "walking", "running"]
+		var foot_states := ["idle", "walking", "running", "swimming"]
 		if sm.current_state and sm.current_state.name.to_lower() in foot_states:
-			EventBus.show_interaction_prompt.emit("Hold F to steal")
+			var is_boat: bool = nearest_vehicle.get_node_or_null(
+				"BoatController"
+			) != null
+			var prompt := "Hold F to board" if is_boat else "Hold F to steal"
+			EventBus.show_interaction_prompt.emit(prompt)
 
 
 func _on_interaction_area_exited(area: Area3D) -> void:

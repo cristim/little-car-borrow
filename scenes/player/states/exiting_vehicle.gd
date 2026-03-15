@@ -32,10 +32,13 @@ func enter(msg: Dictionary = {}) -> void:
 
 	player.velocity = Vector3.ZERO
 
-	# Deactivate vehicle controller
+	# Deactivate vehicle controller (car or boat)
 	var vc := vehicle.get_node_or_null("VehicleController")
 	if vc:
 		vc.active = false
+	var bc := vehicle.get_node_or_null("BoatController")
+	if bc:
+		bc.active = false
 
 	# Switch back to foot context and player camera
 	InputManager.set_context(InputManager.Context.FOOT)

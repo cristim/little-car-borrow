@@ -28,6 +28,10 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	if not _target:
+		if target_path and is_inside_tree():
+			_target = get_node_or_null(target_path)
+			if _target:
+				global_position = _target.global_position
 		return
 
 	var target_vel := Vector3.ZERO

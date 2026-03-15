@@ -14,6 +14,9 @@ var _vehicle: Node = null
 
 func _ready() -> void:
 	_vehicle = get_parent()
+	# Boats float — disable sinking behavior
+	if _vehicle and _vehicle.get_node_or_null("BoatController"):
+		set_physics_process(false)
 
 
 func _physics_process(delta: float) -> void:

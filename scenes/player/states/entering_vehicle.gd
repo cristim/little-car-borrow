@@ -18,6 +18,12 @@ func enter(msg: Dictionary = {}) -> void:
 	var player := owner as CharacterBody3D
 	player.velocity = Vector3.ZERO
 
+	# Boats: instant board (no steal timer, no door animation)
+	if _vehicle.get_node_or_null("BoatController"):
+		_timer = STEAL_DURATION
+		EventBus.hide_interaction_prompt.emit()
+		return
+
 	_progress_bar = owner.get_node_or_null("PlayerUI/StealProgressBar")
 	if _progress_bar:
 		_progress_bar.show_progress()

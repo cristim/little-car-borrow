@@ -52,7 +52,11 @@ func _get_camera_relative_direction(input: Vector2) -> Vector3:
 
 func _update_prompt() -> void:
 	if owner.nearest_vehicle:
-		EventBus.show_interaction_prompt.emit("Hold F to steal")
+		var is_boat: bool = owner.nearest_vehicle.get_node_or_null(
+			"BoatController"
+		) != null
+		var prompt := "Hold F to board" if is_boat else "Hold F to steal"
+		EventBus.show_interaction_prompt.emit(prompt)
 	else:
 		EventBus.hide_interaction_prompt.emit()
 
