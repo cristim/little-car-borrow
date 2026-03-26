@@ -1,4 +1,5 @@
 extends GutTest
+# gdlint: ignore=max-public-methods
 ## Unit tests for chunk_builder_terrain.gd height sampling, vertex coloring,
 ## and sea plane generation.
 
@@ -307,3 +308,369 @@ func test_build_deterministic() -> void:
 	var min1: float = chunk1.get_meta("terrain_min_height")
 	var min2: float = chunk2.get_meta("terrain_min_height")
 	assert_eq(min1, min2, "Same tile should produce same min height")
+
+
+# ================================================================
+# _extract_edge_heights
+# ================================================================
+
+func test_extract_edge_heights_returns_four_directions() -> void:
+	var s: int = TerrainScript.SUBDIVISIONS + 1
+	var heights: Array[float] = []
+	heights.resize(s * s)
+	for i in range(s * s):
+		heights[i] = float(i) * 0.1
+
+	var result: Dictionary = _builder._extract_edge_heights(heights)
+	assert_true(result.has(0), "Should have NORTH edge (0)")
+	assert_true(result.has(1), "Should have EAST edge (1)")
+	assert_true(result.has(2), "Should have SOUTH edge (2)")
+	assert_true(result.has(3), "Should have WEST edge (3)")
+
+
+func test_extract_edge_heights_correct_size() -> void:
+	var s: int = TerrainScript.SUBDIVISIONS + 1
+	var heights: Array[float] = []
+	heights.resize(s * s)
+	for i in range(s * s):
+		heights[i] = 0.0
+
+	var result: Dictionary = _builder._extract_edge_heights(heights)
+	var north: PackedFloat32Array = result[0]
+	assert_eq(north.size(), s, "Edge array size should be SUBDIVISIONS+1")
+
+
+func test_extract_edge_heights_north_row() -> void:
+	var s: int = TerrainScript.SUBDIVISIONS + 1
+	var heights: Array[float] = []
+	heights.resize(s * s)
+	for i in range(s * s):
+		heights[i] = 0.0
+	# Set first row to distinct values
+	for ix in range(s):
+		heights[ix] = float(ix) + 1.0
+
+	var result: Dictionary = _builder._extract_edge_heights(heights)
+	var north: PackedFloat32Array = result[0]
+	for ix in range(s):
+		assert_eq(
+			north[ix], float(ix) + 1.0,
+			"North edge ix=%d should match first row" % ix,
+		)
+
+
+func test_extract_edge_heights_south_row() -> void:
+	var s: int = TerrainScript.SUBDIVISIONS + 1
+	var heights: Array[float] = []
+	heights.resize(s * s)
+	for i in range(s * s):
+		heights[i] = 0.0
+	# Set last row
+	for ix in range(s):
+		heights[TerrainScript.SUBDIVISIONS * s + ix] = 99.0
+
+	var result: Dictionary = _builder._extract_edge_heights(heights)
+	var south: PackedFloat32Array = result[2]
+	assert_eq(south[0], 99.0, "South edge should match last row")
+
+
+func test_extract_edge_heights_west_column() -> void:
+	var s: int = TerrainScript.SUBDIVISIONS + 1
+	var heights: Array[float] = []
+	heights.resize(s * s)
+	for i in range(s * s):
+		heights[i] = 0.0
+	# Set first column
+	for iz in range(s):
+		heights[iz * s] = float(iz) * 2.0
+
+	var result: Dictionary = _builder._extract_edge_heights(heights)
+	var west: PackedFloat32Array = result[3]
+	for iz in range(s):
+		assert_eq(
+			west[iz], float(iz) * 2.0,
+			"West edge iz=%d should match first column" % iz,
+		)
+
+
+func test_extract_edge_heights_east_column() -> void:
+	var s: int = TerrainScript.SUBDIVISIONS + 1
+	var heights: Array[float] = []
+	heights.resize(s * s)
+	for i in range(s * s):
+		heights[i] = 0.0
+	for iz in range(s):
+		heights[iz * s + TerrainScript.SUBDIVISIONS] = 42.0
+
+	var result: Dictionary = _builder._extract_edge_heights(heights)
+	var east: PackedFloat32Array = result[1]
+	assert_eq(east[0], 42.0, "East edge should match last column")
+
+
+# ================================================================
+# _parse_edge_heights
+# ================================================================
+
+func test_parse_edge_heights_empty_returns_empty() -> void:
+	var result: Dictionary = _builder._parse_edge_heights({})
+	assert_eq(result.size(), 0, "Empty tile_data should produce empty edges")
+
+
+func test_parse_edge_heights_extracts_heights() -> void:
+	var heights := PackedFloat32Array([1.0, 2.0, 3.0])
+	var tile_data := {
+		"edges": {
+			0: {"heights": heights},
+		},
+	}
+	var result: Dictionary = _builder._parse_edge_heights(tile_data)
+	assert_true(result.has(0), "Should extract direction 0")
+	var arr: PackedFloat32Array = result[0]
+	assert_eq(arr.size(), 3)
+	assert_eq(arr[0], 1.0)
+
+
+func test_parse_edge_heights_skips_empty_arrays() -> void:
+	var tile_data := {
+		"edges": {
+			0: {"heights": PackedFloat32Array()},
+		},
+	}
+	var result: Dictionary = _builder._parse_edge_heights(tile_data)
+	assert_false(
+		result.has(0),
+		"Empty height array should be skipped",
+	)
+
+
+# ================================================================
+# _sample_edge_array
+# ================================================================
+
+func test_sample_edge_array_first_index() -> void:
+	var arr := PackedFloat32Array([10.0, 20.0, 30.0])
+	var result: float = _builder._sample_edge_array(arr, 0)
+	assert_eq(result, 10.0, "Index 0 should return first element")
+
+
+func test_sample_edge_array_last_index() -> void:
+	var arr := PackedFloat32Array([10.0, 20.0, 30.0])
+	var result: float = _builder._sample_edge_array(
+		arr, TerrainScript.SUBDIVISIONS,
+	)
+	assert_eq(result, 30.0, "Last index should return last element")
+
+
+func test_sample_edge_array_mid_interpolates() -> void:
+	var arr := PackedFloat32Array([0.0, 100.0])
+	var mid_idx: int = TerrainScript.SUBDIVISIONS / 2
+	var result: float = _builder._sample_edge_array(arr, mid_idx)
+	# t = mid_idx / SUBDIVISIONS, interpolated between 0 and 100
+	var expected: float = (float(mid_idx) / float(TerrainScript.SUBDIVISIONS)) * 100.0
+	assert_almost_eq(
+		result, expected, 0.1,
+		"Mid-index should interpolate between edges",
+	)
+
+
+# ================================================================
+# _apply_edge_constraints
+# ================================================================
+
+func test_apply_edge_constraints_empty_returns_original() -> void:
+	var result: float = _builder._apply_edge_constraints(
+		5.0, 8, 8, {},
+	)
+	assert_eq(
+		result, 5.0,
+		"Empty constraints should return original height",
+	)
+
+
+func test_apply_edge_constraints_north_at_edge() -> void:
+	var edge_heights := {
+		0: PackedFloat32Array([10.0, 10.0, 10.0]),
+	}
+	# iz=0, at the north edge — should snap to edge height
+	var result: float = _builder._apply_edge_constraints(
+		0.0, 0, 0, edge_heights,
+	)
+	assert_eq(
+		result, 10.0,
+		"At north edge (iz=0), should snap to edge height",
+	)
+
+
+func test_apply_edge_constraints_beyond_blend_unaffected() -> void:
+	var edge_heights := {
+		0: PackedFloat32Array([10.0, 10.0, 10.0]),
+	}
+	# iz > BLEND_CELLS, should be unaffected by north constraint
+	var iz: int = TerrainScript.BLEND_CELLS + 1
+	var result: float = _builder._apply_edge_constraints(
+		5.0, 0, iz, edge_heights,
+	)
+	assert_eq(
+		result, 5.0,
+		"Beyond blend range, height should be unchanged",
+	)
+
+
+# ================================================================
+# _apply_river_carving
+# ================================================================
+
+func test_river_carving_far_from_river_unchanged() -> void:
+	var entry := Vector3(0.0, 0.0, 0.0)
+	var exit_pt := Vector3(100.0, 0.0, 0.0)
+	var result: float = _builder._apply_river_carving(
+		10.0, 0.0, 50.0, entry, exit_pt, 6.0,
+	)
+	# Point at (0, 50) is 50m from river axis — well outside width+3
+	assert_eq(
+		result, 10.0,
+		"Point far from river should not be carved",
+	)
+
+
+func test_river_carving_inside_channel_depressed() -> void:
+	var entry := Vector3(0.0, 0.0, 50.0)
+	var exit_pt := Vector3(100.0, 0.0, 50.0)
+	# Point directly on river axis
+	var result: float = _builder._apply_river_carving(
+		10.0, 50.0, 50.0, entry, exit_pt, 6.0,
+	)
+	assert_eq(
+		result, 8.0,
+		"Point inside river channel should be depressed by 2.0",
+	)
+
+
+func test_river_carving_bank_slope_blends() -> void:
+	var entry := Vector3(0.0, 0.0, 50.0)
+	var exit_pt := Vector3(100.0, 0.0, 50.0)
+	# Point at half_width + 1.5 from axis (bank zone)
+	var half_w := 3.0
+	var dist_from_axis := half_w + 1.5  # middle of bank
+	var result: float = _builder._apply_river_carving(
+		10.0, 50.0, 50.0 + dist_from_axis,
+		entry, exit_pt, 6.0,
+	)
+	# bank_t = 1.5 / 3.0 = 0.5
+	# lerp(8.0, 10.0, 0.5) = 9.0
+	assert_almost_eq(
+		result, 9.0, 0.01,
+		"Bank should blend between carved and original height",
+	)
+
+
+func test_river_carving_zero_length_river_unchanged() -> void:
+	var entry := Vector3(50.0, 0.0, 50.0)
+	var exit_pt := Vector3(50.0, 0.0, 50.0)  # same point
+	var result: float = _builder._apply_river_carving(
+		10.0, 50.0, 50.0, entry, exit_pt, 6.0,
+	)
+	assert_eq(
+		result, 10.0,
+		"Zero-length river should not carve",
+	)
+
+
+# ================================================================
+# _river_edge_point
+# ================================================================
+
+func test_river_edge_point_north() -> void:
+	var p: Vector3 = _builder._river_edge_point(0.0, 0.0, 50.0, 0, 0.5)
+	assert_eq(p, Vector3(0.0, 0.0, -50.0))
+
+
+func test_river_edge_point_east() -> void:
+	var p: Vector3 = _builder._river_edge_point(0.0, 0.0, 50.0, 1, 0.5)
+	assert_eq(p, Vector3(50.0, 0.0, 0.0))
+
+
+func test_river_edge_point_south() -> void:
+	var p: Vector3 = _builder._river_edge_point(0.0, 0.0, 50.0, 2, 0.5)
+	assert_eq(p, Vector3(0.0, 0.0, 50.0))
+
+
+func test_river_edge_point_west() -> void:
+	var p: Vector3 = _builder._river_edge_point(0.0, 0.0, 50.0, 3, 0.5)
+	assert_eq(p, Vector3(-50.0, 0.0, 0.0))
+
+
+func test_river_edge_point_offset_position() -> void:
+	# pos=0.75 should offset from center
+	var p: Vector3 = _builder._river_edge_point(0.0, 0.0, 50.0, 0, 0.75)
+	# offset = (0.75 - 0.5) * 50 * 2 = 25
+	assert_eq(p, Vector3(25.0, 0.0, -50.0))
+
+
+func test_river_edge_point_invalid_dir_returns_center() -> void:
+	var p: Vector3 = _builder._river_edge_point(10.0, 20.0, 50.0, 99, 0.5)
+	assert_eq(p, Vector3(10.0, 0.0, 20.0))
+
+
+# ================================================================
+# _height_to_color edge cases
+# ================================================================
+
+func test_color_deep_water() -> void:
+	# Far below sea level should be darker blue
+	var c: Color = _builder._height_to_color(-10.0)
+	assert_true(c.b > 0.3, "Deep water should still be bluish")
+	assert_true(c.r < 0.2, "Deep water should have low red")
+
+
+func test_color_at_sea_level_boundary() -> void:
+	# Exactly at SEA_LEVEL boundary
+	var c: Color = _builder._height_to_color(-2.0)
+	# h < 0 but >= SEA_LEVEL: beach zone
+	assert_true(
+		c.r > 0.2,
+		"At sea level boundary should be in beach zone",
+	)
+
+
+func test_color_rock_at_35() -> void:
+	# Between 30 and 50 should be rock-snow transition
+	var c: Color = _builder._height_to_color(35.0)
+	assert_true(c.r > 0.3, "Should have rock color component")
+
+
+# ================================================================
+# Build with edge constraints
+# ================================================================
+
+func test_build_with_edge_heights_returns_edges() -> void:
+	var chunk := Node3D.new()
+	add_child_autofree(chunk)
+	var span: float = _grid.get_grid_span()
+	var result: Dictionary = _builder.build(
+		chunk, Vector2i(5, 0), 5.0 * span, 0.0,
+	)
+	assert_true(result.has(0), "Build should return north edge heights")
+	assert_true(result.has(1), "Build should return east edge heights")
+	assert_true(result.has(2), "Build should return south edge heights")
+	assert_true(result.has(3), "Build should return west edge heights")
+
+
+func test_build_with_river_data() -> void:
+	var chunk := Node3D.new()
+	add_child_autofree(chunk)
+	var span: float = _grid.get_grid_span()
+	var river_data := {
+		"entry_dir": 0,
+		"exit_dir": 2,
+		"position": 0.5,
+		"width": 6.0,
+	}
+	# Should not crash
+	_builder.build(
+		chunk, Vector2i(5, 0), 5.0 * span, 0.0, {}, river_data,
+	)
+	assert_true(
+		chunk.has_meta("terrain_min_height"),
+		"Build with river data should still set metadata",
+	)

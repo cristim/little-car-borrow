@@ -105,3 +105,48 @@ func test_escape_force_renormalizes_after_flattening() -> void:
 		src.contains("back_dir = back_dir.normalized()"),
 		"Escape force should re-normalize after zeroing Y",
 	)
+
+
+# ==========================================================================
+# deactivate() — functional test
+# ==========================================================================
+
+func test_deactivate_sets_active_false() -> void:
+	var ai := _npc_script.new()
+	add_child_autofree(ai)
+	ai.active = true
+	ai.deactivate()
+	assert_false(ai.active, "deactivate should set active to false")
+
+
+func test_deactivate_without_vehicle_does_not_crash() -> void:
+	var ai := _npc_script.new()
+	add_child_autofree(ai)
+	ai.active = true
+	ai._vehicle = null
+	ai.deactivate()
+	assert_false(ai.active, "Should handle null _vehicle gracefully")
+
+
+func test_deactivate_source_applies_brakes() -> void:
+	var src: String = _npc_script.source_code
+	assert_true(
+		src.contains("brake_input = 1.0"),
+		"deactivate should apply full brakes",
+	)
+	assert_true(
+		src.contains("handbrake_input = 1.0"),
+		"deactivate should apply full handbrake",
+	)
+
+
+func test_deactivate_source_zeroes_steering_and_throttle() -> void:
+	var src: String = _npc_script.source_code
+	assert_true(
+		src.contains("steering_input = 0.0"),
+		"deactivate should zero steering",
+	)
+	assert_true(
+		src.contains("throttle_input = 0.0"),
+		"deactivate should zero throttle",
+	)

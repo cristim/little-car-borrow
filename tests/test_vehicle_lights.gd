@@ -89,3 +89,85 @@ func test_no_shadows_enabled() -> void:
 		assert_false(tl.shadow_enabled, "Taillight shadows should be off")
 	for rl in lights._reverse_lights:
 		assert_false(rl.shadow_enabled, "Reverse light shadows should be off")
+
+
+# ---------------------------------------------------------------------------
+# initialize()
+# ---------------------------------------------------------------------------
+
+func test_initialize_sets_vehicle_ref() -> void:
+	var lights: Node3D = VehicleLightsScript.new()
+	add_child_autofree(lights)
+	var rb := RigidBody3D.new()
+	add_child_autofree(rb)
+	lights.initialize(rb)
+	assert_eq(lights._vehicle, rb, "initialize should store the vehicle reference")
+
+
+func test_initialize_accepts_null() -> void:
+	var lights: Node3D = VehicleLightsScript.new()
+	add_child_autofree(lights)
+	lights.initialize(null)
+	assert_null(lights._vehicle)
+
+
+# ---------------------------------------------------------------------------
+# set_player_driving()
+# ---------------------------------------------------------------------------
+
+func test_set_player_driving_true() -> void:
+	var lights: Node3D = VehicleLightsScript.new()
+	add_child_autofree(lights)
+	lights.set_player_driving(true)
+	assert_true(lights._player_driving, "Should set _player_driving to true")
+
+
+func test_set_player_driving_false_resets_manual_states() -> void:
+	var lights: Node3D = VehicleLightsScript.new()
+	add_child_autofree(lights)
+	lights._manual_on = true
+	lights._manual_off = true
+	lights.set_player_driving(false)
+	assert_false(lights._player_driving)
+	assert_false(lights._manual_on, "manual_on should be reset when not driving")
+	assert_false(lights._manual_off, "manual_off should be reset when not driving")
+
+
+# ---------------------------------------------------------------------------
+# toggle_lights()
+# ---------------------------------------------------------------------------
+
+func test_toggle_lights_during_day_turns_on() -> void:
+	var lights: Node3D = VehicleLightsScript.new()
+	add_child_autofree(lights)
+	lights._is_night = false
+	lights.toggle_lights()
+	assert_true(lights._manual_on, "Should toggle manual_on during day")
+	assert_false(lights._manual_off)
+
+
+func test_toggle_lights_during_day_toggles_off() -> void:
+	var lights: Node3D = VehicleLightsScript.new()
+	add_child_autofree(lights)
+	lights._is_night = false
+	lights.toggle_lights()
+	lights.toggle_lights()
+	assert_false(lights._manual_on, "Second toggle should turn off")
+
+
+func test_toggle_lights_during_night_turns_off() -> void:
+	var lights: Node3D = VehicleLightsScript.new()
+	add_child_autofree(lights)
+	lights._set_night_mode(true)
+	lights.toggle_lights()
+	assert_true(lights._manual_off, "Should toggle manual_off during night")
+	assert_false(lights._manual_on)
+
+
+func test_toggle_lights_during_night_toggles_back_on() -> void:
+	var lights: Node3D = VehicleLightsScript.new()
+	add_child_autofree(lights)
+	lights._set_night_mode(true)
+	lights.toggle_lights()
+	lights.toggle_lights()
+	assert_false(lights._manual_off, "Second toggle should re-enable lights")
