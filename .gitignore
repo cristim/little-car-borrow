@@ -26,7 +26,6 @@ export/
 .claude-flow/
 .swarm/
 .mcp.json
-CLAUDE.md
 
 # Project docs (local planning)
 .project-docs/plans/
