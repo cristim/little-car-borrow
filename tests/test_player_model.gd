@@ -1,0 +1,459 @@
+extends GutTest
+## Tests for player_model.gd — methods not covered by animation/run/swim tests.
+## Focuses on: _stroke_shape, _apply_arm_stroke, _is_armed, _is_flashlight_on,
+## _get_gun_elbow_angle, _aim_gun_arm, _aim_flashlight_arm, and edge cases.
+
+const PlayerModelScript = preload("res://scenes/player/player_model.gd")
+
+
+class SwimParent:
+	extends CharacterBody3D
+	var is_swimming := false
+
+
+var _model: Node3D
+var _parent: SwimParent
+var _ls: Node3D
+var _rs: Node3D
+var _lh: Node3D
+var _rh: Node3D
+var _le: Node3D
+var _re: Node3D
+var _lk: Node3D
+var _rk: Node3D
+var _head: Node3D
+var _neck: Node3D
+
+
+func before_each() -> void:
+	_parent = SwimParent.new()
+	_parent.visible = true
+	_model = Node3D.new()
+	_model.set_script(PlayerModelScript)
+	_ls = Node3D.new()
+	_ls.name = "LeftShoulderPivot"
+	_rs = Node3D.new()
+	_rs.name = "RightShoulderPivot"
+	_lh = Node3D.new()
+	_lh.name = "LeftHipPivot"
+	_rh = Node3D.new()
+	_rh.name = "RightHipPivot"
+	_le = Node3D.new()
+	_le.name = "LeftElbowPivot"
+	_ls.add_child(_le)
+	_re = Node3D.new()
+	_re.name = "RightElbowPivot"
+	_rs.add_child(_re)
+	_lk = Node3D.new()
+	_lk.name = "LeftKneePivot"
+	_lh.add_child(_lk)
+	_rk = Node3D.new()
+	_rk.name = "RightKneePivot"
+	_rh.add_child(_rk)
+	var forearm := Node3D.new()
+	forearm.name = "Forearm"
+	_le.add_child(forearm)
+	_head = MeshInstance3D.new()
+	_head.name = "Head"
+	_neck = MeshInstance3D.new()
+	_neck.name = "Neck"
+	_model.add_child(_ls)
+	_model.add_child(_rs)
+	_model.add_child(_lh)
+	_model.add_child(_rh)
+	_model.add_child(_head)
+	_model.add_child(_neck)
+	_parent.add_child(_model)
+	add_child_autofree(_parent)
+	await get_tree().process_frame
+
+
+func _sim(delta: float, frames: int = 1) -> void:
+	for i in frames:
+		_model._process(delta)
+
+
+# ==========================================================================
+# Static: _stroke_shape
+# ==========================================================================
+
+func test_stroke_shape_at_zero() -> void:
+	var result: float = PlayerModelScript._stroke_shape(0.0)
+	assert_almost_eq(result, 0.0, 0.01, "stroke_shape(0) should be ~0")
+
+
+func test_stroke_shape_bounded() -> void:
+	# Check that stroke shape stays in [-1, 1] over a full cycle
+	var min_val := 999.0
+	var max_val := -999.0
+	for i in 360:
+		var phase := float(i) / 360.0 * TAU
+		var val: float = PlayerModelScript._stroke_shape(phase)
+		min_val = minf(min_val, val)
+		max_val = maxf(max_val, val)
+	assert_gte(min_val, -1.1, "stroke_shape min should be >= -1.1")
+	assert_lte(max_val, 1.1, "stroke_shape max should be <= 1.1")
+
+
+func test_stroke_shape_oscillates() -> void:
+	var had_positive := false
+	var had_negative := false
+	for i in 360:
+		var phase := float(i) / 360.0 * TAU
+		var val: float = PlayerModelScript._stroke_shape(phase)
+		if val > 0.3:
+			had_positive = true
+		if val < -0.3:
+			had_negative = true
+	assert_true(had_positive, "stroke_shape should reach positive values")
+	assert_true(had_negative, "stroke_shape should reach negative values")
+
+
+func test_stroke_shape_asymmetric() -> void:
+	# With harmonic distortion, positive and negative half-cycles differ in width
+	var pos_count := 0
+	var neg_count := 0
+	for i in 720:
+		var phase := float(i) / 720.0 * TAU
+		var val: float = PlayerModelScript._stroke_shape(phase)
+		if val > 0.0:
+			pos_count += 1
+		elif val < 0.0:
+			neg_count += 1
+	assert_true(
+		pos_count != neg_count,
+		"Stroke shape should be asymmetric — pos=%d neg=%d" \
+			% [pos_count, neg_count],
+	)
+
+
+# ==========================================================================
+# _apply_arm_stroke
+# ==========================================================================
+
+func test_apply_arm_stroke_left_sets_all_axes() -> void:
+	var shoulder := Node3D.new()
+	var elbow := Node3D.new()
+	add_child_autofree(shoulder)
+	add_child_autofree(elbow)
+	_model._apply_arm_stroke(shoulder, elbow, 0.8, 1.0)
+	# Shoulder should have non-zero values on all 3 axes
+	assert_true(
+		absf(shoulder.rotation.x) > 0.01,
+		"Shoulder X should be set",
+	)
+	assert_true(
+		absf(shoulder.rotation.y) > 0.01,
+		"Shoulder Y should be set",
+	)
+	assert_true(
+		absf(shoulder.rotation.z) > 0.01,
+		"Shoulder Z should be set",
+	)
+
+
+func test_apply_arm_stroke_right_mirrors_y_and_z() -> void:
+	var sh_l := Node3D.new()
+	var el_l := Node3D.new()
+	var sh_r := Node3D.new()
+	var el_r := Node3D.new()
+	add_child_autofree(sh_l)
+	add_child_autofree(el_l)
+	add_child_autofree(sh_r)
+	add_child_autofree(el_r)
+	var stroke := 0.6
+	_model._apply_arm_stroke(sh_l, el_l, stroke, 1.0)
+	_model._apply_arm_stroke(sh_r, el_r, stroke, -1.0)
+	# X should be the same
+	assert_almost_eq(sh_l.rotation.x, sh_r.rotation.x, 0.001, "X same")
+	# Y and Z should be negated
+	assert_almost_eq(
+		sh_l.rotation.y, -sh_r.rotation.y, 0.001, "Y mirrored",
+	)
+	assert_almost_eq(
+		sh_l.rotation.z, -sh_r.rotation.z, 0.001, "Z mirrored",
+	)
+
+
+func test_apply_arm_stroke_elbow_x_within_bounds() -> void:
+	var shoulder := Node3D.new()
+	var elbow := Node3D.new()
+	add_child_autofree(shoulder)
+	add_child_autofree(elbow)
+	# Test a range of stroke values
+	for i in 20:
+		var stroke := -1.0 + float(i) * 0.1
+		_model._apply_arm_stroke(shoulder, elbow, stroke, 1.0)
+		assert_gte(
+			elbow.rotation.x, PlayerModelScript.SWIM_ELBOW_MIN,
+			"Elbow X should not go below min at stroke=%f" % stroke,
+		)
+		assert_lte(
+			elbow.rotation.x, PlayerModelScript.SWIM_ELBOW_MAX,
+			"Elbow X should not exceed max at stroke=%f" % stroke,
+		)
+
+
+func test_apply_arm_stroke_recovery_elbow_different_from_pull() -> void:
+	var sh1 := Node3D.new()
+	var el1 := Node3D.new()
+	var sh2 := Node3D.new()
+	var el2 := Node3D.new()
+	add_child_autofree(sh1)
+	add_child_autofree(el1)
+	add_child_autofree(sh2)
+	add_child_autofree(el2)
+	# Recovery phase (positive stroke)
+	_model._apply_arm_stroke(sh1, el1, 0.9, 1.0)
+	# Pull phase (negative stroke)
+	_model._apply_arm_stroke(sh2, el2, -0.9, 1.0)
+	assert_true(
+		absf(el1.rotation.x - el2.rotation.x) > 0.05,
+		"Elbow bend should differ between recovery and pull",
+	)
+
+
+# ==========================================================================
+# _is_armed / _is_flashlight_on
+# ==========================================================================
+
+func test_is_armed_false_when_no_weapon_node() -> void:
+	# No PlayerWeapon child on parent
+	assert_false(
+		_model._is_armed(),
+		"_is_armed should be false without PlayerWeapon",
+	)
+
+
+func test_is_armed_true_when_weapon_armed() -> void:
+	var pw := Node.new()
+	pw.name = "PlayerWeapon"
+	pw.set_meta("_armed", true)
+	# Use a script to add the _armed property
+	var script := GDScript.new()
+	script.source_code = "extends Node\nvar _armed := true\n"
+	script.reload()
+	pw.set_script(script)
+	_parent.add_child(pw)
+	assert_true(
+		_model._is_armed(),
+		"_is_armed should be true when PlayerWeapon._armed is true",
+	)
+
+
+func test_is_armed_false_when_weapon_holstered() -> void:
+	var pw := Node.new()
+	pw.name = "PlayerWeapon"
+	var script := GDScript.new()
+	script.source_code = "extends Node\nvar _armed := false\n"
+	script.reload()
+	pw.set_script(script)
+	_parent.add_child(pw)
+	assert_false(
+		_model._is_armed(),
+		"_is_armed should be false when PlayerWeapon._armed is false",
+	)
+
+
+func test_is_flashlight_on_false_when_no_flashlight() -> void:
+	assert_false(
+		_model._is_flashlight_on(),
+		"_is_flashlight_on should be false without Flashlight node",
+	)
+
+
+func test_is_flashlight_on_false_when_flashlight_hidden() -> void:
+	var forearm := _le.get_node("Forearm")
+	var fl := SpotLight3D.new()
+	fl.name = "Flashlight"
+	fl.visible = false
+	forearm.add_child(fl)
+	assert_false(
+		_model._is_flashlight_on(),
+		"_is_flashlight_on should be false when flashlight not visible",
+	)
+
+
+func test_is_flashlight_on_true_when_visible() -> void:
+	var forearm := _le.get_node("Forearm")
+	var fl := SpotLight3D.new()
+	fl.name = "Flashlight"
+	fl.visible = true
+	forearm.add_child(fl)
+	assert_true(
+		_model._is_flashlight_on(),
+		"_is_flashlight_on should be true when flashlight visible",
+	)
+
+
+# ==========================================================================
+# _get_gun_elbow_angle
+# ==========================================================================
+
+func test_get_gun_elbow_default_without_weapon() -> void:
+	var angle: float = _model._get_gun_elbow_angle()
+	assert_almost_eq(
+		angle, PlayerModelScript.DEFAULT_GUN_ELBOW, 0.001,
+		"Should return DEFAULT_GUN_ELBOW without PlayerWeapon",
+	)
+
+
+func test_get_gun_elbow_reads_weapon_data() -> void:
+	var pw := Node.new()
+	pw.name = "PlayerWeapon"
+	var script := GDScript.new()
+	script.source_code = (
+		"extends Node\n"
+		+ "const WEAPONS := [{\"elbow\": -0.4}]\n"
+		+ "var _current_idx := 0\n"
+	)
+	script.reload()
+	pw.set_script(script)
+	_parent.add_child(pw)
+	var angle: float = _model._get_gun_elbow_angle()
+	assert_almost_eq(angle, -0.4, 0.001, "Should read elbow from weapon data")
+
+
+# ==========================================================================
+# _aim_gun_arm
+# ==========================================================================
+
+func test_aim_gun_arm_sets_shoulder_and_elbow() -> void:
+	_rs.rotation = Vector3.ZERO
+	_re.rotation = Vector3.ZERO
+	_model._aim_gun_arm(0.0)
+	# total = -(PI/2 + 0) = -PI/2
+	# shoulder.x = total - elbow_angle
+	assert_true(
+		absf(_rs.rotation.x) > 0.1,
+		"Right shoulder X should be set after aim_gun_arm",
+	)
+
+
+func test_aim_gun_arm_pitch_affects_shoulder() -> void:
+	_model._aim_gun_arm(0.3)
+	var shoulder_at_03 := _rs.rotation.x
+	_model._aim_gun_arm(-0.3)
+	var shoulder_at_neg03 := _rs.rotation.x
+	assert_true(
+		absf(shoulder_at_03 - shoulder_at_neg03) > 0.1,
+		"Different pitches should produce different shoulder rotations",
+	)
+
+
+# ==========================================================================
+# _aim_flashlight_arm
+# ==========================================================================
+
+func test_aim_flashlight_arm_sets_left_shoulder_and_elbow() -> void:
+	_ls.rotation = Vector3.ZERO
+	_le.rotation = Vector3.ZERO
+	_model._aim_flashlight_arm(0.0)
+	assert_true(
+		absf(_ls.rotation.x) > 0.1,
+		"Left shoulder X should be set after aim_flashlight_arm",
+	)
+	assert_true(
+		absf(_le.rotation.x) > 0.01,
+		"Left elbow X should be set after aim_flashlight_arm",
+	)
+
+
+func test_aim_flashlight_elbow_varies_with_pitch() -> void:
+	_model._aim_flashlight_arm(PlayerModelScript.PITCH_UP)
+	var elbow_up := _le.rotation.x
+	_model._aim_flashlight_arm(PlayerModelScript.PITCH_DOWN)
+	var elbow_down := _le.rotation.x
+	assert_true(
+		absf(elbow_up - elbow_down) > 0.1,
+		"Elbow angle should vary between pitch up and pitch down",
+	)
+
+
+func test_aim_flashlight_elbow_clamped_range() -> void:
+	_model._aim_flashlight_arm(PlayerModelScript.PITCH_UP)
+	var elbow_up := _le.rotation.x
+	_model._aim_flashlight_arm(PlayerModelScript.PITCH_DOWN)
+	var elbow_down := _le.rotation.x
+	# Up should give FLASH_ELBOW_UP, down should give FLASH_ELBOW_DOWN
+	assert_almost_eq(
+		elbow_up, PlayerModelScript.FLASH_ELBOW_UP, 0.01,
+		"Pitch up should give FLASH_ELBOW_UP",
+	)
+	assert_almost_eq(
+		elbow_down, PlayerModelScript.FLASH_ELBOW_DOWN, 0.01,
+		"Pitch down should give FLASH_ELBOW_DOWN",
+	)
+
+
+# ==========================================================================
+# Constants sanity
+# ==========================================================================
+
+func test_run_threshold_positive() -> void:
+	assert_gt(
+		PlayerModelScript.RUN_THRESHOLD, 0.0,
+		"RUN_THRESHOLD should be positive",
+	)
+
+
+func test_swim_frequency_positive() -> void:
+	assert_gt(
+		PlayerModelScript.SWIM_FREQUENCY, 0.0,
+		"SWIM_FREQUENCY should be positive",
+	)
+
+
+func test_decay_speed_positive() -> void:
+	assert_gt(
+		PlayerModelScript.DECAY_SPEED, 0.0,
+		"DECAY_SPEED should be positive",
+	)
+
+
+func test_swim_decay_faster_than_normal() -> void:
+	assert_gt(
+		PlayerModelScript.SWIM_DECAY_SPEED, PlayerModelScript.DECAY_SPEED,
+		"SWIM_DECAY_SPEED should be faster than DECAY_SPEED",
+	)
+
+
+# ==========================================================================
+# _was_swimming transition flag
+# ==========================================================================
+
+func test_was_swimming_set_after_swim() -> void:
+	_parent.is_swimming = true
+	_sim(0.016, 10)
+	assert_true(
+		_model._was_swimming,
+		"_was_swimming should be true after swimming",
+	)
+
+
+func test_was_swimming_clears_after_decay() -> void:
+	_parent.is_swimming = true
+	_sim(0.016, 30)
+	_parent.is_swimming = false
+	_parent.velocity = Vector3.ZERO
+	# Simulate enough frames for body rotation to decay below 0.1
+	_sim(0.1, 40)
+	assert_false(
+		_model._was_swimming,
+		"_was_swimming should clear once rotation decays",
+	)
+
+
+# ==========================================================================
+# Hip sway position resets when idle
+# ==========================================================================
+
+func test_hip_sway_resets_on_stop() -> void:
+	_parent.velocity = Vector3(0, 0, 5.0)
+	_sim(0.016, 30)
+	_parent.velocity = Vector3.ZERO
+	_sim(0.1, 30)
+	assert_almost_eq(
+		_model.position.x, 0.0, 0.01,
+		"Hip sway (position.x) should decay to 0 when idle",
+	)
