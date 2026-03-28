@@ -2,7 +2,7 @@ extends RefCounted
 ## Builds lane markings and pedestrian crossings as a single merged mesh.
 ## Center lines, edge lines, lane dividers, and zebra crossings.
 
-const MARKING_Y := 0.05
+const MARKING_Y := 0.003
 const DASH_LENGTH := 3.0
 const DASH_GAP := 3.0
 const MARKING_WIDTH := 0.15

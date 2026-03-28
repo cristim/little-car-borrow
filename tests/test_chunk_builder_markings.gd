@@ -166,6 +166,11 @@ func test_marking_y_above_road_surface() -> void:
 		MarkingsScript.MARKING_Y, 0.0,
 		"Marking Y should be above road surface",
 	)
+	# Road top = Y 0.0; markings must not float visibly (>= 1 cm is too high).
+	assert_lt(
+		MarkingsScript.MARKING_Y, 0.01,
+		"Marking Y should be < 1 cm (just enough to avoid z-fighting)",
+	)
 
 
 func test_dash_length_positive() -> void:
