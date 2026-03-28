@@ -612,3 +612,27 @@ func test_thumb_sides_are_mirrored() -> void:
 	var thumb_r := _re.get_node("HandRight_Thumb") as MeshInstance3D
 	assert_gt(thumb_l.position.x, 0.0, "Left thumb should be on +X side")
 	assert_lt(thumb_r.position.x, 0.0, "Right thumb should be on -X side")
+
+
+# ==========================================================================
+# Flashlight scene position — source inspection on player.tscn
+# ==========================================================================
+
+func test_flashlight_positioned_at_housing_tip() -> void:
+	# Read the raw .tscn text so we can inspect the Flashlight transform.
+	# The SpotLight3D was moved from the bare wrist (0, -0.125, 0) to the
+	# tip of the FlashlightBody housing (0, -0.151, -0.076).
+	var f: FileAccess = FileAccess.open(
+		"res://scenes/player/player.tscn", FileAccess.READ
+	)
+	assert_not_null(f, "player.tscn should be readable")
+	var src: String = f.get_as_text()
+	f.close()
+	assert_false(
+		src.contains("0, -0.125, 0\nvisible = false"),
+		"Flashlight should not be at bare wrist position (0, -0.125, 0)",
+	)
+	assert_true(
+		src.contains("-0.151") and src.contains("-0.076"),
+		"Flashlight transform should contain housing-tip offsets (-0.151, -0.076)",
+	)

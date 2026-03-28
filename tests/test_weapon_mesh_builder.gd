@@ -159,3 +159,123 @@ func test_all_meshes_have_material() -> void:
 					"%s/%s should have material" % [wname, mi.name],
 				)
 		root.free()
+
+
+# ==========================================================================
+# Iron sights and detail parts added per weapon
+# ==========================================================================
+
+func test_pistol_has_iron_sights() -> void:
+	var root: Node3D = _build("Pistol")
+	for part in ["FrontSight", "RearSightL", "RearSightR"]:
+		assert_not_null(
+			root.find_child(part, false, false),
+			"Pistol should have %s" % part,
+		)
+	root.free()
+
+
+func test_pistol_front_sight_above_slide() -> void:
+	var root: Node3D = _build("Pistol")
+	var slide: MeshInstance3D = root.find_child("Slide", false, false)
+	var front: MeshInstance3D = root.find_child("FrontSight", false, false)
+	assert_gt(
+		front.position.y, slide.position.y,
+		"FrontSight Y should be above Slide Y",
+	)
+	root.free()
+
+
+func test_pistol_rear_sights_are_symmetric() -> void:
+	var root: Node3D = _build("Pistol")
+	var sl: MeshInstance3D = root.find_child("RearSightL", false, false)
+	var sr: MeshInstance3D = root.find_child("RearSightR", false, false)
+	assert_almost_eq(
+		sl.position.x, -sr.position.x, 0.001,
+		"Rear sight posts should be symmetric about X = 0",
+	)
+	assert_almost_eq(
+		sl.position.y, sr.position.y, 0.001,
+		"Rear sight posts should be at the same height",
+	)
+	root.free()
+
+
+func test_smg_has_front_sight_and_charging_handle() -> void:
+	var root: Node3D = _build("SMG")
+	for part in ["FrontSight", "ChargingHandle"]:
+		assert_not_null(
+			root.find_child(part, false, false),
+			"SMG should have %s" % part,
+		)
+	root.free()
+
+
+func test_smg_charging_handle_is_offset_to_side() -> void:
+	var root: Node3D = _build("SMG")
+	var handle: MeshInstance3D = root.find_child("ChargingHandle", false, false)
+	assert_gt(
+		absf(handle.position.x), 0.02,
+		"ChargingHandle should be laterally offset from centre",
+	)
+	root.free()
+
+
+func test_shotgun_has_front_bead_and_ejection_port() -> void:
+	var root: Node3D = _build("Shotgun")
+	for part in ["FrontBead", "EjectionPort"]:
+		assert_not_null(
+			root.find_child(part, false, false),
+			"Shotgun should have %s" % part,
+		)
+	root.free()
+
+
+func test_shotgun_front_bead_near_muzzle() -> void:
+	var root: Node3D = _build("Shotgun")
+	var bead: MeshInstance3D = root.find_child("FrontBead", false, false)
+	var muzzle_z: float = (root.get_meta("muzzle_local_pos") as Vector3).z
+	# Bead Z should be within 0.05 of the muzzle end
+	assert_lt(
+		bead.position.z, muzzle_z + 0.05,
+		"FrontBead should be near the muzzle end of the barrel",
+	)
+	root.free()
+
+
+func test_rifle_has_detail_parts() -> void:
+	var root: Node3D = _build("Rifle")
+	for part in ["ChargingHandle", "MuzzleDevice", "ScopeEyepiece"]:
+		assert_not_null(
+			root.find_child(part, false, false),
+			"Rifle should have %s" % part,
+		)
+	root.free()
+
+
+func test_rifle_muzzle_device_at_barrel_end() -> void:
+	var root: Node3D = _build("Rifle")
+	var muzzle_dev: MeshInstance3D = root.find_child(
+		"MuzzleDevice", false, false
+	)
+	var barrel: MeshInstance3D = root.find_child("Barrel", false, false)
+	# Muzzle device Z should be more negative than barrel center (closer to tip)
+	assert_lt(
+		muzzle_dev.position.z, barrel.position.z,
+		"MuzzleDevice should be further toward barrel tip than barrel centre",
+	)
+	root.free()
+
+
+func test_rifle_scope_eyepiece_behind_scope_body() -> void:
+	var root: Node3D = _build("Rifle")
+	var scope: MeshInstance3D = root.find_child("Scope", false, false)
+	var eyepiece: MeshInstance3D = root.find_child(
+		"ScopeEyepiece", false, false
+	)
+	# Eyepiece is at the rear (higher Z) of the scope tube
+	assert_gt(
+		eyepiece.position.z, scope.position.z,
+		"ScopeEyepiece should be at the rear (larger Z) of the scope",
+	)
+	root.free()
