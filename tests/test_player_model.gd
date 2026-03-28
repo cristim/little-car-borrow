@@ -599,6 +599,25 @@ func test_hands_at_wrist_depth() -> void:
 	)
 
 
+func test_right_hand_at_gun_grip_height() -> void:
+	# Gun grip sits at ~Y=-0.16 in right-elbow space; palm must align with it,
+	# not hang down at the bare wrist (Y ≈ -0.27).
+	var palm_r := _re.get_node("HandRight_Palm") as MeshInstance3D
+	assert_gt(
+		palm_r.position.y, -0.20,
+		"Right palm should be at gun-grip height (Y > -0.20 from elbow)",
+	)
+
+
+func test_flashlight_body_tilted_upward() -> void:
+	var fl_body := _le.get_node("FlashlightBody") as MeshInstance3D
+	# 20° upward tilt → rotation.x ≈ -deg_to_rad(20) ≈ -0.349
+	assert_lt(
+		fl_body.rotation.x, -0.30,
+		"FlashlightBody should be tilted upward (rotation.x < -0.30 rad)",
+	)
+
+
 func test_flashlight_body_has_forward_z_offset() -> void:
 	var fl_body := _le.get_node("FlashlightBody") as MeshInstance3D
 	assert_lt(
@@ -620,8 +639,8 @@ func test_thumb_sides_are_mirrored() -> void:
 
 func test_flashlight_positioned_at_housing_tip() -> void:
 	# Read the raw .tscn text so we can inspect the Flashlight transform.
-	# The SpotLight3D was moved from the bare wrist (0, -0.125, 0) to the
-	# tip of the FlashlightBody housing (0, -0.151, -0.076).
+	# The SpotLight3D sits at the tip of the tilted FlashlightBody housing
+	# (0, -0.139, -0.074) in Forearm-local space.
 	var f: FileAccess = FileAccess.open(
 		"res://scenes/player/player.tscn", FileAccess.READ
 	)
@@ -633,6 +652,6 @@ func test_flashlight_positioned_at_housing_tip() -> void:
 		"Flashlight should not be at bare wrist position (0, -0.125, 0)",
 	)
 	assert_true(
-		src.contains("-0.151") and src.contains("-0.076"),
-		"Flashlight transform should contain housing-tip offsets (-0.151, -0.076)",
+		src.contains("-0.139") and src.contains("-0.074"),
+		"Flashlight transform should contain tilted housing-tip offsets (-0.139, -0.074)",
 	)

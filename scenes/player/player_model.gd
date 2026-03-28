@@ -165,6 +165,7 @@ func _build_face_details() -> void:
 ## Add hand meshes to both elbow pivots so the wrists end in visible hands.
 ## Wrist end of each forearm is at Y = -0.25 from the elbow pivot.
 ## Left hand also carries a flashlight housing aligned with the SpotLight3D.
+## Right hand is positioned to grip the gun (grip sits at ~Y=-0.16 in elbow space).
 func _build_hands() -> void:
 	var mat_skin: StandardMaterial3D = _mat_ear  # same skin tone as ears/neck
 
@@ -175,18 +176,21 @@ func _build_hands() -> void:
 		Vector3(0.062, 0.050, 0.022), Vector3(0.000, -0.306, -0.014))
 	_add_box(_left_elbow, "HandLeft_Thumb", mat_skin,
 		Vector3(0.022, 0.036, 0.040), Vector3(0.048, -0.262, 0.010))
-	# Flashlight housing — center at (0, -0.276, -0.042) from left elbow;
-	# tip at Z = -0.076 aligns with the SpotLight3D in the scene.
-	_add_box(_left_elbow, "FlashlightBody", _mat_flashlight_body,
+	# Flashlight housing — tilted 20° upward so it reads as hand-held and aimed.
+	# Center at (0, -0.276, -0.042) from left elbow; tip ~Z=-0.074 aligns with SpotLight3D.
+	var fl: MeshInstance3D = _add_box(_left_elbow, "FlashlightBody", _mat_flashlight_body,
 		Vector3(0.020, 0.020, 0.068), Vector3(0.000, -0.276, -0.042))
+	fl.rotation.x = -deg_to_rad(20.0)
 
 	# --- Right hand (grips gun) ---
+	# Gun grip is at ~Y=-0.16 to -0.19 in right-elbow space (gun mesh at Y=-0.2,
+	# rotated -PI/2 around X so gun-local grip at y=-0.06 maps to elbow Y≈-0.16).
 	_add_box(_right_elbow, "HandRight_Palm", mat_skin,
-		Vector3(0.075, 0.028, 0.080), Vector3(0.000, -0.274, 0.000))
+		Vector3(0.060, 0.025, 0.075), Vector3(0.000, -0.165, -0.025))
 	_add_box(_right_elbow, "HandRight_Fingers", mat_skin,
-		Vector3(0.062, 0.050, 0.022), Vector3(0.000, -0.306, -0.014))
+		Vector3(0.055, 0.045, 0.018), Vector3(0.000, -0.195, -0.040))
 	_add_box(_right_elbow, "HandRight_Thumb", mat_skin,
-		Vector3(0.022, 0.036, 0.040), Vector3(-0.048, -0.262, 0.010))
+		Vector3(0.020, 0.032, 0.038), Vector3(-0.040, -0.150, 0.005))
 
 
 ## Helper: create a MeshInstance3D with a BoxMesh, attach to parent node.
@@ -196,7 +200,7 @@ func _add_box(
 	mat: StandardMaterial3D,
 	size: Vector3,
 	pos: Vector3,
-) -> void:
+) -> MeshInstance3D:
 	var mesh := BoxMesh.new()
 	mesh.size = size
 	mesh.material = mat
@@ -205,6 +209,7 @@ func _add_box(
 	mi.mesh = mesh
 	mi.position = pos
 	parent.add_child(mi)
+	return mi
 
 
 func _process(delta: float) -> void:
