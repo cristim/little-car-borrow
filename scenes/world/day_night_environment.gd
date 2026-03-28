@@ -82,15 +82,12 @@ const WEATHER_CLOUD_G: Array = [1.0, 0.80, 0.55]
 
 @export var light_path: NodePath
 @export var env_path: NodePath
-@export var city_path: NodePath
 
 var _light: DirectionalLight3D
 var _env: WorldEnvironment
-var _city: Node3D
 var _sky_mat: ProceduralSkyMaterial
 var _last_lights_visible := false
 var _last_window_night := false
-var _mat_active: Array[bool] = []  # sized dynamically to match window mat count
 var _rng := RandomNumberGenerator.new()
 var _window_toggle_timer: Timer
 
@@ -115,15 +112,14 @@ var _cloud_grey: float = 1.0
 func _ready() -> void:
 	_light = get_node_or_null(light_path) as DirectionalLight3D
 	_env = get_node_or_null(env_path) as WorldEnvironment
-	_city = get_node_or_null(city_path) as Node3D
 
 	if _env and _env.environment:
 		var sky: Sky = _env.environment.sky
 		if sky:
 			_sky_mat = sky.sky_material as ProceduralSkyMaterial
 			if _sky_mat:
-				# Default is 30° — the real sun is 0.5°; 2.5° matches our moon scale.
-				_sky_mat.sun_angle_max = 2.5
+				# Default is 30° — the real sun is 0.5°; 10° gives visible disc + halo.
+				_sky_mat.sun_angle_max = 10.0
 
 	_rng.randomize()
 
@@ -263,7 +259,7 @@ func _update_sun(h: float) -> void:
 	var t: float = clampf((h - 6.0) / 13.0, 0.0, 1.0)
 	var yaw := lerpf(PI * 0.5, -PI * 0.5, t)
 	_light.rotation = Vector3(pitch, yaw, 0.0)
-	_light.light_energy = _sample(SUN_ENERGY, h)
+	_light.light_energy = _sample(SUN_ENERGY, h) * 2.5
 	_light.light_color = Color(
 		_sample(SUN_COL_R, h),
 		_sample(SUN_COL_G, h),
@@ -326,7 +322,9 @@ func _update_moon(h: float) -> void:
 	# Game time is compressed 72×, so updating moon_dir every frame would move
 	# it noticeably fast.  The phase (shader sun_dir) still updates every frame.
 	if not _moon_dir_valid:
-		_moon_dir = Vector3(-sun_fwd.x, absf(sun_fwd.y) + 0.15, -sun_fwd.z).normalized()
+		# sun_fwd = direction light travels (sun source is at -sun_fwd).
+		# Place moon on the opposite side of the sky: +sun_fwd direction.
+		_moon_dir = Vector3(sun_fwd.x, absf(sun_fwd.y) + 0.15, sun_fwd.z).normalized()
 		_moon_dir_valid = true
 	_moon.global_position = origin + _moon_dir * MOON_DIST
 	_moon_mat.set_shader_parameter("brightness", night)
@@ -373,76 +371,90 @@ func _night_factor(h: float) -> float:
 
 
 func _update_windows(h: float) -> void:
-	if not _city:
-		return
-	var mats_v: Variant = _city.get("_window_mats")
-	if mats_v == null:
-		return
-	var mats: Array = mats_v
-	if mats.is_empty():
-		return
 	var night := h < 6.0 or h > 19.0
 	if night == _last_window_night:
 		return
 	_last_window_night = night
+	var chunks: Array = get_tree().get_nodes_in_group("building_chunk")
 	if night:
-		# Random initial pattern: each group independently 55% chance of being lit
-		_mat_active.resize(mats.size())
-		for i in mats.size():
-			_mat_active[i] = _rng.randf() < 0.55
-			var mat: StandardMaterial3D = mats[i]
-			mat.emission_enabled = _mat_active[i]
-			mat.emission = Color(0.9, 0.8, 0.5)
-			mat.emission_energy_multiplier = 0.6
+		# Random initial pattern per chunk: each group independently 55% lit
+		for chunk_body in chunks:
+			var mats_v: Variant = (chunk_body as Node).get_meta("window_mats", null)
+			var active_v: Variant = (chunk_body as Node).get_meta("window_active", null)
+			if mats_v == null or active_v == null:
+				continue
+			var mats: Array = mats_v
+			var active: Array = active_v
+			for i in mats.size():
+				active[i] = _rng.randf() < 0.55
+				var mat: StandardMaterial3D = mats[i]
+				mat.emission_enabled = active[i]
+				mat.emission = Color(0.9, 0.8, 0.5)
+				mat.emission_energy_multiplier = 0.6
+			(chunk_body as Node).set_meta("window_active", active)
 		if _window_toggle_timer.is_stopped():
 			_window_toggle_timer.wait_time = _rng.randf_range(5.0, 12.0)
 			_window_toggle_timer.start()
 	else:
-		for mat in mats:
-			(mat as StandardMaterial3D).emission_enabled = false
+		for chunk_body in chunks:
+			var mats_v: Variant = (chunk_body as Node).get_meta("window_mats", null)
+			var active_v: Variant = (chunk_body as Node).get_meta("window_active", null)
+			if mats_v == null or active_v == null:
+				continue
+			var mats: Array = mats_v
+			var active: Array = active_v
+			active.fill(true)
+			(chunk_body as Node).set_meta("window_active", active)
+			for mat in mats:
+				(mat as StandardMaterial3D).emission_enabled = false
 		_window_toggle_timer.stop()
-		_mat_active.resize(mats.size())
-		_mat_active.fill(true)  # reset so next night starts from full state
 
 
 func _on_window_toggle() -> void:
-	if not _city:
-		return
-	var mats_v: Variant = _city.get("_window_mats")
-	if mats_v == null:
-		return
-	var mats: Array = mats_v
-	if mats.is_empty():
-		return
 	# Don't toggle if it's no longer night
 	var h: float = DayNightManager.current_hour
 	if not (h < 6.0 or h > 19.0):
 		return
-
-	if mats.size() != _mat_active.size():
+	var chunks: Array = get_tree().get_nodes_in_group("building_chunk")
+	if chunks.is_empty():
 		return
+
+	# Pick ONE random chunk to update — changes stay local to that chunk
+	var chunk_body: Node = chunks[_rng.randi() % chunks.size()]
+	var mats_v: Variant = chunk_body.get_meta("window_mats", null)
+	var active_v: Variant = chunk_body.get_meta("window_active", null)
+	if mats_v == null or active_v == null:
+		_window_toggle_timer.wait_time = _rng.randf_range(5.0, 12.0)
+		_window_toggle_timer.start()
+		return
+
+	var mats: Array = mats_v
+	var active: Array = active_v
 
 	var on_indices: Array[int] = []
 	var off_indices: Array[int] = []
-	for i in _mat_active.size():
-		if _mat_active[i]:
+	for i in active.size():
+		if active[i]:
 			on_indices.append(i)
 		else:
 			off_indices.append(i)
 
-	# Bias strongly toward turning off — simulates people going to sleep over time.
-	# Keep at least 2 groups lit so the city never goes completely dark.
-	if _rng.randf() < 0.75 and on_indices.size() > 2:
+	# Bias toward turning off — simulates people going to sleep.
+	# Keep at least 1 group lit so the building never goes fully dark.
+	if _rng.randf() < 0.75 and on_indices.size() > 1:
 		var pick: int = on_indices[_rng.randi_range(0, on_indices.size() - 1)]
-		_mat_active[pick] = false
+		active[pick] = false
 		(mats[pick] as StandardMaterial3D).emission_enabled = false
 	elif off_indices.size() > 0:
 		# Occasionally turn one back on (light sleepers, night owls)
 		var pick: int = off_indices[_rng.randi_range(0, off_indices.size() - 1)]
-		_mat_active[pick] = true
-		(mats[pick] as StandardMaterial3D).emission_enabled = true
+		active[pick] = true
+		var mat: StandardMaterial3D = mats[pick]
+		mat.emission_enabled = true
+		mat.emission = Color(0.9, 0.8, 0.5)
+		mat.emission_energy_multiplier = 0.6
 
-	# Fast interval so changes feel organic, not robotic
+	chunk_body.set_meta("window_active", active)
 	_window_toggle_timer.wait_time = _rng.randf_range(5.0, 12.0)
 	_window_toggle_timer.start()
 

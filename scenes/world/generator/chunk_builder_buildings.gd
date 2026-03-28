@@ -54,6 +54,15 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 		win_sts.append(SurfaceTool.new())
 		win_st_has_data.append(false)
 
+	# Per-chunk window materials — fresh copies of the template so each chunk
+	# toggles independently from every other chunk in the city.
+	var local_win_mats: Array[StandardMaterial3D] = []
+	for i in win_count:
+		var m := StandardMaterial3D.new()
+		m.albedo_color = _window_mats[i].albedo_color
+		m.cull_mode = BaseMaterial3D.CULL_DISABLED
+		local_win_mats.append(m)
+
 	# Single compound collision body for all buildings
 	var body := StaticBody3D.new()
 	body.name = "Buildings"
@@ -215,7 +224,7 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 		var win_inst := MeshInstance3D.new()
 		win_inst.name = "Windows_%d" % i
 		win_inst.mesh = win_mesh
-		win_inst.material_override = _window_mats[i]
+		win_inst.material_override = local_win_mats[i]
 		body.add_child(win_inst)
 
 	# Roof meshes
@@ -239,6 +248,15 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 		int_inst.mesh = int_mesh
 		int_inst.material_override = _interior_mat
 		body.add_child(int_inst)
+
+	# Register chunk for independent per-chunk night toggling
+	if win_st_has_data.has(true):
+		var win_active: Array[bool] = []
+		win_active.resize(win_count)
+		win_active.fill(true)
+		body.set_meta("window_mats", local_win_mats)
+		body.set_meta("window_active", win_active)
+		body.add_to_group("building_chunk")
 
 	chunk.add_child(body)
 

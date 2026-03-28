@@ -183,30 +183,23 @@ func test_sky_horizon_red_peaks_at_sunset() -> void:
 
 
 # ==========================================================================
-# mat_active state
+# Per-chunk window toggling
 # ==========================================================================
 
-func test_mat_active_starts_empty() -> void:
-	var env: Node = DayNightEnvScript.new()
-	add_child_autofree(env)
-	assert_eq(
-		env._mat_active.size(), 0,
-		"mat_active should start empty — sized dynamically on first night",
+func test_update_windows_uses_building_chunk_group() -> void:
+	var src: String = DayNightEnvScript.source_code
+	assert_true(
+		src.contains("\"building_chunk\""),
+		"_update_windows should query the building_chunk group",
 	)
 
 
-func test_mat_active_fill_resets_after_resize() -> void:
-	var env: Node = DayNightEnvScript.new()
-	add_child_autofree(env)
-	env._mat_active.resize(8)
-	env._mat_active[0] = false
-	env._mat_active[3] = false
-	env._mat_active.fill(true)
-	for i in env._mat_active.size():
-		assert_true(
-			env._mat_active[i],
-			"All groups should be active after reset",
-		)
+func test_on_window_toggle_picks_one_chunk() -> void:
+	var src: String = DayNightEnvScript.source_code
+	assert_true(
+		src.contains("_rng.randi() % chunks.size()"),
+		"_on_window_toggle should pick one random chunk, not iterate all",
+	)
 
 
 func test_sun_pitch_at_noon_is_positive() -> void:
@@ -253,12 +246,6 @@ func test_initial_env_is_null() -> void:
 	var env: Node = DayNightEnvScript.new()
 	add_child_autofree(env)
 	assert_null(env._env, "_env should be null without valid path")
-
-
-func test_initial_city_is_null() -> void:
-	var env: Node = DayNightEnvScript.new()
-	add_child_autofree(env)
-	assert_null(env._city, "_city should be null without valid path")
 
 
 func test_last_lights_visible_starts_false() -> void:

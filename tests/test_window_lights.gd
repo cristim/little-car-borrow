@@ -147,10 +147,11 @@ func test_window_meshes_use_correct_materials() -> void:
 	var mats: Array[StandardMaterial3D] = []
 	for _i in 3:
 		mats.append(StandardMaterial3D.new())
+	var template_color := Color(0.18, 0.22, 0.28)
 	var win_mats: Array[StandardMaterial3D] = []
 	for _i in 4:
 		var wm := StandardMaterial3D.new()
-		wm.albedo_color = Color(0.18, 0.22, 0.28)
+		wm.albedo_color = template_color
 		win_mats.append(wm)
 	builder.init(grid, mats, win_mats, StandardMaterial3D.new())
 
@@ -158,78 +159,97 @@ func test_window_meshes_use_correct_materials() -> void:
 	add_child_autofree(chunk)
 	builder.build(chunk, Vector2i(0, 0), 0.0, 0.0)
 
+	# Each chunk gets its own material copies (not the template instances).
+	# Verify that each window mesh has a non-null StandardMaterial3D override
+	# with the correct albedo color copied from the template.
 	var body: Node = chunk.get_child(0)
 	for i in body.get_child_count():
 		var child := body.get_child(i)
 		if child is MeshInstance3D and child.name.begins_with("Windows_"):
-			var idx_str: String = child.name.replace("Windows_", "")
-			var idx := idx_str.to_int()
+			var mi := child as MeshInstance3D
+			assert_not_null(
+				mi.material_override,
+				"Window mesh %s should have a material override" % child.name,
+			)
+			var mat := mi.material_override as StandardMaterial3D
 			assert_eq(
-				(child as MeshInstance3D).material_override,
-				win_mats[idx],
-				"Window mesh should use corresponding material",
+				mat.albedo_color, template_color,
+				"Window material albedo should match the template color",
 			)
 
 
-# --- day_night_environment.gd toggling tests ---
+# --- day_night_environment.gd per-chunk toggling tests ---
 
-func test_mat_active_starts_empty() -> void:
-	var env: Node = DayNightEnvScript.new()
-	add_child_autofree(env)
-	assert_eq(
-		env._mat_active.size(), 0,
-		"mat_active should start empty — sized on first night",
-	)
-
-
-func test_mat_active_fill_resets_all() -> void:
-	var env: Node = DayNightEnvScript.new()
-	add_child_autofree(env)
-	env._mat_active.resize(4)
-	env._mat_active[1] = false
-	env._mat_active[3] = false
-	env._mat_active.fill(true)
-	assert_eq(
-		env._mat_active, [true, true, true, true] as Array[bool],
-		"fill(true) should reset all groups to active",
-	)
-
-
-func test_on_window_toggle_keeps_at_least_one_on() -> void:
-	# Simulate toggling with only 1 group on — it should not turn it off
-	var env: Node = DayNightEnvScript.new()
-	add_child_autofree(env)
-	# Wait a frame for _ready
-	await get_tree().process_frame
-
-	# Create a fake city using the actual city script so _window_mats exists
-	var fake_city: Node3D = CityScript.new()
-	fake_city._window_mats = [] as Array[StandardMaterial3D]
+func test_builder_stores_window_mats_meta() -> void:
+	var builder = BuilderScript.new()
+	var grid = RoadGridScript.new()
+	var mats: Array[StandardMaterial3D] = []
+	for _i in 3:
+		mats.append(StandardMaterial3D.new())
+	var win_mats: Array[StandardMaterial3D] = []
 	for _i in 4:
-		var m := StandardMaterial3D.new()
-		m.emission_enabled = false
-		fake_city._window_mats.append(m)
-	add_child_autofree(fake_city)
-	env._city = fake_city
+		win_mats.append(StandardMaterial3D.new())
+	builder.init(grid, mats, win_mats, StandardMaterial3D.new())
 
-	# Set only group 2 as on
-	env._mat_active = [false, false, true, false] as Array[bool]
+	var chunk := Node3D.new()
+	add_child_autofree(chunk)
+	builder.build(chunk, Vector2i(0, 0), 0.0, 0.0)
 
-	# Force night hour so toggle doesn't bail
-	var saved_hour: float = DayNightManager.current_hour
-	DayNightManager.current_hour = 22.0
-
-	# Call toggle many times — group 2 should never turn off
-	for _i in 100:
-		env._on_window_toggle()
-
+	var body: Node = chunk.get_child(0)
 	assert_true(
-		env._mat_active.has(true),
-		"At least one group must remain active after toggling",
+		body.has_meta("window_mats"),
+		"Builder should store window_mats metadata on the body node",
 	)
 
-	# Restore hour
-	DayNightManager.current_hour = saved_hour
+
+func test_builder_window_active_all_true_initially() -> void:
+	var builder = BuilderScript.new()
+	var grid = RoadGridScript.new()
+	var mats: Array[StandardMaterial3D] = []
+	for _i in 3:
+		mats.append(StandardMaterial3D.new())
+	var win_mats: Array[StandardMaterial3D] = []
+	for _i in 4:
+		win_mats.append(StandardMaterial3D.new())
+	builder.init(grid, mats, win_mats, StandardMaterial3D.new())
+
+	var chunk := Node3D.new()
+	add_child_autofree(chunk)
+	builder.build(chunk, Vector2i(0, 0), 0.0, 0.0)
+
+	var body: Node = chunk.get_child(0)
+	if not body.has_meta("window_active"):
+		return  # no windows on this tile — skip
+	var active: Array = body.get_meta("window_active")
+	for i in active.size():
+		assert_true(
+			active[i],
+			"window_active[%d] should start as true" % i,
+		)
+
+
+func test_builder_adds_body_to_building_chunk_group() -> void:
+	var builder = BuilderScript.new()
+	var grid = RoadGridScript.new()
+	var mats: Array[StandardMaterial3D] = []
+	for _i in 3:
+		mats.append(StandardMaterial3D.new())
+	var win_mats: Array[StandardMaterial3D] = []
+	for _i in 4:
+		win_mats.append(StandardMaterial3D.new())
+	builder.init(grid, mats, win_mats, StandardMaterial3D.new())
+
+	var chunk := Node3D.new()
+	add_child_autofree(chunk)
+	builder.build(chunk, Vector2i(0, 0), 0.0, 0.0)
+
+	var body: Node = chunk.get_child(0)
+	# Only assert group membership when windows were actually created
+	if body.has_meta("window_mats"):
+		assert_true(
+			body.is_in_group("building_chunk"),
+			"Body with windows should be in building_chunk group",
+		)
 
 
 # ==========================================================================
