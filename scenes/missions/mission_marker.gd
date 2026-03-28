@@ -14,6 +14,18 @@ var _pulse_time := 0.0
 func _ready() -> void:
 	add_to_group("mission_marker")
 	trigger.body_entered.connect(_on_body_entered)
+	_snap_to_ground()
+
+
+func _snap_to_ground() -> void:
+	var space := get_world_3d().direct_space_state
+	var from := global_position + Vector3(0.0, 100.0, 0.0)
+	var to := global_position + Vector3(0.0, -20.0, 0.0)
+	var query := PhysicsRayQueryParameters3D.create(from, to)
+	query.collision_mask = 1  # Ground layer only — ignores buildings
+	var hit := space.intersect_ray(query)
+	if not hit.is_empty():
+		global_position.y = hit.position.y
 
 
 func _process(delta: float) -> void:

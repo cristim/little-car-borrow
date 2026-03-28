@@ -333,8 +333,8 @@ func _gen_sidewalk_pos(
 		if b and b.get_signed_distance(pos.x, pos.z) >= 0.0:
 			continue
 		return pos
-	# Fallback: offset from near position
-	return near + Vector3(min_dist, 0.0, 0.0)
+	# Fallback: offset from near position at street level
+	return Vector3(near.x + min_dist, 0.15, near.z)
 
 
 func _find_available(mission_id: String) -> Dictionary:
