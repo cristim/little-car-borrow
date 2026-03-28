@@ -96,6 +96,8 @@ var _window_toggle_timer: Timer
 
 var _moon: MeshInstance3D
 var _moon_mat: ShaderMaterial
+var _moon_dir_valid := false   # true once position is set for current night
+var _moon_dir := Vector3.ZERO  # cached direction; recomputed once per night
 var _star_sphere: MeshInstance3D
 var _star_mat: ShaderMaterial
 var _clouds: Array[Node3D] = []
@@ -310,13 +312,19 @@ func _update_moon(h: float) -> void:
 	var night: float = _night_factor(h)
 	_moon.visible = night > 0.01
 	if not _moon.visible:
+		# Reset so the position is recalculated at the next nightfall.
+		_moon_dir_valid = false
 		return
 	var cam: Camera3D = get_viewport().get_camera_3d()
 	var origin: Vector3 = cam.global_position if cam else Vector3.ZERO
 	var sun_fwd: Vector3 = -_light.global_basis.z if _light else Vector3(0.0, -1.0, 0.0)
-	# Moon opposite the sun; ensure it stays above horizon
-	var moon_dir: Vector3 = Vector3(-sun_fwd.x, absf(sun_fwd.y) + 0.15, -sun_fwd.z).normalized()
-	_moon.global_position = origin + moon_dir * MOON_DIST
+	# Fix the moon's sky position once per night so it does not visibly drift.
+	# Game time is compressed 72×, so updating moon_dir every frame would move
+	# it noticeably fast.  The phase (shader sun_dir) still updates every frame.
+	if not _moon_dir_valid:
+		_moon_dir = Vector3(-sun_fwd.x, absf(sun_fwd.y) + 0.15, -sun_fwd.z).normalized()
+		_moon_dir_valid = true
+	_moon.global_position = origin + _moon_dir * MOON_DIST
 	_moon_mat.set_shader_parameter("brightness", night)
 	_moon_mat.set_shader_parameter("sun_dir", sun_fwd)
 
