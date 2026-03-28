@@ -407,7 +407,7 @@ func test_mouse_input_allowed_in_shoulder_views() -> void:
 
 
 # ==========================================================================
-# Shoulder offset blend (_blend_x drives global_position lateral shift)
+# Shoulder offset blend (_blend_x drives spring_arm.position.x)
 # ==========================================================================
 
 func test_left_view_blends_x_negative() -> void:
@@ -417,6 +417,10 @@ func test_left_view_blends_x_negative() -> void:
 		_cam_root._blend_x, 0.0,
 		"Left shoulder view should blend _blend_x negative",
 	)
+	assert_lt(
+		_spring_arm.position.x, 0.0,
+		"Left shoulder should shift spring_arm.position.x negative",
+	)
 
 
 func test_right_view_blends_x_positive() -> void:
@@ -425,6 +429,10 @@ func test_right_view_blends_x_positive() -> void:
 	assert_gt(
 		_cam_root._blend_x, 0.0,
 		"Right shoulder view should blend _blend_x positive",
+	)
+	assert_gt(
+		_spring_arm.position.x, 0.0,
+		"Right shoulder should shift spring_arm.position.x positive",
 	)
 
 
