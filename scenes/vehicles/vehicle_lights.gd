@@ -3,9 +3,9 @@ extends Node3D
 ## Attach as child of the vehicle's Body node.
 ## Call initialize(vehicle_ref) after adding to tree.
 
-const HEADLIGHT_OFFSETS := [Vector3(-0.55, 0.05, -2.1), Vector3(0.55, 0.05, -2.1)]
-const TAILLIGHT_OFFSETS := [Vector3(-0.55, 0.3, 2.0), Vector3(0.55, 0.3, 2.0)]
-const REVERSE_OFFSETS := [Vector3(-0.4, 0.3, 2.0), Vector3(0.4, 0.3, 2.0)]
+const HEADLIGHT_OFFSETS := [Vector3(-0.55, -0.10, -2.1), Vector3(0.55, -0.10, -2.1)]
+const TAILLIGHT_OFFSETS := [Vector3(-0.55, -0.12, 2.0), Vector3(0.55, -0.12, 2.0)]
+const REVERSE_OFFSETS := [Vector3(-0.4, -0.12, 2.0), Vector3(0.4, -0.12, 2.0)]
 const HEADLIGHT_FIXTURE_SIZE := Vector2(0.12, 0.08)
 const TAILLIGHT_FIXTURE_SIZE := Vector2(0.14, 0.06)
 const REVERSE_FIXTURE_SIZE := Vector2(0.08, 0.05)
