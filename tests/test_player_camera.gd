@@ -407,24 +407,24 @@ func test_mouse_input_allowed_in_shoulder_views() -> void:
 
 
 # ==========================================================================
-# Shoulder camera x offset
+# Shoulder offset blend (_blend_x drives global_position lateral shift)
 # ==========================================================================
 
-func test_left_view_blends_camera_x_negative() -> void:
+func test_left_view_blends_x_negative() -> void:
 	_cam_root._view_mode = PlayerCameraScript.VIEW_LEFT
 	_cam_root._physics_process(0.5)
 	assert_lt(
 		_cam_root._blend_x, 0.0,
-		"Left shoulder view should push camera x negative",
+		"Left shoulder view should blend _blend_x negative",
 	)
 
 
-func test_right_view_blends_camera_x_positive() -> void:
+func test_right_view_blends_x_positive() -> void:
 	_cam_root._view_mode = PlayerCameraScript.VIEW_RIGHT
 	_cam_root._physics_process(0.5)
 	assert_gt(
 		_cam_root._blend_x, 0.0,
-		"Right shoulder view should push camera x positive",
+		"Right shoulder view should blend _blend_x positive",
 	)
 
 
@@ -434,5 +434,5 @@ func test_normal_view_x_returns_to_zero() -> void:
 	_cam_root._physics_process(0.5)
 	assert_lt(
 		absf(_cam_root._blend_x), 0.6,
-		"Normal view should blend camera x back toward zero",
+		"Normal view should blend _blend_x back toward zero",
 	)

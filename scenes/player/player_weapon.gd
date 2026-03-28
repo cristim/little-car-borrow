@@ -196,6 +196,7 @@ func _shoot() -> void:
 		_flash_timer = MUZZLE_FLASH_TIME
 
 	_play_gunshot()
+	EventBus.gunshot_fired.emit(from)
 
 	for _p in range(pellets):
 		var dir := base_dir

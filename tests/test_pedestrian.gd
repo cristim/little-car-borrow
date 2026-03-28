@@ -228,6 +228,113 @@ func test_frame_counter_increments() -> void:
 
 
 # ---------------------------------------------------------------------------
+# _on_gunshot_fired
+# ---------------------------------------------------------------------------
+
+func test_gunshot_hear_radius_constant() -> void:
+	assert_eq(PedestrianScript.GUNSHOT_HEAR_RADIUS, 100.0)
+
+
+func test_gunshot_within_radius_triggers_flee() -> void:
+	var ped := _make_pedestrian_with_sm()
+	add_child_autofree(ped)
+	await get_tree().process_frame
+
+	# Shot fired 10 m away — well within 100 m radius
+	var shot_pos := ped.global_position + Vector3(10.0, 0.0, 0.0)
+	ped._on_gunshot_fired(shot_pos)
+
+	var sm := ped.get_node("StateMachine")
+	var flee := sm.get_node("PedestrianFlee") as MockState
+	assert_true(flee.entered, "Pedestrian should flee from nearby gunshot")
+	assert_true(flee.last_msg.has("threat_pos"), "Flee msg should include threat_pos")
+	assert_eq(flee.last_msg["threat_pos"], shot_pos)
+
+
+func test_gunshot_outside_radius_does_not_trigger_flee() -> void:
+	var ped := _make_pedestrian_with_sm()
+	add_child_autofree(ped)
+	await get_tree().process_frame
+
+	# Shot fired 150 m away — beyond 100 m radius
+	var shot_pos := ped.global_position + Vector3(150.0, 0.0, 0.0)
+	ped._on_gunshot_fired(shot_pos)
+
+	var sm := ped.get_node("StateMachine")
+	var flee := sm.get_node("PedestrianFlee") as MockState
+	assert_false(flee.entered, "Pedestrian should not flee from distant gunshot")
+
+
+func test_gunshot_exactly_at_radius_boundary_does_not_trigger() -> void:
+	var ped := _make_pedestrian_with_sm()
+	add_child_autofree(ped)
+	await get_tree().process_frame
+
+	# Exactly at 100 m — distance > GUNSHOT_HEAR_RADIUS is false, so should flee
+	# Actually distance == radius is NOT > radius, so it DOES trigger.
+	# Place at 100.1 m to test the "outside" boundary.
+	var shot_pos := ped.global_position + Vector3(100.1, 0.0, 0.0)
+	ped._on_gunshot_fired(shot_pos)
+
+	var sm := ped.get_node("StateMachine")
+	var flee := sm.get_node("PedestrianFlee") as MockState
+	assert_false(flee.entered, "Shot just outside radius should not trigger flee")
+
+
+func test_gunshot_does_not_interrupt_already_fleeing() -> void:
+	var ped := _make_pedestrian_with_sm()
+	add_child_autofree(ped)
+	await get_tree().process_frame
+
+	# Transition into flee first
+	var sm := ped.get_node("StateMachine")
+	sm.transition_to("PedestrianFlee", {"threat_pos": Vector3.ZERO})
+
+	var flee := sm.get_node("PedestrianFlee") as MockState
+	flee.entered = false  # reset tracking
+
+	# Nearby gunshot while already fleeing
+	ped._on_gunshot_fired(ped.global_position + Vector3(5.0, 0.0, 0.0))
+
+	assert_false(flee.entered, "Should not re-enter flee when already fleeing")
+
+
+func test_gunshot_without_state_machine_does_not_crash() -> void:
+	var ped := _make_pedestrian_bare()
+	add_child_autofree(ped)
+	await get_tree().process_frame
+
+	# Should not crash even with no state machine
+	ped._on_gunshot_fired(ped.global_position + Vector3(1.0, 0.0, 0.0))
+	pass_test("No crash with missing StateMachine")
+
+
+func test_ready_connects_gunshot_signal() -> void:
+	var ped := _make_pedestrian_bare()
+	add_child_autofree(ped)
+	await get_tree().process_frame
+
+	assert_true(
+		EventBus.gunshot_fired.is_connected(ped._on_gunshot_fired),
+		"Pedestrian should connect to EventBus.gunshot_fired on ready",
+	)
+
+
+func test_exit_tree_disconnects_gunshot_signal() -> void:
+	var ped := _make_pedestrian_bare()
+	add_child_autofree(ped)
+	await get_tree().process_frame
+
+	assert_true(EventBus.gunshot_fired.is_connected(ped._on_gunshot_fired))
+	remove_child(ped)  # triggers _exit_tree
+	assert_false(
+		EventBus.gunshot_fired.is_connected(ped._on_gunshot_fired),
+		"Signal should be disconnected after _exit_tree",
+	)
+	ped.queue_free()
+
+
+# ---------------------------------------------------------------------------
 # _physics_process — no state machine does not crash
 # ---------------------------------------------------------------------------
 

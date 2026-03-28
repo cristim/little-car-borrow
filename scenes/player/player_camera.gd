@@ -87,7 +87,15 @@ func _physics_process(delta: float) -> void:
 	var cur_yaw: float = lerpf(_yaw, _yaw + PI, _face_cam_t)
 	var cur_pitch: float = lerpf(_pitch, FACE_CAM_PITCH, _face_cam_t)
 	spring_arm.spring_length = _blend_spring
-	camera.position.x = _blend_x
+
+	# Shoulder offset: shift the whole rig sideways so the spring arm pivot
+	# (and the collision ray) moves with it.  SpringArm3D manages its children
+	# along its own Z axis, so setting camera.position.x would be overridden.
+	# Camera right in world space = (cos(yaw), 0, sin(yaw)).
+	var right := Vector3(cos(_yaw), 0.0, sin(_yaw))
+	global_position = (
+		parent.global_position + Vector3(0.0, height_offset, 0.0) + right * _blend_x
+	)
 	rotation = Vector3(cur_pitch, cur_yaw, 0)
 
 

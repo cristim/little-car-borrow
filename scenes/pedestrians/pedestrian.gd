@@ -1,9 +1,11 @@
 extends CharacterBody3D
 ## Pedestrian NPC with Walk/Idle/Flee states and vehicle proximity detection.
+## Flees from fast vehicles (ProximityArea) and from gunshots within hearing range.
 
 const FLEE_VEHICLE_SPEED := 5.0
 const LOD_MID_DIST := 40.0
 const LOD_FAR_DIST := 70.0
+const GUNSHOT_HEAR_RADIUS := 100.0
 
 var _frame_counter := 0
 
@@ -13,6 +15,12 @@ func _ready() -> void:
 	var area := get_node_or_null("ProximityArea") as Area3D
 	if area:
 		area.body_entered.connect(_on_proximity_body_entered)
+	EventBus.gunshot_fired.connect(_on_gunshot_fired)
+
+
+func _exit_tree() -> void:
+	if EventBus.gunshot_fired.is_connected(_on_gunshot_fired):
+		EventBus.gunshot_fired.disconnect(_on_gunshot_fired)
 
 
 func _physics_process(delta: float) -> void:
@@ -55,3 +63,13 @@ func _on_proximity_body_entered(body: Node) -> void:
 				"PedestrianFlee",
 				{"threat_pos": (body as Node3D).global_position},
 			)
+
+
+func _on_gunshot_fired(shot_pos: Vector3) -> void:
+	if global_position.distance_to(shot_pos) > GUNSHOT_HEAR_RADIUS:
+		return
+	var sm := get_node_or_null("StateMachine")
+	if sm and sm.current_state:
+		var current_name: String = sm.current_state.name.to_lower()
+		if current_name != "pedestrianflee":
+			sm.transition_to("PedestrianFlee", {"threat_pos": shot_pos})
