@@ -216,21 +216,38 @@ func _try_spawn() -> void:
 		if _grid.is_on_ramp(spawn_pos.x, spawn_pos.z):
 			continue
 
-		# Adjust spawn height to terrain level.
-		# City terrain is always flat (y=0); outside city use noise height,
-		# but reject steep hills — no road exists there and the car would
-		# appear to fall from the sky as seen from the flat city below.
+		# Find the actual physical surface under the spawn point.
+		# Inside the city we raycast downward so we hit the exact road mesh
+		# and detect building tops (which would cause physics-launch on spawn).
+		# Outside the city we fall back to noise height with a tighter cap.
 		var sd: float = _boundary.get_signed_distance(spawn_pos.x, spawn_pos.z)
-		var ground_y: float
+		var surface_y: float
 		if sd < 0.0:
-			ground_y = 0.0
+			# City: raycast from above to find real surface.
+			# collision_mask 3 = Ground (1) + Static buildings (2).
+			var world: World3D = _player.get_world_3d()
+			var space: PhysicsDirectSpaceState3D = world.direct_space_state
+			var rq := PhysicsRayQueryParameters3D.create(
+				Vector3(spawn_pos.x, 80.0, spawn_pos.z),
+				Vector3(spawn_pos.x, -5.0, spawn_pos.z),
+			)
+			rq.collision_mask = 3
+			var hit: Dictionary = space.intersect_ray(rq)
+			if hit.is_empty():
+				continue  # no surface found
+			surface_y = (hit["position"] as Vector3).y
+			if surface_y > 1.0:
+				continue  # building top — no road at this XZ
 		else:
-			ground_y = _boundary.get_ground_height(spawn_pos.x, spawn_pos.z)
-			if ground_y > 6.0:
+			surface_y = _boundary.get_ground_height(spawn_pos.x, spawn_pos.z)
+			if surface_y > 6.0:
 				continue  # steep terrain — no road here
-		if ground_y < SEA_LEVEL:
+		if surface_y < SEA_LEVEL:
 			continue
-		spawn_pos.y = ground_y + 0.5
+		# +1.2 m clearance: keeps GEVP wheel bottoms above the surface so the
+		# suspension spring is not pre-compressed at spawn (pre-compression
+		# causes the large upward impulse that launches vehicles into the air).
+		spawn_pos.y = surface_y + 1.2
 
 		var too_close := false
 		for v in _vehicles:
