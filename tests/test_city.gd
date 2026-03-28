@@ -69,8 +69,8 @@ func test_sea_level() -> void:
 
 func test_edge_mismatch_threshold() -> void:
 	assert_eq(
-		CityScript.EDGE_MISMATCH_THRESHOLD, 0.5,
-		"EDGE_MISMATCH_THRESHOLD should be 0.5 meters",
+		CityScript.EDGE_MISMATCH_THRESHOLD, 0.05,
+		"EDGE_MISMATCH_THRESHOLD should be 0.05 meters",
 	)
 
 
@@ -353,10 +353,10 @@ func test_edges_mismatch_within_threshold() -> void:
 	var city: Node3D = CityScript.new()
 	add_child_autofree(city)
 	var a := PackedFloat32Array([1.0, 2.0, 3.0])
-	var b := PackedFloat32Array([1.4, 2.3, 3.5])
+	var b := PackedFloat32Array([1.04, 2.04, 3.04])
 	assert_false(
 		city._edges_mismatch(a, b),
-		"Values within 0.5 threshold should not mismatch",
+		"Values within 0.05 threshold should not mismatch",
 	)
 
 
