@@ -230,3 +230,91 @@ func test_on_window_toggle_keeps_at_least_one_on() -> void:
 
 	# Restore hour
 	DayNightManager.current_hour = saved_hour
+
+
+# ==========================================================================
+# st_add_windows_on_face_indep — per-window material independence
+# ==========================================================================
+
+func test_indep_uses_multiple_groups_on_tall_face() -> void:
+	# A tall, wide face should have rows×cols > win_count, so with random
+	# per-window assignment we expect more than one group to be used.
+	var win_count := 8
+	var win_sts: Array = []
+	var win_st_has_data: Array = []
+	for _i in win_count:
+		win_sts.append(SurfaceTool.new())
+		win_st_has_data.append(false)
+
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 12345  # deterministic
+
+	# A 20m wide × 30m tall face has plenty of windows
+	CityScript.st_add_windows_on_face_indep(
+		win_sts, win_count, win_st_has_data,
+		Vector3.ZERO, 20.0, 30.0,
+		Vector3(0, 0, -1), Vector3(1, 0, 0),
+		rng,
+	)
+
+	var groups_used := 0
+	for i in win_count:
+		if win_st_has_data[i]:
+			groups_used += 1
+	assert_gt(
+		groups_used, 1,
+		"A large face should distribute windows across multiple material groups",
+	)
+
+
+func test_indep_skips_narrow_face() -> void:
+	# A face narrower than one window should produce no geometry.
+	var win_count := 8
+	var win_sts: Array = []
+	var win_st_has_data: Array = []
+	for _i in win_count:
+		win_sts.append(SurfaceTool.new())
+		win_st_has_data.append(false)
+
+	var rng := RandomNumberGenerator.new()
+
+	CityScript.st_add_windows_on_face_indep(
+		win_sts, win_count, win_st_has_data,
+		Vector3.ZERO, 1.0, 20.0,  # only 1m wide — too narrow
+		Vector3(0, 0, -1), Vector3(1, 0, 0),
+		rng,
+	)
+
+	for i in win_count:
+		assert_false(
+			win_st_has_data[i],
+			"No geometry expected for a face narrower than one window",
+		)
+
+
+func test_indep_all_begun_sts_have_geometry() -> void:
+	# Every ST that was begun (has_data = true) should have vertices.
+	var win_count := 8
+	var win_sts: Array = []
+	var win_st_has_data: Array = []
+	for _i in win_count:
+		win_sts.append(SurfaceTool.new())
+		win_st_has_data.append(false)
+
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 99
+
+	CityScript.st_add_windows_on_face_indep(
+		win_sts, win_count, win_st_has_data,
+		Vector3.ZERO, 20.0, 30.0,
+		Vector3(0, 0, -1), Vector3(1, 0, 0),
+		rng,
+	)
+
+	for i in win_count:
+		if win_st_has_data[i]:
+			var mesh := (win_sts[i] as SurfaceTool).commit()
+			assert_gt(
+				mesh.get_surface_count(), 0,
+				"ST[%d] has_data=true but produced no mesh surface" % i,
+			)

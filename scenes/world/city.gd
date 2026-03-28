@@ -1070,3 +1070,67 @@ static func st_add_windows_on_face(
 			win_st.add_vertex(v0)
 			win_st.add_vertex(v3)
 			win_st.add_vertex(v2)
+
+
+## Like st_add_windows_on_face but picks a random SurfaceTool per window quad
+## so each window belongs to an independent material group and can toggle on/off
+## separately from its neighbours on the same wall.
+## win_sts: pool of SurfaceTools (one per material group).
+## win_st_has_data: parallel bool array; set to true when a ST is first begun.
+static func st_add_windows_on_face_indep(
+	win_sts: Array,
+	win_count: int,
+	win_st_has_data: Array,
+	face_center: Vector3,
+	face_width: float, face_height: float,
+	normal: Vector3,
+	right: Vector3,
+	rng: RandomNumberGenerator,
+) -> void:
+	var win_w := 1.5
+	var win_h := 2.0
+	var gap_x := rng.randf_range(0.6, 1.2)
+	var gap_y := 1.0
+	var floor_h := win_h + gap_y
+	var margin_x := 1.0
+	var margin_bottom := 3.0
+	var margin_top := 2.0
+	var offset := normal * 0.02
+
+	var usable_w := face_width - margin_x * 2.0
+	var usable_h := face_height - margin_bottom - margin_top
+	if usable_w < win_w or usable_h < win_h:
+		return
+
+	var cols := int(usable_w / (win_w + gap_x))
+	var rows := int(usable_h / floor_h)
+	if cols < 1 or rows < 1:
+		return
+
+	var total_w := cols * win_w + (cols - 1) * gap_x
+	var start_x := -total_w * 0.5 + win_w * 0.5
+	var start_y := -face_height * 0.5 + margin_bottom + win_h * 0.5
+
+	var up := Vector3.UP
+	for row in range(rows):
+		for col in range(cols):
+			var wi: int = rng.randi() % win_count
+			if not win_st_has_data[wi]:
+				(win_sts[wi] as SurfaceTool).begin(Mesh.PRIMITIVE_TRIANGLES)
+				win_st_has_data[wi] = true
+			var win_st: SurfaceTool = win_sts[wi]
+			var cx := start_x + col * (win_w + gap_x)
+			var cy := start_y + row * floor_h
+			var center := face_center + right * cx + up * cy + offset
+			var hw := win_w * 0.5
+			var hh := win_h * 0.5
+			var v0 := center - right * hw - up * hh
+			var v1 := center + right * hw - up * hh
+			var v2 := center + right * hw + up * hh
+			var v3 := center - right * hw + up * hh
+			win_st.add_vertex(v0)
+			win_st.add_vertex(v2)
+			win_st.add_vertex(v1)
+			win_st.add_vertex(v0)
+			win_st.add_vertex(v3)
+			win_st.add_vertex(v2)

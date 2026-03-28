@@ -158,8 +158,9 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 				st_used[mi] = true
 
 				# Add windows on buildings taller than 6m.
-				# Each face gets an independent material group so individual
-				# faces can toggle on/off separately at night.
+				# Each window quad gets an independently chosen material group
+				# so individual windows on the same wall can toggle on/off
+				# at different times throughout the night.
 				if s.y > 6.0:
 					var hx := s.x * 0.5
 					var hz := s.z * 0.5
@@ -174,14 +175,8 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 							Vector3(1, 0, 0), Vector3(0, 0, 1)],
 					]
 					for wf: Array in win_faces:
-						var wi: int = rng.randi() % win_count
-						if not win_st_has_data[wi]:
-							win_sts[wi].begin(
-								Mesh.PRIMITIVE_TRIANGLES,
-							)
-							win_st_has_data[wi] = true
-						_city_script.st_add_windows_on_face(
-							win_sts[wi],
+						_city_script.st_add_windows_on_face_indep(
+							win_sts, win_count, win_st_has_data,
 							wf[0] as Vector3, wf[1] as float,
 							s.y,
 							wf[2] as Vector3, wf[3] as Vector3,
