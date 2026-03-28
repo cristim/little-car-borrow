@@ -600,13 +600,22 @@ func test_hands_at_wrist_depth() -> void:
 
 
 func test_left_palm_centred_on_flashlight_tube() -> void:
-	# FlashlightBody centre is at Z≈-0.042; palm must be within 2 cm so
-	# the hand appears to grip the housing rather than floating beside it.
+	# Palm must be within 2 cm of the flashlight tube in Z (gripping it).
 	var palm_l := _le.get_node("HandLeft_Palm") as MeshInstance3D
 	var fl_body := _le.get_node("FlashlightBody") as MeshInstance3D
 	assert_almost_eq(
 		palm_l.position.z, fl_body.position.z, 0.02,
 		"Left palm Z should be within 2 cm of FlashlightBody Z",
+	)
+
+
+func test_flashlight_outside_forearm() -> void:
+	# Forearm half-width in Z = 0.045; flashlight tube radius = 0.010.
+	# Centre must be > 0.055 to clear the forearm face completely.
+	var fl_body := _le.get_node("FlashlightBody") as MeshInstance3D
+	assert_gt(
+		fl_body.position.z, 0.050,
+		"FlashlightBody centre must be outside the forearm (Z > 0.050)",
 	)
 
 
