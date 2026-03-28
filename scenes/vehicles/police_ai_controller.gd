@@ -56,7 +56,8 @@ const YIELD_THROTTLE_MAX := 0.15
 
 # Line-of-sight
 const LOS_RANGE := 100.0
-const LOS_LOST_TIMEOUT := 20.0
+const LOS_LOCK_RANGE := 80.0   # within this distance, chase is never abandoned
+const LOS_LOST_TIMEOUT := 40.0
 const LOS_CHECK_INTERVAL := 0.2
 
 # Stuck detection
@@ -236,8 +237,14 @@ func _update_ai_state(delta: float) -> void:
 		_los_check_timer = 0.0
 		_los_cached = _check_los()
 
-	# Drop pursuit only after losing LOS for a long time
-	if _los_cached:
+	# Drop pursuit only after losing LOS for a long time.
+	# Within LOS_LOCK_RANGE the player is considered visible regardless of
+	# raycast result — prevents quitting while the player is right there.
+	var player_dist: float = (
+		_vehicle.global_position.distance_to(_get_player_vehicle_pos())
+		if _vehicle else INF
+	)
+	if _los_cached or player_dist <= LOS_LOCK_RANGE:
 		_los_lost_timer = 0.0
 	else:
 		_los_lost_timer += delta
