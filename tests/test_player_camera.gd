@@ -258,3 +258,77 @@ func test_multiple_mouse_motions_accumulate_yaw() -> void:
 		_cam_root._yaw, expected, 0.001,
 		"Two mouse motions should accumulate",
 	)
+
+
+# ==========================================================================
+# Face-cam constants
+# ==========================================================================
+
+func test_face_cam_spring_shorter_than_normal() -> void:
+	assert_lt(
+		PlayerCameraScript.FACE_CAM_SPRING,
+		_cam_root.spring_length,
+		"Face-cam spring should be shorter than default for a close-up view",
+	)
+
+
+func test_face_cam_t_starts_at_zero() -> void:
+	assert_almost_eq(
+		_cam_root._face_cam_t, 0.0, 0.001,
+		"Face cam blend should start at 0 (normal view)",
+	)
+
+
+# ==========================================================================
+# Face-cam physics process — spring length blending
+# ==========================================================================
+
+func test_face_cam_spring_blends_toward_face_value() -> void:
+	# Simulate holding the face_cam action
+	Input.action_press("face_cam")
+	_cam_root._physics_process(0.5)
+	var spring_during: float = _cam_root.spring_arm.spring_length
+	Input.action_release("face_cam")
+	assert_lt(
+		spring_during,
+		_cam_root.spring_length,
+		"Spring length should shorten toward FACE_CAM_SPRING while held",
+	)
+
+
+func test_face_cam_spring_restores_on_release() -> void:
+	# Drive the lerp fully toward face cam
+	_cam_root._face_cam_t = 1.0
+	_cam_root._physics_process(0.0)  # apply t=1 without Input influence
+	_cam_root._face_cam_t = 0.0
+	_cam_root._physics_process(0.0)
+	# With t=0 the spring_length should be back to normal
+	assert_almost_eq(
+		_cam_root.spring_arm.spring_length,
+		_cam_root.spring_length,
+		0.01,
+		"Spring should restore to spring_length when face_cam_t = 0",
+	)
+
+
+func test_face_cam_yaw_offset_at_full_blend() -> void:
+	# At t=1 the camera yaw should be _yaw + PI (facing the front)
+	_cam_root._yaw = 0.5
+	_cam_root._face_cam_t = 1.0
+	_cam_root._physics_process(0.0)
+	var expected_yaw: float = 0.5 + PI
+	assert_almost_eq(
+		_cam_root.rotation.y, expected_yaw, 0.01,
+		"At full face-cam blend, yaw should be _yaw + PI",
+	)
+
+
+func test_mouse_input_blocked_during_face_cam() -> void:
+	# When face_cam_t >= 0.5 mouse motion should not update _yaw
+	_cam_root._face_cam_t = 0.8
+	_cam_root._yaw = 1.0
+	_cam_root._unhandled_input(_make_mouse_motion(Vector2(200.0, 0.0)))
+	assert_almost_eq(
+		_cam_root._yaw, 1.0, 0.001,
+		"Mouse input should be blocked while face-cam is active",
+	)
