@@ -90,6 +90,7 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 	body.add_to_group("Static")
 
 	var any_placed := false
+	var door_infos: Array[Array] = []
 
 	for bx in range(_grid.GRID_SIZE):
 		for bz in range(_grid.GRID_SIZE):
@@ -136,6 +137,7 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 					_bld_builder._add_building_collision_with_door(
 						body, center, size, door_face,
 					)
+					door_infos.append([center, size, door_face])
 					has_interiors = true
 				else:
 					_city_script.st_add_box_no_bottom(sts[mi], center, size)
@@ -213,6 +215,11 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 		body.add_to_group("building_chunk")
 
 	chunk.add_child(body)
+
+	for di: Array in door_infos:
+		_bld_builder._create_door_node(
+			chunk, di[0] as Vector3, di[1] as Vector3, di[2] as int,
+		)
 
 
 ## Add residential-scale windows on all faces except the door face.

@@ -16,6 +16,7 @@ var _window_mats: Array[StandardMaterial3D] = []
 var _interior_mat: StandardMaterial3D
 var _roof_mats: Array[StandardMaterial3D] = []
 var _city_script: GDScript = preload("res://scenes/world/city.gd")
+var _door_script: GDScript = preload("res://scenes/world/building_door.gd")
 
 
 func init(
@@ -84,6 +85,9 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 	var int_st := SurfaceTool.new()
 	int_st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var has_interiors := false
+
+	# Deferred door spawns: [center, size, door_face] — added after body
+	var door_infos: Array[Array] = []
 
 	for bx in range(_grid.GRID_SIZE):
 		for bz in range(_grid.GRID_SIZE):
@@ -154,6 +158,7 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 						_add_building_collision_with_door(
 							body, c, s, door_face,
 						)
+						door_infos.append([c, s, door_face])
 					else:
 						_city_script.st_add_box_no_bottom(
 							sts[mi], c, s,
@@ -259,6 +264,9 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 		body.add_to_group("building_chunk")
 
 	chunk.add_child(body)
+
+	for di: Array in door_infos:
+		_create_door_node(chunk, di[0] as Vector3, di[1] as Vector3, di[2] as int)
 
 
 func _add_building_with_door(
@@ -643,6 +651,74 @@ func _st_add_hip_roof(
 		st.add_vertex(e0); st.add_vertex(r0); st.add_vertex(e1)
 		# Back hip triangle — outward normal = +Z
 		st.add_vertex(e2); st.add_vertex(r1); st.add_vertex(e3)
+
+
+## Spawn an interactive door node at the correct hinge position for a building.
+## door_face: 0=front(-Z), 1=back(+Z), 2=left(-X), 3=right(+X)
+func _create_door_node(
+	chunk: Node3D,
+	center: Vector3,
+	size: Vector3,
+	door_face: int,
+) -> void:
+	var hx := size.x * 0.5
+	var hz := size.z * 0.5
+	var ground_y := center.y - size.y * 0.5
+
+	# Face data: [xz_offset, normal, right, door_rot_y]
+	# door_rot_y sets basis so local +X = face_right and local -Z = face_normal.
+	var face_data: Array[Array] = [
+		[Vector3(0, 0, -hz), Vector3(0, 0, -1), Vector3(1, 0, 0), 0.0],
+		[Vector3(0, 0, hz),  Vector3(0, 0, 1),  Vector3(-1, 0, 0), PI],
+		[Vector3(-hx, 0, 0), Vector3(-1, 0, 0), Vector3(0, 0, -1), PI / 2.0],
+		[Vector3(hx, 0, 0),  Vector3(1, 0, 0),  Vector3(0, 0, 1), -PI / 2.0],
+	]
+
+	var fd: Array = face_data[door_face]
+	var face_offset: Vector3 = fd[0]
+	var face_normal: Vector3 = fd[1]
+	var face_right: Vector3 = fd[2]
+	var door_rot_y: float = fd[3]
+
+	# Hinge at right edge of door opening, flush with outer face
+	var hinge_pos := Vector3(
+		center.x + face_offset.x + face_right.x * DOOR_WIDTH * 0.5 + face_normal.x * 0.03,
+		ground_y,
+		center.z + face_offset.z + face_right.z * DOOR_WIDTH * 0.5 + face_normal.z * 0.03,
+	)
+
+	var door_node := Node3D.new()
+	door_node.name = "Door"
+	door_node.set_script(_door_script)
+	door_node.position = hinge_pos
+	door_node.rotation.y = door_rot_y
+
+	# Door panel mesh — local X is face_right, so mesh spans -DOOR_WIDTH/2 from hinge
+	var mesh_inst := MeshInstance3D.new()
+	mesh_inst.name = "DoorMesh"
+	var box := BoxMesh.new()
+	box.size = Vector3(DOOR_WIDTH - 0.04, DOOR_HEIGHT - 0.04, 0.06)
+	mesh_inst.mesh = box
+	mesh_inst.position = Vector3(-DOOR_WIDTH * 0.5, DOOR_HEIGHT * 0.5, 0.0)
+	if _building_mats.size() > 0:
+		mesh_inst.material_override = _building_mats[0]
+	door_node.add_child(mesh_inst)
+
+	# Interaction zone — in local space, local -Z points outward (face normal direction)
+	var area := Area3D.new()
+	area.name = "InteractionZone"
+	area.collision_layer = 0
+	area.collision_mask = 4  # Player layer
+
+	var col_shape := CollisionShape3D.new()
+	var sphere := SphereShape3D.new()
+	sphere.radius = 1.8
+	col_shape.shape = sphere
+	col_shape.position = Vector3(0.0, DOOR_HEIGHT * 0.5, -1.5)
+	area.add_child(col_shape)
+	door_node.add_child(area)
+
+	chunk.add_child(door_node)
 
 
 func _get_block_center_local(bx: int, bz: int) -> Vector2:

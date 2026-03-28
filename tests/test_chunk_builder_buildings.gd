@@ -95,9 +95,9 @@ func test_build_adds_buildings_body_to_chunk() -> void:
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
 	_builder.build(chunk, Vector2i(0, 0), 0.0, 0.0)
-	assert_eq(chunk.get_child_count(), 1, "Build should add one child")
+	assert_gt(chunk.get_child_count(), 0, "Build should add at least one child")
 	var body := chunk.get_child(0) as StaticBody3D
-	assert_not_null(body, "Child should be a StaticBody3D")
+	assert_not_null(body, "First child should be the StaticBody3D")
 	assert_eq(body.name, "Buildings")
 
 
@@ -406,8 +406,9 @@ func test_build_with_offset() -> void:
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
 	_builder.build(chunk, Vector2i(1, 1), span, span)
-	assert_eq(chunk.get_child_count(), 1, "Should still produce one body")
+	assert_gt(chunk.get_child_count(), 0, "Should still produce at least one child")
 	var body := chunk.get_child(0) as StaticBody3D
+	assert_not_null(body, "First child should be StaticBody3D even with offset")
 	assert_gt(
 		body.get_child_count(), 0,
 		"Body should have children even with offset",
