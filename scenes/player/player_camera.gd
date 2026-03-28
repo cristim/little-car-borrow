@@ -84,14 +84,14 @@ func _physics_process(delta: float) -> void:
 		delta * FACE_CAM_LERP,
 	)
 
-	var cur_yaw: float = lerpf(_yaw, _yaw + PI, _face_cam_t)
+	# Shoulder yaw correction: when the spring arm is offset sideways by
+	# blend_x and the camera is spring_length behind, the angle needed to
+	# point back at the player is atan2(blend_x, spring_length).
+	# This blends naturally to zero in front view (blend_x → 0).
+	var shoulder_corr: float = atan2(_blend_x, _blend_spring)
+	var cur_yaw: float = lerpf(_yaw, _yaw + PI, _face_cam_t) + shoulder_corr
 	var cur_pitch: float = lerpf(_pitch, FACE_CAM_PITCH, _face_cam_t)
 	spring_arm.spring_length = _blend_spring
-
-	# Shoulder offset: shift the spring arm laterally within the rig's local
-	# space.  The camera (at the arm's end) still faces the rig origin (player)
-	# because its look direction is the arm's -Z, which always points back
-	# toward the pivot regardless of the arm's lateral position.
 	spring_arm.position.x = _blend_x
 
 	global_position = parent.global_position + Vector3(0.0, height_offset, 0.0)
