@@ -155,27 +155,27 @@ func _build_hands() -> void:
 	var mat_skin: StandardMaterial3D = _mat_ear  # same skin tone as ears/neck
 
 	# --- Left hand (holds flashlight) ---
-	# Elbow +Z = front of arm (world forward at rest, world up when aimed).
-	# Forearm half-width in Z = 0.045; tube centre at Z=+0.060 clears it by 5 mm.
-	# Palm sits between arm and tube (+Z side); fingers curl over the tube.
+	# One solid fist block (Palm) centred on the tube; Fingers is a thin knuckle
+	# ridge across the leading face.  Thumb sticks out on the +X side.
 	_add_box(_left_elbow, "HandLeft_Palm", mat_skin,
-		Vector3(0.042, 0.044, 0.030), Vector3(0.000, -0.285, 0.042))
+		Vector3(0.072, 0.055, 0.070), Vector3(0.000, -0.290, 0.052))
 	_add_box(_left_elbow, "HandLeft_Fingers", mat_skin,
-		Vector3(0.055, 0.040, 0.016), Vector3(0.000, -0.305, 0.070))
+		Vector3(0.068, 0.010, 0.028), Vector3(0.000, -0.310, 0.074))
 	_add_box(_left_elbow, "HandLeft_Thumb", mat_skin,
-		Vector3(0.020, 0.032, 0.026), Vector3(0.042, -0.272, 0.050))
+		Vector3(0.028, 0.048, 0.030), Vector3(0.050, -0.280, 0.048))
 	# Flashlight tube along Y; rotation.x = -20° gives upward tilt when aimed.
 	var fl: MeshInstance3D = _add_box(_left_elbow, "FlashlightBody", _mat_flashlight_body,
 		Vector3(0.020, 0.068, 0.020), Vector3(0.000, -0.294, 0.060))
 	fl.rotation.x = -deg_to_rad(20.0)
 
 	# --- Right hand (grips gun) ---
+	# Same approach: one solid fist block + thin knuckle ridge + thumb.
 	_add_box(_right_elbow, "HandRight_Palm", mat_skin,
-		Vector3(0.068, 0.045, 0.040), Vector3(0.000, -0.252, -0.020))
+		Vector3(0.076, 0.056, 0.068), Vector3(0.000, -0.255, -0.032))
 	_add_box(_right_elbow, "HandRight_Fingers", mat_skin,
-		Vector3(0.055, 0.040, 0.018), Vector3(0.000, -0.272, -0.048))
+		Vector3(0.070, 0.010, 0.028), Vector3(0.000, -0.275, -0.052))
 	_add_box(_right_elbow, "HandRight_Thumb", mat_skin,
-		Vector3(0.020, 0.032, 0.025), Vector3(-0.038, -0.240, -0.008))
+		Vector3(0.028, 0.048, 0.028), Vector3(-0.048, -0.245, -0.015))
 
 
 ## Helper: create a MeshInstance3D with a BoxMesh, attach to parent node.
