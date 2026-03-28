@@ -1,7 +1,7 @@
 extends Node3D
-## Greybox pedestrian visual: multi-part humanoid with random color.
+## Greybox pedestrian visual: multi-part humanoid with randomized appearance and face details.
 
-const CLOTHING_COLORS: Array[Color] = [
+const SHIRT_COLORS: Array[Color] = [
 	Color(0.3, 0.5, 0.7),
 	Color(0.7, 0.3, 0.3),
 	Color(0.3, 0.7, 0.4),
@@ -10,6 +10,17 @@ const CLOTHING_COLORS: Array[Color] = [
 	Color(0.8, 0.6, 0.3),
 	Color(0.2, 0.6, 0.6),
 	Color(0.7, 0.7, 0.3),
+	Color(0.85, 0.85, 0.85),
+	Color(0.15, 0.15, 0.15),
+]
+
+const PANT_COLORS: Array[Color] = [
+	Color(0.15, 0.20, 0.35),
+	Color(0.35, 0.30, 0.22),
+	Color(0.12, 0.12, 0.12),
+	Color(0.45, 0.35, 0.25),
+	Color(0.50, 0.50, 0.50),
+	Color(0.30, 0.45, 0.25),
 ]
 
 const SKIN_COLORS: Array[Color] = [
@@ -19,70 +30,166 @@ const SKIN_COLORS: Array[Color] = [
 	Color(0.40, 0.28, 0.18),
 ]
 
+const HAIR_COLORS: Array[Color] = [
+	Color(0.10, 0.07, 0.04),
+	Color(0.22, 0.14, 0.07),
+	Color(0.45, 0.28, 0.12),
+	Color(0.65, 0.45, 0.18),
+	Color(0.80, 0.65, 0.30),
+	Color(0.55, 0.20, 0.08),
+	Color(0.65, 0.65, 0.65),
+	Color(0.90, 0.90, 0.90),
+]
+
+const EYE_COLORS: Array[Color] = [
+	Color(0.12, 0.08, 0.05),
+	Color(0.22, 0.18, 0.08),
+	Color(0.15, 0.22, 0.18),
+	Color(0.18, 0.22, 0.30),
+]
+
 var _rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
 	_rng.randomize()
-	var clothing := CLOTHING_COLORS[_rng.randi() % CLOTHING_COLORS.size()]
-	var skin := SKIN_COLORS[_rng.randi() % SKIN_COLORS.size()]
 
-	var body_mat := StandardMaterial3D.new()
-	body_mat.albedo_color = clothing
+	var shirt_col := SHIRT_COLORS[_rng.randi() % SHIRT_COLORS.size()]
+	var pant_col := PANT_COLORS[_rng.randi() % PANT_COLORS.size()]
+	var skin_col := SKIN_COLORS[_rng.randi() % SKIN_COLORS.size()]
+	var hair_col := HAIR_COLORS[_rng.randi() % HAIR_COLORS.size()]
+	var eye_col := EYE_COLORS[_rng.randi() % EYE_COLORS.size()]
+
+	# Uniform scale: 87%–113% for height/build variation
+	var s: float = _rng.randf_range(0.87, 1.13)
+	scale = Vector3(s, s, s)
+
+	var shirt_mat := StandardMaterial3D.new()
+	shirt_mat.albedo_color = shirt_col
+
+	var pant_mat := StandardMaterial3D.new()
+	pant_mat.albedo_color = pant_col
 
 	var skin_mat := StandardMaterial3D.new()
-	skin_mat.albedo_color = skin
+	skin_mat.albedo_color = skin_col
 
-	# Torso (0.35 x 0.5 x 0.2) — center at y=1.0 (legs end at 0.75, torso spans 0.75-1.25)
+	var hair_mat := StandardMaterial3D.new()
+	hair_mat.albedo_color = hair_col
+
+	var eye_mat := StandardMaterial3D.new()
+	eye_mat.albedo_color = eye_col
+
+	var brow_mat := StandardMaterial3D.new()
+	brow_mat.albedo_color = hair_col.darkened(0.15)
+
+	var mouth_mat := StandardMaterial3D.new()
+	mouth_mat.albedo_color = Color(0.60, 0.28, 0.26)
+
+	# --- Torso (child 0) ---
 	var torso_mesh := BoxMesh.new()
 	torso_mesh.size = Vector3(0.35, 0.5, 0.2)
 	var torso := MeshInstance3D.new()
 	torso.mesh = torso_mesh
-	torso.material_override = body_mat
+	torso.material_override = shirt_mat
 	torso.position = Vector3(0.0, 1.0, 0.0)
 	add_child(torso)
 
-	# Head (0.22 x 0.22 x 0.22) — sits on top of torso
+	# --- Head pivot (child 1): Node3D hosting head mesh + face detail boxes ---
+	# Head half-extents: ±0.11 X, ±0.11 Y, ±0.11 Z; front face at Z = +0.11
+	var head_pivot := Node3D.new()
+	head_pivot.name = "HeadPivot"
+	head_pivot.position = Vector3(0.0, 1.36, 0.0)
+	add_child(head_pivot)
 	var head_mesh := BoxMesh.new()
 	head_mesh.size = Vector3(0.22, 0.22, 0.22)
-	var head := MeshInstance3D.new()
-	head.mesh = head_mesh
-	head.material_override = skin_mat
-	head.position = Vector3(0.0, 1.36, 0.0)
-	add_child(head)
+	var head_mi := MeshInstance3D.new()
+	head_mi.name = "HeadBase"
+	head_mi.mesh = head_mesh
+	head_mi.material_override = skin_mat
+	head_pivot.add_child(head_mi)
+	_build_face(head_pivot, eye_mat, brow_mat, skin_mat, mouth_mat, hair_mat)
 
-	# Left leg (cylinder radius 0.08, height 0.75) — center at y=0.375
+	# --- Legs (children 2, 3) ---
 	var leg_mesh := CylinderMesh.new()
 	leg_mesh.top_radius = 0.08
 	leg_mesh.bottom_radius = 0.08
 	leg_mesh.height = 0.75
 	var left_leg := MeshInstance3D.new()
 	left_leg.mesh = leg_mesh
-	left_leg.material_override = body_mat
+	left_leg.material_override = pant_mat
 	left_leg.position = Vector3(-0.1, 0.375, 0.0)
 	add_child(left_leg)
-
-	# Right leg
 	var right_leg := MeshInstance3D.new()
 	right_leg.mesh = leg_mesh
-	right_leg.material_override = body_mat
+	right_leg.material_override = pant_mat
 	right_leg.position = Vector3(0.1, 0.375, 0.0)
 	add_child(right_leg)
 
-	# Left arm (cylinder radius 0.06, height 0.55) — hangs from shoulder
+	# --- Arms (children 4, 5) — shirt colour (long sleeves) ---
 	var arm_mesh := CylinderMesh.new()
 	arm_mesh.top_radius = 0.06
 	arm_mesh.bottom_radius = 0.06
 	arm_mesh.height = 0.55
 	var left_arm := MeshInstance3D.new()
 	left_arm.mesh = arm_mesh
-	left_arm.material_override = skin_mat
+	left_arm.material_override = shirt_mat
 	left_arm.position = Vector3(-0.24, 0.97, 0.0)
 	add_child(left_arm)
-
-	# Right arm
 	var right_arm := MeshInstance3D.new()
 	right_arm.mesh = arm_mesh
-	right_arm.material_override = skin_mat
+	right_arm.material_override = shirt_mat
 	right_arm.position = Vector3(0.24, 0.97, 0.0)
 	add_child(right_arm)
+
+
+## Add face detail boxes as children of head_pivot.
+## Coordinates are relative to the head centre (half-extents ±0.11).
+func _build_face(
+	head: Node3D,
+	eye_mat: StandardMaterial3D,
+	brow_mat: StandardMaterial3D,
+	skin_mat: StandardMaterial3D,
+	mouth_mat: StandardMaterial3D,
+	hair_mat: StandardMaterial3D,
+) -> void:
+	# Eyes
+	_add_box(head, "EyeLeft",  eye_mat, Vector3(0.040, 0.022, 0.008), Vector3( 0.044, 0.024, 0.113))
+	_add_box(head, "EyeRight", eye_mat, Vector3(0.040, 0.022, 0.008), Vector3(-0.044, 0.024, 0.113))
+	# Eyebrows
+	_add_box(head, "BrowLeft",  brow_mat, Vector3(0.045, 0.010, 0.006), Vector3( 0.043, 0.055, 0.111))
+	_add_box(head, "BrowRight", brow_mat, Vector3(0.045, 0.010, 0.006), Vector3(-0.043, 0.055, 0.111))
+	# Nose (protrudes from mid-face)
+	_add_box(head, "Nose",  skin_mat, Vector3(0.024, 0.033, 0.020), Vector3(0.0, -0.008, 0.119))
+	# Mouth
+	_add_box(head, "Mouth", mouth_mat, Vector3(0.052, 0.011, 0.006), Vector3(0.0, -0.051, 0.111))
+	# Ears
+	_add_box(head, "EarLeft",  skin_mat, Vector3(0.016, 0.049, 0.033), Vector3( 0.118, 0.000, 0.004))
+	_add_box(head, "EarRight", skin_mat, Vector3(0.016, 0.049, 0.033), Vector3(-0.118, 0.000, 0.004))
+	# Hair cap
+	_add_box(head, "HairTop", hair_mat,
+		Vector3(0.230, 0.045, 0.200), Vector3(0.0, 0.124, 0.002))
+	_add_box(head, "HairSideLeft", hair_mat,
+		Vector3(0.024, 0.090, 0.175), Vector3(0.122, 0.073, 0.003))
+	_add_box(head, "HairSideRight", hair_mat,
+		Vector3(0.024, 0.090, 0.175), Vector3(-0.122, 0.073, 0.003))
+	_add_box(head, "HairBack", hair_mat,
+		Vector3(0.200, 0.057, 0.026), Vector3(0.0, 0.067, -0.115))
+
+
+## Helper: create a MeshInstance3D with a BoxMesh attached to parent.
+func _add_box(
+	parent: Node3D,
+	part_name: String,
+	mat: StandardMaterial3D,
+	size: Vector3,
+	pos: Vector3,
+) -> MeshInstance3D:
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	mesh.material = mat
+	var mi := MeshInstance3D.new()
+	mi.name = part_name
+	mi.mesh = mesh
+	mi.position = pos
+	parent.add_child(mi)
+	return mi
