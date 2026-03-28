@@ -171,3 +171,43 @@ func test_toggle_lights_during_night_toggles_back_on() -> void:
 	lights.toggle_lights()
 	lights.toggle_lights()
 	assert_false(lights._manual_off, "Second toggle should re-enable lights")
+
+
+# ---------------------------------------------------------------------------
+# disable() — power cut on water entry
+# ---------------------------------------------------------------------------
+
+func test_disable_turns_off_headlights() -> void:
+	var lights: Node3D = VehicleLightsScript.new()
+	add_child_autofree(lights)
+	lights._set_night_mode(true)
+	lights.disable()
+	for light in lights._headlights:
+		assert_false(light.visible, "Headlights should be off after disable()")
+
+
+func test_disable_turns_off_taillights() -> void:
+	var lights: Node3D = VehicleLightsScript.new()
+	add_child_autofree(lights)
+	lights._set_night_mode(true)
+	lights.disable()
+	for light in lights._taillights:
+		assert_false(light.visible, "Taillights should be off after disable()")
+
+
+func test_disable_turns_off_reverse_lights() -> void:
+	var lights: Node3D = VehicleLightsScript.new()
+	add_child_autofree(lights)
+	lights.disable()
+	for light in lights._reverse_lights:
+		assert_false(light.visible, "Reverse lights should be off after disable()")
+
+
+func test_disable_stops_physics_processing() -> void:
+	var lights: Node3D = VehicleLightsScript.new()
+	add_child_autofree(lights)
+	lights.disable()
+	assert_false(
+		lights.is_physics_processing(),
+		"disable() should stop physics processing to prevent light restore",
+	)
