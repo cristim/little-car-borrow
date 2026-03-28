@@ -261,7 +261,7 @@ func test_multiple_mouse_motions_accumulate_yaw() -> void:
 
 
 # ==========================================================================
-# Face-cam constants
+# View mode constants
 # ==========================================================================
 
 func test_face_cam_spring_shorter_than_normal() -> void:
@@ -279,30 +279,91 @@ func test_face_cam_t_starts_at_zero() -> void:
 	)
 
 
-# ==========================================================================
-# Face-cam physics process — spring length blending
-# ==========================================================================
-
-func test_face_cam_spring_blends_toward_face_value() -> void:
-	# Simulate holding the face_cam action
-	Input.action_press("face_cam")
-	_cam_root._physics_process(0.5)
-	var spring_during: float = _cam_root.spring_arm.spring_length
-	Input.action_release("face_cam")
-	assert_lt(
-		spring_during,
-		_cam_root.spring_length,
-		"Spring length should shorten toward FACE_CAM_SPRING while held",
+func test_view_mode_starts_at_normal() -> void:
+	assert_eq(
+		_cam_root._view_mode, PlayerCameraScript.VIEW_NORMAL,
+		"View mode should start at normal",
 	)
 
 
-func test_face_cam_spring_restores_on_release() -> void:
-	# Drive the lerp fully toward face cam
+func test_shoulder_x_positive() -> void:
+	assert_gt(
+		PlayerCameraScript.SHOULDER_X, 0.0,
+		"SHOULDER_X should be a positive offset",
+	)
+
+
+# ==========================================================================
+# V key cycles through view modes
+# (toggle is checked via Input.is_action_just_pressed inside _physics_process)
+# ==========================================================================
+
+func _press_camera_view() -> void:
+	Input.action_press("face_cam")
+	_cam_root._physics_process(0.016)
+	Input.action_release("face_cam")
+
+
+func test_view_cycles_normal_to_left() -> void:
+	_cam_root._view_mode = PlayerCameraScript.VIEW_NORMAL
+	_press_camera_view()
+	assert_eq(
+		_cam_root._view_mode, PlayerCameraScript.VIEW_LEFT,
+		"First V press should move to left-shoulder view",
+	)
+
+
+func test_view_cycles_left_to_front() -> void:
+	_cam_root._view_mode = PlayerCameraScript.VIEW_LEFT
+	_press_camera_view()
+	assert_eq(
+		_cam_root._view_mode, PlayerCameraScript.VIEW_FRONT,
+		"Second V press should move to front view",
+	)
+
+
+func test_view_cycles_front_to_right() -> void:
+	_cam_root._view_mode = PlayerCameraScript.VIEW_FRONT
+	_press_camera_view()
+	assert_eq(
+		_cam_root._view_mode, PlayerCameraScript.VIEW_RIGHT,
+		"Third V press should move to right-shoulder view",
+	)
+
+
+func test_view_cycles_right_to_normal() -> void:
+	_cam_root._view_mode = PlayerCameraScript.VIEW_RIGHT
+	_press_camera_view()
+	assert_eq(
+		_cam_root._view_mode, PlayerCameraScript.VIEW_NORMAL,
+		"Fourth V press should wrap back to normal view",
+	)
+
+
+# ==========================================================================
+# Front-view (face-cam) blending
+# ==========================================================================
+
+func test_face_cam_spring_blends_toward_face_value() -> void:
+	_cam_root._view_mode = PlayerCameraScript.VIEW_FRONT
+	_cam_root._physics_process(0.5)
+	assert_lt(
+		_cam_root.spring_arm.spring_length,
+		_cam_root.spring_length,
+		"Spring length should shorten toward FACE_CAM_SPRING in front view",
+	)
+
+
+func test_face_cam_spring_restores_on_normal() -> void:
 	_cam_root._face_cam_t = 1.0
-	_cam_root._physics_process(0.0)  # apply t=1 without Input influence
-	_cam_root._face_cam_t = 0.0
+	_cam_root._blend_spring = PlayerCameraScript.FACE_CAM_SPRING
+	_cam_root._view_mode = PlayerCameraScript.VIEW_NORMAL
 	_cam_root._physics_process(0.0)
-	# With t=0 the spring_length should be back to normal
+	# With t=1 -> target_face_t=0, spring immediately set via lerpf(..., 0)
+	# No delta so no actual lerp, but with t=1 the spring_arm is set to blend_spring
+	_cam_root._face_cam_t = 0.0
+	_cam_root._blend_spring = _cam_root.spring_length
+	_cam_root._physics_process(0.0)
 	assert_almost_eq(
 		_cam_root.spring_arm.spring_length,
 		_cam_root.spring_length,
@@ -323,12 +384,55 @@ func test_face_cam_yaw_offset_at_full_blend() -> void:
 	)
 
 
-func test_mouse_input_blocked_during_face_cam() -> void:
-	# When face_cam_t >= 0.5 mouse motion should not update _yaw
-	_cam_root._face_cam_t = 0.8
+func test_mouse_input_blocked_in_front_view() -> void:
+	_cam_root._view_mode = PlayerCameraScript.VIEW_FRONT
 	_cam_root._yaw = 1.0
 	_cam_root._unhandled_input(_make_mouse_motion(Vector2(200.0, 0.0)))
 	assert_almost_eq(
 		_cam_root._yaw, 1.0, 0.001,
-		"Mouse input should be blocked while face-cam is active",
+		"Mouse input should be blocked in front view mode",
+	)
+
+
+func test_mouse_input_allowed_in_shoulder_views() -> void:
+	for mode: int in [PlayerCameraScript.VIEW_LEFT, PlayerCameraScript.VIEW_RIGHT]:
+		_cam_root._view_mode = mode
+		_cam_root._yaw = 0.0
+		_cam_root._unhandled_input(_make_mouse_motion(Vector2(100.0, 0.0)))
+		assert_lt(
+			_cam_root._yaw, 0.0,
+			"Mouse input should still update yaw in shoulder views",
+		)
+		_cam_root._yaw = 0.0
+
+
+# ==========================================================================
+# Shoulder camera x offset
+# ==========================================================================
+
+func test_left_view_blends_camera_x_negative() -> void:
+	_cam_root._view_mode = PlayerCameraScript.VIEW_LEFT
+	_cam_root._physics_process(0.5)
+	assert_lt(
+		_cam_root._blend_x, 0.0,
+		"Left shoulder view should push camera x negative",
+	)
+
+
+func test_right_view_blends_camera_x_positive() -> void:
+	_cam_root._view_mode = PlayerCameraScript.VIEW_RIGHT
+	_cam_root._physics_process(0.5)
+	assert_gt(
+		_cam_root._blend_x, 0.0,
+		"Right shoulder view should push camera x positive",
+	)
+
+
+func test_normal_view_x_returns_to_zero() -> void:
+	_cam_root._blend_x = 0.6
+	_cam_root._view_mode = PlayerCameraScript.VIEW_NORMAL
+	_cam_root._physics_process(0.5)
+	assert_lt(
+		absf(_cam_root._blend_x), 0.6,
+		"Normal view should blend camera x back toward zero",
 	)
