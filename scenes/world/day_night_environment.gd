@@ -256,8 +256,12 @@ func _update_sun(h: float) -> void:
 		return
 	var pitch := deg_to_rad(-_sample(SUN_PITCH, h))
 	# Arc: sun rises due East (h=6) → transits South (h=12.5) → sets due West (h=19).
+	# ProceduralSkyMaterial renders the sun disc OPPOSITE to the light's forward
+	# direction.  Shadow falls IN the light's forward direction.  So to have the
+	# sun appear in the East at sunrise, the light must point West (yaw=+PI/2).
+	# The lerp goes from +PI/2 (East sunrise) → 0 (South noon) → -PI/2 (West sunset).
 	var t: float = clampf((h - 6.0) / 13.0, 0.0, 1.0)
-	var yaw := lerpf(-PI * 0.5, PI * 0.5, t)
+	var yaw := lerpf(PI * 0.5, -PI * 0.5, t)
 	_light.rotation = Vector3(pitch, yaw, 0.0)
 	_light.light_energy = _sample(SUN_ENERGY, h)
 	_light.light_color = Color(
