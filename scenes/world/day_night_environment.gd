@@ -506,10 +506,9 @@ void fragment() {
 	vec2 id1 = floor(g1);
 	vec2 lc1 = fract(g1) - 0.5;
 	float h1 = hash2(id1);
-	float sz1 = 0.008 + h1 * 0.016;
+	float sz1 = 0.007 + h1 * 0.010;
 	float glow1 = step(0.91, h1)
 		* smoothstep(sz1, 0.0, length(lc1))
-		* (0.6 + 0.4 * sin(TIME * (1.5 + h1 * 4.0) + h1 * 6.2832))
 		* star_alpha;
 	vec3 col1 = mix(vec3(0.85, 0.92, 1.0), vec3(1.0, 0.93, 0.78), h1) * glow1;
 
@@ -518,10 +517,9 @@ void fragment() {
 	vec2 id2 = floor(g2);
 	vec2 lc2 = fract(g2) - 0.5;
 	float h2 = hash2(id2 + vec2(53.1, 97.4));
-	float sz2 = 0.038 + h2 * 0.052;
+	float sz2 = 0.016 + h2 * 0.018;
 	float glow2 = step(0.79, h2)
 		* smoothstep(sz2, 0.0, length(lc2))
-		* (0.55 + 0.45 * sin(TIME * (0.7 + h2 * 1.8) + h2 * 6.2832))
 		* star_alpha;
 	vec3 col2 = mix(vec3(0.9, 0.95, 1.0), vec3(1.0, 0.82, 0.55), h2) * glow2 * 1.4;
 
@@ -531,13 +529,11 @@ void fragment() {
 	vec2 lc3 = fract(g3) - 0.5;
 	float h3 = hash2(id3 + vec2(11.3, 137.8));
 	float d3 = length(lc3);
-	float sz3 = 0.08 + h3 * 0.04;
+	float sz3 = 0.032 + h3 * 0.022;
 	float present3 = step(0.88, h3);
 	float core3 = present3 * smoothstep(sz3, 0.0, d3);
-	float halo3 = present3 * smoothstep(0.42, 0.0, d3) * 0.28;
-	float glow3 = (core3 + halo3)
-		* (0.7 + 0.3 * sin(TIME * 0.5 + h3 * 6.2832))
-		* star_alpha;
+	float halo3 = present3 * smoothstep(0.16, 0.0, d3) * 0.22;
+	float glow3 = (core3 + halo3) * star_alpha;
 	vec3 col3 = mix(vec3(0.7, 0.85, 1.0), vec3(1.0, 0.75, 0.5), h3) * glow3 * 1.8;
 
 	ALBEDO = col1 + col2 + col3;
