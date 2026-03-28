@@ -60,6 +60,11 @@ func _start_sinking() -> void:
 	if police and police.has_method("deactivate"):
 		police.deactivate()
 
+	# Kill vehicle lights (power died in water)
+	var lights := _vehicle.get_node_or_null("Body/VehicleLights")
+	if lights and lights.has_method("disable"):
+		lights.disable()
+
 	# Kill engine audio
 	var audio := _vehicle.get_node_or_null("EngineAudio")
 	if audio:

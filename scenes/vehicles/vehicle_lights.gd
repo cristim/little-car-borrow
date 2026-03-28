@@ -201,6 +201,20 @@ func _apply_light_state() -> void:
 		_set_fixture_emissive(_reverse_fixtures, false)
 
 
+## Permanently cut power to all lights (called when vehicle enters water).
+func disable() -> void:
+	set_physics_process(false)
+	for light in _headlights:
+		light.visible = false
+	for light in _taillights:
+		light.visible = false
+	for light in _reverse_lights:
+		light.visible = false
+	_set_fixture_emissive(_headlight_fixtures, false)
+	_set_fixture_emissive(_taillight_fixtures, false)
+	_set_fixture_emissive(_reverse_fixtures, false)
+
+
 func _set_fixture_emissive(fixtures: Array[MeshInstance3D], on: bool) -> void:
 	for fixture in fixtures:
 		var mat: StandardMaterial3D = fixture.mesh.material
