@@ -30,6 +30,7 @@ class MockPlayer:
 	var walk_speed := 4.0
 	var run_speed := 8.0
 	var gravity := 20.0
+	var jump_speed := 7.0
 	var nearest_vehicle: Node = null
 	var is_swimming := false
 	var player_camera: Node3D = null
@@ -194,3 +195,23 @@ func test_camera_relative_direction_forward() -> void:
 	# With yaw=0: forward should be (0, 0, -1) normalized
 	assert_almost_eq(result.length(), 1.0, 0.01, "Direction should be normalized")
 	assert_almost_eq(result.y, 0.0, 0.001, "Y should be zero")
+
+
+# ---------------------------------------------------------------------------
+# Jump — source-level verification
+# ---------------------------------------------------------------------------
+
+func test_running_checks_jump_input_on_floor() -> void:
+	var src: String = RunningScript.source_code
+	assert_true(
+		src.contains("is_action_just_pressed(\"jump\")"),
+		"Running state should check for jump input when on floor",
+	)
+
+
+func test_running_uses_jump_speed_property() -> void:
+	var src: String = RunningScript.source_code
+	assert_true(
+		src.contains("player.jump_speed"),
+		"Running state should set velocity.y to player.jump_speed on jump",
+	)

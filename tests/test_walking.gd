@@ -30,6 +30,7 @@ class MockPlayer:
 	var walk_speed := 4.0
 	var run_speed := 8.0
 	var gravity := 20.0
+	var jump_speed := 7.0
 	var nearest_vehicle: Node = null
 	var is_swimming := false
 	var player_camera: Node3D = null
@@ -208,3 +209,23 @@ func test_camera_direction_rotates_with_yaw() -> void:
 func test_is_over_water_returns_false_without_city_manager() -> void:
 	var result: bool = _state._is_over_water(Vector3.ZERO)
 	assert_false(result, "Should return false without city_manager in scene")
+
+
+# ---------------------------------------------------------------------------
+# Jump — source-level verification
+# ---------------------------------------------------------------------------
+
+func test_walking_checks_jump_input_on_floor() -> void:
+	var src: String = WalkingScript.source_code
+	assert_true(
+		src.contains("is_action_just_pressed(\"jump\")"),
+		"Walking state should check for jump input when on floor",
+	)
+
+
+func test_walking_uses_jump_speed_property() -> void:
+	var src: String = WalkingScript.source_code
+	assert_true(
+		src.contains("player.jump_speed"),
+		"Walking state should set velocity.y to player.jump_speed on jump",
+	)

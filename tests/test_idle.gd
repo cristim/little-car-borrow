@@ -2,6 +2,7 @@ extends GutTest
 ## Tests for idle state (scenes/player/states/idle.gd).
 
 const IdleScript = preload("res://scenes/player/states/idle.gd")
+const PlayerScript = preload("res://scenes/player/player.gd")
 
 
 # ---------------------------------------------------------------------------
@@ -23,6 +24,7 @@ class MockPlayer:
 	var walk_speed := 4.0
 	var run_speed := 8.0
 	var gravity := 20.0
+	var jump_speed := 7.0
 	var nearest_vehicle: Node = null
 	var is_swimming := false
 	var player_camera: Node3D = null
@@ -175,4 +177,32 @@ func test_physics_update_decelerates_horizontal_velocity() -> void:
 	assert_lte(
 		absf(_player.velocity.z), 2.0,
 		"Z velocity should not increase",
+	)
+
+
+# ---------------------------------------------------------------------------
+# Jump — source-level verification
+# ---------------------------------------------------------------------------
+
+func test_idle_checks_jump_input_on_floor() -> void:
+	var src: String = IdleScript.source_code
+	assert_true(
+		src.contains("is_action_just_pressed(\"jump\")"),
+		"Idle state should check for jump input when on floor",
+	)
+
+
+func test_idle_uses_jump_speed_property() -> void:
+	var src: String = IdleScript.source_code
+	assert_true(
+		src.contains("player.jump_speed"),
+		"Idle state should set velocity.y to player.jump_speed on jump",
+	)
+
+
+func test_player_jump_speed_default() -> void:
+	var src: String = PlayerScript.source_code
+	assert_true(
+		src.contains("jump_speed := 7.0"),
+		"Player jump_speed should default to 7.0",
 	)
