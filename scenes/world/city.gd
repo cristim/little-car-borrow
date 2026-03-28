@@ -321,6 +321,13 @@ func _build_chunk(tile: Vector2i) -> Node3D:
 		_tree_builder.build(chunk, tile, ox, oz)
 		_marking_builder.build(chunk, ox, oz, span)
 		_light_builder.build(chunk, ox, oz)
+		# Store flat edge heights so terrain tiles resolved later know to
+		# blend to ground level (y=0) when adjacent to this city chunk.
+		_store_city_edges(tile, tile_data)
+		# Rebuild any already-loaded terrain neighbors that have a gap at
+		# the city boundary (heights not near y=0).
+		if not _repairing:
+			_repair_city_boundary(tile)
 	else:
 		chunk.set_meta("chunk_type", "terrain")
 		var river_data: Dictionary = _river_map.get_river_at(tile)
@@ -423,6 +430,37 @@ func _shared_edge_mismatches(
 		"heights", PackedFloat32Array(),
 	)
 	return _edges_mismatch(my_edge, their_edge)
+
+
+## Write flat (y=0) edge heights for a city tile into the cache.
+## Terrain tiles resolved after this city chunk will read these heights
+## and blend their edges down to ground level, preventing seams.
+func _store_city_edges(tile: Vector2i, tile_data: Dictionary) -> void:
+	var sample_count: int = _terrain_builder.SUBDIVISIONS + 1
+	var flat: PackedFloat32Array = PackedFloat32Array()
+	flat.resize(sample_count)
+	flat.fill(0.0)
+	var edges: Dictionary = tile_data.get("edges", {})
+	for dir in DIR_OFFSETS:
+		if not edges.has(dir):
+			edges[dir] = {}
+		edges[dir]["heights"] = flat
+	tile_data["edges"] = edges
+	_tile_cache.set_tile_data(tile, tile_data)
+
+
+## After a city chunk is built, rebuild loaded terrain neighbors whose
+## city-facing edge heights deviate from flat ground (y≈0.0).
+## Reuses the existing terrain repair BFS via synthetic flat edge data.
+func _repair_city_boundary(tile: Vector2i) -> void:
+	var sample_count: int = _terrain_builder.SUBDIVISIONS + 1
+	var flat: PackedFloat32Array = PackedFloat32Array()
+	flat.resize(sample_count)
+	flat.fill(0.0)
+	var flat_edges: Dictionary = {}
+	for dir in DIR_OFFSETS:
+		flat_edges[dir] = flat
+	_repair_neighbor_edges(tile, flat_edges)
 
 
 func _edges_mismatch(a: PackedFloat32Array, b: PackedFloat32Array) -> bool:
