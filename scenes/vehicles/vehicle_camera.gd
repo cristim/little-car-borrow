@@ -1,6 +1,12 @@
 extends Node3D
 ## Smooth chase camera for vehicles with speed-based distance and look-ahead.
+##
+## Hold V (camera_view): inspect mode — mouse orbits freely around the vehicle.
+## Releasing V smoothly returns the camera to the auto-tracking position.
 
+const INSPECT_LERP := 8.0
+
+@export var mouse_sensitivity := 0.002
 @export var target_path: NodePath
 @export var min_distance := 5.0
 @export var max_distance := 8.0
@@ -13,6 +19,10 @@ extends Node3D
 
 var _current_velocity := Vector3.ZERO
 var _target: Node3D
+var _auto_yaw := 0.0
+var _inspect_yaw := 0.0
+var _inspect_pitch := 0.0
+var _v_held := false
 
 @onready var spring_arm: SpringArm3D = $SpringArm3D
 @onready var camera: Camera3D = $SpringArm3D/Camera3D
@@ -26,6 +36,17 @@ func _ready() -> void:
 		global_position = _target.global_position
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	if not InputManager.is_vehicle():
+		return
+	if not event is InputEventMouseMotion:
+		return
+	if _v_held:
+		_inspect_yaw -= event.relative.x * mouse_sensitivity
+		_inspect_pitch -= event.relative.y * mouse_sensitivity
+		_inspect_pitch = clampf(_inspect_pitch, -1.2, 0.8)
+
+
 func _physics_process(delta: float) -> void:
 	if not _target:
 		if target_path and is_inside_tree():
@@ -33,6 +54,11 @@ func _physics_process(delta: float) -> void:
 			if _target:
 				global_position = _target.global_position
 		return
+
+	_v_held = Input.is_action_pressed("camera_view")
+	if not _v_held:
+		_inspect_yaw = lerpf(_inspect_yaw, 0.0, delta * INSPECT_LERP)
+		_inspect_pitch = lerpf(_inspect_pitch, 0.0, delta * INSPECT_LERP)
 
 	var target_vel := Vector3.ZERO
 	if _target is RigidBody3D:
@@ -62,16 +88,19 @@ func _physics_process(delta: float) -> void:
 		flat_vel.y = 0.0
 		if flat_vel.length() > 0.5:
 			var target_angle := atan2(flat_vel.x, flat_vel.z)
-			var current_angle := rotation.y
-			rotation.y = lerp_angle(current_angle, target_angle + PI, delta * rotation_speed)
+			var current_angle := _auto_yaw
+			_auto_yaw = lerp_angle(current_angle, target_angle + PI, delta * rotation_speed)
 	else:
 		# When stopped, follow vehicle rotation
 		var target_angle := _target.rotation.y
-		rotation.y = lerp_angle(rotation.y, target_angle, delta * rotation_speed)
+		_auto_yaw = lerp_angle(_auto_yaw, target_angle, delta * rotation_speed)
+
+	rotation = Vector3(_inspect_pitch, _auto_yaw + _inspect_yaw, 0.0)
 
 
 func make_active() -> void:
 	if _target:
 		global_position = _target.global_position
-		rotation.y = _target.rotation.y
+		_auto_yaw = _target.rotation.y
+		rotation.y = _auto_yaw
 	camera.make_current()

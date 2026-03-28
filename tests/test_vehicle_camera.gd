@@ -300,8 +300,8 @@ func test_make_active_source_snaps_position() -> void:
 func test_make_active_source_snaps_rotation() -> void:
 	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
 	assert_true(
-		src.contains("rotation.y = _target.rotation.y"),
-		"make_active should snap rotation to target",
+		src.contains("_auto_yaw = _target.rotation.y"),
+		"make_active should snap _auto_yaw to target rotation",
 	)
 
 
@@ -310,4 +310,135 @@ func test_make_active_source_makes_camera_current() -> void:
 	assert_true(
 		src.contains("camera.make_current()"),
 		"make_active should make the camera current",
+	)
+
+
+# ==========================================================================
+# Inspect mode (hold V)
+# ==========================================================================
+
+func _make_mouse_motion(rel: Vector2) -> InputEventMouseMotion:
+	var event := InputEventMouseMotion.new()
+	event.relative = rel
+	return event
+
+
+func test_default_mouse_sensitivity() -> void:
+	var cam: Node3D = _make_camera()
+	add_child_autofree(cam)
+	assert_almost_eq(cam.mouse_sensitivity, 0.002, 0.0001)
+
+
+func test_inspect_yaw_starts_zero() -> void:
+	var cam: Node3D = _make_camera()
+	add_child_autofree(cam)
+	assert_almost_eq(cam._inspect_yaw, 0.0, 0.001)
+
+
+func test_inspect_pitch_starts_zero() -> void:
+	var cam: Node3D = _make_camera()
+	add_child_autofree(cam)
+	assert_almost_eq(cam._inspect_pitch, 0.0, 0.001)
+
+
+func test_auto_yaw_starts_zero() -> void:
+	var cam: Node3D = _make_camera()
+	add_child_autofree(cam)
+	assert_almost_eq(cam._auto_yaw, 0.0, 0.001)
+
+
+func test_mouse_in_inspect_mode_updates_inspect_yaw() -> void:
+	var cam: Node3D = _make_camera()
+	add_child_autofree(cam)
+	var saved: int = InputManager.current_context
+	InputManager.current_context = InputManager.Context.VEHICLE
+	cam._v_held = true
+	cam._inspect_yaw = 0.0
+	cam._unhandled_input(_make_mouse_motion(Vector2(100.0, 0.0)))
+	assert_lt(
+		cam._inspect_yaw, 0.0,
+		"_inspect_yaw should decrease with rightward mouse while V held",
+	)
+	InputManager.current_context = saved
+
+
+func test_mouse_in_inspect_mode_does_not_change_auto_yaw() -> void:
+	var cam: Node3D = _make_camera()
+	add_child_autofree(cam)
+	var saved: int = InputManager.current_context
+	InputManager.current_context = InputManager.Context.VEHICLE
+	cam._v_held = true
+	cam._auto_yaw = 0.0
+	cam._unhandled_input(_make_mouse_motion(Vector2(100.0, 0.0)))
+	assert_almost_eq(
+		cam._auto_yaw, 0.0, 0.001,
+		"_auto_yaw should not change in inspect mode",
+	)
+	InputManager.current_context = saved
+
+
+func test_mouse_ignored_outside_vehicle_context() -> void:
+	var cam: Node3D = _make_camera()
+	add_child_autofree(cam)
+	var saved: int = InputManager.current_context
+	InputManager.current_context = InputManager.Context.FOOT
+	cam._v_held = true
+	cam._unhandled_input(_make_mouse_motion(Vector2(100.0, 50.0)))
+	assert_almost_eq(
+		cam._inspect_yaw, 0.0, 0.001,
+		"Input ignored outside VEHICLE context",
+	)
+	InputManager.current_context = saved
+
+
+func test_non_mouse_input_ignored() -> void:
+	var cam: Node3D = _make_camera()
+	add_child_autofree(cam)
+	var saved: int = InputManager.current_context
+	InputManager.current_context = InputManager.Context.VEHICLE
+	cam._v_held = true
+	var event := InputEventKey.new()
+	cam._unhandled_input(event)
+	assert_almost_eq(
+		cam._inspect_yaw, 0.0, 0.001,
+		"Key events should not affect _inspect_yaw",
+	)
+	InputManager.current_context = saved
+
+
+func test_inspect_offsets_decay_when_v_released() -> void:
+	var cam: Node3D = _make_camera()
+	var target := Node3D.new()
+	add_child_autofree(target)
+	add_child_autofree(cam)
+	await get_tree().process_frame
+	cam._target = target
+	cam._inspect_yaw = 1.5
+	cam._inspect_pitch = 0.5
+	# camera_view not pressed in tests → _v_held becomes false → decay runs
+	cam._physics_process(0.5)
+	assert_lt(
+		absf(cam._inspect_yaw), 1.5,
+		"_inspect_yaw should decay toward zero on release",
+	)
+	assert_lt(
+		absf(cam._inspect_pitch), 0.5,
+		"_inspect_pitch should decay toward zero on release",
+	)
+
+
+func test_inspect_yaw_applied_to_rotation() -> void:
+	var cam: Node3D = _make_camera()
+	var target := Node3D.new()
+	add_child_autofree(target)
+	add_child_autofree(cam)
+	await get_tree().process_frame
+	cam._target = target
+	cam._auto_yaw = 1.0
+	cam._inspect_yaw = 0.5
+	# delta=0 → no lerp movement, rotation = (_inspect_pitch, _auto_yaw + _inspect_yaw, 0)
+	cam._physics_process(0.0)
+	assert_almost_eq(
+		cam.rotation.y, 1.5, 0.01,
+		"rotation.y should be _auto_yaw + _inspect_yaw",
 	)
