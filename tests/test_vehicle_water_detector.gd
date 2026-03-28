@@ -361,3 +361,50 @@ func test_is_over_water_compares_ground_height() -> void:
 		src.contains("ground_h < SEA_LEVEL"),
 		"Should compare ground height against SEA_LEVEL",
 	)
+
+
+# ==========================================================================
+# Vehicle lights are disabled on water entry
+# ==========================================================================
+
+func test_start_sinking_looks_for_vehicle_lights() -> void:
+	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
+	assert_true(
+		src.contains("\"Body/VehicleLights\""),
+		"_start_sinking should look for Body/VehicleLights node",
+	)
+
+
+func test_start_sinking_calls_disable_on_lights() -> void:
+	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
+	assert_true(
+		src.contains("lights.disable()"),
+		"_start_sinking should call disable() on VehicleLights",
+	)
+
+
+func test_start_sinking_disables_vehicle_lights() -> void:
+	var LightsScript: GDScript = preload(
+		"res://scenes/vehicles/vehicle_lights.gd"
+	)
+	var parent := RigidBody3D.new()
+	add_child_autofree(parent)
+
+	var body := Node3D.new()
+	body.name = "Body"
+	parent.add_child(body)
+
+	var lights: Node3D = LightsScript.new()
+	lights.name = "VehicleLights"
+	body.add_child(lights)
+	lights.initialize(parent)
+	lights._set_night_mode(true)
+
+	var detector: Node = WaterScript.new()
+	parent.add_child(detector)
+	detector._start_sinking()
+
+	assert_false(
+		lights.is_physics_processing(),
+		"VehicleLights should have physics processing disabled after sinking",
+	)

@@ -173,18 +173,19 @@ func test_window_meshes_use_correct_materials() -> void:
 
 # --- day_night_environment.gd toggling tests ---
 
-func test_mat_active_default_all_true() -> void:
+func test_mat_active_starts_empty() -> void:
 	var env: Node = DayNightEnvScript.new()
 	add_child_autofree(env)
 	assert_eq(
-		env._mat_active, [true, true, true, true] as Array[bool],
-		"All window groups should default to active",
+		env._mat_active.size(), 0,
+		"mat_active should start empty — sized on first night",
 	)
 
 
 func test_mat_active_fill_resets_all() -> void:
 	var env: Node = DayNightEnvScript.new()
 	add_child_autofree(env)
+	env._mat_active.resize(4)
 	env._mat_active[1] = false
 	env._mat_active[3] = false
 	env._mat_active.fill(true)

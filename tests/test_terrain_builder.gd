@@ -1,5 +1,4 @@
 extends GutTest
-# gdlint: ignore=max-public-methods
 ## Unit tests for chunk_builder_terrain.gd height sampling, vertex coloring,
 ## and sea plane generation.
 
@@ -673,4 +672,58 @@ func test_build_with_river_data() -> void:
 	assert_true(
 		chunk.has_meta("terrain_min_height"),
 		"Build with river data should still set metadata",
+	)
+
+
+# ================================================================
+# Sea plane material — night rendering fix
+# ================================================================
+
+func test_sea_plane_uses_unshaded_mode() -> void:
+	# Sea plane must be unshaded so ambient light cannot bleed through
+	# as a false "illuminated from below" glow at night.
+	var chunk := Node3D.new()
+	add_child_autofree(chunk)
+	var span: float = _grid.get_grid_span()
+	# Build a west-ocean chunk that is guaranteed to have water
+	_builder.build(chunk, Vector2i(-4, 0), -4.0 * span, 0.0)
+
+	var sea_plane: MeshInstance3D = null
+	for child in chunk.get_children():
+		if child is MeshInstance3D and child.name == "SeaPlane":
+			sea_plane = child
+			break
+
+	if sea_plane == null:
+		return  # chunk happened to have no water — skip
+	var mat := sea_plane.material_override as StandardMaterial3D
+	assert_not_null(mat, "SeaPlane should have a StandardMaterial3D override")
+	assert_eq(
+		mat.shading_mode,
+		BaseMaterial3D.SHADING_MODE_UNSHADED,
+		"Sea plane must be unshaded to prevent false night glow",
+	)
+
+
+func test_sea_plane_is_mostly_opaque() -> void:
+	# Alpha < 0.85 lets the seabed show through at distance,
+	# making the ocean look lit from below at night.
+	var chunk := Node3D.new()
+	add_child_autofree(chunk)
+	var span: float = _grid.get_grid_span()
+	_builder.build(chunk, Vector2i(-4, 0), -4.0 * span, 0.0)
+
+	var sea_plane: MeshInstance3D = null
+	for child in chunk.get_children():
+		if child is MeshInstance3D and child.name == "SeaPlane":
+			sea_plane = child
+			break
+
+	if sea_plane == null:
+		return
+	var mat := sea_plane.material_override as StandardMaterial3D
+	assert_not_null(mat)
+	assert_true(
+		mat.albedo_color.a >= 0.85,
+		"Sea plane alpha should be ≥ 0.85 to hide the seabed (got %.2f)" % mat.albedo_color.a,
 	)
