@@ -19,7 +19,10 @@ func physics_update(delta: float) -> void:
 	var direction := _get_camera_relative_direction(move_input)
 	player.velocity.x = direction.x * player.run_speed
 	player.velocity.z = direction.z * player.run_speed
-	if not player.is_on_floor():
+	if player.is_on_floor():
+		if Input.is_action_just_pressed("jump"):
+			player.velocity.y = player.jump_speed
+	else:
 		player.velocity.y -= player.gravity * delta
 	player.move_and_slide()
 

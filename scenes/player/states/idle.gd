@@ -9,7 +9,10 @@ func physics_update(delta: float) -> void:
 	var player := owner as CharacterBody3D
 	player.velocity.x = move_toward(player.velocity.x, 0.0, player.walk_speed)
 	player.velocity.z = move_toward(player.velocity.z, 0.0, player.walk_speed)
-	if not player.is_on_floor():
+	if player.is_on_floor():
+		if Input.is_action_just_pressed("jump"):
+			player.velocity.y = player.jump_speed
+	else:
 		player.velocity.y -= player.gravity * delta
 	player.move_and_slide()
 
