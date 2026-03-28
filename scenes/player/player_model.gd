@@ -1,13 +1,9 @@
-extends Node3D
-## Procedural walk animation for the articulated player model.
+extends "res://src/character_model_base.gd"
+## Procedural walk/run/swim animation for the articulated player model.
 ## Reads velocity from the parent CharacterBody3D to drive limb swing.
+## Shared walk/run constants and _animate_gait/_decay_gait live in the base class.
 
-const WALK_AMPLITUDE := 0.22
-const RUN_AMPLITUDE := 0.45
-const FREQUENCY := 8.0
-const DECAY_SPEED := 8.0
 const SWIM_DECAY_SPEED := 16.0     # faster decay leaving water so pose snaps out
-const RUN_THRESHOLD := 6.0         # m/s — above this, use run amplitude
 const SWIM_FREQUENCY := 3.0
 const SWIM_ARM_AMPLITUDE := 1.2
 const SWIM_LEG_AMPLITUDE := 0.3
@@ -25,30 +21,16 @@ const SWIM_KICK_RATIO := 3.0       # 6-beat kick (3x arm frequency)
 const ELBOW_RATIO := 0.5
 const KNEE_RATIO := 0.7
 const KNEE_STANCE_FLEX := 0.12     # slight constant knee bend (~7°)
-const WALK_LEAN := 0.03            # slight forward lean when walking (~1.7°)
-const RUN_LEAN := 0.15             # forward lean at full sprint (~8°)
 const RUN_ELBOW_BASE := -1.2       # ~70° bent arms while running
 const WALK_ELBOW_BASE := -0.15     # slight natural bend while walking (~8°)
-const RUN_ARM_INWARD := 0.15       # arms pump slightly across body (Y)
 const RUN_KNEE_LIFT := 0.5         # extra knee bend on forward swing
-const WALK_BOUNCE := 0.015         # vertical bounce when walking (1.5cm)
-const RUN_BOUNCE := 0.05           # vertical bounce when running (5cm)
-const WALK_ARM_INWARD := 0.06      # subtle cross-body arm swing when walking
-const ARM_Z_SWAY := 0.08           # arms sway outward slightly during swing
-const RUN_ARM_Z_SWAY := 0.12       # more pronounced sway when running
-const TORSO_TWIST := 0.04          # torso Y counter-rotation when walking
-const RUN_TORSO_TWIST := 0.1       # stronger torso twist when running
 const ELBOW_Y_ANGLE := 0.15        # forearms angle slightly inward
-const WALK_HIP_SWAY := 0.02        # lateral weight shift when walking (2cm)
-const RUN_HIP_SWAY := 0.01         # less sway when running (1cm)
-const PELVIS_TILT := 0.04          # hip drop on swing side (~2.3°)
 const FLASH_ELBOW_UP := -0.3       # slight bend when looking up
 const FLASH_ELBOW_DOWN := -1.0     # deep bend when looking down
 const PITCH_UP := 0.8              # camera max pitch
 const PITCH_DOWN := -1.2           # camera min pitch
 const DEFAULT_GUN_ELBOW := -0.05   # fallback if weapon data unavailable
 
-var _phase := 0.0
 var _was_swimming := false
 
 # Cached face/hand materials — built once in _ready, shared across parts
@@ -60,19 +42,22 @@ var _mat_ear: StandardMaterial3D
 var _mat_hair: StandardMaterial3D
 var _mat_flashlight_body: StandardMaterial3D
 
-@onready var _left_shoulder: Node3D = $LeftShoulderPivot
-@onready var _right_shoulder: Node3D = $RightShoulderPivot
-@onready var _left_hip: Node3D = $LeftHipPivot
-@onready var _right_hip: Node3D = $RightHipPivot
+# Player-specific pivots (elbows and knees are not in the base class)
 @onready var _left_elbow: Node3D = $LeftShoulderPivot/LeftElbowPivot
 @onready var _right_elbow: Node3D = $RightShoulderPivot/RightElbowPivot
 @onready var _left_knee: Node3D = $LeftHipPivot/LeftKneePivot
 @onready var _right_knee: Node3D = $RightHipPivot/RightKneePivot
-@onready var _head: Node3D = $Head
-@onready var _neck: Node3D = $Neck
 
 
 func _ready() -> void:
+	# Assign base-class pivot vars (cannot use @onready to shadow parent vars)
+	_left_shoulder = get_node("LeftShoulderPivot")
+	_right_shoulder = get_node("RightShoulderPivot")
+	_left_hip = get_node("LeftHipPivot")
+	_right_hip = get_node("RightHipPivot")
+	_head = get_node_or_null("Head")
+	_neck = get_node_or_null("Neck")
+
 	_build_face_materials()
 	_build_face_details()
 	_build_hands()
@@ -170,10 +155,6 @@ func _build_hands() -> void:
 	var mat_skin: StandardMaterial3D = _mat_ear  # same skin tone as ears/neck
 
 	# --- Left hand (holds flashlight) ---
-	# Arm runs along -Y in elbow-pivot space (Rx(-PI/2) maps elbow -Y → world +Z forward).
-	# Flashlight tube must run along Y as well so it points forward, not sideways.
-	# rotation.x = -20° tilts the tube tip toward elbow +Z → world +Y (upward). ✓
-	# Hand wraps around the tube: small Z offset only for palm/finger thickness.
 	_add_box(_left_elbow, "HandLeft_Palm", mat_skin,
 		Vector3(0.042, 0.044, 0.030), Vector3(0.000, -0.285, -0.010))
 	_add_box(_left_elbow, "HandLeft_Fingers", mat_skin,
@@ -181,15 +162,11 @@ func _build_hands() -> void:
 	_add_box(_left_elbow, "HandLeft_Thumb", mat_skin,
 		Vector3(0.020, 0.032, 0.026), Vector3(0.042, -0.272, -0.006))
 	# Flashlight tube along Y; rotation.x = -20° gives upward tilt when aimed.
-	# Tube centre at Y=-0.294, extends from Y=-0.260 (butt near hand) to Y=-0.328 (tip).
 	var fl: MeshInstance3D = _add_box(_left_elbow, "FlashlightBody", _mat_flashlight_body,
 		Vector3(0.020, 0.068, 0.020), Vector3(0.000, -0.294, 0.000))
 	fl.rotation.x = -deg_to_rad(20.0)
 
 	# --- Right hand (grips gun) ---
-	# Gun root placed at elbow (0,-0.29,0.04); grip lands at elbow (0,-0.25,-0.02).
-	# Palm wraps around the grip: centred at wrist (Y≈-0.252), minimal Z offset.
-	# Y-dimension increased so the palm reads as substantial along the arm axis.
 	_add_box(_right_elbow, "HandRight_Palm", mat_skin,
 		Vector3(0.068, 0.045, 0.040), Vector3(0.000, -0.252, -0.020))
 	_add_box(_right_elbow, "HandRight_Fingers", mat_skin,
@@ -235,7 +212,7 @@ func _process(delta: float) -> void:
 		if absf(rotation.x) < 0.1 and absf(rotation.z) < 0.1:
 			_was_swimming = false
 
-	# Smoothly reset body tilt/roll/twist/bounce
+	# Smoothly reset body tilt/roll/twist/bounce (handles swim-exit at faster rate)
 	if rotation.x != 0.0 or rotation.y != 0.0 or rotation.z != 0.0:
 		rotation.x = lerpf(rotation.x, 0.0, delta * decay)
 		rotation.y = lerpf(rotation.y, 0.0, delta * decay)
@@ -258,79 +235,15 @@ func _process(delta: float) -> void:
 	var h_speed := Vector2(vel.x, vel.z).length()
 
 	if h_speed > 0.5:
-		_phase += delta * h_speed * FREQUENCY
 		var t := clampf(
 			(h_speed - 0.5) / (RUN_THRESHOLD - 0.5), 0.0, 1.0
 		)
+		_animate_gait(delta, h_speed, t)
+
+		# Elbows: natural bend (walk) to pumped ~70° (run)
 		var amp := lerpf(WALK_AMPLITUDE, RUN_AMPLITUDE, t)
-		# Phase warp: stretches stance phase, compresses swing (~60/40 split)
-		var warped_phase := _phase + 0.25 * sin(_phase)
-		var swing := sin(warped_phase) * amp
-
-		# Forward lean: slight when walking, more when running
-		var target_lean := lerpf(WALK_LEAN, RUN_LEAN, t)
-		rotation.x = lerpf(rotation.x, target_lean, delta * DECAY_SPEED)
-
-		# Walk bounce: peaks at mid-stance (inverted pendulum model)
-		# Run bounce: peaks during flight phase (spring-mass model) — inverted
-		var bounce_amp := lerpf(WALK_BOUNCE, RUN_BOUNCE, t)
-		var walk_bounce := (0.5 + 0.5 * cos(warped_phase * 2.0)) * bounce_amp
-		var run_bounce := (0.5 - 0.5 * cos(warped_phase * 2.0)) * bounce_amp
-		position.y = lerpf(walk_bounce, run_bounce, t)
-
-		# Lateral hip sway — weight shifts toward stance leg
-		var sway := -sin(warped_phase) * lerpf(WALK_HIP_SWAY, RUN_HIP_SWAY, t)
-		position.x = sway
-
-		# Pelvis tilt — hip drops on swing-leg side (positive sin = left forward,
-		# so negate: left hip drops when left leg swings forward)
-		var tilt := -sin(warped_phase) * lerpf(PELVIS_TILT, PELVIS_TILT * 0.5, t)
-		rotation.z = tilt
-
-		# Torso counter-rotation — twists opposite to legs
-		var twist := sin(warped_phase) * lerpf(TORSO_TWIST, RUN_TORSO_TWIST, t)
-		rotation.y = twist
-
-		# Head/neck stabilization — counters torso twist and pelvis tilt
-		if _head:
-			_head.rotation.y = -twist * 0.6
-			_head.rotation.z = -tilt * 0.7
-		if _neck:
-			_neck.rotation.y = -twist * 0.3
-			_neck.rotation.z = -tilt * 0.3
-
-		# Arms: forward/back swing with forward bias at run speed
-		var arm_bias := t * 0.1
-		_left_shoulder.rotation.x = swing + arm_bias
-		_right_shoulder.rotation.x = -swing + arm_bias
-
-		# Arms sweep inward at mid-swing (90° offset from forward/back)
-		var inward_amp := lerpf(WALK_ARM_INWARD, RUN_ARM_INWARD, t)
-		var l_inward := cos(warped_phase) * inward_amp
-		_left_shoulder.rotation.y = l_inward
-		_right_shoulder.rotation.y = -l_inward
-
-		# Arms sway inward on forward swing (Z) — natural cross-body pendulum
-		var z_sway := lerpf(ARM_Z_SWAY, RUN_ARM_Z_SWAY, t)
-		_left_shoulder.rotation.z = -sin(warped_phase) * z_sway
-		_right_shoulder.rotation.z = sin(warped_phase) * z_sway
-
-		# Legs: forward/back swing (hips have slightly less range than arms)
-		# At run speed, sharpen the waveform so legs snap through mid-stance
-		# faster — creates visual flight phase where both legs are near vertical
-		var raw_leg := sin(warped_phase)
-		var sharp_leg: float = sign(raw_leg) * pow(absf(raw_leg), lerpf(1.0, 0.6, t))
-		var leg_swing: float = sharp_leg * amp * 0.85
-		# At run speed, bias hip swing backward (more extension behind body)
-		var hip_bias := t * -0.1
-		_left_hip.rotation.x = -leg_swing + hip_bias
-		_right_hip.rotation.x = leg_swing + hip_bias
-
-		# Elbows: natural bend (walk) to pumped ~70° (run),
-		# plus extra bend on forward swing (forearm folds up)
 		var elbow_base := lerpf(WALK_ELBOW_BASE, RUN_ELBOW_BASE, t)
 		var elbow_dyn := lerpf(0.15, ELBOW_RATIO, t)
-		# Forward swing: forearm folds up; backswing: slight extension
 		var back_ext := lerpf(0.0, 0.15, t)
 		_left_elbow.rotation.x = elbow_base \
 			+ maxf(0.0, _left_shoulder.rotation.x) * elbow_dyn \
@@ -349,68 +262,24 @@ func _process(delta: float) -> void:
 		var leg_amp := amp * 0.85
 		var l_swing_t := clampf(-_left_hip.rotation.x / leg_amp, 0.0, 1.0)
 		var r_swing_t := clampf(-_right_hip.rotation.x / leg_amp, 0.0, 1.0)
-		# Knee bends mid-swing then extends before heel strike (sin curve)
 		_left_knee.rotation.x = KNEE_STANCE_FLEX \
 			+ sin(l_swing_t * PI) * knee_lift
 		_right_knee.rotation.x = KNEE_STANCE_FLEX \
 			+ sin(r_swing_t * PI) * knee_lift
 	else:
-		_left_shoulder.rotation.x = lerpf(
-			_left_shoulder.rotation.x, 0.0, delta * DECAY_SPEED
-		)
-		_left_shoulder.rotation.y = lerpf(
-			_left_shoulder.rotation.y, 0.0, delta * DECAY_SPEED
-		)
-		_left_shoulder.rotation.z = lerpf(
-			_left_shoulder.rotation.z, 0.0, delta * DECAY_SPEED
-		)
-		_right_shoulder.rotation.x = lerpf(
-			_right_shoulder.rotation.x, 0.0, delta * DECAY_SPEED
-		)
-		_right_shoulder.rotation.y = lerpf(
-			_right_shoulder.rotation.y, 0.0, delta * DECAY_SPEED
-		)
-		_right_shoulder.rotation.z = lerpf(
-			_right_shoulder.rotation.z, 0.0, delta * DECAY_SPEED
-		)
-		_left_hip.rotation.x = lerpf(
-			_left_hip.rotation.x, 0.0, delta * DECAY_SPEED
-		)
-		_right_hip.rotation.x = lerpf(
-			_right_hip.rotation.x, 0.0, delta * DECAY_SPEED
-		)
+		_decay_gait(delta)
 		_left_elbow.rotation.x = lerpf(
-			_left_elbow.rotation.x, 0.0, delta * DECAY_SPEED
-		)
+			_left_elbow.rotation.x, 0.0, delta * DECAY_SPEED)
 		_left_elbow.rotation.y = lerpf(
-			_left_elbow.rotation.y, 0.0, delta * DECAY_SPEED
-		)
+			_left_elbow.rotation.y, 0.0, delta * DECAY_SPEED)
 		_right_elbow.rotation.x = lerpf(
-			_right_elbow.rotation.x, 0.0, delta * DECAY_SPEED
-		)
+			_right_elbow.rotation.x, 0.0, delta * DECAY_SPEED)
 		_right_elbow.rotation.y = lerpf(
-			_right_elbow.rotation.y, 0.0, delta * DECAY_SPEED
-		)
+			_right_elbow.rotation.y, 0.0, delta * DECAY_SPEED)
 		_left_knee.rotation.x = lerpf(
-			_left_knee.rotation.x, 0.0, delta * DECAY_SPEED
-		)
+			_left_knee.rotation.x, 0.0, delta * DECAY_SPEED)
 		_right_knee.rotation.x = lerpf(
-			_right_knee.rotation.x, 0.0, delta * DECAY_SPEED
-		)
-		if _head:
-			_head.rotation.y = lerpf(
-				_head.rotation.y, 0.0, delta * DECAY_SPEED
-			)
-			_head.rotation.z = lerpf(
-				_head.rotation.z, 0.0, delta * DECAY_SPEED
-			)
-		if _neck:
-			_neck.rotation.y = lerpf(
-				_neck.rotation.y, 0.0, delta * DECAY_SPEED
-			)
-			_neck.rotation.z = lerpf(
-				_neck.rotation.z, 0.0, delta * DECAY_SPEED
-			)
+			_right_knee.rotation.x, 0.0, delta * DECAY_SPEED)
 
 	# Aim arms at crosshair using camera pitch (skip when hidden, e.g. driving)
 	if (parent as Node3D).visible:
@@ -554,7 +423,6 @@ func _apply_arm_stroke(
 	shoulder.rotation.z = -sign_f * z_lift
 
 	# Elbow X: bent during recovery, extends at catch, bends during pull.
-	# Separate branches avoid unwanted re-bend at the catch-to-pull transition.
 	var elbow_bend: float
 	if recovery_t > pull_t:
 		# Recovery phase: starts bent (forearm dangles at hip exit) → extends to catch

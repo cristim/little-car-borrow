@@ -51,11 +51,11 @@ func test_flee_speed_constant() -> void:
 
 
 func test_flee_duration_constant() -> void:
-	assert_eq(FleeScript.FLEE_DURATION, 5.0)
+	assert_eq(FleeScript.FLEE_DURATION, 125.0)
 
 
 func test_safe_distance_constant() -> void:
-	assert_eq(FleeScript.SAFE_DISTANCE, 20.0)
+	assert_eq(FleeScript.SAFE_DISTANCE, 500.0)
 
 
 # ---------------------------------------------------------------------------
@@ -191,8 +191,8 @@ func test_transitions_to_walk_when_safe_distance_reached() -> void:
 	var state := _make_flee_state()
 	await get_tree().process_frame
 
-	# Set threat very far away so distance > SAFE_DISTANCE
-	state.enter({"threat_pos": Vector3(-100.0, 0.0, -100.0)})
+	# Set threat well beyond SAFE_DISTANCE (500 m) away
+	state.enter({"threat_pos": Vector3(-600.0, 0.0, 0.0)})
 	state.physics_update(0.016)
 
 	assert_eq(state.state_machine.last_target, "PedestrianWalk")

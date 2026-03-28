@@ -3,8 +3,8 @@ extends "res://src/state_machine/state.gd"
 ## Returns to Walk after 5s or when threat is >20m away.
 
 const FLEE_SPEED := 4.0
-const FLEE_DURATION := 5.0
-const SAFE_DISTANCE := 20.0
+const FLEE_DURATION := 125.0
+const SAFE_DISTANCE := 500.0
 
 var _flee_direction := Vector3.FORWARD
 var _threat_pos := Vector3.ZERO
