@@ -41,6 +41,13 @@ const SKY_HOR_B := [
 	[0.0, 0.08], [5.0, 0.08], [6.0, 0.22], [7.0, 0.82],
 	[17.0, 0.82], [18.0, 0.16], [20.0, 0.08], [24.0, 0.08],
 ]
+# sky_curve controls how far the horizon colour bleeds upward.
+# Lower value = warm band spreads to ~30° above horizon (golden hour).
+# Higher value = sharp horizon — haze stays near ground (midday clarity).
+const SKY_CURVE := [
+	[0.0, 0.15], [5.0, 0.15], [6.0, 0.09], [7.0, 0.20],
+	[17.0, 0.20], [18.0, 0.09], [20.0, 0.15], [24.0, 0.15],
+]
 const SUN_COL_R := [
 	[0.0, 0.2], [5.0, 0.2], [6.0, 1.0], [7.0, 1.0],
 	[17.0, 1.0], [18.0, 1.0], [20.0, 0.2], [24.0, 0.2],
@@ -267,6 +274,7 @@ func _update_sky(h: float) -> void:
 		_sample(SKY_HOR_G, h),
 		_sample(SKY_HOR_B, h),
 	)
+	_sky_mat.sky_curve = _sample(SKY_CURVE, h)
 
 
 func _update_fog(h: float, delta: float) -> void:
