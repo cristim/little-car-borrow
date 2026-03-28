@@ -30,23 +30,25 @@ const SKY_TOP_B := [
 	[17.0, 0.82], [18.0, 0.38], [20.0, 0.05], [24.0, 0.05],
 ]
 const SKY_HOR_R := [
-	[0.0, 0.02], [5.0, 0.02], [6.0, 0.82], [7.0, 0.36],
-	[17.0, 0.36], [18.0, 0.90], [20.0, 0.02], [24.0, 0.02],
+	[0.0, 0.02], [5.0, 0.02], [6.0, 0.88], [7.0, 0.65],
+	[8.0, 0.52], [16.0, 0.52], [17.0, 0.65],
+	[18.0, 0.92], [19.5, 0.08], [20.0, 0.02], [24.0, 0.02],
 ]
 const SKY_HOR_G := [
-	[0.0, 0.02], [5.0, 0.02], [6.0, 0.42], [7.0, 0.62],
-	[17.0, 0.62], [18.0, 0.40], [20.0, 0.02], [24.0, 0.02],
+	[0.0, 0.02], [5.0, 0.02], [6.0, 0.45], [7.0, 0.62],
+	[8.0, 0.73], [16.0, 0.73], [17.0, 0.62],
+	[18.0, 0.40], [19.5, 0.05], [20.0, 0.02], [24.0, 0.02],
 ]
 const SKY_HOR_B := [
-	[0.0, 0.08], [5.0, 0.08], [6.0, 0.22], [7.0, 0.82],
-	[17.0, 0.82], [18.0, 0.16], [20.0, 0.08], [24.0, 0.08],
+	[0.0, 0.08], [5.0, 0.08], [6.0, 0.18], [7.0, 0.62],
+	[8.0, 0.88], [16.0, 0.88], [17.0, 0.62],
+	[18.0, 0.14], [19.5, 0.08], [20.0, 0.08], [24.0, 0.08],
 ]
-# sky_curve controls how far the horizon colour bleeds upward.
-# Lower value = warm band spreads to ~30° above horizon (golden hour).
-# Higher value = sharp horizon — haze stays near ground (midday clarity).
+# sky_curve: low = warm band spreads high (golden hour); high = haze stays near ground.
 const SKY_CURVE := [
-	[0.0, 0.15], [5.0, 0.15], [6.0, 0.09], [7.0, 0.20],
-	[17.0, 0.20], [18.0, 0.09], [20.0, 0.15], [24.0, 0.15],
+	[0.0, 0.15], [5.0, 0.15], [6.0, 0.08], [7.0, 0.22],
+	[8.0, 0.32], [16.0, 0.32], [17.0, 0.22],
+	[18.0, 0.08], [20.0, 0.15], [24.0, 0.15],
 ]
 const SUN_COL_R := [
 	[0.0, 0.2], [5.0, 0.2], [6.0, 1.0], [7.0, 1.0],
@@ -250,7 +252,9 @@ func _update_sun(h: float) -> void:
 	if not _light:
 		return
 	var pitch := deg_to_rad(-_sample(SUN_PITCH, h))
-	var yaw := lerpf(-PI * 0.5, PI * 0.5, h / 24.0)
+	# Arc: sun rises due East (h=6) → transits South (h=12.5) → sets due West (h=19).
+	var t: float = clampf((h - 6.0) / 13.0, 0.0, 1.0)
+	var yaw := lerpf(-PI * 0.5, PI * 0.5, t)
 	_light.rotation = Vector3(pitch, yaw, 0.0)
 	_light.light_energy = _sample(SUN_ENERGY, h)
 	_light.light_color = Color(
