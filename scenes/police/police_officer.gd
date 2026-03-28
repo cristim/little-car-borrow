@@ -102,10 +102,18 @@ func _physics_process(delta: float) -> void:
 	_animate_limbs(delta, h_dist)
 
 
-func _shoot(_target_pos: Vector3) -> void:
+func _shoot(target_pos: Vector3) -> void:
+	# Line-of-sight check — cast against ground (1) + static geometry (2).
+	# If anything is hit the player is behind a wall; don't fire at all.
+	var muzzle := global_position + Vector3(0.0, 1.2, 0.0)
+	var space := get_world_3d().direct_space_state
+	var query := PhysicsRayQueryParameters3D.create(muzzle, target_pos, 3)
+	query.exclude = [self]
+	if not space.intersect_ray(query).is_empty():
+		return
+
 	# Accuracy check — miss sometimes
-	var hit := _rng.randf() < 0.4
-	if hit:
+	if _rng.randf() < 0.4:
 		GameManager.take_damage(SHOOT_DAMAGE)
 
 	# Muzzle flash visual
