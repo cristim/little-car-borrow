@@ -119,6 +119,9 @@ func _ready() -> void:
 		var sky: Sky = _env.environment.sky
 		if sky:
 			_sky_mat = sky.sky_material as ProceduralSkyMaterial
+			if _sky_mat:
+				# Default is 30° — the real sun is 0.5°; 2.5° matches our moon scale.
+				_sky_mat.sun_angle_max = 2.5
 
 	_rng.randomize()
 
