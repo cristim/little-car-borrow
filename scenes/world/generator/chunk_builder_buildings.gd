@@ -595,9 +595,9 @@ func _st_add_gable_roof(
 		_city_script.st_add_quad(st, e0, e1, r1, r0)
 		# Back slope (+Z side)
 		_city_script.st_add_quad(st, e2, e3, r0, r1)
-		# Gable ends (triangles)
-		st.add_vertex(e0); st.add_vertex(r0); st.add_vertex(e3)
-		st.add_vertex(e1); st.add_vertex(e2); st.add_vertex(r1)
+		# Gable ends (triangles) — winding: outward normal = -X (left) and +X (right)
+		st.add_vertex(e0); st.add_vertex(e3); st.add_vertex(r0)
+		st.add_vertex(e1); st.add_vertex(r1); st.add_vertex(e2)
 	else:
 		# Ridge along Z axis
 		var r0 := Vector3(cx, ridge_y, cz - hz)
@@ -610,9 +610,9 @@ func _st_add_gable_roof(
 		_city_script.st_add_quad(st, e3, e0, r0, r1)
 		# Right slope (+X side)
 		_city_script.st_add_quad(st, e1, e2, r1, r0)
-		# Gable ends (triangles)
-		st.add_vertex(e0); st.add_vertex(e1); st.add_vertex(r0)
-		st.add_vertex(e2); st.add_vertex(e3); st.add_vertex(r1)
+		# Gable ends (triangles) — winding: outward normal = -Z (front) and +Z (back)
+		st.add_vertex(e0); st.add_vertex(r0); st.add_vertex(e1)
+		st.add_vertex(e2); st.add_vertex(r1); st.add_vertex(e3)
 
 
 ## Hip roof: ridge shorter than building, all 4 sides slope.
@@ -637,10 +637,10 @@ func _st_add_hip_roof(
 		_city_script.st_add_quad(st, e0, e1, r1, r0)
 		# Back slope (+Z)
 		_city_script.st_add_quad(st, e2, e3, r0, r1)
-		# Left hip triangle
-		st.add_vertex(e0); st.add_vertex(r0); st.add_vertex(e3)
-		# Right hip triangle
-		st.add_vertex(e1); st.add_vertex(e2); st.add_vertex(r1)
+		# Left hip triangle — outward normal = -X
+		st.add_vertex(e0); st.add_vertex(e3); st.add_vertex(r0)
+		# Right hip triangle — outward normal = +X
+		st.add_vertex(e1); st.add_vertex(r1); st.add_vertex(e2)
 	else:
 		# Ridge along Z, inset from Z ends
 		var r0 := Vector3(cx, ridge_y, cz - hz + inset)
@@ -649,10 +649,10 @@ func _st_add_hip_roof(
 		_city_script.st_add_quad(st, e3, e0, r0, r1)
 		# Right slope (+X)
 		_city_script.st_add_quad(st, e1, e2, r1, r0)
-		# Front hip triangle
-		st.add_vertex(e0); st.add_vertex(e1); st.add_vertex(r0)
-		# Back hip triangle
-		st.add_vertex(e2); st.add_vertex(e3); st.add_vertex(r1)
+		# Front hip triangle — outward normal = -Z
+		st.add_vertex(e0); st.add_vertex(r0); st.add_vertex(e1)
+		# Back hip triangle — outward normal = +Z
+		st.add_vertex(e2); st.add_vertex(r1); st.add_vertex(e3)
 
 
 func _get_block_center_local(bx: int, bz: int) -> Vector2:
