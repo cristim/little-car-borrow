@@ -633,11 +633,18 @@ func test_flashlight_body_tilted_upward() -> void:
 	)
 
 
-func test_flashlight_body_has_forward_z_offset() -> void:
+func test_flashlight_body_oriented_along_arm() -> void:
+	# Arm runs along Y in elbow space. The tube must be longest in Y so it
+	# points forward (not sideways or down) when the arm is aimed.
 	var fl_body := _le.get_node("FlashlightBody") as MeshInstance3D
-	assert_lt(
-		fl_body.position.z, -0.02,
-		"FlashlightBody should extend in -Z (forward of palm when aimed)",
+	var bm: BoxMesh = fl_body.mesh as BoxMesh
+	assert_gt(
+		bm.size.y, bm.size.z,
+		"FlashlightBody Y (along-arm) should be longer than Z",
+	)
+	assert_gt(
+		bm.size.y, bm.size.x,
+		"FlashlightBody Y (along-arm) should be longer than X",
 	)
 
 
@@ -654,8 +661,7 @@ func test_thumb_sides_are_mirrored() -> void:
 
 func test_flashlight_positioned_at_housing_tip() -> void:
 	# Read the raw .tscn text so we can inspect the Flashlight transform.
-	# The SpotLight3D sits at the tip of the tilted FlashlightBody housing
-	# (0, -0.139, -0.074) in Forearm-local space.
+	# Tube runs along Y; tip is at Forearm-local (0, -0.201, 0.012) after 20° tilt.
 	var f: FileAccess = FileAccess.open(
 		"res://scenes/player/player.tscn", FileAccess.READ
 	)
@@ -667,6 +673,6 @@ func test_flashlight_positioned_at_housing_tip() -> void:
 		"Flashlight should not be at bare wrist position (0, -0.125, 0)",
 	)
 	assert_true(
-		src.contains("-0.139") and src.contains("-0.074"),
-		"Flashlight transform should contain tilted housing-tip offsets (-0.139, -0.074)",
+		src.contains("-0.201"),
+		"Flashlight Y offset should be -0.201 (tube tip past wrist in Forearm space)",
 	)

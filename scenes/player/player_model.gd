@@ -170,19 +170,20 @@ func _build_hands() -> void:
 	var mat_skin: StandardMaterial3D = _mat_ear  # same skin tone as ears/neck
 
 	# --- Left hand (holds flashlight) ---
-	# Flashlight tube runs along -Z; center at (0,-0.276,-0.042) in elbow space,
-	# so the hand palm must centre on the same Z to wrap around the housing.
+	# Arm runs along -Y in elbow-pivot space (Rx(-PI/2) maps elbow -Y → world +Z forward).
+	# Flashlight tube must run along Y as well so it points forward, not sideways.
+	# rotation.x = -20° tilts the tube tip toward elbow +Z → world +Y (upward). ✓
+	# Hand wraps around the tube: small Z offset only for palm/finger thickness.
 	_add_box(_left_elbow, "HandLeft_Palm", mat_skin,
-		Vector3(0.070, 0.040, 0.045), Vector3(0.000, -0.274, -0.038))
-	# Fingers curl forward around the tube (more negative Z).
+		Vector3(0.042, 0.044, 0.030), Vector3(0.000, -0.285, -0.010))
 	_add_box(_left_elbow, "HandLeft_Fingers", mat_skin,
-		Vector3(0.060, 0.044, 0.018), Vector3(0.000, -0.300, -0.062))
+		Vector3(0.055, 0.040, 0.016), Vector3(0.000, -0.305, -0.022))
 	_add_box(_left_elbow, "HandLeft_Thumb", mat_skin,
-		Vector3(0.022, 0.036, 0.030), Vector3(0.045, -0.262, -0.022))
-	# Flashlight housing — tilted 20° upward so it reads as hand-held and aimed.
-	# Center at (0, -0.276, -0.042) from left elbow; tip ~Z=-0.074 aligns with SpotLight3D.
+		Vector3(0.020, 0.032, 0.026), Vector3(0.042, -0.272, -0.006))
+	# Flashlight tube along Y; rotation.x = -20° gives upward tilt when aimed.
+	# Tube centre at Y=-0.294, extends from Y=-0.260 (butt near hand) to Y=-0.328 (tip).
 	var fl: MeshInstance3D = _add_box(_left_elbow, "FlashlightBody", _mat_flashlight_body,
-		Vector3(0.020, 0.020, 0.068), Vector3(0.000, -0.276, -0.042))
+		Vector3(0.020, 0.068, 0.020), Vector3(0.000, -0.294, 0.000))
 	fl.rotation.x = -deg_to_rad(20.0)
 
 	# --- Right hand (grips gun) ---
