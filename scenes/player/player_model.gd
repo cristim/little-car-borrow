@@ -170,12 +170,15 @@ func _build_hands() -> void:
 	var mat_skin: StandardMaterial3D = _mat_ear  # same skin tone as ears/neck
 
 	# --- Left hand (holds flashlight) ---
+	# Flashlight tube runs along -Z; center at (0,-0.276,-0.042) in elbow space,
+	# so the hand palm must centre on the same Z to wrap around the housing.
 	_add_box(_left_elbow, "HandLeft_Palm", mat_skin,
-		Vector3(0.075, 0.028, 0.080), Vector3(0.000, -0.274, 0.000))
+		Vector3(0.070, 0.040, 0.045), Vector3(0.000, -0.274, -0.038))
+	# Fingers curl forward around the tube (more negative Z).
 	_add_box(_left_elbow, "HandLeft_Fingers", mat_skin,
-		Vector3(0.062, 0.050, 0.022), Vector3(0.000, -0.306, -0.014))
+		Vector3(0.060, 0.044, 0.018), Vector3(0.000, -0.300, -0.062))
 	_add_box(_left_elbow, "HandLeft_Thumb", mat_skin,
-		Vector3(0.022, 0.036, 0.040), Vector3(0.048, -0.262, 0.010))
+		Vector3(0.022, 0.036, 0.030), Vector3(0.045, -0.262, -0.022))
 	# Flashlight housing — tilted 20° upward so it reads as hand-held and aimed.
 	# Center at (0, -0.276, -0.042) from left elbow; tip ~Z=-0.074 aligns with SpotLight3D.
 	var fl: MeshInstance3D = _add_box(_left_elbow, "FlashlightBody", _mat_flashlight_body,
