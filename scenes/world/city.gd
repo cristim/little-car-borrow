@@ -15,6 +15,9 @@ const FLUSH_INTERVAL := 5.0  # seconds between disk flushes
 const SEA_LEVEL := -2.0
 const EDGE_MISMATCH_THRESHOLD := 0.5  # meters — triggers neighbor rebuild
 const MAX_CASCADING_REPAIRS := 12  # safety cap to prevent runaway rebuilds
+const FALL_THRESHOLD := -15.0  # Y below which triggers self-repair
+const REPAIR_COOLDOWN := 2.0  # seconds after self-repair before re-checking
+const REPAIR_RADIUS := 1  # 3x3 grid around fall position
 const DIR_OFFSETS := {
 	0: Vector2i(0, -1),  # NORTH
 	1: Vector2i(1, 0),   # EAST
@@ -96,6 +99,7 @@ var _flush_timer := 0.0
 var _player: Node3D = null
 var _player_found := false
 var _repairing := false  # prevents recursive neighbor repair
+var _repair_cooldown := 0.0
 
 
 func _ready() -> void:
@@ -123,6 +127,14 @@ func _process(delta: float) -> void:
 	if not _player_found:
 		_player_found = true
 		_load_chunks_around(_player.global_position, Vector3.ZERO)
+
+	# Self-repair: detect fall-through (must run every frame)
+	if _repair_cooldown > 0.0:
+		_repair_cooldown -= delta
+	elif _player_found:
+		var fall_pos := _get_tracking_position()
+		if fall_pos.y < FALL_THRESHOLD:
+			_self_repair(fall_pos)
 
 	_update_timer += delta
 	if _update_timer < UPDATE_INTERVAL:
@@ -229,6 +241,58 @@ func _get_player_velocity() -> Vector3:
 	if _player is CharacterBody3D:
 		return (_player as CharacterBody3D).velocity
 	return Vector3.ZERO
+
+
+func _self_repair(pos: Vector3) -> void:
+	_repair_cooldown = REPAIR_COOLDOWN
+	var center: Vector2i = _grid.get_chunk_coord(Vector2(pos.x, pos.z))
+
+	# Suppress per-tile cascade to avoid 9x redundant BFS repairs
+	_repairing = true
+
+	# Regenerate 3x3 grid (outer ring first, center last)
+	for dx in range(-REPAIR_RADIUS, REPAIR_RADIUS + 1):
+		for dz in range(-REPAIR_RADIUS, REPAIR_RADIUS + 1):
+			if dx == 0 and dz == 0:
+				continue
+			_regenerate_chunk(Vector2i(center.x + dx, center.y + dz))
+	_regenerate_chunk(center)
+
+	# Run one edge repair pass from center outward
+	_repairing = false
+	var center_data: Dictionary = _tile_cache.get_tile_data(center)
+	var center_edges: Dictionary = center_data.get("edges", {})
+	var actual: Dictionary = {}
+	for dir: int in center_edges:
+		var h: PackedFloat32Array = center_edges[dir].get(
+			"heights", PackedFloat32Array(),
+		)
+		if h.size() > 0:
+			actual[dir] = h
+	if not actual.is_empty():
+		_repair_neighbor_edges(center, actual)
+
+	# Compute safe landing position
+	var safe_y: float = maxf(
+		_boundary.get_ground_height(pos.x, pos.z), 0.0,
+	) + 2.0
+
+	# Teleport player/vehicle
+	var vehicle = _player.get("current_vehicle")
+	if vehicle and vehicle is RigidBody3D:
+		(vehicle as RigidBody3D).global_position = Vector3(
+			pos.x, safe_y, pos.z,
+		)
+		(vehicle as RigidBody3D).linear_velocity = Vector3.ZERO
+		(vehicle as RigidBody3D).angular_velocity = Vector3.ZERO
+	else:
+		_player.global_position = Vector3(pos.x, safe_y, pos.z)
+		(_player as CharacterBody3D).velocity = Vector3.ZERO
+
+	print(
+		"Self-repair: regenerated 3x3 at %s, respawned at Y=%.1f"
+		% [str(center), safe_y]
+	)
 
 
 func _build_chunk(tile: Vector2i) -> Node3D:
@@ -506,7 +570,7 @@ func _init_materials() -> void:
 	_ramp_mat = StandardMaterial3D.new()
 	_ramp_mat.albedo_color = Color(0.6, 0.55, 0.2)
 
-	for i in 4:
+	for i in 8:
 		var wmat := StandardMaterial3D.new()
 		wmat.albedo_color = Color(0.18, 0.22, 0.28)
 		wmat.cull_mode = BaseMaterial3D.CULL_DISABLED
@@ -558,14 +622,21 @@ func _init_materials() -> void:
 		mat.albedo_color = c
 		_canopy_mats.append(mat)
 
-	# 4 roof colors: terracotta, dark grey, brown, slate
+	# 6 roof tile colors: red/terracotta clay tile variations for random visual variety
 	var roof_colors: Array[Color] = [
-		Color(0.72, 0.38, 0.22), Color(0.30, 0.30, 0.32),
-		Color(0.45, 0.30, 0.18), Color(0.40, 0.40, 0.45),
+		Color(0.75, 0.22, 0.12),  # deep red
+		Color(0.82, 0.30, 0.16),  # medium terracotta
+		Color(0.68, 0.18, 0.10),  # dark clay red
+		Color(0.78, 0.28, 0.14),  # warm red
+		Color(0.85, 0.35, 0.18),  # bright terracotta
+		Color(0.65, 0.20, 0.11),  # muted brick red
 	]
 	for c in roof_colors:
 		var mat := StandardMaterial3D.new()
 		mat.albedo_color = c
+		mat.roughness = 0.9
+		mat.metallic = 0.0
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 		_roof_mats.append(mat)
 
 	_pole_mat = StandardMaterial3D.new()
