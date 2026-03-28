@@ -1,17 +1,28 @@
 extends Node3D
 ## Interactive building door that opens/closes when the player presses F.
+## Automatically closes after AUTO_CLOSE_DELAY seconds if left open.
 ## Created procedurally by chunk_builder_buildings._create_door_node().
 
 const OPEN_ANGLE := -1.2
 const ANIM_DURATION := 0.3
+const AUTO_CLOSE_DELAY := 10.0
 
 var _is_open := false
 var _player_near := false
 var _base_rot_y: float = 0.0
+var _auto_close_timer: Timer = null
 
 
 func _ready() -> void:
 	_base_rot_y = rotation.y
+
+	_auto_close_timer = Timer.new()
+	_auto_close_timer.name = "AutoCloseTimer"
+	_auto_close_timer.wait_time = AUTO_CLOSE_DELAY
+	_auto_close_timer.one_shot = true
+	_auto_close_timer.timeout.connect(_auto_close)
+	add_child(_auto_close_timer)
+
 	var zone: Area3D = get_node_or_null("InteractionZone") as Area3D
 	if zone == null:
 		return
@@ -47,3 +58,13 @@ func _toggle() -> void:
 	tween.tween_property(self, "rotation:y", target_y, ANIM_DURATION)
 	var prompt: String = "[F] Close" if _is_open else "[F] Open"
 	EventBus.show_interaction_prompt.emit(prompt)
+
+	if _is_open:
+		_auto_close_timer.start()
+	else:
+		_auto_close_timer.stop()
+
+
+func _auto_close() -> void:
+	if _is_open:
+		_toggle()

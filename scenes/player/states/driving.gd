@@ -144,8 +144,8 @@ func exit() -> void:
 		if "steering_input" in _vehicle:
 			_vehicle.steering_input = 0.0
 			_vehicle.throttle_input = 0.0
-			_vehicle.brake_input = 0.0
-			_vehicle.handbrake_input = 0.0
+			_vehicle.brake_input = 1.0
+			_vehicle.handbrake_input = 1.0
 		var boat_ctrl := _vehicle.get_node_or_null("BoatController")
 		if boat_ctrl:
 			boat_ctrl.active = false

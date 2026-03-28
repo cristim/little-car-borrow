@@ -276,6 +276,16 @@ func test_exit_disconnects_force_exit() -> void:
 	)
 
 
+func test_exit_applies_brakes_to_stop_car() -> void:
+	_state.enter({"vehicle": _vehicle})
+	_vehicle.steering_input = 0.5
+	_vehicle.throttle_input = 1.0
+	_state.exit()
+	assert_eq(_vehicle.brake_input, 1.0, "brake_input should be 1.0 on exit")
+	assert_eq(_vehicle.handbrake_input, 1.0, "handbrake_input should be 1.0 on exit")
+	assert_eq(_vehicle.throttle_input, 0.0, "throttle_input should be 0 on exit")
+
+
 func test_exit_deactivates_boat_controller() -> void:
 	var boat := _build_vehicle(true)
 	add_child_autofree(boat)

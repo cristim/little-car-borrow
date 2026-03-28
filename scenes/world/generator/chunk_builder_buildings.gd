@@ -119,10 +119,12 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 				var mat_idx := rng.randi() % mat_count
 				var center := Vector3(
 					block_center.x + bx_off + ox,
-					bh * 0.5,
+					bh * 0.5 - 0.01,
 					block_center.y + bz_off + oz,
 				)
-				var size := Vector3(bw, bh, bd)
+				# Extend 2 cm underground so building walls never visually gap
+				# from the block-ground surface.
+				var size := Vector3(bw, bh + 0.02, bd)
 				block_buildings.append({
 					"center": center,
 					"size": size,
@@ -712,9 +714,9 @@ func _create_door_node(
 
 	var col_shape := CollisionShape3D.new()
 	var sphere := SphereShape3D.new()
-	sphere.radius = 1.8
+	sphere.radius = 2.5
 	col_shape.shape = sphere
-	col_shape.position = Vector3(0.0, DOOR_HEIGHT * 0.5, -1.5)
+	col_shape.position = Vector3(0.0, DOOR_HEIGHT * 0.5, -2.5)
 	area.add_child(col_shape)
 	door_node.add_child(area)
 

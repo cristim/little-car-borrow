@@ -48,6 +48,13 @@ func test_anim_duration_is_positive() -> void:
 	)
 
 
+func test_auto_close_delay_is_positive() -> void:
+	assert_gt(
+		DoorScript.AUTO_CLOSE_DELAY, 0.0,
+		"AUTO_CLOSE_DELAY should be positive",
+	)
+
+
 # ==========================================================================
 # Initial state
 # ==========================================================================
@@ -281,3 +288,52 @@ func test_build_adds_door_nodes_to_chunk() -> void:
 		if chunk.get_child(i).name.begins_with("Door"):
 			door_count += 1
 	assert_gt(door_count, 0, "build() should add at least one Door node to chunk")
+
+
+# ==========================================================================
+# Auto-close timer
+# ==========================================================================
+
+func test_auto_close_timer_child_exists_after_ready() -> void:
+	var door := _make_door()
+	var timer: Node = door.get_node_or_null("AutoCloseTimer")
+	assert_not_null(timer, "Door should have a Timer child after _ready")
+	assert_true(timer is Timer, "Timer child should be a Timer node")
+
+
+func test_auto_close_timer_wait_time_matches_constant() -> void:
+	var door := _make_door()
+	var timer: Timer = door.get_node_or_null("AutoCloseTimer") as Timer
+	assert_almost_eq(
+		timer.wait_time,
+		DoorScript.AUTO_CLOSE_DELAY,
+		0.001,
+		"Timer wait_time should equal AUTO_CLOSE_DELAY",
+	)
+
+
+func test_auto_close_timer_is_one_shot() -> void:
+	var door := _make_door()
+	var timer: Timer = door.get_node_or_null("AutoCloseTimer") as Timer
+	assert_true(timer.one_shot, "Auto-close timer should be one_shot")
+
+
+func test_toggle_open_starts_timer() -> void:
+	var door := _make_door()
+	var timer: Timer = door.get_node_or_null("AutoCloseTimer") as Timer
+	door._toggle()  # open
+	assert_true(
+		not timer.is_stopped(),
+		"Opening door should start the auto-close timer",
+	)
+
+
+func test_toggle_close_stops_timer() -> void:
+	var door := _make_door()
+	var timer: Timer = door.get_node_or_null("AutoCloseTimer") as Timer
+	door._toggle()  # open — starts timer
+	door._toggle()  # close — stops timer
+	assert_true(
+		timer.is_stopped(),
+		"Manually closing door should stop the auto-close timer",
+	)
