@@ -293,10 +293,12 @@ func _build_sea_plane(
 	var mesh := st.commit()
 
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.1, 0.3, 0.6, 0.55)
+	mat.albedo_color = Color(0.08, 0.25, 0.52, 0.90)
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+	# Unshaded: water colour is not affected by scene lighting so the seabed
+	# cannot bleed through as a false "illuminated from below" glow at night.
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 
 	var mesh_inst := MeshInstance3D.new()
 	mesh_inst.name = "SeaPlane"
