@@ -216,10 +216,18 @@ func _try_spawn() -> void:
 		if _grid.is_on_ramp(spawn_pos.x, spawn_pos.z):
 			continue
 
-		# Adjust spawn height to terrain level outside city
-		var ground_y: float = _boundary.get_ground_height(
-			spawn_pos.x, spawn_pos.z
-		)
+		# Adjust spawn height to terrain level.
+		# City terrain is always flat (y=0); outside city use noise height,
+		# but reject steep hills — no road exists there and the car would
+		# appear to fall from the sky as seen from the flat city below.
+		var sd: float = _boundary.get_signed_distance(spawn_pos.x, spawn_pos.z)
+		var ground_y: float
+		if sd < 0.0:
+			ground_y = 0.0
+		else:
+			ground_y = _boundary.get_ground_height(spawn_pos.x, spawn_pos.z)
+			if ground_y > 6.0:
+				continue  # steep terrain — no road here
 		if ground_y < SEA_LEVEL:
 			continue
 		spawn_pos.y = ground_y + 0.5
@@ -241,14 +249,14 @@ func _try_spawn() -> void:
 		if too_close:
 			continue
 
-		# Bias spawns ahead of player movement
+		# Never spawn in the player's forward hemisphere — cars must not
+		# pop into view. Only allow spawns behind or to the sides.
 		var h_vel := Vector3(_player_velocity.x, 0.0, _player_velocity.z)
 		if h_vel.length_squared() > 1.0:
 			var offset := spawn_pos - player_pos
 			offset.y = 0.0
-			if h_vel.normalized().dot(offset.normalized()) < -0.3:
-				if _rng.randf() < 0.7:
-					continue
+			if h_vel.normalized().dot(offset.normalized()) > 0.0:
+				continue
 
 		var vehicle := _vehicle_scene.instantiate()
 		_apply_variant(vehicle)
