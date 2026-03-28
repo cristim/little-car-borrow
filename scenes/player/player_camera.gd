@@ -2,7 +2,7 @@ extends Node3D
 ## Third-person mouse-look orbit camera for the player character.
 
 ## Face-cam: hold V to swing camera in front of the player to inspect face.
-const FACE_CAM_SPRING := 1.0
+const FACE_CAM_SPRING := 1.8
 const FACE_CAM_PITCH := -0.05   # slightly below horizontal to see the face
 const FACE_CAM_LERP := 6.0      # transition speed
 

@@ -98,7 +98,8 @@ func _build_face_materials() -> void:
 
 
 ## Add face detail meshes as children of the Head node.
-## Head box half-extents: ±0.11 X, ±0.135 Y, ±0.095 Z (front face at Z = -0.095).
+## Head box half-extents: ±0.11 X, ±0.135 Y, ±0.095 Z (front face at Z = +0.095).
+## Player faces +Z (rotation.y = camera_yaw + PI), so front features use positive Z.
 func _build_face_details() -> void:
 	if not _head:
 		return
@@ -106,28 +107,28 @@ func _build_face_details() -> void:
 	# --- Eyes (iris + pupil combined as dark ovals on the front face) ---
 	_add_box(_head, "EyeLeft",  _mat_eye,
 		Vector3(0.050, 0.028, 0.010),
-		Vector3( 0.054, 0.030, -0.102))
+		Vector3( 0.054, 0.030, 0.102))
 	_add_box(_head, "EyeRight", _mat_eye,
 		Vector3(0.050, 0.028, 0.010),
-		Vector3(-0.054, 0.030, -0.102))
+		Vector3(-0.054, 0.030, 0.102))
 
 	# --- Eyebrows (thin dark strips above eyes) ---
 	_add_box(_head, "BrowLeft",  _mat_eyebrow,
 		Vector3(0.055, 0.012, 0.008),
-		Vector3( 0.053, 0.067, -0.100))
+		Vector3( 0.053, 0.067, 0.100))
 	_add_box(_head, "BrowRight", _mat_eyebrow,
 		Vector3(0.055, 0.012, 0.008),
-		Vector3(-0.053, 0.067, -0.100))
+		Vector3(-0.053, 0.067, 0.100))
 
 	# --- Nose (small box protruding from mid-face) ---
 	_add_box(_head, "Nose", _mat_nose,
 		Vector3(0.030, 0.040, 0.025),
-		Vector3(0.0, -0.010, -0.108))
+		Vector3(0.0, -0.010, 0.108))
 
 	# --- Mouth (thin dark strip below nose) ---
 	_add_box(_head, "Mouth", _mat_mouth,
 		Vector3(0.065, 0.014, 0.008),
-		Vector3(0.0, -0.063, -0.100))
+		Vector3(0.0, -0.063, 0.100))
 
 	# --- Ears (small boxes on the sides of the head) ---
 	_add_box(_head, "EarLeft",  _mat_ear,
@@ -140,7 +141,7 @@ func _build_face_details() -> void:
 	# --- Hair cap (wider/deeper than head, sits on top) ---
 	_add_box(_head, "HairTop", _mat_hair,
 		Vector3(0.240, 0.055, 0.210),
-		Vector3(0.0, 0.152, -0.002))
+		Vector3(0.0, 0.152, 0.002))
 	# Side panels keep hair flush with head sides
 	_add_box(_head, "HairSideLeft",  _mat_hair,
 		Vector3(0.028, 0.110, 0.185),
@@ -148,10 +149,10 @@ func _build_face_details() -> void:
 	_add_box(_head, "HairSideRight", _mat_hair,
 		Vector3(0.028, 0.110, 0.185),
 		Vector3(-0.124, 0.090, 0.003))
-	# Back panel
+	# Back panel (behind head, negative Z)
 	_add_box(_head, "HairBack", _mat_hair,
 		Vector3(0.210, 0.070, 0.028),
-		Vector3(0.0, 0.082, 0.105))
+		Vector3(0.0, 0.082, -0.105))
 
 
 ## Helper: create a MeshInstance3D with a BoxMesh, attach to parent node.

@@ -547,6 +547,6 @@ func test_ears_protrude_sideways() -> void:
 
 
 func test_eyes_are_on_front_face() -> void:
-	# Eyes Z position should be at or past the front face of the head (-0.095)
+	# Player faces +Z, so front face of head is at Z = +0.095; eyes must be there
 	var eye_l := _head.get_node("EyeLeft") as MeshInstance3D
-	assert_lt(eye_l.position.z, -0.09, "Eye should be on or in front of head face")
+	assert_gt(eye_l.position.z, 0.09, "Eye should be on front face (+Z) of head")
