@@ -62,7 +62,7 @@ const SUN_COL_B := [
 ]
 
 # Moon / stars
-const MOON_DIST := 4000.0
+const MOON_DIST := 3000.0
 const MOON_RADIUS := 180.0
 const STAR_SPHERE_R := 4800.0
 
@@ -120,7 +120,7 @@ func _ready() -> void:
 			_sky_mat = sky.sky_material as ProceduralSkyMaterial
 
 	_rng.randomize()
-	_moon_phase = _rng.randf()
+	_moon_phase = 0.15 + _rng.randf() * 0.7
 
 	_window_toggle_timer = Timer.new()
 	_window_toggle_timer.one_shot = true
@@ -537,10 +537,10 @@ void fragment() {
 	vec2 lc3 = fract(g3) - 0.5;
 	float h3 = hash2(id3 + vec2(11.3, 137.8));
 	float d3 = length(lc3);
-	float sz3 = 0.032 + h3 * 0.022;
+	float sz3 = 0.018 + h3 * 0.014;
 	float present3 = step(0.88, h3);
 	float core3 = present3 * smoothstep(sz3, 0.0, d3);
-	float halo3 = present3 * smoothstep(0.16, 0.0, d3) * 0.22;
+	float halo3 = present3 * smoothstep(0.10, 0.0, d3) * 0.22;
 	float glow3 = (core3 + halo3) * star_alpha;
 	vec3 col3 = mix(vec3(0.7, 0.85, 1.0), vec3(1.0, 0.75, 0.5), h3) * glow3 * 1.8;
 

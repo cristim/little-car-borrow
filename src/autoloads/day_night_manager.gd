@@ -6,7 +6,7 @@ const CYCLE_DURATION := 1200.0  # 20 real minutes = 24 game hours
 const HOURS_PER_SECOND := 24.0 / CYCLE_DURATION
 const EMIT_INTERVAL := 0.5  # emit signal every 0.5 game-hours
 
-var current_hour := 18.0  # start at 6 PM (evening for testing)
+var current_hour := 5.0  # start at 5 AM
 var time_speed := 1.0  # debug multiplier
 
 var _last_emitted_hour := -1.0
