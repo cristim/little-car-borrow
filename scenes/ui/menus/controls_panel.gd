@@ -19,6 +19,7 @@ const REBINDABLE_ACTIONS: Array[Dictionary] = [
 	{"action": "radio_next", "label": "Next Radio"},
 	{"action": "pause", "label": "Pause"},
 	{"action": "toggle_fullscreen", "label": "Toggle Fullscreen"},
+	{"action": "camera_view", "label": "Cycle Camera View"},
 ]
 
 var _key_buttons: Dictionary = {}

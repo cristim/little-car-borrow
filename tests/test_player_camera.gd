@@ -299,9 +299,9 @@ func test_shoulder_x_positive() -> void:
 # ==========================================================================
 
 func _press_camera_view() -> void:
-	Input.action_press("face_cam")
+	Input.action_press("camera_view")
 	_cam_root._physics_process(0.016)
-	Input.action_release("face_cam")
+	Input.action_release("camera_view")
 
 
 func test_view_cycles_normal_to_left() -> void:

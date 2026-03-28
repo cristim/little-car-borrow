@@ -62,7 +62,7 @@ func _physics_process(delta: float) -> void:
 
 	# Detect rising edge via is_action_pressed — the same polling approach
 	# the original face-cam hold used, so it is known to be reliable here.
-	var face_cam_down: bool = Input.is_action_pressed("face_cam")
+	var face_cam_down: bool = Input.is_action_pressed("camera_view")
 	if face_cam_down and not _prev_face_cam:
 		_view_mode = (_view_mode + 1) % 4
 	_prev_face_cam = face_cam_down
