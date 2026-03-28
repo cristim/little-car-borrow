@@ -28,9 +28,10 @@ var _pitch := -0.3
 var _view_mode := VIEW_NORMAL
 
 # Blend state — lerp toward target values each frame.
-var _face_cam_t := 0.0   # 0 = facing back (normal), 1 = facing front
-var _blend_x := 0.0      # camera local x offset (left/right shoulder)
-var _blend_spring := 3.5 # current spring length
+var _face_cam_t := 0.0        # 0 = facing back (normal), 1 = facing front
+var _blend_x := 0.0           # camera local x offset (left/right shoulder)
+var _blend_spring := 3.5      # current spring length
+var _prev_face_cam := false   # rising-edge detector for toggle
 
 @onready var spring_arm: SpringArm3D = $SpringArm3D
 @onready var camera: Camera3D = $SpringArm3D/Camera3D
@@ -59,10 +60,12 @@ func _physics_process(delta: float) -> void:
 		return
 	global_position = parent.global_position + Vector3(0, height_offset, 0)
 
-	# Cycle view mode on press (checked here so it fires even when other nodes
-	# consume the raw key event before _unhandled_input is reached).
-	if Input.is_action_just_pressed("face_cam"):
+	# Detect rising edge via is_action_pressed — the same polling approach
+	# the original face-cam hold used, so it is known to be reliable here.
+	var face_cam_down: bool = Input.is_action_pressed("face_cam")
+	if face_cam_down and not _prev_face_cam:
 		_view_mode = (_view_mode + 1) % 4
+	_prev_face_cam = face_cam_down
 
 	# Determine targets based on the active view mode.
 	var target_face_t: float = 1.0 if _view_mode == VIEW_FRONT else 0.0
