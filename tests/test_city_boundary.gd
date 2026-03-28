@@ -127,6 +127,71 @@ func test_ground_height_below_sea_level_west_ocean() -> void:
 	)
 
 
+func test_mesh_height_zero_inside_city() -> void:
+	var b: RefCounted = BoundaryScript.new()
+	b.init(_grid_span, _make_terrain_noise())
+	# Origin is inside city — bilinear corners are all 0.0
+	assert_eq(b.get_mesh_height(0.0, 0.0), 0.0)
+
+
+func test_mesh_height_bounded_by_corners() -> void:
+	# Bilinear interpolation must produce a value between the min and max
+	# of the four surrounding grid corners.  This is the key invariant that
+	# prevents trees from floating above or sinking below the terrain mesh.
+	var b: RefCounted = BoundaryScript.new()
+	b.init(_grid_span, _make_terrain_noise())
+	var step: float = _grid_span / float(BoundaryScript.TERRAIN_SUBDIVISIONS)
+	# Sample several arbitrary points well outside the city
+	var test_points: Array[Vector2] = [
+		Vector2(_grid_span * 2.3, _grid_span * 0.5),
+		Vector2(_grid_span * 1.8, _grid_span * 1.8),
+		Vector2(_grid_span * 3.0, _grid_span * 0.0),
+	]
+	for pt: Vector2 in test_points:
+		var wx: float = pt.x
+		var wz: float = pt.y
+		var gx: float = floor(wx / step) * step
+		var gz: float = floor(wz / step) * step
+		var h00: float = b.get_ground_height(gx, gz)
+		var h10: float = b.get_ground_height(gx + step, gz)
+		var h01: float = b.get_ground_height(gx, gz + step)
+		var h11: float = b.get_ground_height(gx + step, gz + step)
+		var lo: float = minf(minf(h00, h10), minf(h01, h11))
+		var hi: float = maxf(maxf(h00, h10), maxf(h01, h11))
+		var mh: float = b.get_mesh_height(wx, wz)
+		assert_true(
+			mh >= lo - 0.001 and mh <= hi + 0.001,
+			"get_mesh_height(%g,%g)=%g must be within corner range [%g,%g]" % [
+				wx, wz, mh, lo, hi,
+			],
+		)
+
+
+func test_mesh_height_matches_corners_exactly_on_grid() -> void:
+	# At a grid vertex the bilinear result must exactly equal get_ground_height.
+	var b: RefCounted = BoundaryScript.new()
+	b.init(_grid_span, _make_terrain_noise())
+	var step: float = _grid_span / float(BoundaryScript.TERRAIN_SUBDIVISIONS)
+	var wx: float = step * 40.0  # arbitrary integer multiple — on-grid
+	var wz: float = step * 25.0
+	assert_almost_eq(
+		b.get_mesh_height(wx, wz),
+		b.get_ground_height(wx, wz),
+		0.001,
+		"get_mesh_height at a grid vertex must equal get_ground_height",
+	)
+
+
+func test_rural_trees_source_uses_mesh_height() -> void:
+	var src: String = (
+		load("res://scenes/world/generator/chunk_builder_rural_trees.gd") as GDScript
+	).source_code
+	assert_true(
+		src.contains("get_mesh_height"),
+		"Rural tree builder must use get_mesh_height for tree placement",
+	)
+
+
 static func _make_terrain_noise() -> FastNoiseLite:
 	var n := FastNoiseLite.new()
 	n.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH

@@ -88,7 +88,7 @@ func build(
 					break
 				if _near_village(tx, z, has_village, village_center):
 					continue
-				var h: float = _boundary.get_ground_height(tx, z)
+				var h: float = _boundary.get_mesh_height(tx, z)
 				if h < MIN_TREE_HEIGHT:
 					continue
 				_collect_tree(
@@ -108,7 +108,7 @@ func build(
 					break
 				if _near_village(x, tz, has_village, village_center):
 					continue
-				var h: float = _boundary.get_ground_height(x, tz)
+				var h: float = _boundary.get_mesh_height(x, tz)
 				if h < MIN_TREE_HEIGHT:
 					continue
 				_collect_tree(
@@ -146,7 +146,7 @@ func build(
 			var dist: float = rng.randf() * cluster_r
 			var tx: float = cx + cos(angle) * dist
 			var tz: float = cz + sin(angle) * dist
-			var h: float = _boundary.get_ground_height(tx, tz)
+			var h: float = _boundary.get_mesh_height(tx, tz)
 			if h < MIN_TREE_HEIGHT:
 				continue
 			_collect_tree(
@@ -242,9 +242,6 @@ func _collect_tree(
 	canopy_colors: Array,
 	body: StaticBody3D,
 ) -> void:
-	# Sink tree base slightly to compensate for terrain mesh interpolation
-	pos = Vector3(pos.x, pos.y - 0.5, pos.z)
-
 	var trunk_h := rng.randf_range(2.0, 5.0)
 	var trunk_r := rng.randf_range(0.12, 0.3)
 

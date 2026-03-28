@@ -8,6 +8,9 @@ const VARIATION := 0.16  # +/- tiles of noise modulation  # TODO: restore to 0.8
 const LOOP_RADIUS := 2.5  # radius in noise space for seamless loop
 const NOISE_SEED := 77
 const NOISE_FREQ := 0.3
+## Must match chunk_builder_terrain.SUBDIVISIONS so get_mesh_height()
+## bilinearly interpolates at exactly the same grid resolution as the mesh.
+const TERRAIN_SUBDIVISIONS := 16
 
 var _noise: FastNoiseLite
 var _grid_span: float
@@ -61,6 +64,29 @@ func get_boundary_polygon(segments: int) -> PackedVector2Array:
 		var r: float = get_boundary_radius_at_angle(angle)
 		pts[i] = Vector2(cos(angle) * r, sin(angle) * r)
 	return pts
+
+
+## Returns terrain height matched to the actual rendered mesh surface.
+## The terrain mesh is a grid of SUBDIVISIONS×SUBDIVISIONS quads per chunk,
+## linearly interpolated between vertices.  Evaluating the raw noise formula
+## at an arbitrary point gives the curved noise value, which diverges from
+## the flat triangle face when terrain curves — causing trees to appear to
+## float.  This function bilinearly interpolates the same four grid-corner
+## heights that the mesh uses, so the result sits exactly on the surface.
+func get_mesh_height(wx: float, wz: float) -> float:
+	var step: float = _grid_span / float(TERRAIN_SUBDIVISIONS)
+	# Grid-aligned corner to the south-west of the point
+	var gx: float = floor(wx / step) * step
+	var gz: float = floor(wz / step) * step
+	# Sample four corners at actual mesh vertex positions
+	var h00: float = get_ground_height(gx, gz)
+	var h10: float = get_ground_height(gx + step, gz)
+	var h01: float = get_ground_height(gx, gz + step)
+	var h11: float = get_ground_height(gx + step, gz + step)
+	# Bilinear interpolation — matches the flat-quad mesh surface
+	var fx: float = (wx - gx) / step
+	var fz: float = (wz - gz) / step
+	return lerpf(lerpf(h00, h10, fx), lerpf(h01, h11, fx), fz)
 
 
 ## Returns the terrain ground height at a world XZ position.
