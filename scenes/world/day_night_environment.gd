@@ -65,7 +65,7 @@ const SUN_COL_B := [
 
 # Moon / stars
 const MOON_DIST := 3000.0
-const MOON_RADIUS := 180.0
+const MOON_RADIUS := 55.0
 const STAR_SPHERE_R := 4800.0
 
 # Clouds / weather — index = weather state: 0=clear, 1=cloudy, 2=overcast
@@ -96,7 +96,6 @@ var _window_toggle_timer: Timer
 
 var _moon: MeshInstance3D
 var _moon_mat: ShaderMaterial
-var _moon_phase: float = 0.5
 var _star_sphere: MeshInstance3D
 var _star_mat: ShaderMaterial
 var _clouds: Array[Node3D] = []
@@ -122,7 +121,6 @@ func _ready() -> void:
 			_sky_mat = sky.sky_material as ProceduralSkyMaterial
 
 	_rng.randomize()
-	_moon_phase = 0.15 + _rng.randf() * 0.7
 
 	_window_toggle_timer = Timer.new()
 	_window_toggle_timer.one_shot = true
@@ -165,8 +163,8 @@ func _setup_moon() -> void:
 	shader.code = _moon_shader_src()
 	_moon_mat = ShaderMaterial.new()
 	_moon_mat.shader = shader
-	_moon_mat.set_shader_parameter("phase", _moon_phase)
 	_moon_mat.set_shader_parameter("brightness", 0.0)
+	_moon_mat.set_shader_parameter("sun_dir", Vector3(0.0, -1.0, 0.0))
 
 	_moon = MeshInstance3D.new()
 	_moon.mesh = mesh
@@ -317,6 +315,7 @@ func _update_moon(h: float) -> void:
 	var moon_dir: Vector3 = Vector3(-sun_fwd.x, absf(sun_fwd.y) + 0.15, -sun_fwd.z).normalized()
 	_moon.global_position = origin + moon_dir * MOON_DIST
 	_moon_mat.set_shader_parameter("brightness", night)
+	_moon_mat.set_shader_parameter("sun_dir", sun_fwd)
 
 
 func _update_stars(h: float) -> void:
@@ -462,24 +461,24 @@ static func _sample(curve: Array, h: float) -> float:
 
 
 ## Inline GLSL for the moon sphere with phase rendering.
-## phase: 0=new moon (dark), 0.25=waxing quarter, 0.5=full, 0.75=waning quarter.
-## The terminator is computed in view-space so it always faces the camera correctly.
+## Phase is derived from the actual sun direction (world-space) so it stays
+## stable regardless of camera orientation.  NORMAL in Godot fragment shaders
+## is view-space; INV_VIEW_MATRIX converts it back to world-space.
 static func _moon_shader_src() -> String:
 	return """shader_type spatial;
 render_mode unshaded;
 
-uniform float phase : hint_range(0.0, 1.0) = 0.5;
 uniform float brightness : hint_range(0.0, 1.0) = 1.0;
+// Direction light travels toward the ground, world-space (same as DirectionalLight forward).
+uniform vec3 sun_dir = vec3(0.0, -1.0, 0.0);
 
 void fragment() {
-	vec3 n = normalize(NORMAL);
+	// Convert view-space NORMAL to world-space so the terminator is
+	// fixed in the world and does not shift when the camera rotates.
+	vec3 n = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
 
-	// Terminator line sweeps across the disc as phase changes.
-	// cos(phase*TAU): +1 at new moon, -1 at full moon, +1 at new moon.
-	// Waxing (0..0.5): right side lit. Waning (0.5..1): left side lit.
-	float px = cos(phase * 6.2832);
-	float flip = phase > 0.5 ? -1.0 : 1.0;
-	float lit = smoothstep(-0.06, 0.06, flip * n.x - px);
+	// Lit side is the hemisphere facing toward the sun (-sun_dir).
+	float lit = smoothstep(-0.05, 0.05, dot(n, -sun_dir));
 
 	// Subtle surface shading to suggest craters / texture depth
 	float shade = 0.80 + 0.20 * dot(n, normalize(vec3(0.3, 0.5, 1.0)));
