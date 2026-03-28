@@ -30,7 +30,8 @@ func physics_update(delta: float) -> void:
 	ped.move_and_slide()
 
 	# Face away from threat
-	var look_target := ped.global_position + _flee_direction
+	# Model faces +Z; look_at orients -Z, so negate to make face point forward
+	var look_target := ped.global_position - _flee_direction
 	look_target.y = ped.global_position.y
 	if look_target.distance_to(ped.global_position) > 0.01:
 		ped.look_at(look_target, Vector3.UP)

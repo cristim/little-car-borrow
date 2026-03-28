@@ -25,9 +25,9 @@ func physics_update(delta: float) -> void:
 	ped.velocity.y -= 9.8 * delta
 	ped.move_and_slide()
 
-	# Face walk direction
+	# Face walk direction (model faces +Z; look_at orients -Z, so negate direction)
 	if _direction.length_squared() > 0.01:
-		var look_target := ped.global_position + _direction
+		var look_target := ped.global_position - _direction
 		look_target.y = ped.global_position.y
 		if look_target.distance_to(ped.global_position) > 0.01:
 			ped.look_at(look_target, Vector3.UP)
