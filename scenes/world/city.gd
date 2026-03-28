@@ -13,7 +13,7 @@ const SCAN_RANGE := 5  # check -5..+5 tiles around player (boundary can extend ~
 const LOOKAHEAD_TIME := 3.0  # seconds of velocity prediction
 const FLUSH_INTERVAL := 5.0  # seconds between disk flushes
 const SEA_LEVEL := -2.0
-const EDGE_MISMATCH_THRESHOLD := 0.5  # meters — triggers neighbor rebuild
+const EDGE_MISMATCH_THRESHOLD := 0.05  # meters — triggers neighbor rebuild
 const MAX_CASCADING_REPAIRS := 12  # safety cap to prevent runaway rebuilds
 const FALL_THRESHOLD := -15.0  # Y below which triggers self-repair
 const REPAIR_COOLDOWN := 2.0  # seconds after self-repair before re-checking
@@ -425,7 +425,10 @@ func _shared_edge_mismatches(
 	var neighbor_data: Dictionary = _tile_cache.get_tile_data(neighbor)
 	var neighbor_edges: Dictionary = neighbor_data.get("edges", {})
 	if not neighbor_edges.has(opposite):
-		return false
+		# Missing edge means the neighbor was cached before edge-constraint data
+		# was introduced.  Treat as mismatch so the tile gets rebuilt with fresh
+		# constraints instead of inheriting stale (gap-producing) heights.
+		return true
 	var their_edge: PackedFloat32Array = neighbor_edges[opposite].get(
 		"heights", PackedFloat32Array(),
 	)
@@ -776,7 +779,8 @@ func _init_builders() -> void:
 		_grid, _trunk_mats, _canopy_mats, _trunk_mesh, _canopy_meshes, _boundary
 	)
 	_suburb_builder.init(
-		_grid, _building_mats, _roof_mats, _building_builder,
+		_grid, _building_mats, _window_mats, _interior_mat,
+		_roof_mats, _building_builder,
 	)
 	_farmland_builder.init(_grid, _boundary)
 	_mountain_builder.init(_grid, _boundary)
