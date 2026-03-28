@@ -51,7 +51,12 @@ const EYE_COLORS: Array[Color] = [
 	Color(0.18, 0.22, 0.30),
 ]
 
+const WALK_ELBOW_BASE := -0.5      # base elbow fold when walking (~29°)
+const WALK_ELBOW_DYN := 0.15       # extra fold on forward shoulder swing
+
 var _rng := RandomNumberGenerator.new()
+var _left_elbow: Node3D
+var _right_elbow: Node3D
 
 
 func _ready() -> void:
@@ -145,35 +150,63 @@ func _ready() -> void:
 	right_hip.add_child(right_leg)
 
 	# --- Shoulder pivots / arms (children 4, 5) ---
-	# Pivot at shoulder level (y=1.25); arm hangs (centre at y=-0.275)
-	var arm_mesh := CylinderMesh.new()
-	arm_mesh.top_radius = 0.06
-	arm_mesh.bottom_radius = 0.06
-	arm_mesh.height = 0.55
+	# Each arm is split: upper arm (shoulder→elbow) + ElbowPivot + forearm.
+	# Total reach: 0.27 (upper) + 0.28 (forearm) = 0.55 m, same as before.
+	var upper_arm_mesh := CylinderMesh.new()
+	upper_arm_mesh.top_radius = 0.06
+	upper_arm_mesh.bottom_radius = 0.055
+	upper_arm_mesh.height = 0.27
+
+	var forearm_mesh := CylinderMesh.new()
+	forearm_mesh.top_radius = 0.055
+	forearm_mesh.bottom_radius = 0.05
+	forearm_mesh.height = 0.28
 
 	var left_shoulder := Node3D.new()
 	left_shoulder.name = "LeftShoulderPivot"
 	left_shoulder.position = Vector3(-0.24, 1.25, 0.0)
 	add_child(left_shoulder)
 	_left_shoulder = left_shoulder  # base class var
-	var left_arm := MeshInstance3D.new()
-	left_arm.name = "LeftArm"
-	left_arm.mesh = arm_mesh
-	left_arm.material_override = shirt_mat
-	left_arm.position = Vector3(0.0, -0.275, 0.0)
-	left_shoulder.add_child(left_arm)
+	var left_upper_arm := MeshInstance3D.new()
+	left_upper_arm.name = "LeftArm"
+	left_upper_arm.mesh = upper_arm_mesh
+	left_upper_arm.material_override = shirt_mat
+	left_upper_arm.position = Vector3(0.0, -0.135, 0.0)
+	left_shoulder.add_child(left_upper_arm)
+	var left_elbow_pivot := Node3D.new()
+	left_elbow_pivot.name = "LeftElbowPivot"
+	left_elbow_pivot.position = Vector3(0.0, -0.27, 0.0)
+	left_shoulder.add_child(left_elbow_pivot)
+	_left_elbow = left_elbow_pivot
+	var left_forearm := MeshInstance3D.new()
+	left_forearm.name = "LeftForearm"
+	left_forearm.mesh = forearm_mesh
+	left_forearm.material_override = shirt_mat
+	left_forearm.position = Vector3(0.0, -0.14, 0.0)
+	left_elbow_pivot.add_child(left_forearm)
 
 	var right_shoulder := Node3D.new()
 	right_shoulder.name = "RightShoulderPivot"
 	right_shoulder.position = Vector3(0.24, 1.25, 0.0)
 	add_child(right_shoulder)
 	_right_shoulder = right_shoulder  # base class var
-	var right_arm := MeshInstance3D.new()
-	right_arm.name = "RightArm"
-	right_arm.mesh = arm_mesh
-	right_arm.material_override = shirt_mat
-	right_arm.position = Vector3(0.0, -0.275, 0.0)
-	right_shoulder.add_child(right_arm)
+	var right_upper_arm := MeshInstance3D.new()
+	right_upper_arm.name = "RightArm"
+	right_upper_arm.mesh = upper_arm_mesh
+	right_upper_arm.material_override = shirt_mat
+	right_upper_arm.position = Vector3(0.0, -0.135, 0.0)
+	right_shoulder.add_child(right_upper_arm)
+	var right_elbow_pivot := Node3D.new()
+	right_elbow_pivot.name = "RightElbowPivot"
+	right_elbow_pivot.position = Vector3(0.0, -0.27, 0.0)
+	right_shoulder.add_child(right_elbow_pivot)
+	_right_elbow = right_elbow_pivot
+	var right_forearm := MeshInstance3D.new()
+	right_forearm.name = "RightForearm"
+	right_forearm.mesh = forearm_mesh
+	right_forearm.material_override = shirt_mat
+	right_forearm.position = Vector3(0.0, -0.14, 0.0)
+	right_elbow_pivot.add_child(right_forearm)
 
 
 ## Add face detail boxes as children of head_pivot.
@@ -243,5 +276,14 @@ func _process(delta: float) -> void:
 
 	if h_speed > 0.5:
 		_animate_gait(delta, h_speed, 0.0)
+		# Elbow bend: base fold + extra when arm swings forward
+		_left_elbow.rotation.x = WALK_ELBOW_BASE \
+			+ maxf(0.0, _left_shoulder.rotation.x) * WALK_ELBOW_DYN
+		_right_elbow.rotation.x = WALK_ELBOW_BASE \
+			+ maxf(0.0, _right_shoulder.rotation.x) * WALK_ELBOW_DYN
 	else:
 		_decay_gait(delta)
+		_left_elbow.rotation.x = lerpf(
+			_left_elbow.rotation.x, 0.0, delta * DECAY_SPEED)
+		_right_elbow.rotation.x = lerpf(
+			_right_elbow.rotation.x, 0.0, delta * DECAY_SPEED)

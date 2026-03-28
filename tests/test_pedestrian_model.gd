@@ -56,6 +56,22 @@ func _right_arm_mesh(model: Node3D) -> MeshInstance3D:
 	return _right_shoulder_pivot(model).get_child(0) as MeshInstance3D
 
 
+func _left_elbow_pivot(model: Node3D) -> Node3D:
+	return _left_shoulder_pivot(model).get_child(1) as Node3D
+
+
+func _right_elbow_pivot(model: Node3D) -> Node3D:
+	return _right_shoulder_pivot(model).get_child(1) as Node3D
+
+
+func _left_forearm_mesh(model: Node3D) -> MeshInstance3D:
+	return _left_elbow_pivot(model).get_child(0) as MeshInstance3D
+
+
+func _right_forearm_mesh(model: Node3D) -> MeshInstance3D:
+	return _right_elbow_pivot(model).get_child(0) as MeshInstance3D
+
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -377,13 +393,14 @@ func test_leg_mesh_hangs_below_hip_pivot() -> void:
 # Shoulder pivots (arms)
 # ---------------------------------------------------------------------------
 
-func test_shoulder_pivots_have_one_child_each() -> void:
+func test_shoulder_pivots_have_two_children_each() -> void:
+	# Upper arm mesh (child 0) + ElbowPivot (child 1)
 	var model := _make_model()
 	add_child_autofree(model)
 	await get_tree().process_frame
 
-	assert_eq(_left_shoulder_pivot(model).get_child_count(), 1)
-	assert_eq(_right_shoulder_pivot(model).get_child_count(), 1)
+	assert_eq(_left_shoulder_pivot(model).get_child_count(), 2)
+	assert_eq(_right_shoulder_pivot(model).get_child_count(), 2)
 
 
 func test_arms_use_cylinder_mesh() -> void:
@@ -688,3 +705,134 @@ func test_two_models_can_have_different_scales() -> void:
 		scales_seen[rounded] = true
 
 	assert_gt(scales_seen.size(), 1, "Multiple models should produce height variety")
+
+
+# ---------------------------------------------------------------------------
+# Elbow pivots
+# ---------------------------------------------------------------------------
+
+func test_elbow_pivots_exist() -> void:
+	var model := _make_model()
+	add_child_autofree(model)
+	await get_tree().process_frame
+
+	assert_not_null(_left_elbow_pivot(model), "LeftElbowPivot should exist")
+	assert_not_null(_right_elbow_pivot(model), "RightElbowPivot should exist")
+
+
+func test_elbow_pivot_is_node3d_not_mesh() -> void:
+	var model := _make_model()
+	add_child_autofree(model)
+	await get_tree().process_frame
+
+	assert_false(
+		_left_elbow_pivot(model) is MeshInstance3D,
+		"LeftElbowPivot should be a plain Node3D, not a MeshInstance3D",
+	)
+
+
+func test_elbow_pivot_position() -> void:
+	var model := _make_model()
+	add_child_autofree(model)
+	await get_tree().process_frame
+
+	assert_almost_eq(
+		_left_elbow_pivot(model).position.y, -0.27, 0.001,
+		"Elbow pivot should be at y=-0.27 from shoulder pivot",
+	)
+	assert_almost_eq(
+		_right_elbow_pivot(model).position.y, -0.27, 0.001,
+		"Right elbow pivot should be at y=-0.27 from shoulder pivot",
+	)
+
+
+func test_elbow_pivots_symmetric() -> void:
+	var model := _make_model()
+	add_child_autofree(model)
+	await get_tree().process_frame
+
+	assert_almost_eq(
+		_left_elbow_pivot(model).position.x,
+		-_right_elbow_pivot(model).position.x,
+		0.001,
+		"Elbow pivots should be symmetric on X",
+	)
+
+
+func test_forearm_uses_cylinder_mesh() -> void:
+	var model := _make_model()
+	add_child_autofree(model)
+	await get_tree().process_frame
+
+	assert_true(
+		_left_forearm_mesh(model).mesh is CylinderMesh,
+		"Left forearm should use CylinderMesh",
+	)
+	assert_true(
+		_right_forearm_mesh(model).mesh is CylinderMesh,
+		"Right forearm should use CylinderMesh",
+	)
+
+
+func test_forearm_hangs_below_elbow_pivot() -> void:
+	var model := _make_model()
+	add_child_autofree(model)
+	await get_tree().process_frame
+
+	assert_lt(
+		_left_forearm_mesh(model).position.y, 0.0,
+		"Forearm should hang below elbow pivot (y < 0)",
+	)
+
+
+func test_forearms_share_same_mesh() -> void:
+	var model := _make_model()
+	add_child_autofree(model)
+	await get_tree().process_frame
+
+	assert_eq(
+		_left_forearm_mesh(model).mesh,
+		_right_forearm_mesh(model).mesh,
+		"Both forearms should share the same mesh",
+	)
+
+
+func test_elbow_rotates_when_walking() -> void:
+	var ped := CharacterBody3D.new()
+	add_child_autofree(ped)
+	ped.velocity = Vector3(0.0, 0.0, 1.4)
+
+	var model := Node3D.new()
+	model.set_script(PedestrianModelScript)
+	ped.add_child(model)
+
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	var left_elbow := _left_elbow_pivot(model)
+	assert_lt(
+		left_elbow.rotation.x, -0.1,
+		"Elbow should be bent (rotation.x < -0.1) when walking",
+	)
+
+
+func test_elbow_decays_when_still() -> void:
+	var ped := CharacterBody3D.new()
+	add_child_autofree(ped)
+
+	var model := Node3D.new()
+	model.set_script(PedestrianModelScript)
+	ped.add_child(model)
+
+	var left_elbow := _left_elbow_pivot(model)
+	left_elbow.rotation.x = -0.8
+
+	ped.velocity = Vector3.ZERO
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	assert_gt(
+		left_elbow.rotation.x, -0.8,
+		"Elbow should decay toward 0 when still",
+	)
