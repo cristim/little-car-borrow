@@ -346,8 +346,12 @@ func _setup_gun_mesh() -> void:
 	var builder: RefCounted = _builder_script.new()
 	_gun_mesh = builder.build(weapon_name)
 	_gun_mesh.position = Vector3(0.0, -0.2, -0.08)
-	# Barrel is built along -Z; forearm points along -Y of elbow pivot
+	# Barrel built along -Z; forearm points along -Y of elbow pivot.
+	# rotation.x = -PI/2 aligns barrel with arm axis.
+	# rotation.y = PI flips the gun right-side-up (without it the barrel's
+	# +Y "top" maps to elbow -Z = world -Y, putting slide below the hand).
 	_gun_mesh.rotation.x = -PI / 2.0
+	_gun_mesh.rotation.y = PI
 	_elbow.add_child(_gun_mesh)
 
 	var muzzle_local: Vector3 = _gun_mesh.get_meta("muzzle_local_pos")
