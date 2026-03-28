@@ -382,3 +382,59 @@ func test_ten_car_colors_defined() -> void:
 		mgr._car_colors.size(), 10,
 		"Should have 10 car color options",
 	)
+
+
+# ==========================================================================
+# Spawn view-cone rejection (vehicles must not pop into player's view)
+# ==========================================================================
+
+func test_spawn_rejects_forward_hemisphere() -> void:
+	var src: String = TrafficManagerScript.source_code
+	assert_true(
+		src.contains("h_vel.normalized().dot(offset.normalized()) > 0.0"),
+		"Forward hemisphere spawns must be rejected (dot > 0.0)",
+	)
+
+
+func test_spawn_forward_rejection_is_unconditional() -> void:
+	# The old code had a probabilistic rejection (70% chance).
+	# The fix must always reject — no randf() chance mixed in.
+	var src: String = TrafficManagerScript.source_code
+	var dot_idx: int = src.find(
+		"h_vel.normalized().dot(offset.normalized()) > 0.0",
+	)
+	assert_gte(dot_idx, 0, "Forward dot check must exist")
+	# The continue immediately follows — no randf() in between
+	var snippet: String = src.substr(dot_idx, 80)
+	assert_false(
+		snippet.contains("randf()"),
+		"Forward rejection must be unconditional (no randf chance)",
+	)
+
+
+# ==========================================================================
+# Spawn altitude fix (vehicles must not fall from the sky)
+# ==========================================================================
+
+func test_spawn_uses_signed_distance_for_city_check() -> void:
+	var src: String = TrafficManagerScript.source_code
+	assert_true(
+		src.contains("get_signed_distance(spawn_pos.x, spawn_pos.z)"),
+		"Spawn must check signed_distance to detect city boundary",
+	)
+
+
+func test_spawn_uses_flat_ground_inside_city() -> void:
+	var src: String = TrafficManagerScript.source_code
+	assert_true(
+		src.contains("sd < 0.0"),
+		"Inside city (sd < 0) must use flat ground height",
+	)
+
+
+func test_spawn_rejects_steep_terrain_outside_city() -> void:
+	var src: String = TrafficManagerScript.source_code
+	assert_true(
+		src.contains("ground_y > 6.0"),
+		"Steep terrain (ground_y > 6 m) must be rejected to prevent sky-falls",
+	)
