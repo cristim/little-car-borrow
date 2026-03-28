@@ -1,5 +1,8 @@
 extends Node3D
-## Greybox pedestrian visual: multi-part humanoid with randomized appearance and face details.
+## Greybox pedestrian visual: multi-part humanoid with randomized appearance,
+## face details, and a walk animation ported from the player model.
+
+# ---- Appearance palettes ----
 
 const SHIRT_COLORS: Array[Color] = [
 	Color(0.3, 0.5, 0.7),
@@ -48,7 +51,26 @@ const EYE_COLORS: Array[Color] = [
 	Color(0.18, 0.22, 0.30),
 ]
 
+# ---- Walk animation constants (mirror of player_model walk-speed values) ----
+
+const WALK_AMPLITUDE := 0.22
+const FREQUENCY := 8.0
+const DECAY_SPEED := 8.0
+const WALK_LEAN := 0.03
+const WALK_BOUNCE := 0.015
+const TORSO_TWIST := 0.04
+const PELVIS_TILT := 0.04
+const WALK_HIP_SWAY := 0.02
+const WALK_ARM_INWARD := 0.06
+const ARM_Z_SWAY := 0.08
+
 var _rng := RandomNumberGenerator.new()
+var _phase := 0.0
+var _head_pivot: Node3D
+var _left_shoulder: Node3D
+var _right_shoulder: Node3D
+var _left_hip: Node3D
+var _right_hip: Node3D
 
 
 func _ready() -> void:
@@ -100,6 +122,7 @@ func _ready() -> void:
 	head_pivot.name = "HeadPivot"
 	head_pivot.position = Vector3(0.0, 1.36, 0.0)
 	add_child(head_pivot)
+	_head_pivot = head_pivot
 	var head_mesh := BoxMesh.new()
 	head_mesh.size = Vector3(0.22, 0.22, 0.22)
 	var head_mi := MeshInstance3D.new()
@@ -109,37 +132,67 @@ func _ready() -> void:
 	head_pivot.add_child(head_mi)
 	_build_face(head_pivot, eye_mat, brow_mat, skin_mat, mouth_mat, hair_mat)
 
-	# --- Legs (children 2, 3) ---
+	# --- Hip pivots / legs (children 2, 3) ---
+	# Pivot at hip level (y=0.75); leg hangs to ground (centre at y=-0.375)
 	var leg_mesh := CylinderMesh.new()
 	leg_mesh.top_radius = 0.08
 	leg_mesh.bottom_radius = 0.08
 	leg_mesh.height = 0.75
+
+	var left_hip := Node3D.new()
+	left_hip.name = "LeftHipPivot"
+	left_hip.position = Vector3(-0.10, 0.75, 0.0)
+	add_child(left_hip)
+	_left_hip = left_hip
 	var left_leg := MeshInstance3D.new()
+	left_leg.name = "LeftLeg"
 	left_leg.mesh = leg_mesh
 	left_leg.material_override = pant_mat
-	left_leg.position = Vector3(-0.1, 0.375, 0.0)
-	add_child(left_leg)
+	left_leg.position = Vector3(0.0, -0.375, 0.0)
+	left_hip.add_child(left_leg)
+
+	var right_hip := Node3D.new()
+	right_hip.name = "RightHipPivot"
+	right_hip.position = Vector3(0.10, 0.75, 0.0)
+	add_child(right_hip)
+	_right_hip = right_hip
 	var right_leg := MeshInstance3D.new()
+	right_leg.name = "RightLeg"
 	right_leg.mesh = leg_mesh
 	right_leg.material_override = pant_mat
-	right_leg.position = Vector3(0.1, 0.375, 0.0)
-	add_child(right_leg)
+	right_leg.position = Vector3(0.0, -0.375, 0.0)
+	right_hip.add_child(right_leg)
 
-	# --- Arms (children 4, 5) — shirt colour (long sleeves) ---
+	# --- Shoulder pivots / arms (children 4, 5) ---
+	# Pivot at shoulder level (y=1.25); arm hangs (centre at y=-0.275)
 	var arm_mesh := CylinderMesh.new()
 	arm_mesh.top_radius = 0.06
 	arm_mesh.bottom_radius = 0.06
 	arm_mesh.height = 0.55
+
+	var left_shoulder := Node3D.new()
+	left_shoulder.name = "LeftShoulderPivot"
+	left_shoulder.position = Vector3(-0.24, 1.25, 0.0)
+	add_child(left_shoulder)
+	_left_shoulder = left_shoulder
 	var left_arm := MeshInstance3D.new()
+	left_arm.name = "LeftArm"
 	left_arm.mesh = arm_mesh
 	left_arm.material_override = shirt_mat
-	left_arm.position = Vector3(-0.24, 0.97, 0.0)
-	add_child(left_arm)
+	left_arm.position = Vector3(0.0, -0.275, 0.0)
+	left_shoulder.add_child(left_arm)
+
+	var right_shoulder := Node3D.new()
+	right_shoulder.name = "RightShoulderPivot"
+	right_shoulder.position = Vector3(0.24, 1.25, 0.0)
+	add_child(right_shoulder)
+	_right_shoulder = right_shoulder
 	var right_arm := MeshInstance3D.new()
+	right_arm.name = "RightArm"
 	right_arm.mesh = arm_mesh
 	right_arm.material_override = shirt_mat
-	right_arm.position = Vector3(0.24, 0.97, 0.0)
-	add_child(right_arm)
+	right_arm.position = Vector3(0.0, -0.275, 0.0)
+	right_shoulder.add_child(right_arm)
 
 
 ## Add face detail boxes as children of head_pivot.
@@ -193,3 +246,78 @@ func _add_box(
 	mi.position = pos
 	parent.add_child(mi)
 	return mi
+
+
+## Walk animation — driven by parent CharacterBody3D velocity each frame.
+## Mirrors the player_model walk logic (t = 0, no run/swim blend).
+func _process(delta: float) -> void:
+	if not _left_shoulder:
+		return
+	var parent := get_parent()
+	if not parent:
+		return
+
+	var vel: Vector3 = parent.velocity if "velocity" in parent else Vector3.ZERO
+	var h_speed := Vector2(vel.x, vel.z).length()
+
+	if h_speed > 0.5:
+		_phase += delta * h_speed * FREQUENCY
+		var warped_phase := _phase + 0.25 * sin(_phase)
+		var swing := sin(warped_phase) * WALK_AMPLITUDE
+
+		# Body lean, bounce, sway
+		rotation.x = lerpf(rotation.x, WALK_LEAN, delta * DECAY_SPEED)
+		position.y = (0.5 + 0.5 * cos(warped_phase * 2.0)) * WALK_BOUNCE
+		position.x = -sin(warped_phase) * WALK_HIP_SWAY
+
+		# Pelvis tilt and torso counter-twist
+		var tilt := -sin(warped_phase) * PELVIS_TILT
+		rotation.z = tilt
+		var twist := sin(warped_phase) * TORSO_TWIST
+		rotation.y = twist
+
+		# Head stabilization counters torso motion
+		if _head_pivot:
+			_head_pivot.rotation.y = -twist * 0.6
+			_head_pivot.rotation.z = -tilt * 0.7
+
+		# Arms: forward/back + cross-body + Z sway
+		_left_shoulder.rotation.x = swing
+		_right_shoulder.rotation.x = -swing
+		_left_shoulder.rotation.y = cos(warped_phase) * WALK_ARM_INWARD
+		_right_shoulder.rotation.y = -cos(warped_phase) * WALK_ARM_INWARD
+		_left_shoulder.rotation.z = -sin(warped_phase) * ARM_Z_SWAY
+		_right_shoulder.rotation.z = sin(warped_phase) * ARM_Z_SWAY
+
+		# Legs: opposite phase to arms (natural gait)
+		var leg_swing := sin(warped_phase) * WALK_AMPLITUDE * 0.85
+		_left_hip.rotation.x = -leg_swing
+		_right_hip.rotation.x = leg_swing
+	else:
+		# Decay all rotations/positions smoothly back to rest
+		rotation.x = lerpf(rotation.x, 0.0, delta * DECAY_SPEED)
+		rotation.y = lerpf(rotation.y, 0.0, delta * DECAY_SPEED)
+		rotation.z = lerpf(rotation.z, 0.0, delta * DECAY_SPEED)
+		position.y = lerpf(position.y, 0.0, delta * DECAY_SPEED)
+		position.x = lerpf(position.x, 0.0, delta * DECAY_SPEED)
+		_left_shoulder.rotation.x = lerpf(
+			_left_shoulder.rotation.x, 0.0, delta * DECAY_SPEED)
+		_left_shoulder.rotation.y = lerpf(
+			_left_shoulder.rotation.y, 0.0, delta * DECAY_SPEED)
+		_left_shoulder.rotation.z = lerpf(
+			_left_shoulder.rotation.z, 0.0, delta * DECAY_SPEED)
+		_right_shoulder.rotation.x = lerpf(
+			_right_shoulder.rotation.x, 0.0, delta * DECAY_SPEED)
+		_right_shoulder.rotation.y = lerpf(
+			_right_shoulder.rotation.y, 0.0, delta * DECAY_SPEED)
+		_right_shoulder.rotation.z = lerpf(
+			_right_shoulder.rotation.z, 0.0, delta * DECAY_SPEED)
+		_left_hip.rotation.x = lerpf(
+			_left_hip.rotation.x, 0.0, delta * DECAY_SPEED)
+		_right_hip.rotation.x = lerpf(
+			_right_hip.rotation.x, 0.0, delta * DECAY_SPEED)
+		if _head_pivot:
+			_head_pivot.rotation.y = lerpf(
+				_head_pivot.rotation.y, 0.0, delta * DECAY_SPEED)
+			_head_pivot.rotation.z = lerpf(
+				_head_pivot.rotation.z, 0.0, delta * DECAY_SPEED)
