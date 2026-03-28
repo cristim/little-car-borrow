@@ -51,13 +51,14 @@ const DEFAULT_GUN_ELBOW := -0.05   # fallback if weapon data unavailable
 var _phase := 0.0
 var _was_swimming := false
 
-# Cached face materials — built once in _ready, shared across face parts
+# Cached face/hand materials — built once in _ready, shared across parts
 var _mat_eye: StandardMaterial3D
 var _mat_eyebrow: StandardMaterial3D
 var _mat_nose: StandardMaterial3D
 var _mat_mouth: StandardMaterial3D
 var _mat_ear: StandardMaterial3D
 var _mat_hair: StandardMaterial3D
+var _mat_flashlight_body: StandardMaterial3D
 
 @onready var _left_shoulder: Node3D = $LeftShoulderPivot
 @onready var _right_shoulder: Node3D = $RightShoulderPivot
@@ -74,6 +75,7 @@ var _mat_hair: StandardMaterial3D
 func _ready() -> void:
 	_build_face_materials()
 	_build_face_details()
+	_build_hands()
 
 
 ## Create shared materials for face parts (called once).
@@ -95,6 +97,11 @@ func _build_face_materials() -> void:
 
 	_mat_hair = StandardMaterial3D.new()
 	_mat_hair.albedo_color = Color(0.16, 0.10, 0.06)
+
+	_mat_flashlight_body = StandardMaterial3D.new()
+	_mat_flashlight_body.albedo_color = Color(0.12, 0.12, 0.14)
+	_mat_flashlight_body.metallic = 0.7
+	_mat_flashlight_body.roughness = 0.35
 
 
 ## Add face detail meshes as children of the Head node.
@@ -153,6 +160,33 @@ func _build_face_details() -> void:
 	_add_box(_head, "HairBack", _mat_hair,
 		Vector3(0.210, 0.070, 0.028),
 		Vector3(0.0, 0.082, -0.105))
+
+
+## Add hand meshes to both elbow pivots so the wrists end in visible hands.
+## Wrist end of each forearm is at Y = -0.25 from the elbow pivot.
+## Left hand also carries a flashlight housing aligned with the SpotLight3D.
+func _build_hands() -> void:
+	var mat_skin: StandardMaterial3D = _mat_ear  # same skin tone as ears/neck
+
+	# --- Left hand (holds flashlight) ---
+	_add_box(_left_elbow, "HandLeft_Palm", mat_skin,
+		Vector3(0.075, 0.028, 0.080), Vector3(0.000, -0.274, 0.000))
+	_add_box(_left_elbow, "HandLeft_Fingers", mat_skin,
+		Vector3(0.062, 0.050, 0.022), Vector3(0.000, -0.306, -0.014))
+	_add_box(_left_elbow, "HandLeft_Thumb", mat_skin,
+		Vector3(0.022, 0.036, 0.040), Vector3(0.048, -0.262, 0.010))
+	# Flashlight housing — center at (0, -0.276, -0.042) from left elbow;
+	# tip at Z = -0.076 aligns with the SpotLight3D in the scene.
+	_add_box(_left_elbow, "FlashlightBody", _mat_flashlight_body,
+		Vector3(0.020, 0.020, 0.068), Vector3(0.000, -0.276, -0.042))
+
+	# --- Right hand (grips gun) ---
+	_add_box(_right_elbow, "HandRight_Palm", mat_skin,
+		Vector3(0.075, 0.028, 0.080), Vector3(0.000, -0.274, 0.000))
+	_add_box(_right_elbow, "HandRight_Fingers", mat_skin,
+		Vector3(0.062, 0.050, 0.022), Vector3(0.000, -0.306, -0.014))
+	_add_box(_right_elbow, "HandRight_Thumb", mat_skin,
+		Vector3(0.022, 0.036, 0.040), Vector3(-0.048, -0.262, 0.010))
 
 
 ## Helper: create a MeshInstance3D with a BoxMesh, attach to parent node.

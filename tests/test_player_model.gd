@@ -550,3 +550,65 @@ func test_eyes_are_on_front_face() -> void:
 	# Player faces +Z, so front face of head is at Z = +0.095; eyes must be there
 	var eye_l := _head.get_node("EyeLeft") as MeshInstance3D
 	assert_gt(eye_l.position.z, 0.09, "Eye should be on front face (+Z) of head")
+
+
+# ==========================================================================
+# Hand details — _ready builds hand parts on elbow pivots
+# ==========================================================================
+
+func test_hand_left_palm_created() -> void:
+	assert_not_null(
+		_le.get_node_or_null("HandLeft_Palm"),
+		"_ready should add HandLeft_Palm to LeftElbowPivot",
+	)
+
+
+func test_hand_right_palm_created() -> void:
+	assert_not_null(
+		_re.get_node_or_null("HandRight_Palm"),
+		"_ready should add HandRight_Palm to RightElbowPivot",
+	)
+
+
+func test_hand_left_flashlight_body_created() -> void:
+	assert_not_null(
+		_le.get_node_or_null("FlashlightBody"),
+		"_ready should add FlashlightBody to LeftElbowPivot",
+	)
+
+
+func test_hand_parts_are_mesh_instances() -> void:
+	var left_parts := ["HandLeft_Palm", "HandLeft_Fingers", "HandLeft_Thumb",
+		"FlashlightBody"]
+	var right_parts := ["HandRight_Palm", "HandRight_Fingers", "HandRight_Thumb"]
+	for part_name in left_parts:
+		var node: Node = _le.get_node_or_null(part_name)
+		assert_not_null(node, "%s should exist on left elbow" % part_name)
+		assert_true(node is MeshInstance3D, "%s should be MeshInstance3D" % part_name)
+	for part_name in right_parts:
+		var node: Node = _re.get_node_or_null(part_name)
+		assert_not_null(node, "%s should exist on right elbow" % part_name)
+		assert_true(node is MeshInstance3D, "%s should be MeshInstance3D" % part_name)
+
+
+func test_hands_at_wrist_depth() -> void:
+	var palm_l := _le.get_node("HandLeft_Palm") as MeshInstance3D
+	assert_lt(
+		palm_l.position.y, -0.24,
+		"Left palm should be at wrist depth (Y < -0.24 from elbow)",
+	)
+
+
+func test_flashlight_body_has_forward_z_offset() -> void:
+	var fl_body := _le.get_node("FlashlightBody") as MeshInstance3D
+	assert_lt(
+		fl_body.position.z, -0.02,
+		"FlashlightBody should extend in -Z (forward of palm when aimed)",
+	)
+
+
+func test_thumb_sides_are_mirrored() -> void:
+	var thumb_l := _le.get_node("HandLeft_Thumb") as MeshInstance3D
+	var thumb_r := _re.get_node("HandRight_Thumb") as MeshInstance3D
+	assert_gt(thumb_l.position.x, 0.0, "Left thumb should be on +X side")
+	assert_lt(thumb_r.position.x, 0.0, "Right thumb should be on -X side")

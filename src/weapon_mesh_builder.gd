@@ -50,6 +50,13 @@ func _build_pistol(root: Node3D) -> void:
 		root, "TriggerGuard", Vector3(0.01, 0.025, 0.04),
 		Vector3(0.0, -0.04, 0.01), Vector3.ZERO, metal_dark
 	)
+	# Iron sights
+	_add_box(root, "FrontSight", Vector3(0.004, 0.013, 0.005),
+		Vector3(0.0, 0.026, -0.10), Vector3.ZERO, metal_dark)
+	_add_box(root, "RearSightL", Vector3(0.006, 0.011, 0.005),
+		Vector3(-0.013, 0.023, 0.015), Vector3.ZERO, metal_dark)
+	_add_box(root, "RearSightR", Vector3(0.006, 0.011, 0.005),
+		Vector3( 0.013, 0.023, 0.015), Vector3.ZERO, metal_dark)
 
 
 func _build_smg(root: Node3D) -> void:
@@ -85,6 +92,12 @@ func _build_smg(root: Node3D) -> void:
 		root, "StockStub", Vector3(0.04, 0.035, 0.06),
 		Vector3(0.0, -0.005, 0.1), Vector3.ZERO, metal_dark
 	)
+	# Front sight post
+	_add_box(root, "FrontSight", Vector3(0.005, 0.015, 0.005),
+		Vector3(0.0, 0.030, -0.155), Vector3.ZERO, metal_dark)
+	# Charging handle stub (right side of receiver)
+	_add_box(root, "ChargingHandle", Vector3(0.018, 0.010, 0.012),
+		Vector3(0.035, 0.010, -0.010), Vector3.ZERO, metal_mid)
 
 
 func _build_shotgun(root: Node3D) -> void:
@@ -124,6 +137,12 @@ func _build_shotgun(root: Node3D) -> void:
 		root, "TriggerGuard", Vector3(0.01, 0.02, 0.04),
 		Vector3(0.0, -0.035, 0.04), Vector3.ZERO, metal_dark
 	)
+	# Front bead sight at barrel tip
+	_add_box(root, "FrontBead", Vector3(0.007, 0.015, 0.007),
+		Vector3(0.0, 0.023, -0.22), Vector3.ZERO, metal_mid)
+	# Ejection port (right side, darker inset)
+	_add_box(root, "EjectionPort", Vector3(0.024, 0.007, 0.036),
+		Vector3(0.033, 0.018, 0.025), Vector3.ZERO, metal_dark)
 
 
 func _build_rifle(root: Node3D) -> void:
@@ -176,6 +195,15 @@ func _build_rifle(root: Node3D) -> void:
 		root, "StockPad", Vector3(0.035, 0.05, 0.015),
 		Vector3(0.0, -0.005, 0.225), Vector3.ZERO, grip
 	)
+	# Charging handle (right side)
+	_add_box(root, "ChargingHandle", Vector3(0.016, 0.009, 0.012),
+		Vector3(0.026, 0.008, 0.050), Vector3.ZERO, metal_dark)
+	# Muzzle flash hider at barrel tip
+	_add_box(root, "MuzzleDevice", Vector3(0.016, 0.016, 0.028),
+		Vector3(0.0, 0.0, -0.310), Vector3.ZERO, metal_mid)
+	# Scope eyepiece (larger rear bell)
+	_add_box(root, "ScopeEyepiece", Vector3(0.040, 0.033, 0.020),
+		Vector3(0.0, 0.035, 0.090), Vector3.ZERO, metal_dark)
 
 
 func _add_box(
