@@ -600,12 +600,16 @@ func test_hands_at_wrist_depth() -> void:
 
 
 func test_right_hand_at_gun_grip_height() -> void:
-	# Gun grip sits at ~Y=-0.16 in right-elbow space; palm must align with it,
-	# not hang down at the bare wrist (Y ≈ -0.27).
+	# Palm should sit at wrist depth (Y ≈ -0.252), not mid-forearm.
 	var palm_r := _re.get_node("HandRight_Palm") as MeshInstance3D
-	assert_gt(
-		palm_r.position.y, -0.20,
-		"Right palm should be at gun-grip height (Y > -0.20 from elbow)",
+	assert_lt(
+		palm_r.position.y, -0.22,
+		"Right palm should be at wrist depth (Y < -0.22 from elbow)",
+	)
+	# Palm Z offset must be small — not sticking out perpendicular to the forearm.
+	assert_lt(
+		absf(palm_r.position.z), 0.05,
+		"Right palm Z offset should be < 5 cm (not perpendicular to arm)",
 	)
 
 

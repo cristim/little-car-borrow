@@ -183,15 +183,15 @@ func _build_hands() -> void:
 	fl.rotation.x = -deg_to_rad(20.0)
 
 	# --- Right hand (grips gun) ---
-	# Gun mesh rotation is Ry(PI)*Rx(-PI/2): barrel forward, slide on top.
-	# Grip maps to elbow space at ~Y=-0.16, Z=-0.14 (gun-local z maps to elbow Y,
-	# gun-local y maps to elbow Z with a sign flip via rotation.y=PI).
+	# Gun root placed at elbow (0,-0.29,0.04); grip lands at elbow (0,-0.25,-0.02).
+	# Palm wraps around the grip: centred at wrist (Y≈-0.252), minimal Z offset.
+	# Y-dimension increased so the palm reads as substantial along the arm axis.
 	_add_box(_right_elbow, "HandRight_Palm", mat_skin,
-		Vector3(0.060, 0.025, 0.075), Vector3(0.000, -0.165, -0.125))
+		Vector3(0.068, 0.045, 0.040), Vector3(0.000, -0.252, -0.020))
 	_add_box(_right_elbow, "HandRight_Fingers", mat_skin,
-		Vector3(0.055, 0.045, 0.018), Vector3(0.000, -0.190, -0.165))
+		Vector3(0.055, 0.040, 0.018), Vector3(0.000, -0.272, -0.048))
 	_add_box(_right_elbow, "HandRight_Thumb", mat_skin,
-		Vector3(0.020, 0.032, 0.038), Vector3(-0.038, -0.148, -0.090))
+		Vector3(0.020, 0.032, 0.025), Vector3(-0.038, -0.240, -0.008))
 
 
 ## Helper: create a MeshInstance3D with a BoxMesh, attach to parent node.

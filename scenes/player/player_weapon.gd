@@ -345,13 +345,19 @@ func _setup_gun_mesh() -> void:
 
 	var builder: RefCounted = _builder_script.new()
 	_gun_mesh = builder.build(weapon_name)
-	_gun_mesh.position = Vector3(0.0, -0.2, -0.08)
-	# Barrel built along -Z; forearm points along -Y of elbow pivot.
-	# Godot YXZ Euler order: R = Ry * Rx * Rz, so setting both x and z gives
-	# combined Rx(-PI/2) * Rz(PI).  This maps gun -Z → elbow -Y (barrel
-	# forward) AND gun +Y → elbow +Z → world +Y (slide above the hand).
-	_gun_mesh.rotation.x = -PI / 2.0
-	_gun_mesh.rotation.z = PI
+	# Set transform directly via Basis to avoid Euler gimbal lock at x=±PI/2.
+	# Columns are: where gun +X/+Y/+Z go in elbow-pivot space.
+	#   gun +X → elbow -X  (mirrors left/right so weapon faces forward on right arm)
+	#   gun +Y → elbow +Z  (slide/top of gun → world +Y when arm is aimed)
+	#   gun +Z → elbow +Y  (gun -Z muzzle → elbow -Y arm-forward direction)
+	# Root placed so the grip centre (gun-local (0,-0.06,0.04)) lands at elbow
+	# (0,-0.25,-0.02) — right at the wrist end of the forearm.
+	var gun_basis := Basis(
+		Vector3(-1.0,  0.0, 0.0),
+		Vector3( 0.0,  0.0, 1.0),
+		Vector3( 0.0,  1.0, 0.0),
+	)
+	_gun_mesh.transform = Transform3D(gun_basis, Vector3(0.0, -0.29, 0.04))
 	_elbow.add_child(_gun_mesh)
 
 	var muzzle_local: Vector3 = _gun_mesh.get_meta("muzzle_local_pos")
