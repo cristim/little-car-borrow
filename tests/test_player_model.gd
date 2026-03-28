@@ -457,3 +457,96 @@ func test_hip_sway_resets_on_stop() -> void:
 		_model.position.x, 0.0, 0.01,
 		"Hip sway (position.x) should decay to 0 when idle",
 	)
+
+
+# ==========================================================================
+# Face details — _ready builds head parts
+# ==========================================================================
+
+func test_face_details_eyes_created() -> void:
+	assert_not_null(
+		_head.get_node_or_null("EyeLeft"),
+		"_ready should add EyeLeft to Head",
+	)
+	assert_not_null(
+		_head.get_node_or_null("EyeRight"),
+		"_ready should add EyeRight to Head",
+	)
+
+
+func test_face_details_ears_created() -> void:
+	assert_not_null(
+		_head.get_node_or_null("EarLeft"),
+		"_ready should add EarLeft to Head",
+	)
+	assert_not_null(
+		_head.get_node_or_null("EarRight"),
+		"_ready should add EarRight to Head",
+	)
+
+
+func test_face_details_hair_created() -> void:
+	assert_not_null(
+		_head.get_node_or_null("HairTop"),
+		"_ready should add HairTop to Head",
+	)
+
+
+func test_face_details_nose_created() -> void:
+	assert_not_null(
+		_head.get_node_or_null("Nose"),
+		"_ready should add Nose to Head",
+	)
+
+
+func test_face_details_mouth_created() -> void:
+	assert_not_null(
+		_head.get_node_or_null("Mouth"),
+		"_ready should add Mouth to Head",
+	)
+
+
+func test_face_details_are_mesh_instances() -> void:
+	for part_name in ["EyeLeft", "EyeRight", "EarLeft", "EarRight",
+					"HairTop", "Nose", "Mouth", "BrowLeft", "BrowRight"]:
+		var node: Node = _head.get_node_or_null(part_name)
+		assert_not_null(node, "%s should exist" % part_name)
+		assert_true(
+			node is MeshInstance3D,
+			"%s should be MeshInstance3D" % part_name,
+		)
+
+
+func test_eyes_are_darker_than_skin() -> void:
+	var eye := _head.get_node("EyeLeft") as MeshInstance3D
+	var ear := _head.get_node("EarLeft") as MeshInstance3D
+	var eye_mesh := eye.mesh as BoxMesh
+	var ear_mesh := ear.mesh as BoxMesh
+	# Eye albedo luminance should be less than ear (skin) albedo luminance
+	var eye_lum: float = eye_mesh.material.albedo_color.get_luminance()
+	var ear_lum: float = ear_mesh.material.albedo_color.get_luminance()
+	assert_lt(eye_lum, ear_lum, "Eyes should be darker than skin-coloured ears")
+
+
+func test_hair_is_darker_than_skin() -> void:
+	var hair := _head.get_node("HairTop") as MeshInstance3D
+	var ear := _head.get_node("EarLeft") as MeshInstance3D
+	var hair_mesh := hair.mesh as BoxMesh
+	var ear_mesh := ear.mesh as BoxMesh
+	var hair_lum: float = hair_mesh.material.albedo_color.get_luminance()
+	var ear_lum: float = ear_mesh.material.albedo_color.get_luminance()
+	assert_lt(hair_lum, ear_lum, "Hair should be darker than skin")
+
+
+func test_ears_protrude_sideways() -> void:
+	# Ears should be positioned with |X| > head half-width (0.11)
+	var ear_l := _head.get_node("EarLeft") as MeshInstance3D
+	var ear_r := _head.get_node("EarRight") as MeshInstance3D
+	assert_gt(ear_l.position.x, 0.10, "Left ear should extend past head edge")
+	assert_lt(ear_r.position.x, -0.10, "Right ear should extend past head edge")
+
+
+func test_eyes_are_on_front_face() -> void:
+	# Eyes Z position should be at or past the front face of the head (-0.095)
+	var eye_l := _head.get_node("EyeLeft") as MeshInstance3D
+	assert_lt(eye_l.position.z, -0.09, "Eye should be on or in front of head face")

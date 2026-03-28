@@ -51,6 +51,14 @@ const DEFAULT_GUN_ELBOW := -0.05   # fallback if weapon data unavailable
 var _phase := 0.0
 var _was_swimming := false
 
+# Cached face materials — built once in _ready, shared across face parts
+var _mat_eye: StandardMaterial3D
+var _mat_eyebrow: StandardMaterial3D
+var _mat_nose: StandardMaterial3D
+var _mat_mouth: StandardMaterial3D
+var _mat_ear: StandardMaterial3D
+var _mat_hair: StandardMaterial3D
+
 @onready var _left_shoulder: Node3D = $LeftShoulderPivot
 @onready var _right_shoulder: Node3D = $RightShoulderPivot
 @onready var _left_hip: Node3D = $LeftHipPivot
@@ -61,6 +69,107 @@ var _was_swimming := false
 @onready var _right_knee: Node3D = $RightHipPivot/RightKneePivot
 @onready var _head: Node3D = $Head
 @onready var _neck: Node3D = $Neck
+
+
+func _ready() -> void:
+	_build_face_materials()
+	_build_face_details()
+
+
+## Create shared materials for face parts (called once).
+func _build_face_materials() -> void:
+	_mat_eye = StandardMaterial3D.new()
+	_mat_eye.albedo_color = Color(0.12, 0.08, 0.05)
+
+	_mat_eyebrow = StandardMaterial3D.new()
+	_mat_eyebrow.albedo_color = Color(0.18, 0.12, 0.07)
+
+	_mat_nose = StandardMaterial3D.new()
+	_mat_nose.albedo_color = Color(0.80, 0.64, 0.54)
+
+	_mat_mouth = StandardMaterial3D.new()
+	_mat_mouth.albedo_color = Color(0.65, 0.30, 0.28)
+
+	_mat_ear = StandardMaterial3D.new()
+	_mat_ear.albedo_color = Color(0.82, 0.66, 0.56)
+
+	_mat_hair = StandardMaterial3D.new()
+	_mat_hair.albedo_color = Color(0.16, 0.10, 0.06)
+
+
+## Add face detail meshes as children of the Head node.
+## Head box half-extents: ±0.11 X, ±0.135 Y, ±0.095 Z (front face at Z = -0.095).
+func _build_face_details() -> void:
+	if not _head:
+		return
+
+	# --- Eyes (iris + pupil combined as dark ovals on the front face) ---
+	_add_box(_head, "EyeLeft",  _mat_eye,
+		Vector3(0.050, 0.028, 0.010),
+		Vector3( 0.054, 0.030, -0.102))
+	_add_box(_head, "EyeRight", _mat_eye,
+		Vector3(0.050, 0.028, 0.010),
+		Vector3(-0.054, 0.030, -0.102))
+
+	# --- Eyebrows (thin dark strips above eyes) ---
+	_add_box(_head, "BrowLeft",  _mat_eyebrow,
+		Vector3(0.055, 0.012, 0.008),
+		Vector3( 0.053, 0.067, -0.100))
+	_add_box(_head, "BrowRight", _mat_eyebrow,
+		Vector3(0.055, 0.012, 0.008),
+		Vector3(-0.053, 0.067, -0.100))
+
+	# --- Nose (small box protruding from mid-face) ---
+	_add_box(_head, "Nose", _mat_nose,
+		Vector3(0.030, 0.040, 0.025),
+		Vector3(0.0, -0.010, -0.108))
+
+	# --- Mouth (thin dark strip below nose) ---
+	_add_box(_head, "Mouth", _mat_mouth,
+		Vector3(0.065, 0.014, 0.008),
+		Vector3(0.0, -0.063, -0.100))
+
+	# --- Ears (small boxes on the sides of the head) ---
+	_add_box(_head, "EarLeft",  _mat_ear,
+		Vector3(0.020, 0.060, 0.040),
+		Vector3( 0.118, 0.000, 0.005))
+	_add_box(_head, "EarRight", _mat_ear,
+		Vector3(0.020, 0.060, 0.040),
+		Vector3(-0.118, 0.000, 0.005))
+
+	# --- Hair cap (wider/deeper than head, sits on top) ---
+	_add_box(_head, "HairTop", _mat_hair,
+		Vector3(0.240, 0.055, 0.210),
+		Vector3(0.0, 0.152, -0.002))
+	# Side panels keep hair flush with head sides
+	_add_box(_head, "HairSideLeft",  _mat_hair,
+		Vector3(0.028, 0.110, 0.185),
+		Vector3( 0.124, 0.090, 0.003))
+	_add_box(_head, "HairSideRight", _mat_hair,
+		Vector3(0.028, 0.110, 0.185),
+		Vector3(-0.124, 0.090, 0.003))
+	# Back panel
+	_add_box(_head, "HairBack", _mat_hair,
+		Vector3(0.210, 0.070, 0.028),
+		Vector3(0.0, 0.082, 0.105))
+
+
+## Helper: create a MeshInstance3D with a BoxMesh, attach to parent node.
+func _add_box(
+	parent: Node3D,
+	part_name: String,
+	mat: StandardMaterial3D,
+	size: Vector3,
+	pos: Vector3,
+) -> void:
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	mesh.material = mat
+	var mi := MeshInstance3D.new()
+	mi.name = part_name
+	mi.mesh = mesh
+	mi.position = pos
+	parent.add_child(mi)
 
 
 func _process(delta: float) -> void:
