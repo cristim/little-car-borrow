@@ -157,17 +157,36 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 					_city_script.add_box_collision(body, c, s)
 				st_used[mi] = true
 
-				# Add windows on buildings taller than 6m
+				# Add windows on buildings taller than 6m.
+				# Each face gets an independent material group so individual
+				# faces can toggle on/off separately at night.
 				if s.y > 6.0:
-					var win_idx := rng.randi() % win_count
-					if not win_st_has_data[win_idx]:
-						win_sts[win_idx].begin(
-							Mesh.PRIMITIVE_TRIANGLES,
+					var hx := s.x * 0.5
+					var hz := s.z * 0.5
+					var win_faces: Array[Array] = [
+						[c + Vector3(0, 0, -hz), s.x,
+							Vector3(0, 0, -1), Vector3(1, 0, 0)],
+						[c + Vector3(0, 0, hz), s.x,
+							Vector3(0, 0, 1), Vector3(-1, 0, 0)],
+						[c + Vector3(-hx, 0, 0), s.z,
+							Vector3(-1, 0, 0), Vector3(0, 0, -1)],
+						[c + Vector3(hx, 0, 0), s.z,
+							Vector3(1, 0, 0), Vector3(0, 0, 1)],
+					]
+					for wf: Array in win_faces:
+						var wi: int = rng.randi() % win_count
+						if not win_st_has_data[wi]:
+							win_sts[wi].begin(
+								Mesh.PRIMITIVE_TRIANGLES,
+							)
+							win_st_has_data[wi] = true
+						_city_script.st_add_windows_on_face(
+							win_sts[wi],
+							wf[0] as Vector3, wf[1] as float,
+							s.y,
+							wf[2] as Vector3, wf[3] as Vector3,
+							rng,
 						)
-						win_st_has_data[win_idx] = true
-					_add_building_windows(
-						win_sts[win_idx], c, s, rng,
-					)
 
 				# Add pitched roof to short buildings
 				if (
@@ -227,48 +246,6 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 		body.add_child(int_inst)
 
 	chunk.add_child(body)
-
-
-func _add_building_windows(
-	win_st: SurfaceTool,
-	center: Vector3,
-	size: Vector3,
-	rng: RandomNumberGenerator,
-) -> void:
-	var hx := size.x * 0.5
-	var hz := size.z * 0.5
-	# Front (-Z): normal=(0,0,-1), right=(1,0,0)
-	_city_script.st_add_windows_on_face(
-		win_st,
-		center + Vector3(0, 0, -hz),
-		size.x, size.y,
-		Vector3(0, 0, -1), Vector3(1, 0, 0),
-		rng,
-	)
-	# Back (+Z): normal=(0,0,1), right=(-1,0,0)
-	_city_script.st_add_windows_on_face(
-		win_st,
-		center + Vector3(0, 0, hz),
-		size.x, size.y,
-		Vector3(0, 0, 1), Vector3(-1, 0, 0),
-		rng,
-	)
-	# Left (-X): normal=(-1,0,0), right=(0,0,-1)
-	_city_script.st_add_windows_on_face(
-		win_st,
-		center + Vector3(-hx, 0, 0),
-		size.z, size.y,
-		Vector3(-1, 0, 0), Vector3(0, 0, -1),
-		rng,
-	)
-	# Right (+X): normal=(1,0,0), right=(0,0,1)
-	_city_script.st_add_windows_on_face(
-		win_st,
-		center + Vector3(hx, 0, 0),
-		size.z, size.y,
-		Vector3(1, 0, 0), Vector3(0, 0, 1),
-		rng,
-	)
 
 
 func _add_building_with_door(
