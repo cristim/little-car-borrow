@@ -18,8 +18,8 @@ func test_sea_level_is_negative_2() -> void:
 	assert_true(_src.contains("SEA_LEVEL := -2.0"))
 
 
-func test_buoyancy_strength_is_3000() -> void:
-	assert_true(_src.contains("BUOYANCY_STRENGTH := 3000.0"))
+func test_rho_water_is_1000() -> void:
+	assert_true(_src.contains("RHO_WATER := 1000.0"), "Should use seawater density")
 
 
 func test_thrust_force_is_6000() -> void:
@@ -38,22 +38,48 @@ func test_wave_frequency_is_12() -> void:
 	assert_true(_src.contains("WAVE_FREQUENCY := 1.2"))
 
 
-func test_hull_has_4_buoyancy_points() -> void:
+func test_hull_has_8_buoyancy_points() -> void:
 	assert_true(
-		_src.contains("Vector3(0.0, -0.3, -2.5)"),
-		"Should have bow point",
+		_src.contains("Vector3(-1.2, -0.3, -2.0)"),
+		"Should have port bow point",
 	)
 	assert_true(
-		_src.contains("Vector3(0.0, -0.3, 2.5)"),
-		"Should have stern point",
+		_src.contains("Vector3( 1.2, -0.3, -2.0)"),
+		"Should have starboard bow point",
 	)
 	assert_true(
-		_src.contains("Vector3(-1.5, -0.3, 0.0)"),
-		"Should have port point",
+		_src.contains("Vector3( 0.0, -0.3, -2.5)"),
+		"Should have keel bow point",
 	)
 	assert_true(
-		_src.contains("Vector3(1.5, -0.3, 0.0)"),
-		"Should have starboard point",
+		_src.contains("Vector3( 0.0, -0.3,  2.5)"),
+		"Should have keel stern point",
+	)
+
+
+func test_hull_point_area_is_05() -> void:
+	assert_true(
+		_src.contains("HULL_POINT_AREA := 0.5"),
+		"Should define 0.5 m² per hull sample point",
+	)
+
+
+func test_set_passenger_adjusts_mass() -> void:
+	var body := RigidBody3D.new()
+	body.mass = 800.0
+	var ctrl: Node = Node.new()
+	ctrl.set_script(_script)
+	body.add_child(ctrl)
+	add_child_autofree(body)
+	ctrl.set_passenger(75.0)
+	assert_almost_eq(
+		body.mass, 875.0, 0.01,
+		"Boat mass should be base + passenger (800 + 75 = 875)",
+	)
+	ctrl.set_passenger(0.0)
+	assert_almost_eq(
+		body.mass, 800.0, 0.01,
+		"Boat mass should return to base when passenger removed",
 	)
 
 
@@ -169,7 +195,7 @@ func test_emits_vehicle_speed_changed() -> void:
 
 func test_buoyancy_clamps_depth() -> void:
 	assert_true(
-		_src.contains("minf(depth, 1.5)"),
+		_src.contains("clampf(depth, 0.0, MAX_DEPTH_CLAMP)"),
 		"Buoyancy should clamp depth to prevent explosive forces",
 	)
 
