@@ -100,3 +100,10 @@ func make_active() -> void:
 
 func get_yaw() -> float:
 	return _yaw
+
+
+## Returns the aim direction based on persistent yaw/pitch only,
+## ignoring any inspect-mode orbit offset.
+func get_aim_direction() -> Vector3:
+	var basis := Basis.from_euler(Vector3(_pitch, _yaw, 0.0))
+	return -basis.z

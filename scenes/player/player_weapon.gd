@@ -185,7 +185,15 @@ func _shoot() -> void:
 	var vp_size := get_viewport().get_visible_rect().size
 	var crosshair_screen := Vector2(vp_size.x * 0.5, vp_size.y * 0.35)
 	var from := camera.project_ray_origin(crosshair_screen)
-	var base_dir := camera.project_ray_normal(crosshair_screen)
+	# Use the player camera's persistent aim direction (no inspect-mode offset)
+	# so shooting always goes where the player was looking, not where the
+	# inspect orbit has rotated the camera.
+	var base_dir: Vector3
+	var pcam: Node = owner.get_node_or_null("PlayerCamera")
+	if pcam and pcam.has_method("get_aim_direction"):
+		base_dir = pcam.get_aim_direction()
+	else:
+		base_dir = camera.project_ray_normal(crosshair_screen)
 
 	var space: PhysicsDirectSpaceState3D = (
 		owner.get_world_3d().direct_space_state

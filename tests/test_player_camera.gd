@@ -106,6 +106,37 @@ func test_get_yaw_returns_updated_value() -> void:
 
 
 # ==========================================================================
+# get_aim_direction
+# ==========================================================================
+
+func test_get_aim_direction_ignores_inspect_yaw() -> void:
+	_cam_root._yaw = 0.0
+	_cam_root._pitch = 0.0
+	_cam_root._inspect_yaw = PI * 0.5  # 90° inspect orbit
+	var dir: Vector3 = _cam_root.get_aim_direction()
+	# With yaw=0 pitch=0 the aim must point along -Z regardless of inspect offset
+	assert_almost_eq(dir.x, 0.0, 0.01, "aim X should be 0 when yaw=0")
+	assert_almost_eq(dir.z, -1.0, 0.01, "aim Z should be -1 when yaw=0")
+
+
+func test_get_aim_direction_ignores_inspect_pitch() -> void:
+	_cam_root._yaw = 0.0
+	_cam_root._pitch = 0.0
+	_cam_root._inspect_pitch = 0.8  # large inspect pitch
+	var dir: Vector3 = _cam_root.get_aim_direction()
+	assert_almost_eq(dir.z, -1.0, 0.01, "aim Z must not be affected by inspect pitch")
+
+
+func test_get_aim_direction_uses_persistent_yaw() -> void:
+	_cam_root._yaw = PI * 0.5  # 90° right
+	_cam_root._pitch = 0.0
+	_cam_root._inspect_yaw = 0.0
+	var dir: Vector3 = _cam_root.get_aim_direction()
+	assert_almost_eq(dir.x, 1.0, 0.01, "aim X should be +1 when yaw=PI/2")
+	assert_almost_eq(dir.z, 0.0, 0.01, "aim Z should be 0 when yaw=PI/2")
+
+
+# ==========================================================================
 # make_active
 # ==========================================================================
 
