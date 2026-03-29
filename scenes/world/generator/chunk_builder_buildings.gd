@@ -299,6 +299,88 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 	for di: Array in door_infos:
 		_create_door_node(chunk, di[0] as Vector3, di[1] as Vector3, di[2] as int)
 
+	for rh: Dictionary in rooftop_helipads:
+		_add_rooftop_helipad(chunk, rh["center"] as Vector3, rh["size"] as Vector3)
+
+
+func _add_rooftop_helipad(
+	chunk: Node3D, bld_center: Vector3, bld_size: Vector3,
+) -> void:
+	if _rooftop_helipad_mat == null:
+		_rooftop_helipad_mat = StandardMaterial3D.new()
+		_rooftop_helipad_mat.albedo_color = Color(1.0, 1.0, 1.0, 0.85)
+		_rooftop_helipad_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+	var roof_y := bld_center.y + bld_size.y * 0.5 + 0.02
+	var cx := bld_center.x
+	var cz := bld_center.z
+
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+
+	# Painted ring around the H (inner r=3.5, outer r=4.0, 24 segments)
+	var r_in := 3.5
+	var r_out := 4.0
+	var segs := 24
+	for seg in range(segs):
+		var a0: float = seg * TAU / segs
+		var a1: float = (seg + 1) * TAU / segs
+		var v0 := Vector3(cx + r_in * cos(a0), roof_y, cz + r_in * sin(a0))
+		var v1 := Vector3(cx + r_out * cos(a0), roof_y, cz + r_out * sin(a0))
+		var v2 := Vector3(cx + r_out * cos(a1), roof_y, cz + r_out * sin(a1))
+		var v3 := Vector3(cx + r_in * cos(a1), roof_y, cz + r_in * sin(a1))
+		_st_add_flat_quad(st, v0, v1, v2, v3)
+
+	# H — left vertical bar
+	_st_add_flat_rect(st, cx - 1.8, roof_y, cz, 0.5, 5.0)
+	# H — right vertical bar
+	_st_add_flat_rect(st, cx + 1.8, roof_y, cz, 0.5, 5.0)
+	# H — crossbar
+	_st_add_flat_rect(st, cx, roof_y, cz, 3.6 + 0.5, 0.5)
+
+	st.generate_normals()
+	var mesh_inst := MeshInstance3D.new()
+	mesh_inst.name = "RooftopHelipadMark"
+	mesh_inst.mesh = st.commit()
+	mesh_inst.material_override = _rooftop_helipad_mat
+	chunk.add_child(mesh_inst)
+
+	# Minimap marker — Node3D in "helipad" group at roof centre
+	var marker := Node3D.new()
+	marker.name = "RooftopHelipad"
+	marker.position = Vector3(cx, roof_y, cz)
+	marker.add_to_group("helipad")
+	marker.set_meta("helipad_center", Vector3(cx, roof_y, cz))
+	chunk.add_child(marker)
+
+
+## Flat Y-axis quad (top-face) from four corners.
+func _st_add_flat_quad(
+	st: SurfaceTool, v0: Vector3, v1: Vector3, v2: Vector3, v3: Vector3,
+) -> void:
+	var n := Vector3.UP
+	st.set_normal(n); st.add_vertex(v0)
+	st.set_normal(n); st.add_vertex(v1)
+	st.set_normal(n); st.add_vertex(v2)
+	st.set_normal(n); st.add_vertex(v0)
+	st.set_normal(n); st.add_vertex(v2)
+	st.set_normal(n); st.add_vertex(v3)
+
+
+## Flat axis-aligned rectangle on Y plane, centered at (cx, y, cz), width w, depth d.
+func _st_add_flat_rect(
+	st: SurfaceTool, cx: float, y: float, cz: float, w: float, d: float,
+) -> void:
+	var hw := w * 0.5
+	var hd := d * 0.5
+	_st_add_flat_quad(
+		st,
+		Vector3(cx - hw, y, cz - hd),
+		Vector3(cx + hw, y, cz - hd),
+		Vector3(cx + hw, y, cz + hd),
+		Vector3(cx - hw, y, cz + hd),
+	)
+
 
 func _add_building_with_door(
 	ext_st: SurfaceTool,

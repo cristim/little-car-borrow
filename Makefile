@@ -1,4 +1,4 @@
-.PHONY: run lint format test clean export-web
+.PHONY: run lint format test coverage clean export-web
 
 GODOT := godot
 VENV := .venv/bin
@@ -20,6 +20,11 @@ format-check:
 
 test:
 	$(GODOT) --path . --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests/ -gexit
+
+coverage:
+	$(GODOT) --path . --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests/ -gexit \
+		--coverage-include "res://src/*" \
+		--coverage-threshold 80
 
 export-web:
 	@mkdir -p export/web

@@ -450,3 +450,102 @@ func test_wall_thickness_positive() -> void:
 		BuildingsScript.WALL_THICKNESS, 0.0,
 		"Wall thickness should be positive",
 	)
+
+
+# ================================================================
+# Rooftop helipads
+# ================================================================
+
+func test_rooftop_helipad_min_height_positive() -> void:
+	assert_gt(
+		BuildingsScript.ROOFTOP_HELIPAD_MIN_H, 0.0,
+		"Rooftop helipad minimum height should be positive",
+	)
+
+
+func test_rooftop_helipad_min_width_positive() -> void:
+	assert_gt(
+		BuildingsScript.ROOFTOP_HELIPAD_MIN_W, 0.0,
+		"Rooftop helipad minimum width should be positive",
+	)
+
+
+func test_rooftop_helipads_per_chunk_positive() -> void:
+	assert_gt(
+		BuildingsScript.ROOFTOP_HELIPADS_PER_CHUNK, 0,
+		"ROOFTOP_HELIPADS_PER_CHUNK should be at least 1",
+	)
+
+
+func test_add_rooftop_helipad_adds_mesh_to_chunk() -> void:
+	var chunk := Node3D.new()
+	add_child_autofree(chunk)
+	var bld_center := Vector3(10.0, 7.0, 10.0)
+	var bld_size := Vector3(12.0, 14.0, 12.0)
+	_builder._add_rooftop_helipad(chunk, bld_center, bld_size)
+	var found := false
+	for child in chunk.get_children():
+		if child is MeshInstance3D and child.name == "RooftopHelipadMark":
+			found = true
+			break
+	assert_true(found, "Should add RooftopHelipadMark MeshInstance3D to chunk")
+
+
+func test_add_rooftop_helipad_adds_marker_to_helipad_group() -> void:
+	var chunk := Node3D.new()
+	add_child_autofree(chunk)
+	_builder._add_rooftop_helipad(chunk, Vector3(5.0, 8.0, 5.0), Vector3(11.0, 16.0, 11.0))
+	var marker: Node3D = null
+	for child in chunk.get_children():
+		if child is Node3D and child.is_in_group("helipad"):
+			marker = child as Node3D
+			break
+	assert_not_null(marker, "Should add a Node3D in the helipad group")
+
+
+func test_add_rooftop_helipad_marker_has_helipad_center_meta() -> void:
+	var chunk := Node3D.new()
+	add_child_autofree(chunk)
+	var bld_center := Vector3(8.0, 6.0, 8.0)
+	var bld_size := Vector3(12.0, 12.0, 12.0)
+	_builder._add_rooftop_helipad(chunk, bld_center, bld_size)
+	var marker: Node3D = null
+	for child in chunk.get_children():
+		if child is Node3D and child.is_in_group("helipad"):
+			marker = child as Node3D
+			break
+	assert_not_null(marker, "Helipad marker should exist")
+	assert_true(marker.has_meta("helipad_center"), "Marker should have helipad_center meta")
+
+
+func test_add_rooftop_helipad_center_y_at_roof_surface() -> void:
+	var chunk := Node3D.new()
+	add_child_autofree(chunk)
+	var bld_center := Vector3(0.0, 7.0, 0.0)
+	var bld_size := Vector3(12.0, 14.0, 12.0)
+	_builder._add_rooftop_helipad(chunk, bld_center, bld_size)
+	var marker: Node3D = null
+	for child in chunk.get_children():
+		if child is Node3D and child.is_in_group("helipad"):
+			marker = child as Node3D
+			break
+	assert_not_null(marker, "Helipad marker should exist")
+	var expected_y: float = bld_center.y + bld_size.y * 0.5 + 0.02
+	var hpos: Vector3 = marker.get_meta("helipad_center") as Vector3
+	assert_almost_eq(hpos.y, expected_y, 0.001, "helipad_center Y should be at roof surface")
+
+
+func test_add_rooftop_helipad_center_xz_matches_building() -> void:
+	var chunk := Node3D.new()
+	add_child_autofree(chunk)
+	var bld_center := Vector3(15.0, 5.0, 20.0)
+	_builder._add_rooftop_helipad(chunk, bld_center, Vector3(12.0, 10.0, 12.0))
+	var marker: Node3D = null
+	for child in chunk.get_children():
+		if child is Node3D and child.is_in_group("helipad"):
+			marker = child as Node3D
+			break
+	assert_not_null(marker, "Helipad marker should exist")
+	var hpos: Vector3 = marker.get_meta("helipad_center") as Vector3
+	assert_almost_eq(hpos.x, bld_center.x, 0.001, "helipad_center X should match building")
+	assert_almost_eq(hpos.z, bld_center.z, 0.001, "helipad_center Z should match building")
