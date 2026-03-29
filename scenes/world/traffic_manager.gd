@@ -226,19 +226,18 @@ func _try_spawn() -> void:
 			Vector3(spawn_pos.x, 80.0, spawn_pos.z),
 			Vector3(spawn_pos.x, -5.0, spawn_pos.z),
 		)
-		rq.collision_mask = 3
+		# Mask 1 = Ground layer only. Roads, terrain, bridges and ramps all
+		# use layer 1. Buildings use layer 2 — excluding them prevents the
+		# raycast from landing on building rooftops in suburbs and outside
+		# the city, which would place vehicles 3-8 m above road level.
+		rq.collision_mask = 1
 		var hit: Dictionary = space.intersect_ray(rq)
 		var surface_y: float
 		if not hit.is_empty():
 			surface_y = (hit["position"] as Vector3).y
-			if sd < 0.0:
-				# City: surface_y > 1.0 means we hit a building top, not a road.
-				if surface_y > 1.0:
-					continue
-			else:
-				# Outside city: hills/highways can be up to 6 m.
-				if surface_y > 6.0:
-					continue
+			# Outside city: reject very steep terrain (no flat road surface).
+			if sd >= 0.0 and surface_y > 6.0:
+				continue
 		else:
 			# No collision mesh found (unloaded chunk or no collision).
 			if sd < 0.0:
