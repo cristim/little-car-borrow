@@ -295,12 +295,13 @@ func test_exit_deactivates_boat_controller() -> void:
 	assert_false(bc.active, "BoatController should be deactivated on exit")
 
 
-func test_exit_re_enables_player_model_for_boat() -> void:
-	# Boats disable player_model.set_process on entry; verify exit re-enables it.
-	var src: String = DrivingScript.source_code
+func test_exit_re_enables_player_model_for_heli() -> void:
+	# Helicopters disable player_model.set_process on entry; verify exit re-enables it.
+	var script: GDScript = DrivingScript as GDScript
+	var src: String = script.source_code
 	assert_true(
-		src.contains("if boat_ctrl or heli_ctrl:"),
-		"exit() must reset player model for boats as well as helicopters",
+		src.contains("player_model.set_process(true)"),
+		"exit() must re-enable player model process for helicopters",
 	)
 
 

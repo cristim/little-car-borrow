@@ -47,6 +47,26 @@ func _build_mesh() -> void:
 	fuselage.material_override = body_mat
 	body.add_child(fuselage)
 
+	# Cockpit seat (inside cabin, forward section)
+	var seat_mat := StandardMaterial3D.new()
+	seat_mat.albedo_color = Color(0.25, 0.22, 0.18)
+	var seat_mesh := MeshInstance3D.new()
+	seat_mesh.name = "CockpitSeat"
+	seat_mesh.mesh = builder.build_cockpit_seat()
+	seat_mesh.material_override = seat_mat
+	body.add_child(seat_mesh)
+
+	# Windshield: two semi-transparent glass panes on the nose face
+	var glass_mat := StandardMaterial3D.new()
+	glass_mat.albedo_color = Color(0.55, 0.75, 0.85, 0.35)
+	glass_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	glass_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var windshield := MeshInstance3D.new()
+	windshield.name = "Windshield"
+	windshield.mesh = builder.build_windshield()
+	windshield.material_override = glass_mat
+	body.add_child(windshield)
+
 	# Tail rotor at end of boom, offset to left side
 	# Boom rear Z = FUSE_HL + TAIL_LEN = 2.0 + 3.0 = 5.0
 	var tail_rotor := MeshInstance3D.new()
@@ -56,10 +76,10 @@ func _build_mesh() -> void:
 	tail_rotor.position = Vector3(-0.3, 0.0, 5.0)
 	body.add_child(tail_rotor)
 
-	# Main rotor hub at fuselage top (FUSE_HH = 0.75)
+	# Main rotor hub on a short mast above the fuselage (y=1.2 clears the pilot)
 	var rotor := Node3D.new()
 	rotor.name = "Rotor"
-	rotor.position = Vector3(0.0, 0.75, 0.0)
+	rotor.position = Vector3(0.0, 1.2, 0.0)
 	add_child(rotor)
 
 	var rotor_blades := MeshInstance3D.new()

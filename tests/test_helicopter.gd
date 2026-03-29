@@ -2,6 +2,7 @@ extends GutTest
 ## Tests for helicopter.gd and helicopter_controller.gd
 
 const HelicopterScene := preload("res://scenes/vehicles/helicopter.tscn")
+const ControllerScript := preload("res://scenes/vehicles/helicopter_controller.gd")
 
 var _heli: CharacterBody3D = null
 
@@ -131,3 +132,43 @@ func test_helicopter_collision_mask_includes_ground() -> void:
 		(_heli.collision_mask & 1) != 0,
 		"Helicopter collision_mask should include ground layer (1)",
 	)
+
+
+# --- Speed and rotor constants ---
+
+func test_controller_forward_speed_is_fast() -> void:
+	assert_gte(
+		ControllerScript.FORWARD_SPEED, 40.0,
+		"FORWARD_SPEED should be at least 40 m/s",
+	)
+
+
+func test_controller_rotor_spin_fast_enough() -> void:
+	assert_gte(
+		ControllerScript.ROTOR_SPIN, 15.0,
+		"ROTOR_SPIN should be at least 15 rad/s for realistic appearance",
+	)
+
+
+func test_controller_has_tail_rotor_spin_constant() -> void:
+	assert_gte(
+		ControllerScript.TAIL_ROTOR_SPIN, 20.0,
+		"TAIL_ROTOR_SPIN should be at least 20 rad/s",
+	)
+
+
+func test_helicopter_has_cockpit_seat() -> void:
+	var seat: Node = _heli.get_node_or_null("Body/CockpitSeat")
+	assert_not_null(seat, "Helicopter should have a CockpitSeat node")
+
+
+func test_helicopter_has_windshield() -> void:
+	var ws: Node = _heli.get_node_or_null("Body/Windshield")
+	assert_not_null(ws, "Helicopter should have a Windshield node")
+
+
+func test_rotor_raised_above_fuselage_top() -> void:
+	# Rotor hub must be above y=1.0 so the pilot's head clears the rotor disk
+	var rotor: Node3D = _heli.get_node_or_null("Rotor") as Node3D
+	assert_not_null(rotor, "Rotor node should exist")
+	assert_gt(rotor.position.y, 1.0, "Rotor hub should be above y=1.0 to clear pilot")

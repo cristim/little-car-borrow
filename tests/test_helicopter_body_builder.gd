@@ -1,24 +1,24 @@
 extends GutTest
 ## Unit tests for helicopter body builder mesh generation.
 
+const BuilderScript = preload("res://scenes/vehicles/helicopter_body_builder.gd")
+
 var _builder: RefCounted = null
 
 
 func before_each() -> void:
-	_builder = preload(
-		"res://scenes/vehicles/helicopter_body_builder.gd"
-	).new()
+	_builder = BuilderScript.new()
 
 
 func test_build_fuselage_returns_mesh() -> void:
-	var mesh := _builder.build_fuselage()
+	var mesh: ArrayMesh = (_builder as BuilderScript).build_fuselage()
 	assert_not_null(mesh, "build_fuselage should return a mesh")
 	assert_true(mesh is ArrayMesh, "Should be an ArrayMesh")
 
 
 func test_build_fuselage_has_vertices() -> void:
-	var mesh := _builder.build_fuselage()
-	var arrays := mesh.surface_get_arrays(0)
+	var mesh: ArrayMesh = (_builder as BuilderScript).build_fuselage()
+	var arrays: Array = mesh.surface_get_arrays(0)
 	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	assert_gt(
 		verts.size(), 0,
@@ -27,14 +27,14 @@ func test_build_fuselage_has_vertices() -> void:
 
 
 func test_build_main_rotor_returns_mesh() -> void:
-	var mesh := _builder.build_main_rotor()
+	var mesh: ArrayMesh = (_builder as BuilderScript).build_main_rotor()
 	assert_not_null(mesh, "build_main_rotor should return a mesh")
 	assert_true(mesh is ArrayMesh, "Should be an ArrayMesh")
 
 
 func test_build_main_rotor_has_vertices() -> void:
-	var mesh := _builder.build_main_rotor()
-	var arrays := mesh.surface_get_arrays(0)
+	var mesh: ArrayMesh = (_builder as BuilderScript).build_main_rotor()
+	var arrays: Array = mesh.surface_get_arrays(0)
 	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	assert_gt(
 		verts.size(), 0,
@@ -43,14 +43,14 @@ func test_build_main_rotor_has_vertices() -> void:
 
 
 func test_build_tail_rotor_returns_mesh() -> void:
-	var mesh := _builder.build_tail_rotor()
+	var mesh: ArrayMesh = (_builder as BuilderScript).build_tail_rotor()
 	assert_not_null(mesh, "build_tail_rotor should return a mesh")
 	assert_true(mesh is ArrayMesh, "Should be an ArrayMesh")
 
 
 func test_build_tail_rotor_has_vertices() -> void:
-	var mesh := _builder.build_tail_rotor()
-	var arrays := mesh.surface_get_arrays(0)
+	var mesh: ArrayMesh = (_builder as BuilderScript).build_tail_rotor()
+	var arrays: Array = mesh.surface_get_arrays(0)
 	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	assert_gt(
 		verts.size(), 0,
@@ -59,8 +59,8 @@ func test_build_tail_rotor_has_vertices() -> void:
 
 
 func test_fuselage_vertex_count_is_multiple_of_three() -> void:
-	var mesh := _builder.build_fuselage()
-	var arrays := mesh.surface_get_arrays(0)
+	var mesh: ArrayMesh = (_builder as BuilderScript).build_fuselage()
+	var arrays: Array = mesh.surface_get_arrays(0)
 	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	assert_eq(
 		verts.size() % 3, 0,
@@ -69,10 +69,36 @@ func test_fuselage_vertex_count_is_multiple_of_three() -> void:
 
 
 func test_main_rotor_vertex_count_is_multiple_of_three() -> void:
-	var mesh := _builder.build_main_rotor()
-	var arrays := mesh.surface_get_arrays(0)
+	var mesh: ArrayMesh = (_builder as BuilderScript).build_main_rotor()
+	var arrays: Array = mesh.surface_get_arrays(0)
 	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	assert_eq(
 		verts.size() % 3, 0,
 		"Triangle mesh vertex count should be multiple of 3",
 	)
+
+
+func test_build_cockpit_seat_returns_mesh() -> void:
+	var mesh: ArrayMesh = (_builder as BuilderScript).build_cockpit_seat()
+	assert_not_null(mesh, "build_cockpit_seat should return a mesh")
+	assert_true(mesh is ArrayMesh, "Cockpit seat should be an ArrayMesh")
+
+
+func test_build_cockpit_seat_has_vertices() -> void:
+	var mesh: ArrayMesh = (_builder as BuilderScript).build_cockpit_seat()
+	var arrays: Array = mesh.surface_get_arrays(0)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	assert_gt(verts.size(), 0, "Cockpit seat mesh should have vertices")
+
+
+func test_build_windshield_returns_mesh() -> void:
+	var mesh: ArrayMesh = (_builder as BuilderScript).build_windshield()
+	assert_not_null(mesh, "build_windshield should return a mesh")
+	assert_true(mesh is ArrayMesh, "Windshield should be an ArrayMesh")
+
+
+func test_build_windshield_has_vertices() -> void:
+	var mesh: ArrayMesh = (_builder as BuilderScript).build_windshield()
+	var arrays: Array = mesh.surface_get_arrays(0)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	assert_gt(verts.size(), 0, "Windshield mesh should have vertices")

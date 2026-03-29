@@ -60,17 +60,30 @@ func enter(msg: Dictionary = {}) -> void:
 				lk.rotation.x = 1.4
 			if rk:
 				rk.rotation.x = 1.4
-			# Right arm reaches back toward engine tiller (behind player)
-			var rs: Node3D = player_model.get_node_or_null(
-				"RightShoulderPivot"
+			var ls: Node3D = player_model.get_node_or_null("LeftShoulderPivot")
+			var rs: Node3D = player_model.get_node_or_null("RightShoulderPivot")
+			var le: Node3D = player_model.get_node_or_null(
+				"LeftShoulderPivot/LeftElbowPivot"
 			)
-			if rs:
-				rs.rotation.x = -0.8  # arm extends behind (toward stern)
 			var re: Node3D = player_model.get_node_or_null(
 				"RightShoulderPivot/RightElbowPivot"
 			)
-			if re:
-				re.rotation.x = 0.6  # slight bend at elbow
+			if is_heli:
+				# Both arms forward on flight controls
+				if ls:
+					ls.rotation.x = 0.5
+				if rs:
+					rs.rotation.x = 0.5
+				if le:
+					le.rotation.x = -0.3
+				if re:
+					re.rotation.x = -0.3
+			else:
+				# Boat: right arm reaches back toward engine tiller
+				if rs:
+					rs.rotation.x = -0.8
+				if re:
+					re.rotation.x = 0.6
 	owner.set_physics_process(false)
 	owner.collision_layer = 0
 	owner.collision_mask = 0
@@ -214,8 +227,19 @@ func physics_update(_delta: float) -> void:
 	# Keep player position synced so managers spawn entities near the vehicle
 	if _vehicle and is_instance_valid(_vehicle):
 		owner.global_position = (_vehicle as Node3D).global_position
+		# If in helicopter, place player in cockpit seat facing nose
+		if _vehicle.get_node_or_null("HelicopterController"):
+			# Seat cushion top is at y=-0.65 in heli local space; player origin at feet
+			var seat_offset := Vector3(0.0, -0.65, -0.52)
+			owner.global_position = (_vehicle as Node3D).to_global(seat_offset)
+			# Player model faces +Z; helicopter nose is -Z — flip PI to face forward
+			owner.global_rotation = Vector3(
+				0.0,
+				(_vehicle as Node3D).global_rotation.y + PI,
+				0.0,
+			)
 		# If in boat, position player at seat near engine and animate tiller
-		if _vehicle.get_node_or_null("BoatController"):
+		elif _vehicle.get_node_or_null("BoatController"):
 			# Sit on port (left) side near engine so right arm reaches tiller
 			var sz: float = _vehicle.get_meta("stern_z", 2.5)
 			var seat_offset := Vector3(-0.4, 0.35, sz - 0.5)

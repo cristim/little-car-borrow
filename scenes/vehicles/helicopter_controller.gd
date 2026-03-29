@@ -8,15 +8,16 @@ extends Node
 ##   Space (jump)    — collective up (ascend)
 ##   Shift (run)     — collective down (descend)
 
-const ASCEND_FORCE := 8.0    # m/s vertical when ascending
-const DESCEND_FORCE := 6.0   # m/s vertical when descending
-const HOVER_SINK := 3.0      # gentle sink rate when no vertical input
-const FORWARD_SPEED := 14.0  # m/s forward
-const BACK_SPEED := 5.0      # m/s reverse
+const ASCEND_FORCE := 24.0   # m/s vertical when ascending
+const DESCEND_FORCE := 18.0  # m/s vertical when descending
+const HOVER_SINK := 9.0      # gentle sink rate when no vertical input
+const FORWARD_SPEED := 42.0  # m/s forward
+const BACK_SPEED := 15.0     # m/s reverse
 const YAW_SPEED := 1.8       # rad/s yaw
 const TILT_MAX := 0.22        # max visual tilt (radians)
 const TILT_RATE := 4.0        # visual tilt animation speed
-const ROTOR_SPIN := 6.0       # rotor animation speed (rad/s)
+const ROTOR_SPIN := 20.0      # main rotor animation speed (rad/s)
+const TAIL_ROTOR_SPIN := 32.0 # tail rotor animation speed (rad/s)
 
 var active := false:
 	set(value):
@@ -30,6 +31,7 @@ var _fwd_input := 0.0
 var _yaw_input := 0.0
 var _asc_input := 0.0
 var _rotor_angle := 0.0
+var _tail_angle := 0.0
 var _vis_pitch := 0.0
 var _vis_roll := 0.0
 
@@ -77,6 +79,11 @@ func physics_update(delta: float, heli: CharacterBody3D) -> void:
 	var rotor: Node3D = heli.get_node_or_null("Rotor") as Node3D
 	if rotor:
 		rotor.rotation.y = _rotor_angle
+
+	_tail_angle += TAIL_ROTOR_SPIN * delta
+	var tail_rotor: Node3D = heli.get_node_or_null("Body/TailRotor") as Node3D
+	if tail_rotor:
+		tail_rotor.rotation.x = _tail_angle
 
 	# Visual body tilt based on movement
 	var target_pitch := -_fwd_input * TILT_MAX

@@ -168,6 +168,37 @@ func build_tail_rotor() -> ArrayMesh:
 	return st.commit()
 
 
+func build_windshield() -> ArrayMesh:
+	## Flat quad panels forming a two-pane windshield on the nose.
+	## Thin depth so it sits flush with/just inside the tapered nose face.
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var zf := -FUSE_HL + 0.02  # just inside the nose face
+	var thickness := 0.03
+	var nhw := FUSE_HW * NOSE_TAPER
+	var nhh := FUSE_HH * NOSE_TAPER
+	# Left pane (x: -nhw to -0.05, y: -nhh+0.1 to +nhh-0.05)
+	_add_box(st,
+		Vector3(-nhw + 0.05, -nhh + 0.1, zf - thickness),
+		Vector3(-0.05, nhh - 0.05, zf))
+	# Right pane (x: 0.05 to nhw-0.05, y: same)
+	_add_box(st,
+		Vector3(0.05, -nhh + 0.1, zf - thickness),
+		Vector3(nhw - 0.05, nhh - 0.05, zf))
+	return st.commit()
+
+
+func build_cockpit_seat() -> ArrayMesh:
+	## Simple bucket seat inside the cockpit (centered, forward section).
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	# Seat cushion: 0.4 wide, 0.1 tall, 0.45 deep; center at z=-0.5
+	_add_box(st, Vector3(-0.2, -0.75, -0.75), Vector3(0.2, -0.65, -0.3))
+	# Seat back: 0.4 wide, 0.55 tall, 0.08 deep; upright behind cushion
+	_add_box(st, Vector3(-0.2, -0.65, -0.78), Vector3(0.2, -0.10, -0.70))
+	return st.commit()
+
+
 func _add_box(st: SurfaceTool, min_pt: Vector3, max_pt: Vector3) -> void:
 	var x0 := min_pt.x
 	var y0 := min_pt.y
