@@ -129,6 +129,8 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 					"center": center,
 					"size": size,
 					"mat_idx": mat_idx,
+					"bx_off": bx_off,
+					"bz_off": bz_off,
 				})
 
 			# Pick first eligible building for a door
@@ -148,7 +150,16 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 				var mi: int = b["mat_idx"]
 
 				if i == door_bldg_idx:
-					var door_face := rng.randi_range(0, 3)
+					# Face toward nearest road: pick axis with larger offset from block
+					# centre so the door never opens into an adjacent building or wall.
+					# 0=-Z(front), 1=+Z(back), 2=-X(left), 3=+X(right)
+					var bx_off: float = b["bx_off"]
+					var bz_off: float = b["bz_off"]
+					var door_face: int
+					if absf(bx_off) >= absf(bz_off):
+						door_face = 3 if bx_off >= 0.0 else 2
+					else:
+						door_face = 1 if bz_off >= 0.0 else 0
 					var face_w: float = (
 						s.x if door_face <= 1 else s.z
 					)
