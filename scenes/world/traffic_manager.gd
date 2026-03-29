@@ -150,8 +150,13 @@ func _process(delta: float) -> void:
 	var launched: Array[Node] = []
 	for v in _vehicles:
 		if is_instance_valid(v) and "linear_velocity" in v:
-			if (v as RigidBody3D).linear_velocity.y > LAUNCH_VEL_THRESHOLD:
+			var vy: float = (v as RigidBody3D).linear_velocity.y
+			if vy > LAUNCH_VEL_THRESHOLD:
 				launched.append(v)
+				var vpos: Vector3 = (v as Node3D).global_position
+				print("[Traffic] CULL launch vy=%.1f pos=(%.1f,%.1f,%.1f)" % [
+					vy, vpos.x, vpos.y, vpos.z,
+				])
 	for v in launched:
 		_vehicles.erase(v)
 		if is_instance_valid(v):
@@ -251,10 +256,15 @@ func _try_spawn() -> void:
 		rq.collision_mask = 1
 		var hit: Dictionary = space.intersect_ray(rq)
 		var surface_y: float
+		var surface_src: String
 		if not hit.is_empty():
 			surface_y = (hit["position"] as Vector3).y
+			surface_src = "raycast"
 			# Outside city: reject very steep terrain (no flat road surface).
 			if sd >= 0.0 and surface_y > 6.0:
+				print("[Traffic] SKIP steep surface_y=%.2f xz=(%.1f,%.1f)" % [
+					surface_y, spawn_pos.x, spawn_pos.z,
+				])
 				continue
 		else:
 			# No collision mesh found (unloaded chunk or no collision).
@@ -262,7 +272,11 @@ func _try_spawn() -> void:
 				continue  # inside city but no road collision — skip
 			# Outside city: fall back to noise height rather than no spawn.
 			surface_y = _boundary.get_ground_height(spawn_pos.x, spawn_pos.z)
+			surface_src = "noise"
 			if surface_y > 6.0:
+				print("[Traffic] SKIP noise steep surface_y=%.2f xz=(%.1f,%.1f)" % [
+					surface_y, spawn_pos.x, spawn_pos.z,
+				])
 				continue
 		if surface_y < SEA_LEVEL:
 			continue
@@ -299,6 +313,10 @@ func _try_spawn() -> void:
 			if h_vel.normalized().dot(offset.normalized()) > 0.0:
 				continue
 
+		print("[Traffic] SPAWN src=%s surface_y=%.2f pos=(%.1f,%.1f,%.1f) sd=%.1f" % [
+			surface_src, surface_y,
+			spawn_pos.x, spawn_pos.y, spawn_pos.z, sd,
+		])
 		var vehicle := _vehicle_scene.instantiate()
 		_apply_variant(vehicle)
 		_randomize_color(vehicle)
@@ -354,6 +372,9 @@ func _despawn_far() -> void:
 		var npc_ai_node: Node = v.get_node_or_null("NPCVehicleController")
 		if npc_ai_node and npc_ai_node._spawn_grace <= 0.0 \
 				and v_pos.y > AIRBORNE_CULL_HEIGHT:
+			print("[Traffic] CULL airborne pos=(%.1f,%.1f,%.1f)" % [
+				v_pos.x, v_pos.y, v_pos.z,
+			])
 			to_remove.append(v)
 			continue
 		var d := v_pos.distance_to(player_pos)
