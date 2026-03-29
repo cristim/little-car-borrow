@@ -36,7 +36,12 @@ func _on_interaction_area_entered(area: Area3D) -> void:
 			var is_boat: bool = nearest_vehicle.get_node_or_null(
 				"BoatController"
 			) != null
-			var prompt := "Hold F to board" if is_boat else "Hold F to steal"
+			var is_heli: bool = nearest_vehicle.get_node_or_null(
+				"HelicopterController"
+			) != null
+			var prompt := (
+				"Hold F to board" if (is_boat or is_heli) else "Hold F to steal"
+			)
 			EventBus.show_interaction_prompt.emit(prompt)
 
 

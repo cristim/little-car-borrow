@@ -92,6 +92,9 @@ var _bridge_builder = preload(
 var _pier_builder = preload(
 	"res://scenes/world/generator/chunk_builder_piers.gd"
 ).new()
+var _helipad_builder = preload(
+	"res://scenes/world/generator/chunk_builder_helipad.gd"
+).new()
 
 var _chunks: Dictionary = {}
 var _update_timer := 0.0
@@ -316,6 +319,7 @@ func _build_chunk(tile: Vector2i) -> Node3D:
 		if biome == "suburb":
 			_suburb_builder.build(chunk, tile, ox, oz)
 			_ramp_builder.build(chunk, tile, ox, oz)
+			_helipad_builder.build(chunk, tile, ox, oz)
 		else:
 			_building_builder.build(chunk, tile, ox, oz)
 		_tree_builder.build(chunk, tile, ox, oz)
@@ -789,6 +793,7 @@ func _init_builders() -> void:
 	_river_builder.init(_grid, _boundary)
 	_bridge_builder.init(_grid, _boundary, _road_mat)
 	_pier_builder.init(_grid, _boundary)
+	_helipad_builder.init(_grid, _sidewalk_mat, _marking_mat)
 	_tile_resolver.init(
 		_tile_cache, _biome_map, _grid, _boundary, _river_map,
 	)

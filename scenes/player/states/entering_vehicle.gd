@@ -18,8 +18,11 @@ func enter(msg: Dictionary = {}) -> void:
 	var player := owner as CharacterBody3D
 	player.velocity = Vector3.ZERO
 
-	# Boats: instant board (no steal timer, no door animation)
-	if _vehicle.get_node_or_null("BoatController"):
+	# Boats and helicopters: instant board (no steal timer, no door animation)
+	if (
+		_vehicle.get_node_or_null("BoatController") != null
+		or _vehicle.get_node_or_null("HelicopterController") != null
+	):
 		_timer = STEAL_DURATION
 		EventBus.hide_interaction_prompt.emit()
 		return

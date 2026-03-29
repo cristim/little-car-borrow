@@ -13,11 +13,12 @@ func enter(msg: Dictionary = {}) -> void:
 	_original_collision_layer = _vehicle.collision_layer
 	_vehicle.collision_layer = 8
 
-	# Detect boat vs car
+	# Detect vehicle type
 	var is_boat: bool = _vehicle.get_node_or_null("BoatController") != null
+	var is_heli: bool = _vehicle.get_node_or_null("HelicopterController") != null
 
-	# Hide player for cars, keep visible for boats (shown sitting)
-	if not is_boat:
+	# Hide player for cars; keep visible for boats and helicopters (shown riding)
+	if not is_boat and not is_heli:
 		owner.visible = false
 	else:
 		owner.visible = true
@@ -74,13 +75,23 @@ func enter(msg: Dictionary = {}) -> void:
 	owner.collision_layer = 0
 	owner.collision_mask = 0
 
-	# Activate player's vehicle controller (car or boat)
+	# Activate player's vehicle controller (car, boat, or helicopter)
 	var vc := _vehicle.get_node_or_null("VehicleController")
 	if vc:
 		vc.active = true
 	var bc := _vehicle.get_node_or_null("BoatController")
 	if bc:
 		bc.active = true
+	var hc := _vehicle.get_node_or_null("HelicopterController")
+	if hc:
+		hc.active = true
+		# Reparent helicopter to city root so it survives suburb chunk unloading
+		var city: Node = owner.get_tree().get_first_node_in_group("city_manager")
+		if city and _vehicle.get_parent() != city:
+			var old_parent: Node = _vehicle.get_parent()
+			if old_parent:
+				old_parent.remove_child(_vehicle)
+			city.add_child(_vehicle)
 
 	# Switch to vehicle context and camera
 	InputManager.set_context(InputManager.Context.VEHICLE)
@@ -93,12 +104,17 @@ func enter(msg: Dictionary = {}) -> void:
 		vcam = CamScene.instantiate()
 		vcam.set("target_path", NodePath(".."))
 		_vehicle.add_child(vcam)
-	# Pull camera back for boats so player and engine are visible
+	# Pull camera back for boats/helicopters so player and vehicle are visible
 	if is_boat:
 		vcam.set("min_distance", 8.0)
 		vcam.set("max_distance", 12.0)
 		vcam.set("min_height", 3.0)
 		vcam.set("max_height", 5.0)
+	elif is_heli:
+		vcam.set("min_distance", 12.0)
+		vcam.set("max_distance", 20.0)
+		vcam.set("min_height", 4.0)
+		vcam.set("max_height", 10.0)
 	vcam.make_active()
 
 	# Listen for forced ejection (vehicle destroyed, mission completion, etc.)
@@ -108,8 +124,8 @@ func enter(msg: Dictionary = {}) -> void:
 	if _vehicle.get_node_or_null("NPCVehicleController"):
 		EventBus.crime_committed.emit("vehicle_theft", 30)
 
-	# Skip lights and water detector for boats
-	if not is_boat:
+	# Skip lights and water detector for boats and helicopters
+	if not is_boat and not is_heli:
 		# Ensure vehicle has lights (starting vehicle doesn't get them from a spawner)
 		var body := _vehicle.get_node_or_null("Body")
 		if body and not body.get_node_or_null("VehicleLights"):
@@ -149,6 +165,9 @@ func exit() -> void:
 		var boat_ctrl := _vehicle.get_node_or_null("BoatController")
 		if boat_ctrl:
 			boat_ctrl.active = false
+		var heli_ctrl := _vehicle.get_node_or_null("HelicopterController")
+		if heli_ctrl:
+			heli_ctrl.active = false
 			# Re-enable walk animation and reset seated pose
 			var player_model: Node3D = owner.get_node_or_null("PlayerModel")
 			if player_model:
