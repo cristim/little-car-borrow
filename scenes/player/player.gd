@@ -3,8 +3,8 @@ extends CharacterBody3D
 
 @export var walk_speed := 4.0
 @export var run_speed := 8.0
-@export var gravity := 20.0
-@export var jump_speed := 7.0
+@export var gravity := 9.8
+@export var jump_speed := 4.9
 @export var rotation_speed := 10.0
 
 var nearest_vehicle: Node = null

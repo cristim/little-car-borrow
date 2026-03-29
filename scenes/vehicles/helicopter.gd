@@ -3,7 +3,7 @@ extends CharacterBody3D
 ## Parked helicopters fall under gravity; player-controlled ones use
 ## HelicopterController for flight physics.
 
-const GRAVITY := 20.0
+const GRAVITY := 9.8
 
 var _controller: Node = null
 

@@ -113,7 +113,7 @@ func test_default_run_speed() -> void:
 
 
 func test_default_gravity() -> void:
-	assert_eq(_player.gravity, 20.0, "Default gravity")
+	assert_eq(_player.gravity, 9.8, "Default gravity")
 
 
 func test_default_rotation_speed() -> void:

@@ -58,8 +58,8 @@ func test_despawn_dist_value() -> void:
 
 func test_gravity_value() -> void:
 	assert_eq(
-		OfficerScript.GRAVITY, 20.0,
-		"Gravity should be 20.0",
+		OfficerScript.GRAVITY, 9.8,
+		"Gravity should be 9.8",
 	)
 
 

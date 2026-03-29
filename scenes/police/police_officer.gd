@@ -7,7 +7,7 @@ const SHOOT_RANGE := 30.0
 const SHOOT_COOLDOWN := 1.2
 const SHOOT_DAMAGE := 8.0
 const DESPAWN_DIST := 80.0
-const GRAVITY := 20.0
+const GRAVITY := 9.8
 const MUZZLE_FLASH_TIME := 0.08
 
 var _player: Node3D = null
