@@ -609,13 +609,15 @@ func test_left_palm_centred_on_flashlight_tube() -> void:
 	)
 
 
-func test_flashlight_outside_forearm() -> void:
-	# Forearm half-width in Z = 0.045; flashlight tube radius = 0.010.
-	# Centre must be > 0.055 to clear the forearm face completely.
-	var fl_body := _le.get_node("FlashlightBody") as MeshInstance3D
+func test_left_palm_front_face_clears_forearm() -> void:
+	# Palm overlaps the forearm end; its front face must extend past the forearm
+	# surface (Z = 0.045) so the hand is visible and not buried.
+	var palm_l := _le.get_node("HandLeft_Palm") as MeshInstance3D
+	var bm: BoxMesh = palm_l.mesh as BoxMesh
+	var front_z := palm_l.position.z + bm.size.z * 0.5
 	assert_gt(
-		fl_body.position.z, 0.050,
-		"FlashlightBody centre must be outside the forearm (Z > 0.050)",
+		front_z, 0.045,
+		"Left palm front face must extend past the forearm surface (Z > 0.045)",
 	)
 
 
@@ -633,12 +635,12 @@ func test_right_hand_at_gun_grip_height() -> void:
 	)
 
 
-func test_flashlight_body_tilted_upward() -> void:
+func test_flashlight_body_no_local_rotation() -> void:
 	var fl_body := _le.get_node("FlashlightBody") as MeshInstance3D
-	# 20° upward tilt → rotation.x ≈ -deg_to_rad(20) ≈ -0.349
-	assert_lt(
-		fl_body.rotation.x, -0.30,
-		"FlashlightBody should be tilted upward (rotation.x < -0.30 rad)",
+	# Tube is along Y (arm direction) — no extra tilt needed; SpotLight aims via look_at.
+	assert_almost_eq(
+		fl_body.rotation.x, 0.0, 0.01,
+		"FlashlightBody should have no local rotation (tube already along arm axis)",
 	)
 
 

@@ -155,18 +155,18 @@ func _build_hands() -> void:
 	var mat_skin: StandardMaterial3D = _mat_ear  # same skin tone as ears/neck
 
 	# --- Left hand (holds flashlight) ---
-	# One solid fist block (Palm) centred on the tube; Fingers is a thin knuckle
-	# ridge across the leading face.  Thumb sticks out on the +X side.
+	# Mirror of the right hand: palm overlaps the forearm end so the wrist looks
+	# connected. Z is flipped to the front-facing side (+Z = world-up when aimed).
+	# The flashlight tube runs through the grip; its lower end protrudes past the fist.
 	_add_box(_left_elbow, "HandLeft_Palm", mat_skin,
-		Vector3(0.072, 0.055, 0.070), Vector3(0.000, -0.290, 0.052))
+		Vector3(0.076, 0.056, 0.068), Vector3(0.000, -0.255, 0.032))
 	_add_box(_left_elbow, "HandLeft_Fingers", mat_skin,
-		Vector3(0.068, 0.010, 0.028), Vector3(0.000, -0.310, 0.074))
+		Vector3(0.070, 0.010, 0.028), Vector3(0.000, -0.275, 0.052))
 	_add_box(_left_elbow, "HandLeft_Thumb", mat_skin,
-		Vector3(0.028, 0.048, 0.030), Vector3(0.050, -0.280, 0.048))
-	# Flashlight tube along Y; rotation.x = -20° gives upward tilt when aimed.
-	var fl: MeshInstance3D = _add_box(_left_elbow, "FlashlightBody", _mat_flashlight_body,
-		Vector3(0.020, 0.068, 0.020), Vector3(0.000, -0.294, 0.060))
-	fl.rotation.x = -deg_to_rad(20.0)
+		Vector3(0.028, 0.048, 0.028), Vector3(0.048, -0.245, 0.015))
+	# Tube mostly hidden inside fist; lower end protrudes ~3 cm past the palm.
+	_add_box(_left_elbow, "FlashlightBody", _mat_flashlight_body,
+		Vector3(0.020, 0.080, 0.020), Vector3(0.000, -0.275, 0.032))
 
 	# --- Right hand (grips gun) ---
 	# Same approach: one solid fist block + thin knuckle ridge + thumb.
