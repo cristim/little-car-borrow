@@ -10,7 +10,7 @@ extends Node
 
 const ASCEND_FORCE := 24.0   # m/s vertical when ascending
 const DESCEND_FORCE := 18.0  # m/s vertical when descending
-const HOVER_SINK := 9.0      # gentle sink rate when no vertical input
+const HOVER_SINK := 1.5      # very slow passive sink when no vertical input
 const FORWARD_SPEED := 42.0  # m/s forward
 const BACK_SPEED := 15.0     # m/s reverse
 const YAW_SPEED := 1.8       # rad/s yaw
