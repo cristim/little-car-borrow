@@ -98,7 +98,7 @@ func initialize(vehicle: RigidBody3D, road_idx: int, direction: int) -> void:
 	_direction = direction
 	_rng.randomize()
 	_find_next_intersection()
-	_spawn_grace = 2.0
+	_spawn_grace = 4.0
 
 
 func _physics_process(delta: float) -> void:

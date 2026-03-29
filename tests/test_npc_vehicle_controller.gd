@@ -22,8 +22,8 @@ func test_spawn_grace_default_zero() -> void:
 func test_spawn_grace_source_set_in_initialize() -> void:
 	var src: String = _npc_script.source_code
 	assert_true(
-		src.contains("_spawn_grace = 2.0"),
-		"initialize() should set _spawn_grace to 2.0",
+		src.contains("_spawn_grace = 4.0"),
+		"initialize() should set _spawn_grace to 4.0",
 	)
 
 
