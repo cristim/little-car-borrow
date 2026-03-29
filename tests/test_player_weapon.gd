@@ -243,9 +243,9 @@ func test_unlock_weapon_emits_signal() -> void:
 	var captured := []
 	var on_unlock := func(idx: int) -> void:
 		captured.append(idx)
-	EventBus.weapon_unlocked.connect(_on_unlock)
+	EventBus.weapon_unlocked.connect(on_unlock)
 	_pw.unlock_weapon(3)
-	EventBus.weapon_unlocked.disconnect(_on_unlock)
+	EventBus.weapon_unlocked.disconnect(on_unlock)
 	assert_eq(captured.size(), 1, "Should emit once")
 	if captured.size() > 0:
 		assert_eq(captured[0], 3, "Should emit weapon_unlocked(3)")
@@ -256,9 +256,9 @@ func test_unlock_weapon_shows_notification() -> void:
 	var captured := []
 	var on_notif := func(text: String, _dur: float) -> void:
 		captured.append(text)
-	EventBus.show_notification.connect(_on_notif)
+	EventBus.show_notification.connect(on_notif)
 	_pw.unlock_weapon(1)
-	EventBus.show_notification.disconnect(_on_notif)
+	EventBus.show_notification.disconnect(on_notif)
 	assert_eq(captured.size(), 1, "Should emit notification")
 	if captured.size() > 0:
 		assert_true(
@@ -271,9 +271,9 @@ func test_unlock_already_unlocked_is_noop() -> void:
 	var signal_count := 0
 	var on_unlock := func(_idx: int) -> void:
 		signal_count += 1
-	EventBus.weapon_unlocked.connect(_on_unlock)
+	EventBus.weapon_unlocked.connect(on_unlock)
 	_pw.unlock_weapon(0)  # Already unlocked
-	EventBus.weapon_unlocked.disconnect(_on_unlock)
+	EventBus.weapon_unlocked.disconnect(on_unlock)
 	assert_eq(signal_count, 0, "Should not emit for already unlocked weapon")
 
 
@@ -462,4 +462,26 @@ func test_setup_gun_mesh_noop_without_elbow() -> void:
 	assert_null(
 		_pw._gun_mesh,
 		"Gun mesh should be null when _elbow is null",
+	)
+
+
+# ==========================================================================
+# Ray origin and blood position (source-level verification)
+# ==========================================================================
+
+func test_shoot_uses_player_camera_pivot_as_ray_origin() -> void:
+	var script: GDScript = WeaponScript as GDScript
+	var src: String = script.source_code
+	assert_true(
+		src.contains("pcam is Node3D") and src.contains("(pcam as Node3D).global_position"),
+		"_shoot() must use PlayerCamera pivot global_position as ray origin",
+	)
+
+
+func test_spawn_blood_uses_target_floor_y() -> void:
+	var script: GDScript = WeaponScript as GDScript
+	var src: String = script.source_code
+	assert_true(
+		src.contains("target.global_position.y"),
+		"_spawn_blood() must use target.global_position.y for floor level",
 	)

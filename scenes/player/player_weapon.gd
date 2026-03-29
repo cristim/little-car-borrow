@@ -184,12 +184,19 @@ func _shoot() -> void:
 
 	var vp_size := get_viewport().get_visible_rect().size
 	var crosshair_screen := Vector2(vp_size.x * 0.5, vp_size.y * 0.35)
-	var from := camera.project_ray_origin(crosshair_screen)
+	# Use the PlayerCamera pivot as ray origin so SpringArm3D clipping into
+	# rooftops or walls does not misplace the shot origin.  The pivot is always
+	# at player.global_position + height_offset, which is in open air.
+	var pcam: Node = owner.get_node_or_null("PlayerCamera")
+	var from: Vector3
+	if pcam and pcam is Node3D:
+		from = (pcam as Node3D).global_position
+	else:
+		from = camera.project_ray_origin(crosshair_screen)
 	# Use the player camera's persistent aim direction (no inspect-mode offset)
 	# so shooting always goes where the player was looking, not where the
 	# inspect orbit has rotated the camera.
 	var base_dir: Vector3
-	var pcam: Node = owner.get_node_or_null("PlayerCamera")
 	if pcam and pcam.has_method("get_aim_direction"):
 		base_dir = pcam.get_aim_direction()
 	else:
@@ -235,14 +242,14 @@ func _shoot() -> void:
 
 		if body.is_in_group("pedestrian"):
 			_spawn_ragdoll(body, dir)
-			_spawn_blood(hit_pos)
+			_spawn_blood(hit_pos, body as Node3D)
 			EventBus.pedestrian_killed.emit(body)
 			var heat: int = roundi(35.0 * crime_mult)
 			EventBus.crime_committed.emit("shoot_pedestrian", heat)
 			body.queue_free()
 		elif body.is_in_group("police_officer"):
 			_spawn_ragdoll(body, dir)
-			_spawn_blood(hit_pos)
+			_spawn_blood(hit_pos, body as Node3D)
 			var heat: int = roundi(60.0 * crime_mult)
 			EventBus.crime_committed.emit("shoot_police", heat)
 			body.queue_free()
@@ -320,8 +327,11 @@ func _spawn_world_decal(pos: Vector3, normal: Vector3) -> void:
 	)
 
 
-func _spawn_blood(hit_pos: Vector3) -> void:
-	var blood_pos := Vector3(hit_pos.x, 0.02, hit_pos.z)
+func _spawn_blood(hit_pos: Vector3, target: Node3D = null) -> void:
+	# Use the target's feet level so blood pools on the actual floor surface,
+	# not always at world y=0 (wrong when shooting from or onto elevated areas).
+	var floor_y: float = target.global_position.y if target != null else hit_pos.y
+	var blood_pos := Vector3(hit_pos.x, floor_y + 0.02, hit_pos.z)
 	var decal := _spawn_decal(
 		blood_pos, Vector3.UP, 0.2, Color(0.4, 0.02, 0.02)
 	)
