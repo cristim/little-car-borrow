@@ -168,7 +168,9 @@ func exit() -> void:
 		var heli_ctrl := _vehicle.get_node_or_null("HelicopterController")
 		if heli_ctrl:
 			heli_ctrl.active = false
-			# Re-enable walk animation and reset seated pose
+		# Boats and helicopters disable the walk animation and apply a seated
+		# pose on entry — re-enable processing and reset all joints on exit.
+		if boat_ctrl or heli_ctrl:
 			var player_model: Node3D = owner.get_node_or_null("PlayerModel")
 			if player_model:
 				player_model.set_process(true)
