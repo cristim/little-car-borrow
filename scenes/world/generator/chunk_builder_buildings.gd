@@ -9,6 +9,10 @@ const INTERIOR_FLOOR_Y := 0.05
 const INTERIOR_INSET := 0.15
 const WALL_THICKNESS := 0.25
 const PITCHED_ROOF_THRESHOLD := 8.0  # buildings under this height get pitched roofs
+const ROOFTOP_HELIPAD_MIN_H := 12.0  # minimum building height for a rooftop helipad
+const ROOFTOP_HELIPAD_MIN_W := 10.0  # minimum width/depth for rooftop helipad
+const ROOFTOP_HELIPAD_CHANCE := 0.12 # per-building probability
+const ROOFTOP_HELIPADS_PER_CHUNK := 2
 
 var _grid: RefCounted
 var _building_mats: Array[StandardMaterial3D] = []
@@ -17,6 +21,7 @@ var _interior_mat: StandardMaterial3D
 var _roof_mats: Array[StandardMaterial3D] = []
 var _city_script: GDScript = preload("res://scenes/world/city.gd")
 var _door_script: GDScript = preload("res://scenes/world/building_door.gd")
+var _rooftop_helipad_mat: StandardMaterial3D = null
 
 
 func init(
@@ -88,6 +93,9 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 
 	# Deferred door spawns: [center, size, door_face] — added after body
 	var door_infos: Array[Array] = []
+
+	# Rooftop helipads — collected during loop, spawned after body
+	var rooftop_helipads: Array[Dictionary] = []
 
 	for bx in range(_grid.GRID_SIZE):
 		for bz in range(_grid.GRID_SIZE):
@@ -220,6 +228,16 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 						roof_sts[ri], c, s, rng,
 					)
 					roof_st_used[ri] = true
+
+				# Rooftop helipad on tall, wide, flat-roofed buildings
+				if (
+					s.y >= ROOFTOP_HELIPAD_MIN_H
+					and s.x >= ROOFTOP_HELIPAD_MIN_W
+					and s.z >= ROOFTOP_HELIPAD_MIN_W
+					and rooftop_helipads.size() < ROOFTOP_HELIPADS_PER_CHUNK
+					and rng.randf() < ROOFTOP_HELIPAD_CHANCE
+				):
+					rooftop_helipads.append({"center": c, "size": s})
 
 	# Create one MeshInstance3D per used palette color
 	for i in range(mat_count):
@@ -740,7 +758,7 @@ func _create_door_node(
 	var sphere := SphereShape3D.new()
 	sphere.radius = 2.5
 	col_shape.shape = sphere
-	col_shape.position = Vector3(0.0, DOOR_HEIGHT * 0.5, -2.5)
+	col_shape.position = Vector3(0.0, DOOR_HEIGHT * 0.5, 0.0)
 	area.add_child(col_shape)
 	door_node.add_child(area)
 
