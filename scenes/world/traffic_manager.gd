@@ -244,10 +244,9 @@ func _try_spawn() -> void:
 				continue  # steep terrain — no road here
 		if surface_y < SEA_LEVEL:
 			continue
-		# +1.2 m clearance: keeps GEVP wheel bottoms above the surface so the
-		# suspension spring is not pre-compressed at spawn (pre-compression
-		# causes the large upward impulse that launches vehicles into the air).
-		spawn_pos.y = surface_y + 1.2
+		# +0.1 m: wheel bottoms (body_y - 0.10) sit exactly at the road
+		# surface with zero spring compression, so no upward launch impulse.
+		spawn_pos.y = surface_y + 0.1
 
 		var too_close := false
 		for v in _vehicles:

@@ -183,7 +183,7 @@ func _try_spawn() -> void:
 		)
 		if ground_y < SEA_LEVEL:
 			continue
-		spawn_pos.y = ground_y + 0.5
+		spawn_pos.y = ground_y + 0.1
 
 		var too_close := false
 		for v in _police:
