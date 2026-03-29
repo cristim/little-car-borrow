@@ -217,11 +217,9 @@ func _try_spawn() -> void:
 			continue
 
 		# Raycast downward to find the real physical surface.
-		# This works everywhere — city roads, building tops, highways.
-		# Outside the city, fall back to noise height only if no collision
-		# is found (unloaded chunk) rather than relying on the boundary
-		# signed-distance classification, which could misclassify edge
-		# positions and let noise heights of 50m+ slip through.
+		# Raycast runs everywhere; city vs outside-city only affects which
+		# height thresholds apply and whether a noise fallback is allowed.
+		var sd: float = _boundary.get_signed_distance(spawn_pos.x, spawn_pos.z)
 		var world: World3D = _player.get_world_3d()
 		var space: PhysicsDirectSpaceState3D = world.direct_space_state
 		var rq := PhysicsRayQueryParameters3D.create(
@@ -233,22 +231,30 @@ func _try_spawn() -> void:
 		var surface_y: float
 		if not hit.is_empty():
 			surface_y = (hit["position"] as Vector3).y
-			if surface_y > 1.0:
-				continue  # building top — no road at this XZ
+			if sd < 0.0:
+				# City: surface_y > 1.0 means we hit a building top, not a road.
+				if surface_y > 1.0:
+					continue
+			else:
+				# Outside city: hills/highways can be up to 6 m.
+				if surface_y > 6.0:
+					continue
 		else:
-			# No collision mesh (unloaded or outside city).
-			# Only allow this for positions outside the city boundary.
-			var sd: float = _boundary.get_signed_distance(spawn_pos.x, spawn_pos.z)
+			# No collision mesh found (unloaded chunk or no collision).
 			if sd < 0.0:
 				continue  # inside city but no road collision — skip
+			# Outside city: fall back to noise height rather than no spawn.
 			surface_y = _boundary.get_ground_height(spawn_pos.x, spawn_pos.z)
 			if surface_y > 6.0:
-				continue  # steep terrain — no road here
+				continue
 		if surface_y < SEA_LEVEL:
 			continue
-		# +0.1 m: wheel bottoms (body_y - 0.10) sit exactly at the road
-		# surface with zero spring compression, so no upward launch impulse.
-		spawn_pos.y = surface_y + 0.1
+		# +0.25 m clearance: GEVP rear ray extends 0.15 m below body origin
+		# (spring_length 0.20 + tire_radius 0.30 - attachment_y 0.35).
+		# Spawning with wheels already in contact causes a massive first-frame
+		# damping spike (previous_compression=0 → spring_speed=compression/dt).
+		# 0.25 m keeps all wheels clear of the ground on the first physics tick.
+		spawn_pos.y = surface_y + 0.25
 
 		var too_close := false
 		for v in _vehicles:
