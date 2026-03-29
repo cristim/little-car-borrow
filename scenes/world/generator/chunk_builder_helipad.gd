@@ -57,6 +57,9 @@ func _build_pad(chunk: Node3D, center: Vector3) -> void:
 	body.collision_layer = 1  # ground layer — helicopter can land on it
 	body.collision_mask = 0
 	body.add_to_group("Road")
+	body.add_to_group("helipad")
+	# Store world centre so the minimap can draw the H icon at the correct spot
+	body.set_meta("helipad_center", center)
 
 	var col := CollisionShape3D.new()
 	var box := BoxShape3D.new()

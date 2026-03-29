@@ -18,6 +18,7 @@ const MARKER_START_COLOR := Color(0.2, 0.9, 0.2)
 const MARKER_PICKUP_COLOR := Color(0.3, 0.5, 1.0)
 const MARKER_DROPOFF_COLOR := Color(1.0, 0.9, 0.2)
 const HELI_COLOR := Color(1.0, 0.3, 0.3)
+const HELIPAD_COLOR := Color(0.2, 0.85, 0.95)
 const TERRAIN_COLOR := Color(0.22, 0.45, 0.18, 0.5)
 const WATER_COLOR := Color(0.15, 0.35, 0.65, 0.5)
 const VILLAGE_COLOR := Color(0.55, 0.40, 0.25, 0.8)
@@ -195,6 +196,9 @@ func _draw() -> void:
 
 	# Police helicopter (distinct icon)
 	_draw_heli_icons(player_pos, yaw)
+
+	# Helipads ("H" icon)
+	_draw_helipad_icons(player_pos, yaw)
 
 	# Mission markers (colored diamonds)
 	_draw_mission_markers(player_pos, yaw)
@@ -655,6 +659,33 @@ func _draw_heli_icons(ppos: Vector3, yaw: float) -> void:
 			mp + Vector2(0.0, -blade_len),
 			mp + Vector2(0.0, blade_len),
 			HELI_COLOR, 1.5,
+		)
+
+
+func _draw_helipad_icons(ppos: Vector3, yaw: float) -> void:
+	var pads := get_tree().get_nodes_in_group("helipad")
+	var view_sq := (_map_radius / _scale) * (_map_radius / _scale)
+	for pad in pads:
+		if not is_instance_valid(pad):
+			continue
+		var hpos: Vector3 = (pad as Node3D).get_meta(
+			"helipad_center", (pad as Node3D).global_position
+		)
+		var dx := hpos.x - ppos.x
+		var dz := hpos.z - ppos.z
+		if dx * dx + dz * dz > view_sq:
+			continue
+		var mp := _world_to_minimap(hpos, ppos, yaw)
+		if not _in_circle(mp):
+			continue
+		# Background circle so "H" is readable over terrain
+		draw_circle(mp, 7.0, Color(0.0, 0.0, 0.0, 0.55))
+		draw_string(
+			ThemeDB.fallback_font,
+			mp - Vector2(4.5, 5.0),
+			"H",
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 11,
+			HELIPAD_COLOR,
 		)
 
 

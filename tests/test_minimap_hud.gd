@@ -390,3 +390,23 @@ func test_frame_count_increments() -> void:
 	await get_tree().process_frame
 
 	assert_gt(mm._frame_count, start_count, "Frame count should increment")
+
+
+# ================================================================
+# Helipad icons
+# ================================================================
+
+func test_helipad_color_constant_exists() -> void:
+	var mm := _build_minimap()
+	assert_true(
+		mm.get("HELIPAD_COLOR") != null,
+		"HELIPAD_COLOR constant should exist on minimap",
+	)
+
+
+func test_helipad_color_is_distinct_from_heli_color() -> void:
+	var mm := _build_minimap()
+	assert_ne(
+		mm.HELIPAD_COLOR, mm.HELI_COLOR,
+		"HELIPAD_COLOR should differ from police HELI_COLOR",
+	)

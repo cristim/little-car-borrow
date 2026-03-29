@@ -149,3 +149,41 @@ func test_different_tiles_produce_different_positions() -> void:
 		pos_a, pos_b,
 		"Helicopters in different tiles should spawn at different positions",
 	)
+
+
+func test_helipad_pad_in_helipad_group() -> void:
+	_builder.build(_chunk, Vector2i(0, 0), 0.0, 0.0)
+	await get_tree().process_frame
+	var found := false
+	for child in _chunk.get_children():
+		if child is StaticBody3D and child.is_in_group("helipad"):
+			found = true
+			break
+	assert_true(found, "Helipad pad should be in the 'helipad' group for minimap detection")
+
+
+func test_helipad_pad_has_center_metadata() -> void:
+	_builder.build(_chunk, Vector2i(0, 0), 0.0, 0.0)
+	await get_tree().process_frame
+	for child in _chunk.get_children():
+		if child is StaticBody3D and child.is_in_group("helipad"):
+			assert_true(
+				child.has_meta("helipad_center"),
+				"Helipad pad should have 'helipad_center' metadata for minimap positioning",
+			)
+			return
+	fail_test("No helipad StaticBody3D found")
+
+
+func test_helipad_center_metadata_is_vector3() -> void:
+	_builder.build(_chunk, Vector2i(0, 0), 0.0, 0.0)
+	await get_tree().process_frame
+	for child in _chunk.get_children():
+		if child is StaticBody3D and child.is_in_group("helipad"):
+			var center: Vector3 = child.get_meta("helipad_center")
+			assert_true(
+				center is Vector3,
+				"helipad_center metadata should be a Vector3",
+			)
+			return
+	fail_test("No helipad StaticBody3D found")
