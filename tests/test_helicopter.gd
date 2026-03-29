@@ -162,9 +162,13 @@ func test_helicopter_has_cockpit_seat() -> void:
 	assert_not_null(seat, "Helicopter should have a CockpitSeat node")
 
 
-func test_helicopter_has_windshield() -> void:
-	var ws: Node = _heli.get_node_or_null("Body/Windshield")
-	assert_not_null(ws, "Helicopter should have a Windshield node")
+func test_fuselage_has_two_surfaces() -> void:
+	var fuse: MeshInstance3D = _heli.get_node_or_null("Body/Fuselage") as MeshInstance3D
+	assert_not_null(fuse)
+	assert_eq(
+		fuse.mesh.get_surface_count(), 2,
+		"Fuselage mesh should have 2 surfaces (solid + glass)",
+	)
 
 
 func test_rotor_raised_above_fuselage_top() -> void:
@@ -174,6 +178,3 @@ func test_rotor_raised_above_fuselage_top() -> void:
 	assert_gt(rotor.position.y, 1.4, "Rotor hub should be above y=1.4 to clear pilot")
 
 
-func test_helicopter_has_side_windows() -> void:
-	var sw: Node = _heli.get_node_or_null("Body/SideWindows")
-	assert_not_null(sw, "Helicopter should have a SideWindows node")

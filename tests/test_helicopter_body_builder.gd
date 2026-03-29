@@ -91,27 +91,16 @@ func test_build_cockpit_seat_has_vertices() -> void:
 	assert_gt(verts.size(), 0, "Cockpit seat mesh should have vertices")
 
 
-func test_build_windshield_returns_mesh() -> void:
-	var mesh: ArrayMesh = (_builder as BuilderScript).build_windshield()
-	assert_not_null(mesh, "build_windshield should return a mesh")
-	assert_true(mesh is ArrayMesh, "Windshield should be an ArrayMesh")
+func test_fuselage_has_two_surfaces() -> void:
+	var mesh: ArrayMesh = (_builder as BuilderScript).build_fuselage()
+	assert_eq(
+		mesh.get_surface_count(), 2,
+		"Fuselage should have 2 surfaces (surface 0: solid, surface 1: glass)",
+	)
 
 
-func test_build_windshield_has_vertices() -> void:
-	var mesh: ArrayMesh = (_builder as BuilderScript).build_windshield()
-	var arrays: Array = mesh.surface_get_arrays(0)
+func test_fuselage_glass_surface_has_vertices() -> void:
+	var mesh: ArrayMesh = (_builder as BuilderScript).build_fuselage()
+	var arrays: Array = mesh.surface_get_arrays(1)
 	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
-	assert_gt(verts.size(), 0, "Windshield mesh should have vertices")
-
-
-func test_build_side_windows_returns_mesh() -> void:
-	var mesh: ArrayMesh = (_builder as BuilderScript).build_side_windows()
-	assert_not_null(mesh, "build_side_windows should return a mesh")
-	assert_true(mesh is ArrayMesh, "Side windows should be an ArrayMesh")
-
-
-func test_build_side_windows_has_vertices() -> void:
-	var mesh: ArrayMesh = (_builder as BuilderScript).build_side_windows()
-	var arrays: Array = mesh.surface_get_arrays(0)
-	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
-	assert_gt(verts.size(), 0, "Side windows mesh should have vertices")
+	assert_gt(verts.size(), 0, "Fuselage glass surface (1) should have vertices")

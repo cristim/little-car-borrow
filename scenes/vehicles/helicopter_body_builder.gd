@@ -39,25 +39,41 @@ const TAIL_ROTOR_BLADE_H := 0.03
 
 
 func build_fuselage() -> ArrayMesh:
-	var st := SurfaceTool.new()
+	## Returns a two-surface mesh:
+	##   surface 0 — opaque body (roof, floor, rear, tail boom, fin, skids)
+	##   surface 1 — glass (front/windshield face, left side, right side)
+	var arr_mesh := ArrayMesh.new()
+
+	var st := SurfaceTool.new()   # surface 0: solid
+	var stg := SurfaceTool.new()  # surface 1: glass
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	stg.begin(Mesh.PRIMITIVE_TRIANGLES)
 
 	var yb := -FUSE_HH
 	var yt := FUSE_HH
 	var zf := -FUSE_HL  # front (nose)
 	var zr := FUSE_HL   # rear
 
-	# Tapered nose (front face is smaller)
 	var nhw := FUSE_HW * NOSE_TAPER
 	var nhh := FUSE_HH * NOSE_TAPER
 	var nyb := -nhh
 	var nyt := nhh
 
-	# Main cabin: 6 faces (box), but front face uses tapered dimensions
-	# Front face (tapered)
-	_add_quad(st,
+	# ── GLASS faces (front + left + right) ───────────────────────────────────
+	# Front face (windshield — tapered nose)
+	_add_quad(stg,
 		Vector3(-nhw, nyb, zf), Vector3(nhw, nyb, zf),
 		Vector3(nhw, nyt, zf), Vector3(-nhw, nyt, zf))
+	# Left face (full trapezoidal side panel)
+	_add_quad(stg,
+		Vector3(-FUSE_HW, yb, zr), Vector3(-nhw, nyb, zf),
+		Vector3(-nhw, nyt, zf), Vector3(-FUSE_HW, yt, zr))
+	# Right face
+	_add_quad(stg,
+		Vector3(nhw, nyb, zf), Vector3(FUSE_HW, yb, zr),
+		Vector3(FUSE_HW, yt, zr), Vector3(nhw, nyt, zf))
+
+	# ── SOLID faces ───────────────────────────────────────────────────────────
 	# Rear face
 	_add_quad(st,
 		Vector3(FUSE_HW, yb, zr), Vector3(-FUSE_HW, yb, zr),
@@ -70,18 +86,9 @@ func build_fuselage() -> ArrayMesh:
 	_add_quad(st,
 		Vector3(-nhw, nyb, zf), Vector3(-FUSE_HW, yb, zr),
 		Vector3(FUSE_HW, yb, zr), Vector3(nhw, nyb, zf))
-	# Left face
-	_add_quad(st,
-		Vector3(-FUSE_HW, yb, zr), Vector3(-nhw, nyb, zf),
-		Vector3(-nhw, nyt, zf), Vector3(-FUSE_HW, yt, zr))
-	# Right face
-	_add_quad(st,
-		Vector3(nhw, nyb, zf), Vector3(FUSE_HW, yb, zr),
-		Vector3(FUSE_HW, yt, zr), Vector3(nhw, nyt, zf))
 
 	# Tail boom: extends from fuselage rear
 	var tz := zr + TAIL_LEN
-	# Rear cap
 	_add_quad(st,
 		Vector3(TAIL_HW, -TAIL_HH, tz), Vector3(-TAIL_HW, -TAIL_HH, tz),
 		Vector3(-TAIL_HW, TAIL_HH, tz), Vector3(TAIL_HW, TAIL_HH, tz))
@@ -117,22 +124,23 @@ func build_fuselage() -> ArrayMesh:
 		var sy := -FUSE_HH - SKID_DROP
 		var szf := -FUSE_HL * 0.8
 		var szr := FUSE_HL * 0.5
-		# Skid rail (horizontal bar)
 		_add_box(st,
 			Vector3(sx - SKID_WIDTH * 0.5, sy - SKID_HEIGHT * 0.5, szf),
 			Vector3(sx + SKID_WIDTH * 0.5, sy + SKID_HEIGHT * 0.5, szr))
-		# Front strut (vertical connecting fuselage bottom to skid)
 		var strut_zf := szf + 0.3
 		_add_box(st,
 			Vector3(sx - STRUT_WIDTH * 0.5, sy, strut_zf - STRUT_DEPTH * 0.5),
 			Vector3(sx + STRUT_WIDTH * 0.5, -FUSE_HH, strut_zf + STRUT_DEPTH * 0.5))
-		# Rear strut
 		var strut_zr := szr - 0.4
 		_add_box(st,
 			Vector3(sx - STRUT_WIDTH * 0.5, sy, strut_zr - STRUT_DEPTH * 0.5),
 			Vector3(sx + STRUT_WIDTH * 0.5, -FUSE_HH, strut_zr + STRUT_DEPTH * 0.5))
 
-	return st.commit()
+	st.generate_normals()
+	stg.generate_normals()
+	arr_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, st.commit_to_arrays())
+	arr_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, stg.commit_to_arrays())
+	return arr_mesh
 
 
 func build_main_rotor() -> ArrayMesh:
@@ -168,26 +176,6 @@ func build_tail_rotor() -> ArrayMesh:
 	return st.commit()
 
 
-func build_windshield() -> ArrayMesh:
-	## Flat quad panels forming a two-pane windshield on the nose.
-	## Thin depth so it sits flush with/just inside the tapered nose face.
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var zf := -FUSE_HL + 0.02  # just inside the nose face
-	var thickness := 0.03
-	var nhw := FUSE_HW * NOSE_TAPER
-	var nhh := FUSE_HH * NOSE_TAPER
-	# Left pane (x: -nhw to -0.05, y: -nhh+0.1 to +nhh-0.05)
-	_add_box(st,
-		Vector3(-nhw + 0.05, -nhh + 0.1, zf - thickness),
-		Vector3(-0.05, nhh - 0.05, zf))
-	# Right pane (x: 0.05 to nhw-0.05, y: same)
-	_add_box(st,
-		Vector3(0.05, -nhh + 0.1, zf - thickness),
-		Vector3(nhw - 0.05, nhh - 0.05, zf))
-	return st.commit()
-
-
 func build_cockpit_seat() -> ArrayMesh:
 	## Simple bucket seat inside the cockpit (centered, forward section).
 	## Positioned at the new cabin floor y = -FUSE_HH = -1.1.
@@ -197,28 +185,6 @@ func build_cockpit_seat() -> ArrayMesh:
 	_add_box(st, Vector3(-0.22, -1.1, -1.0), Vector3(0.22, -0.95, -0.4))
 	# Seat back: 0.44 wide, 0.7 tall, 0.1 deep; upright behind cushion
 	_add_box(st, Vector3(-0.22, -0.95, -1.05), Vector3(0.22, -0.25, -0.95))
-	return st.commit()
-
-
-func build_side_windows() -> ArrayMesh:
-	## Thin glass panels on the left and right cabin walls.
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var thickness := 0.05
-	# Window spans cabin area: forward from z=-FUSE_HL+0.3 to z=+FUSE_HL*0.1
-	# Height: from y=-FUSE_HH*0.3 to y=+FUSE_HH*0.65
-	var y_lo := -FUSE_HH * 0.3
-	var y_hi := FUSE_HH * 0.65
-	var z_f := -FUSE_HL + 0.35
-	var z_r := FUSE_HL * 0.12
-	# Left pane (sits just inside the left wall)
-	_add_box(st,
-		Vector3(-FUSE_HW, y_lo, z_f),
-		Vector3(-FUSE_HW + thickness, y_hi, z_r))
-	# Right pane (symmetric)
-	_add_box(st,
-		Vector3(FUSE_HW - thickness, y_lo, z_f),
-		Vector3(FUSE_HW, y_hi, z_r))
 	return st.commit()
 
 

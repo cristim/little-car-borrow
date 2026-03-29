@@ -41,10 +41,19 @@ func _build_mesh() -> void:
 	body.name = "Body"
 	add_child(body)
 
+	# Glass material for fuselage surface 1 (front/left/right faces)
+	var glass_mat := StandardMaterial3D.new()
+	glass_mat.albedo_color = Color(0.55, 0.75, 0.85, 0.35)
+	glass_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	glass_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+	# Fuselage: surface 0 = opaque body, surface 1 = glass faces
 	var fuselage := MeshInstance3D.new()
 	fuselage.name = "Fuselage"
-	fuselage.mesh = builder.build_fuselage()
-	fuselage.material_override = body_mat
+	var fuse_mesh: ArrayMesh = builder.build_fuselage() as ArrayMesh
+	fuse_mesh.surface_set_material(0, body_mat)
+	fuse_mesh.surface_set_material(1, glass_mat)
+	fuselage.mesh = fuse_mesh
 	body.add_child(fuselage)
 
 	# Cockpit seat (inside cabin, forward section)
@@ -55,26 +64,6 @@ func _build_mesh() -> void:
 	seat_mesh.mesh = builder.build_cockpit_seat()
 	seat_mesh.material_override = seat_mat
 	body.add_child(seat_mesh)
-
-	# Shared glass material for windshield and side windows
-	var glass_mat := StandardMaterial3D.new()
-	glass_mat.albedo_color = Color(0.55, 0.75, 0.85, 0.35)
-	glass_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	glass_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-
-	# Windshield: two semi-transparent panes on the nose face
-	var windshield := MeshInstance3D.new()
-	windshield.name = "Windshield"
-	windshield.mesh = builder.build_windshield()
-	windshield.material_override = glass_mat
-	body.add_child(windshield)
-
-	# Side windows (left + right cabin walls)
-	var side_win := MeshInstance3D.new()
-	side_win.name = "SideWindows"
-	side_win.mesh = builder.build_side_windows()
-	side_win.material_override = glass_mat
-	body.add_child(side_win)
 
 	# Tail rotor at end of boom, offset to left side
 	# Boom rear Z = FUSE_HL + TAIL_LEN = 2.5 + 3.5 = 6.0
