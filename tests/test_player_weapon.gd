@@ -478,6 +478,15 @@ func test_shoot_uses_player_camera_pivot_as_ray_origin() -> void:
 	)
 
 
+func test_shoot_direction_uses_project_ray_normal_at_crosshair() -> void:
+	var script: GDScript = WeaponScript as GDScript
+	var src: String = script.source_code
+	assert_true(
+		src.contains("project_ray_normal(crosshair_screen)"),
+		"_shoot() must use project_ray_normal(crosshair_screen) for aim direction",
+	)
+
+
 func test_spawn_blood_uses_target_floor_y() -> void:
 	var script: GDScript = WeaponScript as GDScript
 	var src: String = script.source_code

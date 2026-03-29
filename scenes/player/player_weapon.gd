@@ -193,14 +193,10 @@ func _shoot() -> void:
 		from = (pcam as Node3D).global_position
 	else:
 		from = camera.project_ray_origin(crosshair_screen)
-	# Use the player camera's persistent aim direction (no inspect-mode offset)
-	# so shooting always goes where the player was looking, not where the
-	# inspect orbit has rotated the camera.
-	var base_dir: Vector3
-	if pcam and pcam.has_method("get_aim_direction"):
-		base_dir = pcam.get_aim_direction()
-	else:
-		base_dir = camera.project_ray_normal(crosshair_screen)
+	# Direction: use the camera's ray through the crosshair pixel so that
+	# shots land exactly where the crosshair is displayed (crosshair anchor
+	# is at 35 % screen height, not at the camera centre / 50 %).
+	var base_dir: Vector3 = camera.project_ray_normal(crosshair_screen)
 
 	var space: PhysicsDirectSpaceState3D = (
 		owner.get_world_3d().direct_space_state
