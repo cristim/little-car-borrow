@@ -31,6 +31,15 @@ func _ready() -> void:
 			windshield.mesh = result["windshield"]
 			windshield.material_override = _glass_mat
 
+		# Opaque waterline cap — occludes water surface inside hull
+		var cap := MeshInstance3D.new()
+		cap.name = "WaterlineCap"
+		cap.mesh = result["waterline_cap"]
+		var cap_mat := StandardMaterial3D.new()
+		cap_mat.albedo_color = Color(0.10, 0.12, 0.14)  # dark bilge grey
+		cap.material_override = cap_mat
+		add_child(cap)
+
 
 func _init_materials() -> void:
 	_hull_mat = StandardMaterial3D.new()

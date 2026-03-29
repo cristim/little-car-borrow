@@ -69,6 +69,7 @@ func build(variant: String) -> Dictionary:
 		"cabin": cabin,
 		"windshield": windshield,
 		"engine": engine,
+		"waterline_cap": _build_waterline_cap(profiles),
 		"stern_z": stern_z,
 		"collision_size": col_size,
 	}
@@ -318,6 +319,28 @@ func _build_windshield(data: Dictionary) -> ArrayMesh:
 		Vector3(cab_hw, ws_top, ws_z),
 		Vector3(-cab_hw, ws_top, ws_z),
 	)
+	return st.commit()
+
+
+## Flat opaque plane at y=0.05, spanning the hull cross-section.
+## Occludes the water surface mesh from appearing inside the hull.
+func _build_waterline_cap(profiles: Array) -> ArrayMesh:
+	var cap_y := 0.05  # just above local waterline (y=0), beats wave crests
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for i in range(profiles.size() - 1):
+		var pa: Dictionary = profiles[i]
+		var pb: Dictionary = profiles[i + 1]
+		var za: float = float(pa["z"])
+		var zb: float = float(pb["z"])
+		var hw_a: float = float(pa["hw"]) * 0.95
+		var hw_b: float = float(pb["hw"]) * 0.95
+		_add_quad(
+			st,
+			Vector3(-hw_a, cap_y, za), Vector3(hw_a, cap_y, za),
+			Vector3(hw_b, cap_y, zb), Vector3(-hw_b, cap_y, zb),
+		)
+	st.generate_normals()
 	return st.commit()
 
 
