@@ -3,34 +3,34 @@ extends RefCounted
 ## Follows the same pattern as car_body_builder.gd — all geometry built
 ## with SurfaceTool.begin/add_vertex/commit, flat normals via _add_quad.
 
-# Fuselage dimensions
-const FUSE_HW := 1.0       # half-width
-const FUSE_HH := 0.75      # half-height
-const FUSE_HL := 2.0       # half-length (nose to rear of cabin)
+# Fuselage dimensions — scaled up so the pilot fits inside the cabin
+const FUSE_HW := 1.3       # half-width  (was 1.0)
+const FUSE_HH := 1.1       # half-height (was 0.75) — cabin top at y=1.1, above pilot head
+const FUSE_HL := 2.5       # half-length (was 2.0)
 const NOSE_TAPER := 0.6    # nose tapers to this fraction of full size
 
 # Tail boom
-const TAIL_LEN := 3.0
-const TAIL_HW := 0.25
-const TAIL_HH := 0.25
+const TAIL_LEN := 3.5      # (was 3.0)
+const TAIL_HW := 0.3       # (was 0.25)
+const TAIL_HH := 0.3       # (was 0.25)
 
 # Tail fin (vertical stabilizer)
-const FIN_HEIGHT := 0.8
-const FIN_LEN := 0.6
-const FIN_THICKNESS := 0.05
+const FIN_HEIGHT := 0.9
+const FIN_LEN := 0.7
+const FIN_THICKNESS := 0.06
 
 # Skids
-const SKID_DROP := 0.6     # how far below fuselage bottom
-const SKID_WIDTH := 0.08
+const SKID_DROP := 0.7     # how far below fuselage bottom (was 0.6)
+const SKID_WIDTH := 0.1
 const SKID_HEIGHT := 0.06
-const SKID_SPREAD := 0.7   # lateral offset from center
-const STRUT_WIDTH := 0.06
-const STRUT_DEPTH := 0.06
+const SKID_SPREAD := 0.9   # lateral offset from center (was 0.7)
+const STRUT_WIDTH := 0.07
+const STRUT_DEPTH := 0.07
 
 # Rotor
-const ROTOR_RADIUS := 3.5
-const ROTOR_BLADE_W := 0.18
-const ROTOR_BLADE_H := 0.04
+const ROTOR_RADIUS := 4.5  # (was 3.5)
+const ROTOR_BLADE_W := 0.22
+const ROTOR_BLADE_H := 0.05
 
 # Tail rotor
 const TAIL_ROTOR_RADIUS := 0.5
@@ -190,12 +190,35 @@ func build_windshield() -> ArrayMesh:
 
 func build_cockpit_seat() -> ArrayMesh:
 	## Simple bucket seat inside the cockpit (centered, forward section).
+	## Positioned at the new cabin floor y = -FUSE_HH = -1.1.
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	# Seat cushion: 0.4 wide, 0.1 tall, 0.45 deep; center at z=-0.5
-	_add_box(st, Vector3(-0.2, -0.75, -0.75), Vector3(0.2, -0.65, -0.3))
-	# Seat back: 0.4 wide, 0.55 tall, 0.08 deep; upright behind cushion
-	_add_box(st, Vector3(-0.2, -0.65, -0.78), Vector3(0.2, -0.10, -0.70))
+	# Seat cushion: 0.44 wide, 0.15 tall, 0.6 deep; at cabin floor
+	_add_box(st, Vector3(-0.22, -1.1, -1.0), Vector3(0.22, -0.95, -0.4))
+	# Seat back: 0.44 wide, 0.7 tall, 0.1 deep; upright behind cushion
+	_add_box(st, Vector3(-0.22, -0.95, -1.05), Vector3(0.22, -0.25, -0.95))
+	return st.commit()
+
+
+func build_side_windows() -> ArrayMesh:
+	## Thin glass panels on the left and right cabin walls.
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var thickness := 0.05
+	# Window spans cabin area: forward from z=-FUSE_HL+0.3 to z=+FUSE_HL*0.1
+	# Height: from y=-FUSE_HH*0.3 to y=+FUSE_HH*0.65
+	var y_lo := -FUSE_HH * 0.3
+	var y_hi := FUSE_HH * 0.65
+	var z_f := -FUSE_HL + 0.35
+	var z_r := FUSE_HL * 0.12
+	# Left pane (sits just inside the left wall)
+	_add_box(st,
+		Vector3(-FUSE_HW, y_lo, z_f),
+		Vector3(-FUSE_HW + thickness, y_hi, z_r))
+	# Right pane (symmetric)
+	_add_box(st,
+		Vector3(FUSE_HW - thickness, y_lo, z_f),
+		Vector3(FUSE_HW, y_hi, z_r))
 	return st.commit()
 
 

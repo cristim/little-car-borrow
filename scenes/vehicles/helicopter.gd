@@ -56,30 +56,39 @@ func _build_mesh() -> void:
 	seat_mesh.material_override = seat_mat
 	body.add_child(seat_mesh)
 
-	# Windshield: two semi-transparent glass panes on the nose face
+	# Shared glass material for windshield and side windows
 	var glass_mat := StandardMaterial3D.new()
 	glass_mat.albedo_color = Color(0.55, 0.75, 0.85, 0.35)
 	glass_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	glass_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+	# Windshield: two semi-transparent panes on the nose face
 	var windshield := MeshInstance3D.new()
 	windshield.name = "Windshield"
 	windshield.mesh = builder.build_windshield()
 	windshield.material_override = glass_mat
 	body.add_child(windshield)
 
+	# Side windows (left + right cabin walls)
+	var side_win := MeshInstance3D.new()
+	side_win.name = "SideWindows"
+	side_win.mesh = builder.build_side_windows()
+	side_win.material_override = glass_mat
+	body.add_child(side_win)
+
 	# Tail rotor at end of boom, offset to left side
-	# Boom rear Z = FUSE_HL + TAIL_LEN = 2.0 + 3.0 = 5.0
+	# Boom rear Z = FUSE_HL + TAIL_LEN = 2.5 + 3.5 = 6.0
 	var tail_rotor := MeshInstance3D.new()
 	tail_rotor.name = "TailRotor"
 	tail_rotor.mesh = builder.build_tail_rotor()
 	tail_rotor.material_override = rotor_mat
-	tail_rotor.position = Vector3(-0.3, 0.0, 5.0)
+	tail_rotor.position = Vector3(-0.35, 0.0, 6.0)
 	body.add_child(tail_rotor)
 
-	# Main rotor hub on a short mast above the fuselage (y=1.2 clears the pilot)
+	# Main rotor hub on mast above fuselage (y=1.5 clears cabin top at y=1.1)
 	var rotor := Node3D.new()
 	rotor.name = "Rotor"
-	rotor.position = Vector3(0.0, 1.2, 0.0)
+	rotor.position = Vector3(0.0, 1.5, 0.0)
 	add_child(rotor)
 
 	var rotor_blades := MeshInstance3D.new()
@@ -88,23 +97,23 @@ func _build_mesh() -> void:
 	rotor_blades.material_override = rotor_mat
 	rotor.add_child(rotor_blades)
 
-	# Collision capsule aligned with fuselage body
-	# Skid bottom Y = -(FUSE_HH + SKID_DROP + SKID_HEIGHT/2) = -(0.75+0.6+0.03) = -1.38
-	# CapsuleShape3D: radius=0.8, height=1.0 → half_total = 0.5+0.8 = 1.3
-	# Shape center Y so that bottom aligns with skids: y = -1.38 + 1.3 = -0.08
+	# Collision capsule — scaled to the larger fuselage
+	# Skid bottom Y = -(FUSE_HH + SKID_DROP + SKID_HEIGHT/2) = -(1.1+0.7+0.03) = -1.83
+	# CapsuleShape3D: radius=1.1, height=1.5 → half_total = 0.75+1.1 = 1.85
+	# Shape center Y = -1.83 + 1.85 = +0.02
 	var col := CollisionShape3D.new()
 	col.name = "BodyCollision"
 	var cap := CapsuleShape3D.new()
-	cap.radius = 0.8
-	cap.height = 1.0
+	cap.radius = 1.1
+	cap.height = 1.5
 	col.shape = cap
-	col.position = Vector3(0.0, -0.08, 0.0)
+	col.position = Vector3(0.0, 0.02, 0.0)
 	add_child(col)
 
 	# Exit marker: player spawns to the left on dismount
 	var marker := Marker3D.new()
 	marker.name = "DoorMarker"
-	marker.position = Vector3(-2.5, 0.0, 0.0)
+	marker.position = Vector3(-3.5, 0.0, 0.0)
 	add_child(marker)
 
 	# Flight controller
@@ -125,7 +134,7 @@ func _setup_interaction() -> void:
 
 	var shape := CollisionShape3D.new()
 	var box := BoxShape3D.new()
-	box.size = Vector3(3.5, 2.0, 5.0)
+	box.size = Vector3(5.0, 2.5, 7.0)
 	shape.shape = box
 	area.add_child(shape)
 	add_child(area)

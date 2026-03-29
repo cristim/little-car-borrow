@@ -102,3 +102,16 @@ func test_build_windshield_has_vertices() -> void:
 	var arrays: Array = mesh.surface_get_arrays(0)
 	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	assert_gt(verts.size(), 0, "Windshield mesh should have vertices")
+
+
+func test_build_side_windows_returns_mesh() -> void:
+	var mesh: ArrayMesh = (_builder as BuilderScript).build_side_windows()
+	assert_not_null(mesh, "build_side_windows should return a mesh")
+	assert_true(mesh is ArrayMesh, "Side windows should be an ArrayMesh")
+
+
+func test_build_side_windows_has_vertices() -> void:
+	var mesh: ArrayMesh = (_builder as BuilderScript).build_side_windows()
+	var arrays: Array = mesh.surface_get_arrays(0)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	assert_gt(verts.size(), 0, "Side windows mesh should have vertices")

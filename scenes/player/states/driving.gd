@@ -229,8 +229,8 @@ func physics_update(_delta: float) -> void:
 		owner.global_position = (_vehicle as Node3D).global_position
 		# If in helicopter, place player in cockpit seat facing nose
 		if _vehicle.get_node_or_null("HelicopterController"):
-			# Seat cushion top is at y=-0.65 in heli local space; player origin at feet
-			var seat_offset := Vector3(0.0, -0.65, -0.52)
+			# Seat cushion top at y=-0.95; player head ends up at ~y=+0.55 (below cabin top 1.1)
+			var seat_offset := Vector3(0.0, -0.95, -0.7)
 			owner.global_position = (_vehicle as Node3D).to_global(seat_offset)
 			# Player model faces +Z; helicopter nose is -Z — flip PI to face forward
 			owner.global_rotation = Vector3(

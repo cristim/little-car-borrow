@@ -6,8 +6,8 @@ extends RefCounted
 const PAD_SIZE := 14.0
 const PAD_THICKNESS := 0.12
 const HELIPADS_PER_CHUNK := 2
-## Spawn Y: PAD_THICKNESS + skid drop (0.6) + skid half-height (0.03) + epsilon
-const HELI_SPAWN_Y := 0.78
+## Spawn Y: FUSE_HH(1.1) + SKID_DROP(0.7) + SKID_HEIGHT/2(0.03) + epsilon
+const HELI_SPAWN_Y := 1.85
 ## Inset from chunk edge when choosing pad centre
 const EDGE_MARGIN := 12.0
 ## "H" marking dimensions
