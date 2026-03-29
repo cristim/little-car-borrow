@@ -6,7 +6,7 @@ extends Node
 ##   W / S           — pitch forward / back (translate forward / reverse)
 ##   A / D           — yaw left / right (tail rotor)
 ##   Space (jump)    — collective up (ascend)
-##   Shift (run)     — collective down (descend)
+##   Shift (sprint)  — collective down (descend)
 
 const ASCEND_FORCE := 24.0   # m/s vertical when ascending
 const DESCEND_FORCE := 90.0  # m/s vertical when descending
@@ -50,7 +50,7 @@ func physics_update(delta: float, heli: CharacterBody3D) -> void:
 	)
 	_asc_input = (
 		Input.get_action_strength("jump")
-		- Input.get_action_strength("run")
+		- Input.get_action_strength("sprint")
 	)
 
 	# Yaw
