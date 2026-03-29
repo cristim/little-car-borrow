@@ -103,21 +103,22 @@ func test_enter_shows_board_prompt_with_boat() -> void:
 	)
 
 
-func test_enter_hides_prompt_without_vehicle() -> void:
+func test_enter_does_not_emit_prompt_without_vehicle() -> void:
 	_player.nearest_vehicle = null
 	watch_signals(EventBus)
 	_state.enter()
-	assert_signal_emitted(EventBus, "hide_interaction_prompt")
+	assert_signal_not_emitted(EventBus, "hide_interaction_prompt")
+	assert_signal_not_emitted(EventBus, "show_interaction_prompt")
 
 
 # ---------------------------------------------------------------------------
 # exit() tests
 # ---------------------------------------------------------------------------
 
-func test_exit_hides_prompt() -> void:
+func test_exit_does_not_hide_prompt() -> void:
 	watch_signals(EventBus)
 	_state.exit()
-	assert_signal_emitted(EventBus, "hide_interaction_prompt")
+	assert_signal_not_emitted(EventBus, "hide_interaction_prompt")
 
 
 # ---------------------------------------------------------------------------

@@ -258,7 +258,7 @@ func test_exit_restores_player_collision() -> void:
 	_state.enter({"vehicle": _vehicle})
 	_state.exit()
 	assert_eq(_player.collision_layer, 4, "Player layer should be 4")
-	assert_eq(_player.collision_mask, 3, "Player mask should be 3")
+	assert_eq(_player.collision_mask, 115, "Player mask should be 115")
 
 
 func test_exit_clears_current_vehicle() -> void:

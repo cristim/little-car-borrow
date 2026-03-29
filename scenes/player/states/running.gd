@@ -37,7 +37,7 @@ func enter(_msg: Dictionary = {}) -> void:
 
 
 func exit() -> void:
-	EventBus.hide_interaction_prompt.emit()
+	pass
 
 
 func handle_input(event: InputEvent) -> void:
@@ -60,8 +60,6 @@ func _update_prompt() -> void:
 		) != null
 		var prompt := "Hold F to board" if is_boat else "Hold F to steal"
 		EventBus.show_interaction_prompt.emit(prompt)
-	else:
-		EventBus.hide_interaction_prompt.emit()
 
 
 func _is_over_water(pos: Vector3) -> bool:

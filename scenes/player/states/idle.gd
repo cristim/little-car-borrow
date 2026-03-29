@@ -36,12 +36,10 @@ func enter(_msg: Dictionary = {}) -> void:
 		) != null
 		var prompt := "Hold F to board" if is_boat else "Hold F to steal"
 		EventBus.show_interaction_prompt.emit(prompt)
-	else:
-		EventBus.hide_interaction_prompt.emit()
 
 
 func exit() -> void:
-	EventBus.hide_interaction_prompt.emit()
+	pass
 
 
 func handle_input(event: InputEvent) -> void:

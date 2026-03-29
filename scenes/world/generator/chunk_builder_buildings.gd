@@ -717,6 +717,19 @@ func _create_door_node(
 		mesh_inst.material_override = _building_mats[0]
 	door_node.add_child(mesh_inst)
 
+	# Physical door panel — blocks the player when closed, rotates with door_node
+	var door_body := StaticBody3D.new()
+	door_body.name = "DoorBody"
+	door_body.collision_layer = 2  # Static layer
+	door_body.collision_mask = 0
+	var door_col := CollisionShape3D.new()
+	var door_box := BoxShape3D.new()
+	door_box.size = Vector3(DOOR_WIDTH - 0.04, DOOR_HEIGHT - 0.04, 0.06)
+	door_col.shape = door_box
+	door_col.position = Vector3(-DOOR_WIDTH * 0.5, DOOR_HEIGHT * 0.5, 0.0)
+	door_body.add_child(door_col)
+	door_node.add_child(door_body)
+
 	# Interaction zone — in local space, local -Z points outward (face normal direction)
 	var area := Area3D.new()
 	area.name = "InteractionZone"

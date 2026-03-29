@@ -274,6 +274,34 @@ func test_create_door_mesh_has_box_shape() -> void:
 	assert_true(mesh_inst.mesh is BoxMesh, "Door mesh should be a BoxMesh")
 
 
+func test_create_door_node_has_door_body() -> void:
+	var builder := _make_builder()
+	var chunk := Node3D.new()
+	add_child_autofree(chunk)
+	builder._create_door_node(
+		chunk, Vector3(0, 5, 0), Vector3(10, 10, 10), 0,
+	)
+	var door: Node = chunk.get_child(0)
+	var body: Node = door.get_node_or_null("DoorBody")
+	assert_not_null(body, "Door should have a DoorBody child for physical collision")
+	assert_true(body is StaticBody3D, "DoorBody should be a StaticBody3D")
+
+
+func test_create_door_body_collision_layer_is_static() -> void:
+	var builder := _make_builder()
+	var chunk := Node3D.new()
+	add_child_autofree(chunk)
+	builder._create_door_node(
+		chunk, Vector3(0, 5, 0), Vector3(10, 10, 10), 0,
+	)
+	var door: Node = chunk.get_child(0)
+	var body: StaticBody3D = door.get_node_or_null("DoorBody") as StaticBody3D
+	assert_eq(
+		body.collision_layer, 2,
+		"DoorBody collision_layer should be 2 (Static layer)",
+	)
+
+
 # ==========================================================================
 # build() integration — door nodes appear as chunk children
 # ==========================================================================

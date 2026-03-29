@@ -202,7 +202,7 @@ func exit() -> void:
 	owner.visible = true
 	owner.set_physics_process(true)
 	owner.collision_layer = 4
-	owner.collision_mask = 3
+	owner.collision_mask = 115
 
 	_vehicle = null
 	owner.current_vehicle = null
