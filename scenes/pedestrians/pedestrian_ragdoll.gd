@@ -11,7 +11,7 @@ var _timer := 0.0
 
 func _ready() -> void:
 	gravity_scale = 1.2
-	mass = 60.0
+	mass = 75.0
 	collision_layer = 0  # doesn't collide with anything as a layer
 	collision_mask = 3   # bounces off ground + static
 

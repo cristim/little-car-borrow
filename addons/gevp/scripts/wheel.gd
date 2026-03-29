@@ -16,7 +16,7 @@ extends RayCast3D
 ## try parenting it to a [Node3D] and using that as the wheel node instead.
 @export var wheel_node : Node3D
 
-var wheel_mass := 15.0
+var wheel_mass := 20.0
 var tire_radius := 0.3
 var tire_width := 205.0
 var ackermann := 0.15
