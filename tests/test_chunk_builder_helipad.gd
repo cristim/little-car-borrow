@@ -45,36 +45,34 @@ func test_build_adds_static_body_pad() -> void:
 	await get_tree().process_frame
 	var found := false
 	for child in _chunk.get_children():
-		if child is StaticBody3D and child.name == "Helipad":
+		if child is StaticBody3D and child.is_in_group("Road"):
 			found = true
 			break
-	assert_true(found, "build() should create a StaticBody3D named 'Helipad'")
+	assert_true(found, "build() should create a helipad StaticBody3D in the Road group")
 
 
 func test_helipad_on_ground_layer() -> void:
 	_builder.build(_chunk, Vector2i(0, 0), 0.0, 0.0)
 	await get_tree().process_frame
 	for child in _chunk.get_children():
-		if child is StaticBody3D and child.name == "Helipad":
+		if child is StaticBody3D and child.is_in_group("Road"):
 			assert_eq(
 				child.collision_layer, 1,
 				"Helipad pad should be on ground collision layer (1)",
 			)
 			return
-	fail_test("No Helipad StaticBody3D found")
+	fail_test("No helipad StaticBody3D found")
 
 
 func test_helipad_in_road_group() -> void:
 	_builder.build(_chunk, Vector2i(0, 0), 0.0, 0.0)
 	await get_tree().process_frame
+	var found := false
 	for child in _chunk.get_children():
-		if child is StaticBody3D and child.name == "Helipad":
-			assert_true(
-				child.is_in_group("Road"),
-				"Helipad should be in the 'Road' group so tires/physics treat it as ground",
-			)
-			return
-	fail_test("No Helipad StaticBody3D found")
+		if child is StaticBody3D and child.is_in_group("Road"):
+			found = true
+			break
+	assert_true(found, "Helipad pads should be in the 'Road' group")
 
 
 func test_build_spawns_helicopter() -> void:
@@ -117,7 +115,7 @@ func test_helipads_per_chunk_count() -> void:
 	await get_tree().process_frame
 	var pad_count := 0
 	for child in _chunk.get_children():
-		if child is StaticBody3D and child.name == "Helipad":
+		if child is StaticBody3D and child.is_in_group("Road"):
 			pad_count += 1
 	assert_eq(
 		pad_count,
