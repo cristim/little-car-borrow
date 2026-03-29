@@ -9,7 +9,7 @@ extends Node
 ##   Shift (sprint)  — collective down (descend)
 
 const ASCEND_FORCE := 24.0   # m/s vertical when ascending
-const DESCEND_FORCE := 90.0  # m/s vertical when descending
+const DESCEND_FORCE := 8.0   # m/s vertical when descending
 const HOVER_SINK := 1.5      # very slow passive sink when no vertical input
 const FORWARD_SPEED := 42.0  # m/s forward
 const BACK_SPEED := 15.0     # m/s reverse
