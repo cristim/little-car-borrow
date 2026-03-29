@@ -3,6 +3,7 @@ extends "res://src/state_machine/state.gd"
 
 var _vehicle: Node = null
 var _original_collision_layer := 0
+var _boat_seat_vel_y := 0.0  # vertical velocity for gravity-based bench settling
 
 
 func enter(msg: Dictionary = {}) -> void:
@@ -95,6 +96,14 @@ func enter(msg: Dictionary = {}) -> void:
 	var bc := _vehicle.get_node_or_null("BoatController")
 	if bc:
 		bc.active = true
+		bc.set_passenger(75.0)  # player mass added to Archimedes displacement
+		# Start player above the bench — gravity will settle them onto the seat
+		_boat_seat_vel_y = 0.0
+		var sz_enter: float = _vehicle.get_meta("stern_z", 2.5)
+		var above_seat: Vector3 = (_vehicle as Node3D).to_global(
+			Vector3(-0.4, 0.80, sz_enter - 0.5)
+		)
+		owner.global_position = above_seat
 	var hc := _vehicle.get_node_or_null("HelicopterController")
 	if hc:
 		hc.active = true
@@ -178,6 +187,7 @@ func exit() -> void:
 		var boat_ctrl := _vehicle.get_node_or_null("BoatController")
 		if boat_ctrl:
 			boat_ctrl.active = false
+			boat_ctrl.set_passenger(0.0)  # remove player weight from buoyancy
 		var heli_ctrl := _vehicle.get_node_or_null("HelicopterController")
 		if heli_ctrl:
 			heli_ctrl.active = false
@@ -223,7 +233,7 @@ func exit() -> void:
 	owner.current_vehicle = null
 
 
-func physics_update(_delta: float) -> void:
+func physics_update(delta: float) -> void:
 	# Keep player position synced so managers spawn entities near the vehicle
 	if _vehicle and is_instance_valid(_vehicle):
 		owner.global_position = (_vehicle as Node3D).global_position
@@ -238,14 +248,24 @@ func physics_update(_delta: float) -> void:
 				(_vehicle as Node3D).global_rotation.y + PI,
 				0.0,
 			)
-		# If in boat, position player at seat near engine and animate tiller
+		# If in boat, gravity-settle player onto bench then track the boat
 		elif _vehicle.get_node_or_null("BoatController"):
-			# Sit on port (left) side near engine so right arm reaches tiller
 			var sz: float = _vehicle.get_meta("stern_z", 2.5)
-			var seat_offset := Vector3(-0.4, 0.35, sz - 0.5)
-			owner.global_position = (
-				(_vehicle as Node3D).to_global(seat_offset)
+			# Seat top is at local y=0.30 (seat_y_top in boat_body_builder)
+			var seat_world: Vector3 = (_vehicle as Node3D).to_global(
+				Vector3(-0.4, 0.30, sz - 0.5)
 			)
+			# Apply gravity until player reaches seat surface
+			if owner.global_position.y > seat_world.y + 0.005:
+				_boat_seat_vel_y -= 9.8 * delta
+				var new_y: float = owner.global_position.y + _boat_seat_vel_y * delta
+				if new_y <= seat_world.y:
+					new_y = seat_world.y
+					_boat_seat_vel_y = 0.0
+				owner.global_position = Vector3(seat_world.x, new_y, seat_world.z)
+			else:
+				_boat_seat_vel_y = 0.0
+				owner.global_position = seat_world
 			# Player model faces +Z, boat forward is -Z — add PI to face bow
 			owner.global_rotation = Vector3(
 				0.0,

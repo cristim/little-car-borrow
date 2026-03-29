@@ -25,6 +25,8 @@ class StubVehicleController:
 class StubBoatController:
 	extends Node
 	var active := false
+	func set_passenger(_mass: float) -> void:
+		pass
 
 
 class StubLights:
