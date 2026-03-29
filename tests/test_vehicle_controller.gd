@@ -32,31 +32,12 @@ func test_vehicle_defaults_null() -> void:
 # Inactive state zeros all inputs
 # ==========================================================================
 
-func test_inactive_zeros_steering() -> void:
+func test_inactive_returns_without_touching_inputs() -> void:
+	# When inactive, the controller must return early so it does NOT
+	# override brake/handbrake values that were set by driving.gd on exit.
 	assert_true(
-		_src.contains("vehicle.steering_input = 0.0"),
-		"Inactive state should zero steering_input",
-	)
-
-
-func test_inactive_zeros_throttle() -> void:
-	assert_true(
-		_src.contains("vehicle.throttle_input = 0.0"),
-		"Inactive state should zero throttle_input",
-	)
-
-
-func test_inactive_zeros_brake() -> void:
-	assert_true(
-		_src.contains("vehicle.brake_input = 0.0"),
-		"Inactive state should zero brake_input",
-	)
-
-
-func test_inactive_zeros_handbrake() -> void:
-	assert_true(
-		_src.contains("vehicle.handbrake_input = 0.0"),
-		"Inactive state should zero handbrake_input",
+		_src.contains("if not active:") and _src.contains("return"),
+		"Inactive state should return early without modifying inputs",
 	)
 
 
