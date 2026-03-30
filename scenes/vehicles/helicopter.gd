@@ -32,6 +32,7 @@ func _build_mesh() -> void:
 
 	var body_mat := StandardMaterial3D.new()
 	body_mat.albedo_color = Color(0.15, 0.15, 0.18, 1.0)
+	body_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 
 	var rotor_mat := StandardMaterial3D.new()
 	rotor_mat.albedo_color = Color(0.1, 0.1, 0.1, 1.0)
@@ -41,10 +42,9 @@ func _build_mesh() -> void:
 	body.name = "Body"
 	add_child(body)
 
-	# Glass material for fuselage surface 1 (front/left/right faces)
+	# Fuselage surface 1 (front/sides): opaque, double-sided like the body
 	var glass_mat := StandardMaterial3D.new()
-	glass_mat.albedo_color = Color(0.55, 0.75, 0.85, 0.35)
-	glass_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	glass_mat.albedo_color = Color(0.55, 0.75, 0.85, 1.0)
 	glass_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 
 	# Fuselage: surface 0 = opaque body, surface 1 = glass faces

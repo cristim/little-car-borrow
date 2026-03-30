@@ -171,6 +171,35 @@ func test_fuselage_has_two_surfaces() -> void:
 	)
 
 
+func test_fuselage_body_surface_is_double_sided() -> void:
+	var fuse: MeshInstance3D = _heli.get_node_or_null("Body/Fuselage") as MeshInstance3D
+	assert_not_null(fuse)
+	var mat := fuse.mesh.surface_get_material(0) as StandardMaterial3D
+	assert_not_null(mat, "Surface 0 should have a material")
+	assert_eq(
+		mat.cull_mode,
+		BaseMaterial3D.CULL_DISABLED,
+		"Body material must be double-sided so bottom is visible from above",
+	)
+
+
+func test_fuselage_glass_surface_is_opaque_and_double_sided() -> void:
+	var fuse: MeshInstance3D = _heli.get_node_or_null("Body/Fuselage") as MeshInstance3D
+	assert_not_null(fuse)
+	var mat := fuse.mesh.surface_get_material(1) as StandardMaterial3D
+	assert_not_null(mat, "Surface 1 should have a material")
+	assert_eq(
+		mat.transparency,
+		BaseMaterial3D.TRANSPARENCY_DISABLED,
+		"Glass surface should be opaque",
+	)
+	assert_eq(
+		mat.cull_mode,
+		BaseMaterial3D.CULL_DISABLED,
+		"Glass surface must be double-sided",
+	)
+
+
 func test_rotor_raised_above_fuselage_top() -> void:
 	# Rotor hub must be above y=1.4 so the disk clears the enlarged cabin
 	var rotor: Node3D = _heli.get_node_or_null("Rotor") as Node3D
