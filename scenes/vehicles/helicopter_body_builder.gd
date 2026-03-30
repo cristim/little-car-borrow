@@ -55,32 +55,29 @@ func build_fuselage() -> ArrayMesh:
 	var zr := FUSE_HL   # rear
 
 	var nhw := FUSE_HW * NOSE_TAPER
-	var nhh := FUSE_HH * NOSE_TAPER
-	var nyb := -nhh
-	var nyt := nhh
 
 	# ── GLASS faces (front + upper half of left/right) ───────────────────────
-	# Front face (windshield — tapered nose, flat bottom)
+	# Front face (windshield — tapered nose, full height)
 	_add_quad(stg,
 		Vector3(-nhw, yb, zf), Vector3(nhw, yb, zf),
-		Vector3(nhw, nyt, zf), Vector3(-nhw, nyt, zf))
+		Vector3(nhw, yt, zf), Vector3(-nhw, yt, zf))
 	# Left face — upper half (glass) from y=0 to top
 	_add_quad(stg,
 		Vector3(-FUSE_HW, 0.0, zr), Vector3(-nhw, 0.0, zf),
-		Vector3(-nhw, nyt, zf), Vector3(-FUSE_HW, yt, zr))
+		Vector3(-nhw, yt, zf), Vector3(-FUSE_HW, yt, zr))
 	# Right face — upper half (glass) from y=0 to top
 	_add_quad(stg,
 		Vector3(nhw, 0.0, zf), Vector3(FUSE_HW, 0.0, zr),
-		Vector3(FUSE_HW, yt, zr), Vector3(nhw, nyt, zf))
+		Vector3(FUSE_HW, yt, zr), Vector3(nhw, yt, zf))
 
 	# ── SOLID faces ───────────────────────────────────────────────────────────
 	# Rear face
 	_add_quad(st,
 		Vector3(FUSE_HW, yb, zr), Vector3(-FUSE_HW, yb, zr),
 		Vector3(-FUSE_HW, yt, zr), Vector3(FUSE_HW, yt, zr))
-	# Top face (trapezoid: narrow at nose, wide at rear)
+	# Top face — flat at yt so the rotor hub sits flush on the roof
 	_add_quad(st,
-		Vector3(-nhw, nyt, zf), Vector3(nhw, nyt, zf),
+		Vector3(-nhw, yt, zf), Vector3(nhw, yt, zf),
 		Vector3(FUSE_HW, yt, zr), Vector3(-FUSE_HW, yt, zr))
 	# Bottom face — flat at yb across full width
 	_add_quad(st,
@@ -113,17 +110,9 @@ func build_fuselage() -> ArrayMesh:
 		Vector3(TAIL_HW, -TAIL_HH, zr), Vector3(TAIL_HW, -TAIL_HH, tz),
 		Vector3(TAIL_HW, TAIL_HH, tz), Vector3(TAIL_HW, TAIL_HH, zr))
 
-	# Tail fin (vertical stabilizer at end of boom)
-	var fin_zf := tz - FIN_LEN
-	_add_quad(st,
-		Vector3(-FIN_THICKNESS, TAIL_HH, fin_zf),
-		Vector3(FIN_THICKNESS, TAIL_HH, fin_zf),
-		Vector3(FIN_THICKNESS, TAIL_HH + FIN_HEIGHT, tz),
-		Vector3(-FIN_THICKNESS, TAIL_HH + FIN_HEIGHT, tz))
-	_add_quad(st,
-		Vector3(FIN_THICKNESS, TAIL_HH, fin_zf),
-		Vector3(-FIN_THICKNESS, TAIL_HH, fin_zf),
-		Vector3(-FIN_THICKNESS, TAIL_HH + FIN_HEIGHT, tz),
+	# Tail fin (vertical stabilizer) — proper 3D box, no coplanar duplication
+	_add_box(st,
+		Vector3(-FIN_THICKNESS, TAIL_HH, tz - FIN_LEN),
 		Vector3(FIN_THICKNESS, TAIL_HH + FIN_HEIGHT, tz))
 
 	# Landing skids (two parallel rails + two vertical struts each)
