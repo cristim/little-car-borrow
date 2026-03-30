@@ -183,15 +183,15 @@ func test_fuselage_body_surface_is_double_sided() -> void:
 	)
 
 
-func test_fuselage_glass_surface_is_opaque_and_double_sided() -> void:
+func test_fuselage_glass_surface_is_translucent_and_double_sided() -> void:
 	var fuse: MeshInstance3D = _heli.get_node_or_null("Body/Fuselage") as MeshInstance3D
 	assert_not_null(fuse)
 	var mat := fuse.mesh.surface_get_material(1) as StandardMaterial3D
 	assert_not_null(mat, "Surface 1 should have a material")
 	assert_eq(
 		mat.transparency,
-		BaseMaterial3D.TRANSPARENCY_DISABLED,
-		"Glass surface should be opaque",
+		BaseMaterial3D.TRANSPARENCY_ALPHA,
+		"Glass surface should be translucent",
 	)
 	assert_eq(
 		mat.cull_mode,
