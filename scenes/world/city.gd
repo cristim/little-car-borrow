@@ -6,8 +6,8 @@ extends Node3D
 ## Performance: meshes merged via SurfaceTool, compound collision bodies,
 ## shared material palette, MultiMesh trees. ~22 draw calls per chunk.
 
-const CHUNK_LOAD_RADIUS := 2.5  # in grid_span units — loads 5x5 grid around player
-const CHUNK_UNLOAD_RADIUS := 3.5
+const CHUNK_LOAD_RADIUS := 2.0  # in grid_span units — loads ~4x4 grid around player
+const CHUNK_UNLOAD_RADIUS := 3.0
 const UPDATE_INTERVAL := 0.5
 const SCAN_RANGE := 5  # check -5..+5 tiles around player (boundary can extend ~4.6 tiles)
 const LOOKAHEAD_TIME := 3.0  # seconds of velocity prediction
