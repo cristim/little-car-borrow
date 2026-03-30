@@ -75,10 +75,17 @@ func _build_mesh() -> void:
 	tail_rotor.position = Vector3(-0.35, 0.0, 6.0)
 	body.add_child(tail_rotor)
 
-	# Main rotor hub on mast above fuselage (y=1.5 clears cabin top at y=1.1)
+	# Rotor hub fairing + mast (visual, tilts with body)
+	var hub_mesh := MeshInstance3D.new()
+	hub_mesh.name = "RotorHub"
+	hub_mesh.mesh = builder.build_rotor_hub()
+	hub_mesh.material_override = rotor_mat
+	body.add_child(hub_mesh)
+
+	# Main rotor disk above mast (y=2.0 clears cabin top at y=1.4)
 	var rotor := Node3D.new()
 	rotor.name = "Rotor"
-	rotor.position = Vector3(0.0, 1.5, 0.0)
+	rotor.position = Vector3(0.0, 2.0, 0.0)
 	add_child(rotor)
 
 	var rotor_blades := MeshInstance3D.new()
@@ -87,17 +94,17 @@ func _build_mesh() -> void:
 	rotor_blades.material_override = rotor_mat
 	rotor.add_child(rotor_blades)
 
-	# Collision capsule — scaled to the larger fuselage
-	# Skid bottom Y = -(FUSE_HH + SKID_DROP + SKID_HEIGHT/2) = -(1.1+0.7+0.03) = -1.83
-	# CapsuleShape3D: radius=1.1, height=1.5 → half_total = 0.75+1.1 = 1.85
-	# Shape center Y = -1.83 + 1.85 = +0.02
+	# Collision capsule — spans from skid bottom to fuselage top
+	# Skid bottom Y = -(FUSE_HH + SKID_DROP + SKID_HEIGHT/2) = -(1.4+0.7+0.03) = -2.13
+	# CapsuleShape3D: radius=1.1, height=3.5 → half_total = 1.75
+	# Shape center Y midpoint of 1.4 and -2.13 ≈ -0.4
 	var col := CollisionShape3D.new()
 	col.name = "BodyCollision"
 	var cap := CapsuleShape3D.new()
 	cap.radius = 1.1
-	cap.height = 1.5
+	cap.height = 3.5
 	col.shape = cap
-	col.position = Vector3(0.0, 0.02, 0.0)
+	col.position = Vector3(0.0, -0.4, 0.0)
 	add_child(col)
 
 	# Exit marker: player spawns to the left on dismount

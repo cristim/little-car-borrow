@@ -162,6 +162,11 @@ func test_helicopter_has_cockpit_seat() -> void:
 	assert_not_null(seat, "Helicopter should have a CockpitSeat node")
 
 
+func test_helicopter_has_rotor_hub() -> void:
+	var hub: Node = _heli.get_node_or_null("Body/RotorHub")
+	assert_not_null(hub, "Helicopter should have a Body/RotorHub node")
+
+
 func test_fuselage_has_two_surfaces() -> void:
 	var fuse: MeshInstance3D = _heli.get_node_or_null("Body/Fuselage") as MeshInstance3D
 	assert_not_null(fuse)

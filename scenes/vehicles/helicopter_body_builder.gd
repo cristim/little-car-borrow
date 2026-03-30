@@ -5,7 +5,7 @@ extends RefCounted
 
 # Fuselage dimensions — scaled up so the pilot fits inside the cabin
 const FUSE_HW := 1.3       # half-width  (was 1.0)
-const FUSE_HH := 1.1       # half-height (was 0.75) — cabin top at y=1.1, above pilot head
+const FUSE_HH := 1.4       # half-height — cabin top at y=1.4, pilot fits fully inside
 const FUSE_HL := 2.5       # half-length (was 2.0)
 const NOSE_TAPER := 0.6    # nose tapers to this fraction of full size
 
@@ -16,8 +16,8 @@ const TAIL_HH := 0.3       # (was 0.25)
 
 # Tail fin (vertical stabilizer)
 const FIN_HEIGHT := 0.9
-const FIN_LEN := 0.7
-const FIN_THICKNESS := 0.06
+const FIN_LEN := 2.0       # elongated along Z for proper stabilizer shape
+const FIN_THICKNESS := 0.12
 
 # Skids
 const SKID_DROP := 0.7     # how far below fuselage bottom (was 0.6)
@@ -59,18 +59,18 @@ func build_fuselage() -> ArrayMesh:
 	var nyb := -nhh
 	var nyt := nhh
 
-	# ── GLASS faces (front + left + right) ───────────────────────────────────
-	# Front face (windshield — tapered nose)
+	# ── GLASS faces (front + upper half of left/right) ───────────────────────
+	# Front face (windshield — tapered nose, flat bottom)
 	_add_quad(stg,
-		Vector3(-nhw, nyb, zf), Vector3(nhw, nyb, zf),
+		Vector3(-nhw, yb, zf), Vector3(nhw, yb, zf),
 		Vector3(nhw, nyt, zf), Vector3(-nhw, nyt, zf))
-	# Left face (full trapezoidal side panel)
+	# Left face — upper half (glass) from y=0 to top
 	_add_quad(stg,
-		Vector3(-FUSE_HW, yb, zr), Vector3(-nhw, nyb, zf),
+		Vector3(-FUSE_HW, 0.0, zr), Vector3(-nhw, 0.0, zf),
 		Vector3(-nhw, nyt, zf), Vector3(-FUSE_HW, yt, zr))
-	# Right face
+	# Right face — upper half (glass) from y=0 to top
 	_add_quad(stg,
-		Vector3(nhw, nyb, zf), Vector3(FUSE_HW, yb, zr),
+		Vector3(nhw, 0.0, zf), Vector3(FUSE_HW, 0.0, zr),
 		Vector3(FUSE_HW, yt, zr), Vector3(nhw, nyt, zf))
 
 	# ── SOLID faces ───────────────────────────────────────────────────────────
@@ -82,10 +82,18 @@ func build_fuselage() -> ArrayMesh:
 	_add_quad(st,
 		Vector3(-nhw, nyt, zf), Vector3(nhw, nyt, zf),
 		Vector3(FUSE_HW, yt, zr), Vector3(-FUSE_HW, yt, zr))
-	# Bottom face
+	# Bottom face — flat at yb across full width
 	_add_quad(st,
-		Vector3(-nhw, nyb, zf), Vector3(-FUSE_HW, yb, zr),
-		Vector3(FUSE_HW, yb, zr), Vector3(nhw, nyb, zf))
+		Vector3(-nhw, yb, zf), Vector3(-FUSE_HW, yb, zr),
+		Vector3(FUSE_HW, yb, zr), Vector3(nhw, yb, zf))
+	# Left face — lower half (solid) from yb to y=0
+	_add_quad(st,
+		Vector3(-FUSE_HW, yb, zr), Vector3(-nhw, yb, zf),
+		Vector3(-nhw, 0.0, zf), Vector3(-FUSE_HW, 0.0, zr))
+	# Right face — lower half (solid) from yb to y=0
+	_add_quad(st,
+		Vector3(nhw, yb, zf), Vector3(FUSE_HW, yb, zr),
+		Vector3(FUSE_HW, 0.0, zr), Vector3(nhw, 0.0, zf))
 
 	# Tail boom: extends from fuselage rear
 	var tz := zr + TAIL_LEN
@@ -178,13 +186,25 @@ func build_tail_rotor() -> ArrayMesh:
 
 func build_cockpit_seat() -> ArrayMesh:
 	## Simple bucket seat inside the cockpit (centered, forward section).
-	## Positioned at the new cabin floor y = -FUSE_HH = -1.1.
+	## Positioned at cabin floor y = -FUSE_HH.
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	# Seat cushion: 0.44 wide, 0.15 tall, 0.6 deep; at cabin floor
-	_add_box(st, Vector3(-0.22, -1.1, -1.0), Vector3(0.22, -0.95, -0.4))
+	_add_box(st, Vector3(-0.22, -FUSE_HH, -1.0), Vector3(0.22, -FUSE_HH + 0.15, -0.4))
 	# Seat back: 0.44 wide, 0.7 tall, 0.1 deep; upright behind cushion
-	_add_box(st, Vector3(-0.22, -0.95, -1.05), Vector3(0.22, -0.25, -0.95))
+	_add_box(st, Vector3(-0.22, -FUSE_HH + 0.15, -1.05), Vector3(0.22, -FUSE_HH + 0.85, -0.95))
+	return st.commit()
+
+
+func build_rotor_hub() -> ArrayMesh:
+	## Hub fairing + mast connecting fuselage roof to rotor disk.
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	# Hub fairing: box sitting on fuselage roof
+	_add_box(st, Vector3(-0.22, FUSE_HH, -0.22), Vector3(0.22, FUSE_HH + 0.3, 0.22))
+	# Mast: thin box rising from hub to rotor disk
+	_add_box(st, Vector3(-0.07, FUSE_HH + 0.3, -0.07), Vector3(0.07, FUSE_HH + 0.6, 0.07))
+	st.generate_normals()
 	return st.commit()
 
 
