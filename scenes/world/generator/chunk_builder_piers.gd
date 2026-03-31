@@ -169,13 +169,22 @@ func _build_pier_geometry(
 	mesh_inst.material_override = _wood_mat
 	body.add_child(mesh_inst)
 
-	# Deck collision
+	# Deck collision — box dimensions must follow pier_dir so X-axis piers
+	# get the correct 12 m dimension on X, not on Z.
 	var col := CollisionShape3D.new()
 	var box := BoxShape3D.new()
-	box.size = Vector3(PIER_WIDTH, 0.15, PIER_LENGTH)
+	var box_thickness := 0.5
+	var col_len_x: float = (
+		PIER_LENGTH * absf(pier_dir.x) + PIER_WIDTH * absf(pier_dir.z)
+	)
+	var col_len_z: float = (
+		PIER_LENGTH * absf(pier_dir.z) + PIER_WIDTH * absf(pier_dir.x)
+	)
+	box.size = Vector3(col_len_x, box_thickness, col_len_z)
 	col.shape = box
+	# Centre the box so its top face sits flush with the deck surface.
 	var deck_center := shore_pos + pier_dir * PIER_LENGTH * 0.5
-	deck_center.y = deck_y
+	deck_center.y = deck_y - box_thickness * 0.5
 	col.position = deck_center
 	body.add_child(col)
 

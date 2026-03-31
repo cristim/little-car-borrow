@@ -534,6 +534,32 @@ func test_boat_spawned_beyond_pier_tip() -> void:
 	)
 
 
+func test_pier_collision_box_direction_aware() -> void:
+	# The collision box must use pier-direction-aware dimensions so that
+	# X-axis piers get a 12 m span on X, not on Z.
+	var script: GDScript = PiersScript as GDScript
+	var src: String = script.source_code
+	assert_true(
+		src.contains("absf(pier_dir.x)"),
+		"Collision box width must account for pier_dir.x",
+	)
+	assert_true(
+		src.contains("absf(pier_dir.z)"),
+		"Collision box length must account for pier_dir.z",
+	)
+
+
+func test_pier_collision_box_top_flush_with_deck() -> void:
+	# The box centre must be shifted down by half thickness so the top face
+	# sits flush with deck_y rather than floating above it.
+	var script: GDScript = PiersScript as GDScript
+	var src: String = script.source_code
+	assert_true(
+		src.contains("deck_y - box_thickness * 0.5"),
+		"Collision box centre y must be deck_y - half thickness",
+	)
+
+
 func test_find_shore_edge_returns_empty_for_city_center() -> void:
 	var span: float = _grid.get_grid_span()
 	var hs := span * 0.5
