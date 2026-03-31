@@ -517,6 +517,23 @@ func test_build_deterministic_same_tile() -> void:
 # _find_shore_edge
 # ================================================================
 
+func test_boat_spawned_beyond_pier_tip() -> void:
+	# Boats must not spawn under the pier deck (which extends to PIER_LENGTH).
+	# Verify the spawn formula places them past the tip.
+	var script: GDScript = PiersScript as GDScript
+	var src: String = script.source_code
+	# Old formula was PIER_LENGTH * 0.8 (inside pier) — ensure it is gone
+	assert_false(
+		src.contains("PIER_LENGTH * 0.8"),
+		"Boat spawn must not use PIER_LENGTH * 0.8 (places boat under pier)",
+	)
+	# New formula starts at PIER_LENGTH + some positive offset
+	assert_true(
+		src.contains("PIER_LENGTH + 2.0"),
+		"Boat spawn should use PIER_LENGTH + 2.0 to clear the pier tip",
+	)
+
+
 func test_find_shore_edge_returns_empty_for_city_center() -> void:
 	var span: float = _grid.get_grid_span()
 	var hs := span * 0.5

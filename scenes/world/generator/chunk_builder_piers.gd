@@ -232,10 +232,13 @@ func _spawn_boats(
 		var variant: String = BOAT_VARIANTS[rng.randi() % BOAT_VARIANTS.size()]
 		var result: Dictionary = _boat_builder.build(variant)
 
-		# Position at pier end, offset to side
+		# Position beyond the pier tip so boats can't get stuck under the dock.
+		# PIER_LENGTH + 2.0 gives 2 m clearance past the pier end.
+		# Cross offset of PIER_WIDTH * 0.5 + 3.5 keeps boats clear of the
+		# pier side and of the shore on either side.
 		var side: float = -1.0 if i == 0 else 1.0
-		var boat_pos := shore_pos + pier_dir * (PIER_LENGTH * 0.8 + float(i) * 4.0)
-		boat_pos += cross * (PIER_WIDTH * 0.5 + 2.0) * side
+		var boat_pos := shore_pos + pier_dir * (PIER_LENGTH + 2.0 + float(i) * 4.0)
+		boat_pos += cross * (PIER_WIDTH * 0.5 + 3.5) * side
 		boat_pos.y = SEA_LEVEL + 0.3
 
 		var boat := _build_boat_node(result, variant, boat_pos, pier_dir)
