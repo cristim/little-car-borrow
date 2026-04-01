@@ -97,11 +97,13 @@ func enter(msg: Dictionary = {}) -> void:
 	if bc:
 		bc.active = true
 		bc.set_passenger(75.0)  # player mass added to Archimedes displacement
-		# Start player above the bench — gravity will settle them onto the seat
+		# Seat top is at local y=0.30; hip pivot is 0.80 above player origin,
+		# so the player origin must be at seat_top - hip_offset = 0.30 - 0.80 = -0.50.
+		# Start 0.40 m above the final seat position so gravity drops them in.
 		_boat_seat_vel_y = 0.0
 		var sz_enter: float = _vehicle.get_meta("stern_z", 2.5)
 		var above_seat: Vector3 = (_vehicle as Node3D).to_global(
-			Vector3(-0.4, 0.80, sz_enter - 0.5)
+			Vector3(-0.4, -0.10, sz_enter - 0.5)
 		)
 		owner.global_position = above_seat
 	var hc := _vehicle.get_node_or_null("HelicopterController")
@@ -251,9 +253,10 @@ func physics_update(delta: float) -> void:
 		# If in boat, gravity-settle player onto bench then track the boat
 		elif _vehicle.get_node_or_null("BoatController"):
 			var sz: float = _vehicle.get_meta("stern_z", 2.5)
-			# Seat top is at local y=0.30 (seat_y_top in boat_body_builder)
+			# Player origin is at feet; hip pivot is 0.80 m above origin.
+			# Seat top (local y=0.30) must align with hips: origin_y = 0.30 - 0.80 = -0.50
 			var seat_world: Vector3 = (_vehicle as Node3D).to_global(
-				Vector3(-0.4, 0.30, sz - 0.5)
+				Vector3(-0.4, -0.50, sz - 0.5)
 			)
 			# Apply gravity until player reaches seat surface
 			if owner.global_position.y > seat_world.y + 0.005:
