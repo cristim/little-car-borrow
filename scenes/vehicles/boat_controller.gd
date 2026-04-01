@@ -81,10 +81,12 @@ func _physics_process(delta: float) -> void:
 			_body.basis * stern_offset,
 		)
 
-	# Rotate the visual engine pivot to match steering
+	# Rotate the visual engine pivot to match steering.
+	# Sign matches steer_angle used for thrust (both negated) so the
+	# pivot visually agrees with the direction the boat is turning.
 	var engine_pivot: Node3D = _body.get_node_or_null("EnginePivot")
 	if engine_pivot:
-		var target_angle: float = steer * MAX_STEER_ANGLE
+		var target_angle: float = -steer * MAX_STEER_ANGLE
 		engine_pivot.rotation.y = lerpf(
 			engine_pivot.rotation.y, target_angle, 0.15,
 		)

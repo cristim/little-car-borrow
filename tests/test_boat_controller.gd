@@ -214,6 +214,19 @@ func test_engine_pivot_visual_steering() -> void:
 	)
 
 
+func test_engine_pivot_sign_matches_thrust_angle() -> void:
+	# Both steer_angle (thrust) and engine pivot target_angle must use
+	# the same sign (-steer) so the visual pivot agrees with boat turn direction.
+	assert_true(
+		_src.contains("steer_angle: float = -steer * MAX_STEER_ANGLE"),
+		"Thrust steer_angle should be -steer * MAX_STEER_ANGLE",
+	)
+	assert_true(
+		_src.contains("target_angle: float = -steer * MAX_STEER_ANGLE"),
+		"Engine pivot target_angle must match thrust sign (-steer)",
+	)
+
+
 func test_wave_height_uses_sin() -> void:
 	assert_true(
 		_src.contains("WAVE_AMPLITUDE * sin("),
