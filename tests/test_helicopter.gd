@@ -37,8 +37,8 @@ func test_helicopter_has_fuselage() -> void:
 
 
 func test_helicopter_has_rotor() -> void:
-	var rotor := _heli.get_node_or_null("Rotor")
-	assert_not_null(rotor, "Helicopter should have a Rotor node")
+	var rotor := _heli.get_node_or_null("Body/Rotor")
+	assert_not_null(rotor, "Helicopter should have a Body/Rotor node")
 
 
 func test_helicopter_has_tail_rotor() -> void:
@@ -207,7 +207,7 @@ func test_fuselage_glass_surface_is_translucent_and_double_sided() -> void:
 
 func test_rotor_raised_above_fuselage_top() -> void:
 	# Rotor hub must be above y=1.4 so the disk clears the enlarged cabin
-	var rotor: Node3D = _heli.get_node_or_null("Rotor") as Node3D
+	var rotor: Node3D = _heli.get_node_or_null("Body/Rotor") as Node3D
 	assert_not_null(rotor, "Rotor node should exist")
 	assert_gt(rotor.position.y, 1.4, "Rotor hub should be above y=1.4 to clear pilot")
 

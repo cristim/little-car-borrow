@@ -76,7 +76,7 @@ func physics_update(delta: float, heli: CharacterBody3D) -> void:
 
 	# Rotor spin animation
 	_rotor_angle += ROTOR_SPIN * delta
-	var rotor: Node3D = heli.get_node_or_null("Rotor") as Node3D
+	var rotor: Node3D = heli.get_node_or_null("Body/Rotor") as Node3D
 	if rotor:
 		rotor.rotation.y = _rotor_angle
 

@@ -82,11 +82,11 @@ func _build_mesh() -> void:
 	hub_mesh.material_override = rotor_mat
 	body.add_child(hub_mesh)
 
-	# Main rotor disk above mast (y=2.0 clears cabin top at y=1.4)
+	# Main rotor disk — child of Body so it tilts with the fuselage during flight
 	var rotor := Node3D.new()
 	rotor.name = "Rotor"
 	rotor.position = Vector3(0.0, 2.0, 0.0)
-	add_child(rotor)
+	body.add_child(rotor)
 
 	var rotor_blades := MeshInstance3D.new()
 	rotor_blades.name = "RotorBlades"
