@@ -62,8 +62,9 @@ func _ready() -> void:
 		add_child(light)
 		_taillights.append(light)
 		# Visible fixture mesh (rear-facing quad)
+		# Offset 0.11 places the quad 3 cm past the bumper outer face (bump_d=0.08)
 		var fixture := _create_fixture(
-			offset + Vector3(0.0, 0.0, 0.01),
+			offset + Vector3(0.0, 0.0, 0.11),
 			TAILLIGHT_FIXTURE_SIZE,
 			Color(1.0, 0.1, 0.05),
 			Color(0.4, 0.05, 0.02)
@@ -85,7 +86,7 @@ func _ready() -> void:
 		_reverse_lights.append(light)
 		# Visible fixture mesh (rear-facing quad)
 		var fixture := _create_fixture(
-			offset + Vector3(0.0, 0.0, 0.01),
+			offset + Vector3(0.0, 0.0, 0.11),
 			REVERSE_FIXTURE_SIZE,
 			Color(1.0, 1.0, 1.0),
 			Color(0.3, 0.3, 0.3)
