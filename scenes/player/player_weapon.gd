@@ -5,28 +5,28 @@ extends Node
 
 const WEAPONS := [
 	{
-		"name": "Pistol", "range": 50.0, "damage": 25.0, "cooldown": 0.3,
+		"name": "Pistol", "range": 80.0, "damage": 25.0, "cooldown": 0.3,
 		"auto": false, "spread": 0.0, "pellets": 1, "crime_mult": 1.0,
 		"body": Vector3(0.06, 0.06, 0.2), "muzzle_z": -0.2,
 		"snap_dur": 0.005, "body_dur": 0.06, "tail_decay": 6.0,
 		"base_freq": 200.0, "end_freq": 60.0, "elbow": -0.05,
 	},
 	{
-		"name": "SMG", "range": 40.0, "damage": 12.0, "cooldown": 0.08,
+		"name": "SMG", "range": 70.0, "damage": 12.0, "cooldown": 0.08,
 		"auto": true, "spread": 0.03, "pellets": 1, "crime_mult": 1.0,
 		"body": Vector3(0.06, 0.08, 0.25), "muzzle_z": -0.25,
 		"snap_dur": 0.003, "body_dur": 0.03, "tail_decay": 10.0,
 		"base_freq": 280.0, "end_freq": 100.0, "elbow": -0.05,
 	},
 	{
-		"name": "Shotgun", "range": 25.0, "damage": 60.0, "cooldown": 0.8,
+		"name": "Shotgun", "range": 40.0, "damage": 60.0, "cooldown": 0.8,
 		"auto": false, "spread": 0.08, "pellets": 6, "crime_mult": 1.5,
 		"body": Vector3(0.08, 0.06, 0.3), "muzzle_z": -0.3,
 		"snap_dur": 0.008, "body_dur": 0.08, "tail_decay": 4.0,
 		"base_freq": 160.0, "end_freq": 40.0, "elbow": -0.4,
 	},
 	{
-		"name": "Rifle", "range": 100.0, "damage": 40.0, "cooldown": 0.5,
+		"name": "Rifle", "range": 200.0, "damage": 40.0, "cooldown": 0.5,
 		"auto": false, "spread": 0.005, "pellets": 1, "crime_mult": 1.2,
 		"body": Vector3(0.04, 0.04, 0.4), "muzzle_z": -0.4,
 		"snap_dur": 0.004, "body_dur": 0.05, "tail_decay": 5.0,

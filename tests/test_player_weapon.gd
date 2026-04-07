@@ -344,6 +344,21 @@ func test_weapons_array_size() -> void:
 	assert_eq(WeaponScript.WEAPONS.size(), 4, "Should have 4 weapons")
 
 
+func test_weapon_ranges() -> void:
+	assert_almost_eq(
+		float(WeaponScript.WEAPONS[0]["range"]), 80.0, 0.01, "Pistol range 80 m",
+	)
+	assert_almost_eq(
+		float(WeaponScript.WEAPONS[1]["range"]), 70.0, 0.01, "SMG range 70 m",
+	)
+	assert_almost_eq(
+		float(WeaponScript.WEAPONS[2]["range"]), 40.0, 0.01, "Shotgun range 40 m",
+	)
+	assert_almost_eq(
+		float(WeaponScript.WEAPONS[3]["range"]), 200.0, 0.01, "Rifle range 200 m",
+	)
+
+
 func test_vehicle_impulse_positive() -> void:
 	assert_gt(
 		WeaponScript.VEHICLE_IMPULSE, 0.0,
