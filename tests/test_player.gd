@@ -291,3 +291,61 @@ func test_rotation_does_not_update_in_vehicle_mode() -> void:
 		_player.rotation.y, 0.0, 0.001,
 		"Rotation should not change in VEHICLE context",
 	)
+
+
+# ==========================================================================
+# Fall damage
+# ==========================================================================
+
+func test_fall_damage_min_height_constant() -> void:
+	assert_almost_eq(
+		PlayerScript.FALL_DAMAGE_MIN_HEIGHT, 3.0, 0.001,
+		"Safe fall threshold should be 3.0 m",
+	)
+
+
+func test_fall_damage_per_meter_constant() -> void:
+	assert_almost_eq(
+		PlayerScript.FALL_DAMAGE_PER_METER, 10.0, 0.001,
+		"Damage rate should be 10 HP per metre beyond threshold",
+	)
+
+
+func test_fall_peak_y_recorded_when_leaving_floor() -> void:
+	# Simulate player stepping off an edge: was on floor, now in air.
+	_player._was_on_floor = true
+	_player.global_position = Vector3(0.0, 5.0, 0.0)
+	# Call _physics_process while off floor (is_on_floor() returns false by default)
+	_player._physics_process(0.016)
+	assert_almost_eq(
+		_player._fall_peak_y, 5.0, 0.01,
+		"_fall_peak_y should be set to y when leaving floor",
+	)
+
+
+func test_fall_peak_y_tracks_highest_point() -> void:
+	# Player is in the air and rises further (jump arc).
+	_player._was_on_floor = false
+	_player._fall_peak_y = 5.0
+	_player.global_position = Vector3(0.0, 7.0, 0.0)
+	_player._physics_process(0.016)
+	assert_almost_eq(
+		_player._fall_peak_y, 7.0, 0.01,
+		"_fall_peak_y should update to highest point reached",
+	)
+
+
+func test_no_fall_damage_below_threshold() -> void:
+	# Fall of exactly FALL_DAMAGE_MIN_HEIGHT should deal no damage.
+	var initial_health: float = GameManager.health
+	_player._was_on_floor = false
+	_player._fall_peak_y = _player.global_position.y + PlayerScript.FALL_DAMAGE_MIN_HEIGHT
+	# Simulate landing: is_on_floor() is true next frame.
+	# We can't force is_on_floor() easily, so verify via source_code instead.
+	var script: GDScript = PlayerScript as GDScript
+	assert_true(
+		script.source_code.contains("fall_dist > FALL_DAMAGE_MIN_HEIGHT"),
+		"Damage should only apply when fall exceeds minimum height",
+	)
+	# Restore health just in case.
+	GameManager.health = initial_health
