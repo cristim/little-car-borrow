@@ -70,3 +70,16 @@ func test_deterministic_results() -> void:
 	var biome1: String = _biome_map.get_biome(Vector2i(3, 3))
 	var biome2: String = _biome_map.get_biome(Vector2i(3, 3))
 	assert_eq(biome1, biome2)
+
+
+# ==========================================================================
+# Biome noise scaling (I2 fix)
+# ==========================================================================
+
+
+func test_biome_noise_call_has_no_double_scaling() -> void:
+	var src: String = (BiomeMapScript as GDScript).source_code
+	assert_false(
+		src.contains("get_noise_2d(wx * 0.01"),
+		"_biome_noise.get_noise_2d must not double-scale with * 0.01; noise frequency handles it",
+	)

@@ -20,7 +20,7 @@ func find_path(from_world: Vector3, to_world: Vector3, grid: RefCounted) -> Arra
 	var goal_pos: Vector3 = _get_intersection_pos(to_ns, to_ew, to_world, grid)
 
 	if start_pos.distance_to(goal_pos) < 1.0:
-		return []
+		return [start_pos]  # trivially at destination; callers advance when within 1 m
 
 	var grid_span: float = grid.get_grid_span()
 

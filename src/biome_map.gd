@@ -75,7 +75,7 @@ func _get_rural_biome(
 	wz: float,
 	tiles_outside: float,
 ) -> String:
-	var raw: float = _biome_noise.get_noise_2d(wx * 0.01, wz * 0.01)
+	var raw: float = _biome_noise.get_noise_2d(wx, wz)
 
 	# Higher terrain = more likely mountain/forest
 	var ground_h: float = 0.0

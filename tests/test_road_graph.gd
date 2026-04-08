@@ -10,7 +10,9 @@ var _graph = preload("res://src/road_graph.gd").new()
 # ================================================================
 
 
-func test_same_intersection_returns_empty() -> void:
+func test_same_intersection_returns_single_waypoint() -> void:
+	# I5 fix: return [start_pos] so callers can distinguish "already arrived"
+	# from "no path found" (both returned [] before the fix).
 	var pos := Vector3(
 		_grid.get_road_center_near(3, 0.0),
 		0.0,
@@ -19,8 +21,8 @@ func test_same_intersection_returns_empty() -> void:
 	var path: Array[Vector3] = _graph.find_path(pos, pos, _grid)
 	assert_eq(
 		path.size(),
-		0,
-		"Same start and goal should return empty path",
+		1,
+		"Same start and goal should return [start_pos] — trivially arrived",
 	)
 
 
