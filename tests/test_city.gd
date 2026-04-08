@@ -477,7 +477,7 @@ func test_repairing_starts_false() -> void:
 
 
 func test_ready_calls_tile_cache_flush() -> void:
-	var src: String = CityScript.source_code
+	var src: String = (CityScript as GDScript).source_code
 	var ready_start: int = src.find("func _ready()")
 	var ready_end: int = src.find("\nfunc ", ready_start + 1)
 	var ready_body: String = src.substr(ready_start, ready_end - ready_start)

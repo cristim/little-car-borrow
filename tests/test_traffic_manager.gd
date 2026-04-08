@@ -407,7 +407,7 @@ func test_ten_car_colors_defined() -> void:
 
 
 func test_spawn_rejects_forward_hemisphere() -> void:
-	var src: String = TrafficManagerScript.source_code
+	var src: String = (TrafficManagerScript as GDScript).source_code
 	assert_true(
 		src.contains("h_vel.normalized().dot(offset.normalized()) > 0.0"),
 		"Forward hemisphere spawns must be rejected (dot > 0.0)",
@@ -417,7 +417,7 @@ func test_spawn_rejects_forward_hemisphere() -> void:
 func test_spawn_forward_rejection_is_unconditional() -> void:
 	# The old code had a probabilistic rejection (70% chance).
 	# The fix must always reject — no randf() chance mixed in.
-	var src: String = TrafficManagerScript.source_code
+	var src: String = (TrafficManagerScript as GDScript).source_code
 	var dot_idx: int = (
 		src
 		. find(
@@ -439,7 +439,7 @@ func test_spawn_forward_rejection_is_unconditional() -> void:
 
 
 func test_spawn_uses_signed_distance_for_city_check() -> void:
-	var src: String = TrafficManagerScript.source_code
+	var src: String = (TrafficManagerScript as GDScript).source_code
 	assert_true(
 		src.contains("get_signed_distance(spawn_pos.x, spawn_pos.z)"),
 		"Spawn must check signed_distance to detect city boundary",
@@ -447,7 +447,7 @@ func test_spawn_uses_signed_distance_for_city_check() -> void:
 
 
 func test_spawn_uses_flat_ground_inside_city() -> void:
-	var src: String = TrafficManagerScript.source_code
+	var src: String = (TrafficManagerScript as GDScript).source_code
 	assert_true(
 		src.contains("sd < 0.0"),
 		"Inside city (sd < 0) must use flat ground height",
@@ -455,7 +455,7 @@ func test_spawn_uses_flat_ground_inside_city() -> void:
 
 
 func test_spawn_rejects_steep_terrain_outside_city() -> void:
-	var src: String = TrafficManagerScript.source_code
+	var src: String = (TrafficManagerScript as GDScript).source_code
 	assert_true(
 		src.contains("ground_y > 6.0"),
 		"Steep terrain (ground_y > 6 m) must be rejected to prevent sky-falls",
@@ -469,7 +469,7 @@ func test_spawn_rejects_steep_terrain_outside_city() -> void:
 
 func test_get_biome_lazy_fetch_in_source() -> void:
 	# I5: biome map must be fetched lazily in _get_biome, not at _ready
-	var src: String = TrafficManagerScript.source_code
+	var src: String = (TrafficManagerScript as GDScript).source_code
 	assert_true(
 		src.contains("if _biome_map == null:"),
 		"_get_biome must lazily check _biome_map == null before use",
@@ -478,7 +478,7 @@ func test_get_biome_lazy_fetch_in_source() -> void:
 
 func test_ready_does_not_call_fetch_biome_map() -> void:
 	# I5: _ready must not eagerly call _fetch_biome_map (city_manager may not exist yet)
-	var src: String = TrafficManagerScript.source_code
+	var src: String = (TrafficManagerScript as GDScript).source_code
 	# The fetch call should only appear inside _get_biome and _fetch_biome_map, not _ready
 	var ready_start: int = src.find("func _ready()")
 	var ready_end: int = src.find("\nfunc ", ready_start + 1)
@@ -495,7 +495,7 @@ func test_ready_does_not_call_fetch_biome_map() -> void:
 
 
 func test_lod_freeze_skips_despawned_vehicles() -> void:
-	var src: String = TrafficManagerScript.source_code
+	var src: String = (TrafficManagerScript as GDScript).source_code
 	# Both despawn sites must have 'continue' after to_remove.append
 	# to prevent the LOD freeze block from writing to freed vehicles.
 	assert_true(
