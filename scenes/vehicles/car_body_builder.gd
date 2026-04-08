@@ -712,17 +712,18 @@ func _generate_profiles(variant_name: String) -> Array[Dictionary]:
 		p.hw = float(base.hw) * width_mult
 		p.yb = float(base.yb) * height_mult + ground_offset
 
-		var is_cabin: bool = float(base.inset) > 0.01
+		var base_inset: float = float(base.get("inset", 0.0))
+		var is_cabin: bool = base_inset > 0.01
 		if is_cabin:
 			if float(base.z) < cabin_start_z or float(base.z) > cabin_end_z:
 				p.yt = float(base.yt) * height_mult * 0.3
 				p.inset = 0.0
 			else:
 				p.yt = float(base.yt) * height_mult * cabin_height_mult
-				p.inset = float(base.inset) + cabin_inset_add
+				p.inset = base_inset + cabin_inset_add
 		else:
 			p.yt = float(base.yt) * height_mult
-			p.inset = float(base.inset)
+			p.inset = base_inset
 
 		if float(base.z) >= bed_start_z and not is_cabin:
 			p.yt = maxf(p.yt, float(base.yt) * height_mult * 0.5)

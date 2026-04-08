@@ -717,6 +717,57 @@ func test_thumb_sides_are_mirrored() -> void:
 # ==========================================================================
 
 
+# ==========================================================================
+# LERP_SNAP_EPSILON — lerp convergence fix (M1)
+# ==========================================================================
+
+
+func test_lerp_snap_epsilon_constant_exists() -> void:
+	assert_true(
+		PlayerModelScript.get_script_constant_map().has("LERP_SNAP_EPSILON"),
+		"LERP_SNAP_EPSILON const should be defined in player_model.gd",
+	)
+
+
+func test_lerp_snap_epsilon_is_small_positive() -> void:
+	assert_gt(
+		PlayerModelScript.LERP_SNAP_EPSILON,
+		0.0,
+		"LERP_SNAP_EPSILON must be positive",
+	)
+	assert_lt(
+		PlayerModelScript.LERP_SNAP_EPSILON,
+		0.01,
+		"LERP_SNAP_EPSILON must be small (< 0.01) to avoid visible snapping",
+	)
+
+
+func test_lerp_snap_source_uses_epsilon_not_exact_zero() -> void:
+	var src: String = (PlayerModelScript as GDScript).source_code
+	assert_true(
+		src.contains("LERP_SNAP_EPSILON"),
+		"player_model should reference LERP_SNAP_EPSILON in lerp convergence checks",
+	)
+	assert_false(
+		src.contains("rotation.x != 0.0"),
+		"exact != 0.0 float comparison should be replaced with epsilon threshold",
+	)
+
+
+func test_rotation_snaps_to_zero_after_lerp() -> void:
+	# Set a tiny residual rotation below LERP_SNAP_EPSILON — lerp won't move it,
+	# but the snap-to-zero branch should zero it on the next frame.
+	_model.rotation = Vector3(0.00005, 0.00005, 0.00005)
+	_parent.velocity = Vector3.ZERO
+	_sim(0.016, 5)
+	assert_almost_eq(
+		_model.rotation.x,
+		0.0,
+		0.0001,
+		"Rotation should snap to exactly zero below LERP_SNAP_EPSILON",
+	)
+
+
 func test_flashlight_positioned_at_housing_tip() -> void:
 	# Read the raw .tscn text so we can inspect the Flashlight transform.
 	# Tube runs along Y; tip is at Forearm-local (0, -0.201, 0.012) after 20° tilt.

@@ -478,3 +478,21 @@ func test_los_lost_timeout_is_at_least_40_seconds() -> void:
 		40.0,
 		"Chase should not abandon before 40 s without line-of-sight",
 	)
+
+
+# ==========================================================================
+# Cross-traffic mask excludes pedestrians (I6 fix)
+# ==========================================================================
+
+
+func test_cross_traffic_mask_excludes_pedestrians() -> void:
+	# Pedestrian layer = 32. Mask 80 = NPC(16) | Police(64) — no pedestrians.
+	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
+	assert_true(
+		src.contains("cross_mask := 80"),
+		"Cross-traffic mask should be 80 (NPC+Police) not 112 (which includes pedestrians)",
+	)
+	assert_false(
+		src.contains("cross_mask := 112"),
+		"cross_mask 112 includes pedestrians and should not be used",
+	)

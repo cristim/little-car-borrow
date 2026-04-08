@@ -20,9 +20,6 @@ torque on rotated vehicles.
 
 ## MEDIUM
 
-### M1 — `player_model.gd:85-101`: Float comparison `!= 0.0` never matches lerpf result
-Rotation reset block runs every idle frame forever. Minor CPU waste.
-
 ### M2 — `player_flashlight.gd:23`: `look_at` degenerates when camera looks straight down
 
 ### M3 — `player_flashlight.gd:26-29`: `toggle_flashlight` handled without InputManager context check

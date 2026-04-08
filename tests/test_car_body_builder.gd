@@ -505,3 +505,19 @@ func test_build_interior_all_variants() -> void:
 			mesh is ArrayMesh,
 			"Variant %s interior should be ArrayMesh" % variant,
 		)
+
+
+# --- base.inset dict safety (L2 fix) ---
+
+
+func test_base_inset_uses_safe_dict_get() -> void:
+	# Verify the source uses base.get("inset", ...) instead of bare base.inset
+	var src: String = (_builder.get_script() as GDScript).source_code
+	assert_true(
+		src.contains('base.get("inset"'),
+		"car_body_builder should access base.inset via .get() with default to avoid crash",
+	)
+	assert_false(
+		src.contains("float(base.inset)"),
+		"bare base.inset access (without .get) must not be present",
+	)

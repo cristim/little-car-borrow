@@ -30,6 +30,7 @@ const FLASH_ELBOW_DOWN := -1.0  # deep bend when looking down
 const PITCH_UP := 0.8  # camera max pitch
 const PITCH_DOWN := -1.2  # camera min pitch
 const DEFAULT_GUN_ELBOW := -0.05  # fallback if weapon data unavailable
+const LERP_SNAP_EPSILON := 0.0001  # snap lerp to zero below this threshold
 
 var _was_swimming := false
 
@@ -249,23 +250,42 @@ func _process(delta: float) -> void:
 			_was_swimming = false
 
 	# Smoothly reset body tilt/roll/twist/bounce (handles swim-exit at faster rate)
-	if rotation.x != 0.0 or rotation.y != 0.0 or rotation.z != 0.0:
+	var rot_nonzero := (
+		absf(rotation.x) > LERP_SNAP_EPSILON
+		or absf(rotation.y) > LERP_SNAP_EPSILON
+		or absf(rotation.z) > LERP_SNAP_EPSILON
+	)
+	if rot_nonzero:
 		rotation.x = lerpf(rotation.x, 0.0, delta * decay)
 		rotation.y = lerpf(rotation.y, 0.0, delta * decay)
 		rotation.z = lerpf(rotation.z, 0.0, delta * decay)
-	if position.y != 0.0:
+	elif rotation != Vector3.ZERO:
+		rotation = Vector3.ZERO
+	if absf(position.y) > LERP_SNAP_EPSILON:
 		position.y = lerpf(position.y, 0.0, delta * decay)
-	if position.x != 0.0:
+	else:
+		position.y = 0.0
+	if absf(position.x) > LERP_SNAP_EPSILON:
 		position.x = lerpf(position.x, 0.0, delta * decay)
+	else:
+		position.x = 0.0
 	# Reset head/neck counter-rotation from swimming
-	if _head and _head.rotation.z != 0.0:
+	if _head and absf(_head.rotation.z) > LERP_SNAP_EPSILON:
 		_head.rotation.z = lerpf(_head.rotation.z, 0.0, delta * decay)
-	if _head and _head.rotation.y != 0.0:
+	elif _head:
+		_head.rotation.z = 0.0
+	if _head and absf(_head.rotation.y) > LERP_SNAP_EPSILON:
 		_head.rotation.y = lerpf(_head.rotation.y, 0.0, delta * decay)
-	if _neck and _neck.rotation.z != 0.0:
+	elif _head:
+		_head.rotation.y = 0.0
+	if _neck and absf(_neck.rotation.z) > LERP_SNAP_EPSILON:
 		_neck.rotation.z = lerpf(_neck.rotation.z, 0.0, delta * decay)
-	if _neck and _neck.rotation.y != 0.0:
+	elif _neck:
+		_neck.rotation.z = 0.0
+	if _neck and absf(_neck.rotation.y) > LERP_SNAP_EPSILON:
 		_neck.rotation.y = lerpf(_neck.rotation.y, 0.0, delta * decay)
+	elif _neck:
+		_neck.rotation.y = 0.0
 
 	var vel: Vector3 = parent.velocity if "velocity" in parent else Vector3.ZERO
 	var h_speed := Vector2(vel.x, vel.z).length()

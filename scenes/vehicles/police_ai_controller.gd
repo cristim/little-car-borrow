@@ -605,8 +605,8 @@ func _cast_rays() -> void:
 		travel_dir = _dir_to_heading(_direction)
 	var cross_left := travel_dir.rotated(Vector3.UP, PI * 0.5)
 	var cross_right := travel_dir.rotated(Vector3.UP, -PI * 0.5)
-	# NPC(16) | Pedestrians(32) | Police(64) = 112
-	var cross_mask := 112
+	# NPC(16) | Police(64) = 80 — pedestrians(32) excluded so they don't block pursuit
+	var cross_mask := 80
 
 	var clq := PhysicsRayQueryParameters3D.create(from, from + cross_left * CROSS_RAY_LENGTH)
 	clq.collision_mask = cross_mask
