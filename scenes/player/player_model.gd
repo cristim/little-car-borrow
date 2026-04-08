@@ -331,8 +331,8 @@ func _process(delta: float) -> void:
 		_left_knee.rotation.x = lerpf(_left_knee.rotation.x, 0.0, delta * DECAY_SPEED)
 		_right_knee.rotation.x = lerpf(_right_knee.rotation.x, 0.0, delta * DECAY_SPEED)
 
-	# Aim arms at crosshair using camera pitch (skip when hidden, e.g. driving)
-	if (parent as Node3D).visible:
+	# Aim arms at crosshair using camera pitch (skip when not on foot, e.g. driving)
+	if InputManager.is_foot():
 		var pitch := _get_camera_pitch()
 
 		if _is_armed():
@@ -361,7 +361,7 @@ func _get_gun_elbow_angle() -> float:
 	var pw := get_parent().get_node_or_null("PlayerWeapon")
 	if pw == null:
 		return DEFAULT_GUN_ELBOW
-	var w: Dictionary = pw.WEAPONS[pw._current_idx]
+	var w: Dictionary = pw.get_current_weapon()
 	var angle: float = w.get("elbow", DEFAULT_GUN_ELBOW)
 	return angle
 

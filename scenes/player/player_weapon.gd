@@ -198,6 +198,10 @@ func _cycle_weapon(direction: int) -> void:
 			return
 
 
+func get_current_weapon() -> Dictionary:
+	return WEAPONS[_current_idx]
+
+
 func unlock_weapon(idx: int) -> void:
 	if idx < 0 or idx >= WEAPONS.size():
 		return
