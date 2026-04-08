@@ -1,7 +1,6 @@
-extends "res://src/state_machine/state.gd"
+extends "res://src/state_machine/player_state.gd"
 ## Player swimming state: buoyancy at water surface, WASD movement.
 
-const SEA_LEVEL := -2.0
 const SWIM_SPEED := 2.5
 const SPRINT_SWIM_SPEED := 4.0
 const BUOYANCY_FORCE := 12.0
@@ -62,24 +61,6 @@ func physics_update(delta: float) -> void:
 		return
 
 
-func _get_camera_relative_direction(input: Vector2) -> Vector3:
-	var cam_yaw: float = owner.player_camera.get_yaw()
-	var forward := Vector3(-sin(cam_yaw), 0, -cos(cam_yaw))
-	var right := Vector3(-forward.z, 0, forward.x)
-	var direction := (forward * -input.y + right * input.x).normalized()
-	return direction
-
-
-func _get_ground_height(pos: Vector3) -> float:
-	var city_nodes := owner.get_tree().get_nodes_in_group("city_manager")
-	if city_nodes.is_empty():
-		return 0.0
-	var boundary: RefCounted = city_nodes[0].get_meta("city_boundary")
-	if not boundary:
-		return 0.0
-	return boundary.get_ground_height(pos.x, pos.z)
-
-
 func handle_input(event: InputEvent) -> void:
 	# Allow boarding boats from water (not cars)
 	if event.is_action_pressed("interact") and owner.nearest_vehicle:
@@ -94,7 +75,3 @@ func _update_prompt() -> void:
 		EventBus.show_interaction_prompt.emit("Hold F to board")
 	else:
 		EventBus.hide_interaction_prompt.emit()
-
-
-func _is_over_water(pos: Vector3) -> bool:
-	return _get_ground_height(pos) < SEA_LEVEL
