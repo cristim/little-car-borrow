@@ -154,3 +154,57 @@ func test_boundary_just_after_7() -> void:
 		_flashlight.visible,
 		"Flashlight should be off at 7:30 (past dawn)",
 	)
+
+
+# ==========================================================================
+# look_at degeneration guard (M2 fix)
+# ==========================================================================
+
+
+func test_look_at_source_has_length_squared_guard() -> void:
+	var src: String = (_flashlight.get_script() as GDScript).source_code
+	assert_true(
+		src.contains("length_squared()"),
+		"_process should guard look_at with length_squared() check to avoid degenerate case",
+	)
+
+
+func test_look_at_source_has_up_vector_fallback() -> void:
+	var src: String = (_flashlight.get_script() as GDScript).source_code
+	assert_true(
+		src.contains("Vector3.FORWARD"),
+		"look_at should fall back to Vector3.FORWARD when pointing straight up/down",
+	)
+
+
+# ==========================================================================
+# Driving context guard (M3 fix)
+# ==========================================================================
+
+
+func test_toggle_source_checks_is_foot() -> void:
+	var src: String = (_flashlight.get_script() as GDScript).source_code
+	assert_true(
+		src.contains("InputManager.is_foot()"),
+		"toggle_flashlight input should only respond when InputManager.is_foot() is true",
+	)
+
+
+func test_toggle_blocked_when_in_vehicle() -> void:
+	# Set night so flashlight would otherwise be on
+	DayNightManager.current_hour = 22.0
+	_flashlight._update_visibility()
+	assert_true(_flashlight.visible, "Precondition: flashlight on at night")
+	# Switch to vehicle context
+	var saved_ctx := InputManager.current_context
+	InputManager.set_context(InputManager.Context.VEHICLE)
+	# Simulate toggle
+	var ev := InputEventAction.new()
+	ev.action = "toggle_flashlight"
+	ev.pressed = true
+	_flashlight._unhandled_input(ev)
+	assert_true(
+		_flashlight.visible,
+		"Toggle should be ignored while in vehicle context",
+	)
+	InputManager.set_context(saved_ctx)

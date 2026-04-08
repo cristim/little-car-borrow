@@ -78,6 +78,7 @@ const WEAPONS := [
 	},
 ]
 const VEHICLE_IMPULSE := 80.0
+const RAGDOLL_LIFETIME := 8.0
 const MAX_WORLD_DECALS := 30
 const WORLD_DECAL_LIFETIME := 15.0
 const MAX_BLOOD_DECALS := 20
@@ -117,6 +118,8 @@ func _process(delta: float) -> void:
 			_muzzle_flash.visible = false
 
 	if GameManager.is_dead:
+		if _armed:
+			_holster()
 		return
 
 	# Weapon key: draw weapon or switch; press same key again to holster
@@ -308,6 +311,11 @@ func _spawn_ragdoll(target: Node, shoot_dir: Vector3) -> void:
 	var impulse := shoot_dir * 15.0
 	impulse.y = 0.0
 	ragdoll.apply_central_impulse(impulse)
+	get_tree().create_timer(RAGDOLL_LIFETIME).timeout.connect(
+		func() -> void:
+			if is_instance_valid(ragdoll):
+				ragdoll.queue_free()
+	)
 
 
 func _spawn_decal(

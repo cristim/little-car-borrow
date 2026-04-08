@@ -20,11 +20,18 @@ func _process(_delta: float) -> void:
 			return
 	# Aim flashlight toward where the camera is looking
 	var target := _camera.global_position - _camera.global_transform.basis.z * 50.0
-	look_at(target, Vector3.UP)
+	var forward := target - global_position
+	if forward.length_squared() > 0.0001:
+		var up := (
+			Vector3.FORWARD
+			if absf(forward.normalized().dot(Vector3.UP)) > 0.99
+			else Vector3.UP
+		)
+		look_at(target, up)
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("toggle_flashlight"):
+	if event.is_action_pressed("toggle_flashlight") and InputManager.is_foot():
 		_manual_off = not _manual_off
 		_update_visibility()
 

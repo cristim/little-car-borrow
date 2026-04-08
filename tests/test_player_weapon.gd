@@ -547,3 +547,58 @@ func test_spawn_blood_uses_target_floor_y() -> void:
 		src.contains("target.global_position.y"),
 		"_spawn_blood() must use target.global_position.y for floor level",
 	)
+
+
+# ==========================================================================
+# Holster on death (H4 fix)
+# ==========================================================================
+
+
+func test_holster_called_on_death_when_armed() -> void:
+	_pw._draw_weapon(0)
+	assert_true(_pw._armed, "Precondition: weapon should be drawn")
+	GameManager.is_dead = true
+	_pw._process(0.016)
+	assert_false(
+		_pw._armed,
+		"Weapon should be holstered when GameManager.is_dead is true",
+	)
+
+
+func test_no_error_on_death_when_unarmed() -> void:
+	assert_false(_pw._armed, "Precondition: weapon should be holstered")
+	GameManager.is_dead = true
+	_pw._process(0.016)  # must not crash
+	assert_false(_pw._armed, "Weapon remains holstered after dead-check while unarmed")
+
+
+# ==========================================================================
+# Ragdoll lifetime timer (M7 fix)
+# ==========================================================================
+
+
+func test_ragdoll_lifetime_constant_defined() -> void:
+	assert_true(
+		WeaponScript.get_script_constant_map().has("RAGDOLL_LIFETIME"),
+		"RAGDOLL_LIFETIME const should be defined",
+	)
+
+
+func test_ragdoll_lifetime_at_least_5_seconds() -> void:
+	assert_gte(
+		WeaponScript.RAGDOLL_LIFETIME,
+		5.0,
+		"RAGDOLL_LIFETIME should be at least 5 seconds",
+	)
+
+
+func test_ragdoll_source_has_lifetime_timer() -> void:
+	var src: String = (WeaponScript as GDScript).source_code
+	assert_true(
+		src.contains("RAGDOLL_LIFETIME"),
+		"_spawn_ragdoll should reference RAGDOLL_LIFETIME for cleanup timer",
+	)
+	assert_true(
+		src.contains("is_instance_valid(ragdoll)"),
+		"Ragdoll timer lambda should guard with is_instance_valid",
+	)
