@@ -71,7 +71,9 @@ func is_city_tile(tile: Vector2i) -> bool:
 
 
 func _get_rural_biome(
-	wx: float, wz: float, tiles_outside: float,
+	wx: float,
+	wz: float,
+	tiles_outside: float,
 ) -> String:
 	var raw: float = _biome_noise.get_noise_2d(wx * 0.01, wz * 0.01)
 
@@ -93,8 +95,12 @@ func _get_rural_biome(
 		biome = "forest"
 	elif score > -0.2:
 		# Villages appear in farmland areas, spotted by secondary noise
-		var village_n: float = _biome_noise.get_noise_2d(
-			wx * 0.03 + 500.0, wz * 0.03 + 500.0,
+		var village_n: float = (
+			_biome_noise
+			. get_noise_2d(
+				wx * 0.03 + 500.0,
+				wz * 0.03 + 500.0,
+			)
 		)
 		if score <= 0.1 and village_n > 0.3:
 			biome = "village"

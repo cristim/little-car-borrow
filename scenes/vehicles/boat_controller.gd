@@ -5,10 +5,10 @@ extends Node
 
 const SEA_LEVEL := -2.0
 ## Archimedes buoyancy: F = ρ × g × A × depth
-const RHO_WATER := 1000.0       # kg/m³ (sea water ≈ 1025; use 1000 for simplicity)
-const G_WATER := 9.8            # m/s² (matches engine gravity)
-const HULL_POINT_AREA := 0.5    # m² per sample point (8 pts × 0.5 = 4 m² waterplane)
-const MAX_DEPTH_CLAMP := 1.5    # m — prevents explosive forces when deeply submerged
+const RHO_WATER := 1000.0  # kg/m³ (sea water ≈ 1025; use 1000 for simplicity)
+const G_WATER := 9.8  # m/s² (matches engine gravity)
+const HULL_POINT_AREA := 0.5  # m² per sample point (8 pts × 0.5 = 4 m² waterplane)
+const MAX_DEPTH_CLAMP := 1.5  # m — prevents explosive forces when deeply submerged
 const BUOY_PER_M: float = RHO_WATER * G_WATER * HULL_POINT_AREA  # 4900 N per metre
 const THRUST_FORCE := 6000.0
 const MAX_STEER_ANGLE := 0.5
@@ -19,13 +19,13 @@ const WAVE_FREQUENCY := 1.2
 # Spread across hull perimeter for accurate pitch/roll response
 const HULL_POINTS := [
 	Vector3(-1.2, -0.3, -2.0),  # port bow
-	Vector3( 1.2, -0.3, -2.0),  # starboard bow
-	Vector3(-1.2, -0.3,  0.0),  # port mid
-	Vector3( 1.2, -0.3,  0.0),  # starboard mid
-	Vector3(-1.2, -0.3,  2.0),  # port stern
-	Vector3( 1.2, -0.3,  2.0),  # starboard stern
-	Vector3( 0.0, -0.3, -2.5),  # keel bow
-	Vector3( 0.0, -0.3,  2.5),  # keel stern
+	Vector3(1.2, -0.3, -2.0),  # starboard bow
+	Vector3(-1.2, -0.3, 0.0),  # port mid
+	Vector3(1.2, -0.3, 0.0),  # starboard mid
+	Vector3(-1.2, -0.3, 2.0),  # port stern
+	Vector3(1.2, -0.3, 2.0),  # starboard stern
+	Vector3(0.0, -0.3, -2.5),  # keel bow
+	Vector3(0.0, -0.3, 2.5),  # keel stern
 ]
 
 var active := false
@@ -58,12 +58,10 @@ func _physics_process(delta: float) -> void:
 
 	# Thrust and steering
 	var throttle: float = (
-		Input.get_action_strength("move_forward")
-		- Input.get_action_strength("move_backward")
+		Input.get_action_strength("move_forward") - Input.get_action_strength("move_backward")
 	)
 	var steer: float = (
-		Input.get_action_strength("move_left")
-		- Input.get_action_strength("move_right")
+		Input.get_action_strength("move_left") - Input.get_action_strength("move_right")
 	)
 
 	# Only apply thrust when hull is in water
@@ -76,9 +74,12 @@ func _physics_process(delta: float) -> void:
 		# Rotate thrust direction around local Y
 		var motor_dir: Vector3 = forward.rotated(Vector3.UP, steer_angle)
 		var stern_offset := Vector3(0.0, -0.3, 2.5)
-		_body.apply_force(
-			motor_dir * throttle * THRUST_FORCE,
-			_body.basis * stern_offset,
+		(
+			_body
+			. apply_force(
+				motor_dir * throttle * THRUST_FORCE,
+				_body.basis * stern_offset,
+			)
 		)
 
 	# Rotate the visual engine pivot to match steering.
@@ -88,7 +89,9 @@ func _physics_process(delta: float) -> void:
 	if engine_pivot:
 		var target_angle: float = -steer * MAX_STEER_ANGLE
 		engine_pivot.rotation.y = lerpf(
-			engine_pivot.rotation.y, target_angle, 0.15,
+			engine_pivot.rotation.y,
+			target_angle,
+			0.15,
 		)
 
 	# Emit speed for HUD
@@ -103,9 +106,12 @@ func _apply_buoyancy() -> void:
 		var depth: float = wave_y - world_point.y
 		if depth > 0.0:
 			var force_mag: float = BUOY_PER_M * clampf(depth, 0.0, MAX_DEPTH_CLAMP)
-			_body.apply_force(
-				Vector3(0.0, force_mag, 0.0),
-				_body.to_local(world_point),
+			(
+				_body
+				. apply_force(
+					Vector3(0.0, force_mag, 0.0),
+					_body.to_local(world_point),
+				)
 			)
 
 
@@ -123,9 +129,7 @@ func _stabilize(_delta: float) -> void:
 
 func _get_wave_height(pos: Vector3) -> float:
 	var t: float = Time.get_ticks_msec() * 0.001
-	return SEA_LEVEL + WAVE_AMPLITUDE * sin(
-		t * WAVE_FREQUENCY + pos.x * 0.5 + pos.z * 0.3
-	)
+	return SEA_LEVEL + WAVE_AMPLITUDE * sin(t * WAVE_FREQUENCY + pos.x * 0.5 + pos.z * 0.3)
 
 
 func _is_hull_submerged() -> bool:

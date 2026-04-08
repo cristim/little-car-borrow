@@ -45,9 +45,7 @@ var _rotor_pivot: Node3D = null
 var _tail_rotor_pivot: Node3D = null
 var _spotlight: SpotLight3D = null
 var _shoot_timer: Timer = null
-var _body_builder: RefCounted = preload(
-	"res://scenes/vehicles/helicopter_body_builder.gd"
-).new()
+var _body_builder: RefCounted = preload("res://scenes/vehicles/helicopter_body_builder.gd").new()
 var _tracers: Array[MeshInstance3D] = []
 var _rotor_audio: AudioStreamPlayer3D = null
 var _rotor_phase := 0.0
@@ -66,10 +64,7 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	if not _player:
-		_player = (
-			get_tree().get_first_node_in_group("player")
-			as Node3D
-		)
+		_player = (get_tree().get_first_node_in_group("player") as Node3D)
 		if not _player:
 			return
 
@@ -120,10 +115,7 @@ func _process_approach(_delta: float) -> void:
 
 func _process_orbit(delta: float) -> void:
 	var target := _get_player_pos()
-	var h_dist := Vector2(
-		global_position.x - target.x,
-		global_position.z - target.z
-	).length()
+	var h_dist := Vector2(global_position.x - target.x, global_position.z - target.z).length()
 
 	if h_dist > ORBIT_RADIUS * 2.0:
 		_state = HeliState.APPROACH
@@ -174,9 +166,7 @@ func _start_shoot_timer() -> void:
 	_shoot_timer.one_shot = true
 	_shoot_timer.timeout.connect(_on_shoot_timer_timeout)
 	add_child(_shoot_timer)
-	_shoot_timer.start(
-		_rng.randf_range(SHOOT_INTERVAL_MIN, SHOOT_INTERVAL_MAX)
-	)
+	_shoot_timer.start(_rng.randf_range(SHOOT_INTERVAL_MIN, SHOOT_INTERVAL_MAX))
 
 
 func _on_shoot_timer_timeout() -> void:
@@ -187,9 +177,7 @@ func _on_shoot_timer_timeout() -> void:
 
 	_try_shoot()
 
-	_shoot_timer.start(
-		_rng.randf_range(SHOOT_INTERVAL_MIN, SHOOT_INTERVAL_MAX)
-	)
+	_shoot_timer.start(_rng.randf_range(SHOOT_INTERVAL_MIN, SHOOT_INTERVAL_MAX))
 
 
 func _try_shoot() -> void:
@@ -244,9 +232,7 @@ func _spawn_tracer(from_pos: Vector3, to_pos: Vector3) -> void:
 	if absf(dir.dot(Vector3.UP)) < 0.999:
 		tracer.look_at(tracer.global_position + dir, Vector3.UP)
 	else:
-		tracer.look_at(
-			tracer.global_position + dir, Vector3.FORWARD
-		)
+		tracer.look_at(tracer.global_position + dir, Vector3.FORWARD)
 	tracer.rotate_object_local(Vector3.RIGHT, PI / 2.0)
 
 	_tracers.append(tracer)
@@ -270,9 +256,7 @@ func _play_shoot_sound() -> void:
 	add_child(asp)
 	asp.play()
 
-	var playback: AudioStreamGeneratorPlayback = (
-		asp.get_stream_playback()
-	)
+	var playback: AudioStreamGeneratorPlayback = asp.get_stream_playback()
 	var shoot_rng := RandomNumberGenerator.new()
 	shoot_rng.randomize()
 
@@ -328,9 +312,7 @@ func _build_scene_tree() -> void:
 	fuselage.name = "FuselageMesh"
 	fuselage.mesh = _body_builder.build_fuselage()
 	fuselage.material_override = body_mat
-	fuselage.cast_shadow = (
-		GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-	)
+	fuselage.cast_shadow = (GeometryInstance3D.SHADOW_CASTING_SETTING_ON)
 	body.add_child(fuselage)
 
 	_rotor_pivot = Node3D.new()
@@ -374,9 +356,7 @@ func _setup_audio() -> void:
 	_rotor_audio.stream = gen
 	_rotor_audio.bus = "SFX"
 	_rotor_audio.max_distance = 120.0
-	_rotor_audio.attenuation_model = (
-		AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
-	)
+	_rotor_audio.attenuation_model = (AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE)
 	add_child(_rotor_audio)
 	_rotor_audio.play()
 
@@ -384,10 +364,7 @@ func _setup_audio() -> void:
 func _fill_rotor_audio() -> void:
 	if not _rotor_audio:
 		return
-	var playback := (
-		_rotor_audio.get_stream_playback()
-		as AudioStreamGeneratorPlayback
-	)
+	var playback := _rotor_audio.get_stream_playback() as AudioStreamGeneratorPlayback
 	if not playback:
 		return
 
@@ -404,10 +381,8 @@ func _fill_rotor_audio() -> void:
 		pulse = pulse * pulse * pulse * signf(pulse)
 		var blade_sample := pulse * 0.25
 
-		var noise := (randf() - 0.5)
-		_rotor_noise_state += noise_alpha * (
-			noise - _rotor_noise_state
-		)
+		var noise := randf() - 0.5
+		_rotor_noise_state += noise_alpha * (noise - _rotor_noise_state)
 		var wind_sample := _rotor_noise_state * 0.15
 
 		var sample := blade_sample + wind_sample

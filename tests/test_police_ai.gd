@@ -2,12 +2,10 @@
 extends GutTest
 ## Unit tests for police AI controller helpers and state transitions.
 
-const PoliceAIScript = preload(
-	"res://scenes/vehicles/police_ai_controller.gd"
-)
-
+const PoliceAIScript = preload("res://scenes/vehicles/police_ai_controller.gd")
 
 # --- TestablePoliceAI: overrides scene-dependent methods ---
+
 
 class TestablePoliceAI:
 	extends "res://scenes/vehicles/police_ai_controller.gd"
@@ -45,6 +43,7 @@ func after_each() -> void:
 # _calc_pursuit_steer
 # ==========================================================================
 
+
 func test_pursuit_steer_zero_heading() -> void:
 	var result := PoliceAIScript._calc_pursuit_steer(0.0, 1.5)
 	assert_eq(result, 0.0)
@@ -74,6 +73,7 @@ func test_pursuit_steer_30_right_not_clamped() -> void:
 # _calc_pursuit_cruise
 # ==========================================================================
 
+
 func test_cruise_below_threshold_unchanged() -> void:
 	var result := PoliceAIScript._calc_pursuit_cruise(0.3, 60.0, 0.5, 30.0)
 	assert_eq(result, 60.0)
@@ -86,9 +86,7 @@ func test_cruise_at_threshold_unchanged() -> void:
 
 
 func test_cruise_90_degrees() -> void:
-	var result := PoliceAIScript._calc_pursuit_cruise(
-		PI / 2.0, 60.0, 0.5, 30.0
-	)
+	var result := PoliceAIScript._calc_pursuit_cruise(PI / 2.0, 60.0, 0.5, 30.0)
 	assert_almost_eq(result, 47.84, 0.1)
 
 
@@ -100,6 +98,7 @@ func test_cruise_180_degrees_minimum() -> void:
 # ==========================================================================
 # _calc_wall_steer
 # ==========================================================================
+
 
 func test_wall_steer_low_urgency() -> void:
 	var result := PoliceAIScript._calc_wall_steer(0.1, 0.3, 0.5)
@@ -136,37 +135,63 @@ func test_wall_steer_no_avoidance_no_current_defaults_positive() -> void:
 # _calc_escape_steer
 # ==========================================================================
 
+
 func test_escape_steer_pursue_with_avoidance() -> void:
-	var result := PoliceAIScript._calc_escape_steer(
-		PoliceAIScript.AIState.PURSUE, 0.5, 0.0,
+	var result := (
+		PoliceAIScript
+		. _calc_escape_steer(
+			PoliceAIScript.AIState.PURSUE,
+			0.5,
+			0.0,
+		)
 	)
 	assert_eq(result, 1.0)
 
 
 func test_escape_steer_pursue_negative_avoidance() -> void:
-	var result := PoliceAIScript._calc_escape_steer(
-		PoliceAIScript.AIState.PURSUE, -0.5, 0.0,
+	var result := (
+		PoliceAIScript
+		. _calc_escape_steer(
+			PoliceAIScript.AIState.PURSUE,
+			-0.5,
+			0.0,
+		)
 	)
 	assert_eq(result, -1.0)
 
 
 func test_escape_steer_pursue_below_threshold() -> void:
-	var result := PoliceAIScript._calc_escape_steer(
-		PoliceAIScript.AIState.PURSUE, 0.05, 0.0,
+	var result := (
+		PoliceAIScript
+		. _calc_escape_steer(
+			PoliceAIScript.AIState.PURSUE,
+			0.05,
+			0.0,
+		)
 	)
 	assert_eq(result, 0.0)
 
 
 func test_escape_steer_patrol_lane_error() -> void:
-	var result := PoliceAIScript._calc_escape_steer(
-		PoliceAIScript.AIState.PATROL, 0.0, -1.5,
+	var result := (
+		PoliceAIScript
+		. _calc_escape_steer(
+			PoliceAIScript.AIState.PATROL,
+			0.0,
+			-1.5,
+		)
 	)
 	assert_eq(result, 1.0)
 
 
 func test_escape_steer_patrol_lane_below_threshold() -> void:
-	var result := PoliceAIScript._calc_escape_steer(
-		PoliceAIScript.AIState.PATROL, 0.0, 0.5,
+	var result := (
+		PoliceAIScript
+		. _calc_escape_steer(
+			PoliceAIScript.AIState.PATROL,
+			0.0,
+			0.5,
+		)
 	)
 	assert_eq(result, 0.0)
 
@@ -174,6 +199,7 @@ func test_escape_steer_patrol_lane_below_threshold() -> void:
 # ==========================================================================
 # State transitions
 # ==========================================================================
+
 
 func test_patrol_to_pursue_resets_timers() -> void:
 	_ai._ai_state = PoliceAIScript.AIState.PATROL
@@ -258,6 +284,7 @@ func test_rapid_state_cycling_clean() -> void:
 # Avoidance clamping (Round 8: negative clamp case)
 # ==========================================================================
 
+
 func test_avoidance_clamp_positive_over_range() -> void:
 	# _drive() uses clampf(_steer_avoidance, -0.5, 0.5)
 	assert_eq(clampf(0.8, -0.5, 0.5), 0.5)
@@ -277,6 +304,7 @@ func test_avoidance_clamp_within_range_unchanged() -> void:
 # Guard logic: dist <= 1.0 (Round 8)
 # ==========================================================================
 
+
 func test_pursuit_steer_at_zero_heading_err_for_overlap() -> void:
 	# When player overlaps car (dist <= 1.0), caller passes heading_err=0.0.
 	# Steer should be 0.0 — no fishtailing or error.
@@ -291,13 +319,15 @@ func test_pursuit_steer_at_zero_heading_err_for_overlap() -> void:
 # Patrol regression (Round 8)
 # ==========================================================================
 
+
 func test_patrol_pick_direction_never_reverses() -> void:
 	# _pick_next_direction (patrol path) should never pick reverse of current
 	for i in range(20):
 		_ai._direction = PoliceAIScript.Direction.NORTH
 		_ai._pick_next_direction()
 		assert_ne(
-			_ai._direction, PoliceAIScript.Direction.SOUTH,
+			_ai._direction,
+			PoliceAIScript.Direction.SOUTH,
 			"Patrol should never U-turn from NORTH (iteration %d)" % i,
 		)
 
@@ -324,6 +354,7 @@ func test_patrol_pick_direction_covers_all_non_reverse() -> void:
 # ==========================================================================
 # _calc_brake_params
 # ==========================================================================
+
 
 func test_brake_params_pursuit_vehicle() -> void:
 	var bp := PoliceAIScript._calc_brake_params(true, false)
@@ -361,55 +392,97 @@ func test_brake_params_patrol_pedestrian() -> void:
 # _should_yield
 # ==========================================================================
 
+
 func test_yield_no_cross_traffic() -> void:
 	assert_false(PoliceAIScript._should_yield(false, 0.0, 1.0))
 
 
 func test_yield_under_threshold() -> void:
 	var t := PoliceAIScript.PURSUIT_YIELD_TIME - 0.2
-	assert_true(PoliceAIScript._should_yield(
-		true, t, PoliceAIScript.PURSUIT_YIELD_TIME,
-	))
+	assert_true(
+		(
+			PoliceAIScript
+			. _should_yield(
+				true,
+				t,
+				PoliceAIScript.PURSUIT_YIELD_TIME,
+			)
+		)
+	)
 
 
 func test_yield_over_threshold() -> void:
 	var t := PoliceAIScript.PURSUIT_YIELD_TIME + 0.1
-	assert_false(PoliceAIScript._should_yield(
-		true, t, PoliceAIScript.PURSUIT_YIELD_TIME,
-	))
+	assert_false(
+		(
+			PoliceAIScript
+			. _should_yield(
+				true,
+				t,
+				PoliceAIScript.PURSUIT_YIELD_TIME,
+			)
+		)
+	)
 
 
 func test_yield_at_exact_threshold() -> void:
-	assert_false(PoliceAIScript._should_yield(
-		true, PoliceAIScript.PURSUIT_YIELD_TIME,
-		PoliceAIScript.PURSUIT_YIELD_TIME,
-	))
+	assert_false(
+		(
+			PoliceAIScript
+			. _should_yield(
+				true,
+				PoliceAIScript.PURSUIT_YIELD_TIME,
+				PoliceAIScript.PURSUIT_YIELD_TIME,
+			)
+		)
+	)
 
 
 func test_yield_just_under_threshold() -> void:
 	var t := PoliceAIScript.PURSUIT_YIELD_TIME - 0.001
-	assert_true(PoliceAIScript._should_yield(
-		true, t, PoliceAIScript.PURSUIT_YIELD_TIME,
-	))
+	assert_true(
+		(
+			PoliceAIScript
+			. _should_yield(
+				true,
+				t,
+				PoliceAIScript.PURSUIT_YIELD_TIME,
+			)
+		)
+	)
 
 
 func test_yield_patrol_under_threshold() -> void:
 	var t := PoliceAIScript.MAX_YIELD_TIME - 0.2
-	assert_true(PoliceAIScript._should_yield(
-		true, t, PoliceAIScript.MAX_YIELD_TIME,
-	))
+	assert_true(
+		(
+			PoliceAIScript
+			. _should_yield(
+				true,
+				t,
+				PoliceAIScript.MAX_YIELD_TIME,
+			)
+		)
+	)
 
 
 func test_yield_patrol_at_threshold() -> void:
-	assert_false(PoliceAIScript._should_yield(
-		true, PoliceAIScript.MAX_YIELD_TIME,
-		PoliceAIScript.MAX_YIELD_TIME,
-	))
+	assert_false(
+		(
+			PoliceAIScript
+			. _should_yield(
+				true,
+				PoliceAIScript.MAX_YIELD_TIME,
+				PoliceAIScript.MAX_YIELD_TIME,
+			)
+		)
+	)
 
 
 # ==========================================================================
 # State transition yield resets
 # ==========================================================================
+
 
 func test_pursue_to_patrol_resets_yield() -> void:
 	_ai._ai_state = PoliceAIScript.AIState.PURSUE
@@ -476,6 +549,7 @@ func test_patrol_state_after_pursue_ends() -> void:
 # Spawn grace and airborne guard (flying car fix)
 # ==========================================================================
 
+
 func test_spawn_grace_set_after_initialize() -> void:
 	var vehicle := RigidBody3D.new()
 	add_child_autofree(vehicle)
@@ -507,6 +581,7 @@ func test_spawn_grace_not_reset_on_state_transition() -> void:
 # ==========================================================================
 # Horizontal force flattening — source code verification
 # ==========================================================================
+
 
 func test_escape_force_zeroes_y_component() -> void:
 	var src: String = PoliceAIScript.source_code

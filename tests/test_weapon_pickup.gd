@@ -2,9 +2,7 @@ extends GutTest
 ## Tests for scenes/world/weapon_pickup.gd — spinning animation, body
 ## detection logic, and weapon index handling.
 
-const WeaponPickupScript = preload(
-	"res://scenes/world/weapon_pickup.gd"
-)
+const WeaponPickupScript = preload("res://scenes/world/weapon_pickup.gd")
 const WeaponScript = preload("res://scenes/player/player_weapon.gd")
 
 
@@ -30,11 +28,13 @@ func _make_pickup() -> Node3D:
 # Initial state
 # ==========================================================================
 
+
 func test_weapon_idx_default_zero() -> void:
 	var pickup := _make_pickup()
 	add_child_autofree(pickup)
 	assert_eq(
-		pickup.weapon_idx, 0,
+		pickup.weapon_idx,
+		0,
 		"Default weapon index should be 0",
 	)
 
@@ -49,6 +49,7 @@ func test_spin_time_starts_at_zero() -> void:
 # Weapon index bounds
 # ==========================================================================
 
+
 func test_weapon_idx_can_be_set() -> void:
 	var pickup := _make_pickup()
 	add_child_autofree(pickup)
@@ -58,7 +59,8 @@ func test_weapon_idx_can_be_set() -> void:
 
 func test_weapons_array_not_empty() -> void:
 	assert_gt(
-		WeaponScript.WEAPONS.size(), 0,
+		WeaponScript.WEAPONS.size(),
+		0,
 		"WEAPONS array should have at least one weapon",
 	)
 
@@ -68,7 +70,8 @@ func test_default_weapon_idx_in_range() -> void:
 	add_child_autofree(pickup)
 	assert_gte(pickup.weapon_idx, 0)
 	assert_lt(
-		pickup.weapon_idx, WeaponScript.WEAPONS.size(),
+		pickup.weapon_idx,
+		WeaponScript.WEAPONS.size(),
 		"Default weapon_idx should be within WEAPONS range",
 	)
 
@@ -77,6 +80,7 @@ func test_default_weapon_idx_in_range() -> void:
 # Spin animation math
 # ==========================================================================
 
+
 func test_process_advances_spin_time() -> void:
 	var pickup := _make_pickup()
 	add_child_autofree(pickup)
@@ -84,7 +88,9 @@ func test_process_advances_spin_time() -> void:
 	pickup._spin_time = 0.0
 	pickup._process(0.5)
 	assert_almost_eq(
-		pickup._spin_time, 0.5, 0.001,
+		pickup._spin_time,
+		0.5,
+		0.001,
 		"_process should advance _spin_time",
 	)
 
@@ -97,7 +103,9 @@ func test_process_rotates_mesh_pivot() -> void:
 	pickup._process(1.0)
 	# rotation.y = _spin_time * 1.5 = 1.5
 	assert_almost_eq(
-		pickup.mesh_pivot.rotation.y, 1.5, 0.001,
+		pickup.mesh_pivot.rotation.y,
+		1.5,
+		0.001,
 		"Mesh pivot should rotate at 1.5 rad/s",
 	)
 
@@ -111,7 +119,9 @@ func test_process_bobs_mesh_pivot_y() -> void:
 	# position.y = 1.0 + sin(1.0 * 2.0) * 0.1
 	var expected_y := 1.0 + sin(2.0) * 0.1
 	assert_almost_eq(
-		pickup.mesh_pivot.position.y, expected_y, 0.001,
+		pickup.mesh_pivot.position.y,
+		expected_y,
+		0.001,
 		"Mesh pivot should bob vertically",
 	)
 
@@ -129,6 +139,7 @@ func test_spin_accumulates_over_frames() -> void:
 # ==========================================================================
 # Body detection logic — _on_body_entered
 # ==========================================================================
+
 
 func test_player_group_detected() -> void:
 	var body := Node3D.new()
@@ -192,6 +203,7 @@ func test_combined_layers_detect_player_vehicle() -> void:
 # Weapon data integrity (since pickup references WEAPONS array)
 # ==========================================================================
 
+
 func test_all_weapons_have_name() -> void:
 	for w in WeaponScript.WEAPONS:
 		assert_true(
@@ -199,7 +211,8 @@ func test_all_weapons_have_name() -> void:
 			"Each weapon should have a name",
 		)
 		assert_gt(
-			(w.name as String).length(), 0,
+			(w.name as String).length(),
+			0,
 			"Weapon name should not be empty",
 		)
 
@@ -207,7 +220,8 @@ func test_all_weapons_have_name() -> void:
 func test_all_weapons_have_positive_damage() -> void:
 	for w in WeaponScript.WEAPONS:
 		assert_gt(
-			w.damage, 0.0,
+			w.damage,
+			0.0,
 			"Weapon '%s' should have positive damage" % w.name,
 		)
 
@@ -215,7 +229,8 @@ func test_all_weapons_have_positive_damage() -> void:
 func test_all_weapons_have_positive_range() -> void:
 	for w in WeaponScript.WEAPONS:
 		assert_gt(
-			w.range, 0.0,
+			w.range,
+			0.0,
 			"Weapon '%s' should have positive range" % w.name,
 		)
 
@@ -223,7 +238,8 @@ func test_all_weapons_have_positive_range() -> void:
 func test_all_weapons_have_positive_cooldown() -> void:
 	for w in WeaponScript.WEAPONS:
 		assert_gt(
-			w.cooldown, 0.0,
+			w.cooldown,
+			0.0,
 			"Weapon '%s' should have positive cooldown" % w.name,
 		)
 
@@ -232,7 +248,8 @@ func test_weapon_names_are_unique() -> void:
 	var names: Array[String] = []
 	for w in WeaponScript.WEAPONS:
 		assert_does_not_have(
-			names, w.name,
+			names,
+			w.name,
 			"Weapon name '%s' should be unique" % w.name,
 		)
 		names.append(w.name)
@@ -242,13 +259,15 @@ func test_weapon_names_are_unique() -> void:
 # Mesh building — weapon index out of range
 # ==========================================================================
 
+
 func test_build_mesh_with_invalid_index_no_crash() -> void:
 	var pickup := _make_pickup()
 	pickup.weapon_idx = 999
 	add_child_autofree(pickup)
 	# _ready calls _build_mesh which should bail with invalid idx
 	assert_eq(
-		pickup.mesh_pivot.get_child_count(), 0,
+		pickup.mesh_pivot.get_child_count(),
+		0,
 		"Invalid weapon index should not add any mesh children",
 	)
 
@@ -258,6 +277,7 @@ func test_build_mesh_with_negative_index_no_crash() -> void:
 	pickup.weapon_idx = -1
 	add_child_autofree(pickup)
 	assert_eq(
-		pickup.mesh_pivot.get_child_count(), 0,
+		pickup.mesh_pivot.get_child_count(),
+		0,
 		"Negative weapon index should not add any mesh children",
 	)

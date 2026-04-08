@@ -17,6 +17,7 @@ func before_each() -> void:
 # Direction enum values
 # ==========================================================================
 
+
 func test_direction_north_is_zero() -> void:
 	assert_eq(VehicleAIBase.Direction.NORTH, 0)
 
@@ -36,6 +37,7 @@ func test_direction_west_is_three() -> void:
 # ==========================================================================
 # Shared constants
 # ==========================================================================
+
 
 func test_arrival_dist() -> void:
 	assert_eq(VehicleAIBase.ARRIVAL_DIST, 6.0)
@@ -65,6 +67,7 @@ func test_max_escape_attempts_value() -> void:
 # Default instance state
 # ==========================================================================
 
+
 func test_default_active_true() -> void:
 	assert_true(_ai.active)
 
@@ -88,6 +91,7 @@ func test_default_escape_attempts_zero() -> void:
 # ==========================================================================
 # _dir_to_heading
 # ==========================================================================
+
 
 func test_dir_to_heading_north() -> void:
 	assert_eq(
@@ -124,6 +128,7 @@ func test_dir_to_heading_invalid_defaults_north() -> void:
 # ==========================================================================
 # _get_reverse
 # ==========================================================================
+
 
 func test_reverse_north_gives_south() -> void:
 	assert_eq(
@@ -164,6 +169,7 @@ func test_reverse_invalid_defaults_north() -> void:
 # _find_next_road_coord
 # ==========================================================================
 
+
 func test_find_next_road_coord_positive_direction_returns_ahead() -> void:
 	# With sign_dir=1 (southward), result should be > current
 	var result := _ai._find_next_road_coord(0.0, 1)
@@ -185,6 +191,7 @@ func test_find_next_road_coord_respects_min_ahead() -> void:
 # ==========================================================================
 # deactivate
 # ==========================================================================
+
 
 func test_deactivate_sets_active_false() -> void:
 	_ai.active = true

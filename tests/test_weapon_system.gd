@@ -10,18 +10,28 @@ func test_weapons_count() -> void:
 
 func test_weapon_has_required_keys() -> void:
 	var required := [
-		"name", "range", "damage", "cooldown", "auto", "spread",
-		"pellets", "crime_mult", "body", "muzzle_z",
-		"snap_dur", "body_dur", "tail_decay", "base_freq", "end_freq",
+		"name",
+		"range",
+		"damage",
+		"cooldown",
+		"auto",
+		"spread",
+		"pellets",
+		"crime_mult",
+		"body",
+		"muzzle_z",
+		"snap_dur",
+		"body_dur",
+		"tail_decay",
+		"base_freq",
+		"end_freq",
 	]
 	for i in range(WeaponScript.WEAPONS.size()):
 		var w: Dictionary = WeaponScript.WEAPONS[i]
 		for key in required:
 			assert_true(
 				w.has(key),
-				"Weapon %d (%s) missing key: %s" % [
-					i, w.get("name", "?"), key
-				],
+				"Weapon %d (%s) missing key: %s" % [i, w.get("name", "?"), key],
 			)
 
 
@@ -50,9 +60,7 @@ func test_rifle_has_longest_range() -> void:
 		var r: float = weapon["range"]
 		if r > max_range:
 			max_range = r
-	assert_eq(
-		w["range"], max_range, "Rifle should have longest range"
-	)
+	assert_eq(w["range"], max_range, "Rifle should have longest range")
 
 
 func test_all_weapons_have_positive_cooldown() -> void:
@@ -79,6 +87,7 @@ func test_pellet_damage_totals_match() -> void:
 		var total: float = w["damage"]
 		var per_pellet: float = total / float(pellets)
 		assert_gt(
-			per_pellet, 0.0,
+			per_pellet,
+			0.0,
 			"%s per-pellet damage should be > 0" % w["name"],
 		)

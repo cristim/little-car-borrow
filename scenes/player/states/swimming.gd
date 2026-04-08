@@ -32,9 +32,7 @@ func physics_update(delta: float) -> void:
 		player.velocity.y = lerpf(player.velocity.y, 0.0, delta * 5.0)
 
 	# Horizontal movement
-	var move_input := Input.get_vector(
-		"move_left", "move_right", "move_forward", "move_backward"
-	)
+	var move_input := Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
 	var speed: float = SPRINT_SWIM_SPEED if Input.is_action_pressed("sprint") else SWIM_SPEED
 
 	if move_input.length() > 0.1:
@@ -65,9 +63,7 @@ func handle_input(event: InputEvent) -> void:
 	# Allow boarding boats from water (not cars)
 	if event.is_action_pressed("interact") and owner.nearest_vehicle:
 		if owner.nearest_vehicle.get_node_or_null("BoatController"):
-			state_machine.transition_to(
-				"EnteringVehicle", {"vehicle": owner.nearest_vehicle}
-			)
+			state_machine.transition_to("EnteringVehicle", {"vehicle": owner.nearest_vehicle})
 
 
 func _update_prompt() -> void:

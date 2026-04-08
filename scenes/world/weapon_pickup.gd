@@ -21,12 +21,8 @@ func _process(delta: float) -> void:
 
 
 func _build_mesh() -> void:
-	var WeaponScript: GDScript = preload(
-		"res://scenes/player/player_weapon.gd"
-	)
-	var BuilderScript: GDScript = preload(
-		"res://src/weapon_mesh_builder.gd"
-	)
+	var WeaponScript: GDScript = preload("res://scenes/player/player_weapon.gd")
+	var BuilderScript: GDScript = preload("res://src/weapon_mesh_builder.gd")
 	if weapon_idx < 0 or weapon_idx >= WeaponScript.WEAPONS.size():
 		return
 	var w: Dictionary = WeaponScript.WEAPONS[weapon_idx]

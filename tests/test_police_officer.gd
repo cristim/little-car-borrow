@@ -4,10 +4,7 @@ extends GutTest
 ## Tests model building, shooting logic, target position, limb animation,
 ## and state transitions.
 
-const OfficerScript = preload(
-	"res://scenes/police/police_officer.gd"
-)
-
+const OfficerScript = preload("res://scenes/police/police_officer.gd")
 
 var _officer: CharacterBody3D
 
@@ -21,51 +18,59 @@ func before_each() -> void:
 # Constants
 # ================================================================
 
+
 func test_chase_speed_value() -> void:
 	assert_eq(
-		OfficerScript.CHASE_SPEED, 5.5,
+		OfficerScript.CHASE_SPEED,
+		5.5,
 		"Chase speed should be 5.5",
 	)
 
 
 func test_shoot_range_value() -> void:
 	assert_eq(
-		OfficerScript.SHOOT_RANGE, 30.0,
+		OfficerScript.SHOOT_RANGE,
+		30.0,
 		"Shoot range should be 30.0",
 	)
 
 
 func test_shoot_cooldown_value() -> void:
 	assert_eq(
-		OfficerScript.SHOOT_COOLDOWN, 1.2,
+		OfficerScript.SHOOT_COOLDOWN,
+		1.2,
 		"Shoot cooldown should be 1.2",
 	)
 
 
 func test_shoot_damage_value() -> void:
 	assert_eq(
-		OfficerScript.SHOOT_DAMAGE, 8.0,
+		OfficerScript.SHOOT_DAMAGE,
+		8.0,
 		"Shoot damage should be 8.0",
 	)
 
 
 func test_despawn_dist_value() -> void:
 	assert_eq(
-		OfficerScript.DESPAWN_DIST, 80.0,
+		OfficerScript.DESPAWN_DIST,
+		80.0,
 		"Despawn distance should be 80.0",
 	)
 
 
 func test_gravity_value() -> void:
 	assert_eq(
-		OfficerScript.GRAVITY, 9.8,
+		OfficerScript.GRAVITY,
+		9.8,
 		"Gravity should be 9.8",
 	)
 
 
 func test_muzzle_flash_time_value() -> void:
 	assert_eq(
-		OfficerScript.MUZZLE_FLASH_TIME, 0.08,
+		OfficerScript.MUZZLE_FLASH_TIME,
+		0.08,
 		"Muzzle flash time should be 0.08",
 	)
 
@@ -73,6 +78,7 @@ func test_muzzle_flash_time_value() -> void:
 # ================================================================
 # Group and collision setup
 # ================================================================
+
 
 func test_added_to_police_officer_group() -> void:
 	assert_true(
@@ -83,14 +89,16 @@ func test_added_to_police_officer_group() -> void:
 
 func test_collision_layer_is_npc() -> void:
 	assert_eq(
-		_officer.collision_layer, 4,
+		_officer.collision_layer,
+		4,
 		"Collision layer should be 4 (NPC)",
 	)
 
 
 func test_collision_mask_static_and_ground() -> void:
 	assert_eq(
-		_officer.collision_mask, 3,
+		_officer.collision_mask,
+		3,
 		"Collision mask should be 3 (Static + Ground)",
 	)
 
@@ -98,6 +106,7 @@ func test_collision_mask_static_and_ground() -> void:
 # ================================================================
 # Model building
 # ================================================================
+
 
 func test_officer_model_exists() -> void:
 	var model := _officer.get_node_or_null("OfficerModel")
@@ -146,7 +155,8 @@ func test_left_shoulder_pivot_exists() -> void:
 		"Left shoulder pivot should exist",
 	)
 	assert_eq(
-		_officer._left_shoulder.name, "LeftShoulderPivot",
+		_officer._left_shoulder.name,
+		"LeftShoulderPivot",
 		"Should be named LeftShoulderPivot",
 	)
 
@@ -157,7 +167,8 @@ func test_right_shoulder_pivot_exists() -> void:
 		"Right shoulder pivot should exist",
 	)
 	assert_eq(
-		_officer._right_shoulder.name, "RightShoulderPivot",
+		_officer._right_shoulder.name,
+		"RightShoulderPivot",
 		"Should be named RightShoulderPivot",
 	)
 
@@ -168,7 +179,8 @@ func test_left_hip_pivot_exists() -> void:
 		"Left hip pivot should exist",
 	)
 	assert_eq(
-		_officer._left_hip.name, "LeftHipPivot",
+		_officer._left_hip.name,
+		"LeftHipPivot",
 		"Should be named LeftHipPivot",
 	)
 
@@ -179,7 +191,8 @@ func test_right_hip_pivot_exists() -> void:
 		"Right hip pivot should exist",
 	)
 	assert_eq(
-		_officer._right_hip.name, "RightHipPivot",
+		_officer._right_hip.name,
+		"RightHipPivot",
 		"Should be named RightHipPivot",
 	)
 
@@ -203,11 +216,15 @@ func test_collision_capsule_exists() -> void:
 			if shape is CapsuleShape3D:
 				found = true
 				assert_almost_eq(
-					(shape as CapsuleShape3D).radius, 0.3, 0.001,
+					(shape as CapsuleShape3D).radius,
+					0.3,
+					0.001,
 					"Capsule radius should be 0.3",
 				)
 				assert_almost_eq(
-					(shape as CapsuleShape3D).height, 1.7, 0.001,
+					(shape as CapsuleShape3D).height,
+					1.7,
+					0.001,
 					"Capsule height should be 1.7",
 				)
 				break
@@ -218,11 +235,13 @@ func test_collision_capsule_exists() -> void:
 # _get_target_pos
 # ================================================================
 
+
 func test_target_pos_no_player_returns_self() -> void:
 	_officer._player = null
 	var pos: Vector3 = _officer._get_target_pos()
 	assert_eq(
-		pos, _officer.global_position,
+		pos,
+		_officer.global_position,
 		"Without player, target should be own position",
 	)
 
@@ -235,7 +254,8 @@ func test_target_pos_with_player_returns_player_pos() -> void:
 
 	var pos: Vector3 = _officer._get_target_pos()
 	assert_eq(
-		pos, Vector3(10.0, 0.0, 20.0),
+		pos,
+		Vector3(10.0, 0.0, 20.0),
 		"Should return player position",
 	)
 
@@ -251,7 +271,8 @@ func test_target_pos_with_player_in_vehicle() -> void:
 
 	var pos: Vector3 = _officer._get_target_pos()
 	assert_eq(
-		pos, Vector3(50.0, 0.0, 50.0),
+		pos,
+		Vector3(50.0, 0.0, 50.0),
 		"Should return vehicle position when player is in vehicle",
 	)
 
@@ -265,7 +286,8 @@ func test_target_pos_with_null_vehicle() -> void:
 
 	var pos: Vector3 = _officer._get_target_pos()
 	assert_eq(
-		pos, Vector3(15.0, 0.0, 25.0),
+		pos,
+		Vector3(15.0, 0.0, 25.0),
 		"Should return player position when vehicle is null",
 	)
 
@@ -273,6 +295,7 @@ func test_target_pos_with_null_vehicle() -> void:
 # ================================================================
 # _shoot
 # ================================================================
+
 
 func test_shoot_enables_muzzle_flash() -> void:
 	_officer._shoot(Vector3.ZERO)
@@ -285,7 +308,8 @@ func test_shoot_enables_muzzle_flash() -> void:
 func test_shoot_sets_flash_timer() -> void:
 	_officer._shoot(Vector3.ZERO)
 	assert_eq(
-		_officer._flash_timer, OfficerScript.MUZZLE_FLASH_TIME,
+		_officer._flash_timer,
+		OfficerScript.MUZZLE_FLASH_TIME,
 		"Flash timer should be set to MUZZLE_FLASH_TIME",
 	)
 
@@ -293,7 +317,8 @@ func test_shoot_sets_flash_timer() -> void:
 func test_shoot_sets_shoot_pose_timer() -> void:
 	_officer._shoot(Vector3.ZERO)
 	assert_eq(
-		_officer._shoot_pose_timer, 0.4,
+		_officer._shoot_pose_timer,
+		0.4,
 		"Shoot pose timer should be 0.4",
 	)
 
@@ -303,7 +328,8 @@ func test_shoot_creates_audio_child() -> void:
 	_officer._shoot(Vector3.ZERO)
 	# _play_gunshot adds an AudioStreamPlayer3D child
 	assert_gt(
-		_officer.get_child_count(), child_count_before,
+		_officer.get_child_count(),
+		child_count_before,
 		"Should add audio player child",
 	)
 
@@ -311,6 +337,7 @@ func test_shoot_creates_audio_child() -> void:
 # ================================================================
 # Muzzle flash fadeout
 # ================================================================
+
 
 func test_flash_timer_decrements() -> void:
 	_officer._flash_timer = 0.05
@@ -320,7 +347,8 @@ func test_flash_timer_decrements() -> void:
 	var delta := 0.03
 	_officer._flash_timer -= delta
 	assert_gt(
-		_officer._flash_timer, 0.0,
+		_officer._flash_timer,
+		0.0,
 		"Flash timer should still be positive",
 	)
 	assert_true(
@@ -348,17 +376,20 @@ func test_flash_timer_hides_muzzle_when_expired() -> void:
 # _animate_limbs
 # ================================================================
 
+
 func test_animate_limbs_running_swings_arms() -> void:
 	_officer._anim_phase = 0.0
 	_officer._shoot_pose_timer = 0.0
 	_officer._animate_limbs(0.1, 10.0)  # h_dist > 2.0 = running
 
 	assert_ne(
-		_officer._anim_phase, 0.0,
+		_officer._anim_phase,
+		0.0,
 		"Anim phase should advance when running",
 	)
 	assert_ne(
-		_officer._left_shoulder.rotation.x, 0.0,
+		_officer._left_shoulder.rotation.x,
+		0.0,
 		"Left shoulder should swing when running",
 	)
 
@@ -380,7 +411,8 @@ func test_animate_limbs_idle_decays_toward_zero() -> void:
 		"Limbs should decay toward zero when idle",
 	)
 	assert_eq(
-		_officer._anim_phase, 0.0,
+		_officer._anim_phase,
+		0.0,
 		"Anim phase should reset to 0 when idle",
 	)
 
@@ -421,6 +453,7 @@ func test_animate_limbs_no_shoulders_safe() -> void:
 # Initial state
 # ================================================================
 
+
 func test_initial_shoot_timer_zero() -> void:
 	assert_eq(_officer._shoot_timer, 0.0)
 
@@ -459,11 +492,13 @@ func test_rng_is_randomized() -> void:
 # Model structure counts
 # ================================================================
 
+
 func test_model_child_count() -> void:
 	var model := _officer.get_node("OfficerModel")
 	# torso, head, hat, left_shoulder, right_shoulder, left_hip, right_hip = 7
 	assert_eq(
-		model.get_child_count(), 7,
+		model.get_child_count(),
+		7,
 		"OfficerModel should have 7 direct children",
 	)
 
@@ -471,28 +506,32 @@ func test_model_child_count() -> void:
 func test_right_shoulder_has_arm_gun_and_flash() -> void:
 	# Right shoulder: arm mesh, gun mesh, muzzle flash
 	assert_eq(
-		_officer._right_shoulder.get_child_count(), 3,
+		_officer._right_shoulder.get_child_count(),
+		3,
 		"Right shoulder should have arm, gun, and muzzle flash",
 	)
 
 
 func test_left_shoulder_has_one_arm() -> void:
 	assert_eq(
-		_officer._left_shoulder.get_child_count(), 1,
+		_officer._left_shoulder.get_child_count(),
+		1,
 		"Left shoulder should have one arm mesh",
 	)
 
 
 func test_left_hip_has_one_leg() -> void:
 	assert_eq(
-		_officer._left_hip.get_child_count(), 1,
+		_officer._left_hip.get_child_count(),
+		1,
 		"Left hip should have one leg mesh",
 	)
 
 
 func test_right_hip_has_one_leg() -> void:
 	assert_eq(
-		_officer._right_hip.get_child_count(), 1,
+		_officer._right_hip.get_child_count(),
+		1,
 		"Right hip should have one leg mesh",
 	)
 
@@ -504,6 +543,7 @@ func test_right_hip_has_one_leg() -> void:
 # ================================================================
 # Line-of-sight (LOS) wall check — source-code verification
 # ================================================================
+
 
 func test_shoot_performs_los_raycast() -> void:
 	var src: String = OfficerScript.source_code
@@ -543,6 +583,7 @@ func test_los_blocks_shot_on_hit() -> void:
 # ================================================================
 # PlayerStub for vehicle targeting tests
 # ================================================================
+
 
 class PlayerStub:
 	extends Node3D

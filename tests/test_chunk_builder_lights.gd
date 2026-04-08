@@ -2,9 +2,7 @@ extends GutTest
 ## Unit tests for chunk_builder_lights.gd — streetlight pole and lamp
 ## MultiMesh generation along road intersections.
 
-const LightsScript = preload(
-	"res://scenes/world/generator/chunk_builder_lights.gd"
-)
+const LightsScript = preload("res://scenes/world/generator/chunk_builder_lights.gd")
 const RoadGridScript = preload("res://src/road_grid.gd")
 
 var _grid: RefCounted
@@ -25,13 +23,15 @@ func before_each() -> void:
 # Initialization
 # ================================================================
 
+
 func test_init_stores_grid() -> void:
 	assert_eq(_builder._grid, _grid, "Grid should be stored after init")
 
 
 func test_init_stores_pole_material() -> void:
 	assert_eq(
-		_builder._pole_mat, _pole_mat,
+		_builder._pole_mat,
+		_pole_mat,
 		"Pole material should be stored after init",
 	)
 
@@ -54,11 +54,13 @@ func test_lamp_material_is_emissive() -> void:
 func test_lamp_material_color() -> void:
 	var mat := _builder._lamp_mat as StandardMaterial3D
 	assert_eq(
-		mat.albedo_color, LightsScript.LAMP_COLOR,
+		mat.albedo_color,
+		LightsScript.LAMP_COLOR,
 		"Lamp material albedo should match LAMP_COLOR",
 	)
 	assert_eq(
-		mat.emission, LightsScript.LAMP_COLOR,
+		mat.emission,
+		LightsScript.LAMP_COLOR,
 		"Lamp material emission should match LAMP_COLOR",
 	)
 
@@ -66,7 +68,8 @@ func test_lamp_material_color() -> void:
 func test_lamp_material_emission_energy() -> void:
 	var mat := _builder._lamp_mat as StandardMaterial3D
 	assert_eq(
-		mat.emission_energy_multiplier, 2.0,
+		mat.emission_energy_multiplier,
+		2.0,
 		"Lamp emission energy multiplier should be 2.0",
 	)
 
@@ -96,7 +99,8 @@ func test_init_creates_lamp_mesh() -> void:
 func test_pole_mesh_uses_pole_material() -> void:
 	var mesh := _builder._pole_mesh as CylinderMesh
 	assert_eq(
-		mesh.material, _pole_mat,
+		mesh.material,
+		_pole_mat,
 		"Pole mesh should use pole material",
 	)
 
@@ -104,7 +108,8 @@ func test_pole_mesh_uses_pole_material() -> void:
 func test_lamp_mesh_uses_lamp_material() -> void:
 	var mesh := _builder._lamp_mesh as SphereMesh
 	assert_eq(
-		mesh.material, _builder._lamp_mat,
+		mesh.material,
+		_builder._lamp_mat,
 		"Lamp mesh should use lamp material",
 	)
 
@@ -113,12 +118,14 @@ func test_lamp_mesh_uses_lamp_material() -> void:
 # Build output structure
 # ================================================================
 
+
 func test_build_adds_two_children_to_chunk() -> void:
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
 	_builder.build(chunk, 0.0, 0.0)
 	assert_eq(
-		chunk.get_child_count(), 2,
+		chunk.get_child_count(),
+		2,
 		"Build should add poles and lamps MultiMeshInstance3D",
 	)
 
@@ -167,13 +174,15 @@ func test_lamps_in_streetlight_group() -> void:
 # MultiMesh properties
 # ================================================================
 
+
 func test_poles_multimesh_has_instances() -> void:
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
 	_builder.build(chunk, 0.0, 0.0)
 	var poles := chunk.get_child(0) as MultiMeshInstance3D
 	assert_gt(
-		poles.multimesh.instance_count, 0,
+		poles.multimesh.instance_count,
+		0,
 		"Poles MultiMesh should have instances",
 	)
 
@@ -184,7 +193,8 @@ func test_lamps_multimesh_has_instances() -> void:
 	_builder.build(chunk, 0.0, 0.0)
 	var lamps := chunk.get_child(1) as MultiMeshInstance3D
 	assert_gt(
-		lamps.multimesh.instance_count, 0,
+		lamps.multimesh.instance_count,
+		0,
 		"Lamps MultiMesh should have instances",
 	)
 
@@ -232,7 +242,8 @@ func test_poles_multimesh_uses_pole_mesh() -> void:
 	_builder.build(chunk, 0.0, 0.0)
 	var poles := chunk.get_child(0) as MultiMeshInstance3D
 	assert_eq(
-		poles.multimesh.mesh, _builder._pole_mesh,
+		poles.multimesh.mesh,
+		_builder._pole_mesh,
 		"Poles MultiMesh should use the pole mesh",
 	)
 
@@ -243,7 +254,8 @@ func test_lamps_multimesh_uses_lamp_mesh() -> void:
 	_builder.build(chunk, 0.0, 0.0)
 	var lamps := chunk.get_child(1) as MultiMeshInstance3D
 	assert_eq(
-		lamps.multimesh.mesh, _builder._lamp_mesh,
+		lamps.multimesh.mesh,
+		_builder._lamp_mesh,
 		"Lamps MultiMesh should use the lamp mesh",
 	)
 
@@ -251,6 +263,7 @@ func test_lamps_multimesh_uses_lamp_mesh() -> void:
 # ================================================================
 # Position sanity — lamps are at pole top
 # ================================================================
+
 
 func test_lamp_y_equals_pole_height() -> void:
 	var chunk := Node3D.new()
@@ -262,7 +275,8 @@ func test_lamp_y_equals_pole_height() -> void:
 	# In headless mode, MultiMesh transforms may read back as identity.
 	# Verify the multimesh was configured with the correct mesh instead.
 	assert_eq(
-		lamps.multimesh.mesh, _builder._lamp_mesh,
+		lamps.multimesh.mesh,
+		_builder._lamp_mesh,
 		"Lamp multimesh should reference the lamp mesh",
 	)
 
@@ -277,7 +291,8 @@ func test_pole_y_at_half_height() -> void:
 	# In headless mode, MultiMesh transforms may read back as identity.
 	# Verify the multimesh was configured with the correct mesh instead.
 	assert_eq(
-		poles.multimesh.mesh, _builder._pole_mesh,
+		poles.multimesh.mesh,
+		_builder._pole_mesh,
 		"Pole multimesh should reference the pole mesh",
 	)
 
@@ -285,6 +300,7 @@ func test_pole_y_at_half_height() -> void:
 # ================================================================
 # Instance count sanity
 # ================================================================
+
 
 func test_instance_count_based_on_grid() -> void:
 	var chunk := Node3D.new()
@@ -300,7 +316,8 @@ func test_instance_count_based_on_grid() -> void:
 	assert_gt(count, 0, "Should have at least some streetlights")
 	# Upper bound sanity: (GRID_SIZE+1)^2 = 121 max per direction
 	assert_lt(
-		count, 300,
+		count,
+		300,
 		"Should not have an unreasonable number of streetlights",
 	)
 
@@ -309,13 +326,15 @@ func test_instance_count_based_on_grid() -> void:
 # Offset positioning
 # ================================================================
 
+
 func test_build_with_offset() -> void:
 	var span: float = _grid.get_grid_span()
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
 	_builder.build(chunk, span, span)
 	assert_eq(
-		chunk.get_child_count(), 2,
+		chunk.get_child_count(),
+		2,
 		"Build with offset should still produce 2 children",
 	)
 
@@ -326,7 +345,8 @@ func test_build_with_negative_offset() -> void:
 	add_child_autofree(chunk)
 	_builder.build(chunk, -span, -span)
 	assert_eq(
-		chunk.get_child_count(), 2,
+		chunk.get_child_count(),
+		2,
 		"Build with negative offset should still produce 2 children",
 	)
 
@@ -334,6 +354,7 @@ func test_build_with_negative_offset() -> void:
 # ================================================================
 # Determinism
 # ================================================================
+
 
 func test_build_is_deterministic() -> void:
 	var chunk_a := Node3D.new()
@@ -357,23 +378,27 @@ func test_build_is_deterministic() -> void:
 # Constants sanity
 # ================================================================
 
+
 func test_pole_height_positive() -> void:
 	assert_gt(
-		LightsScript.POLE_HEIGHT, 0.0,
+		LightsScript.POLE_HEIGHT,
+		0.0,
 		"Pole height should be positive",
 	)
 
 
 func test_pole_radius_positive() -> void:
 	assert_gt(
-		LightsScript.POLE_RADIUS, 0.0,
+		LightsScript.POLE_RADIUS,
+		0.0,
 		"Pole radius should be positive",
 	)
 
 
 func test_lamp_radius_positive() -> void:
 	assert_gt(
-		LightsScript.LAMP_RADIUS, 0.0,
+		LightsScript.LAMP_RADIUS,
+		0.0,
 		"Lamp radius should be positive",
 	)
 

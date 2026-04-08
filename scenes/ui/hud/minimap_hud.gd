@@ -68,28 +68,25 @@ func _ready() -> void:
 func _rebuild_clip_circle() -> void:
 	if _fullscreen:
 		# Use rectangular clip for fullscreen
-		_clip_circle = PackedVector2Array([
-			Vector2(0, 0),
-			Vector2(size.x, 0),
-			Vector2(size.x, size.y),
-			Vector2(0, size.y),
-		])
+		_clip_circle = PackedVector2Array(
+			[
+				Vector2(0, 0),
+				Vector2(size.x, 0),
+				Vector2(size.x, size.y),
+				Vector2(0, size.y),
+			]
+		)
 		return
 	var center := Vector2(_map_center, _map_center)
 	_clip_circle.resize(64)
 	for i in range(64):
 		var angle: float = float(i) * TAU / 64.0
-		_clip_circle[i] = center + Vector2(
-			cos(angle), sin(angle)
-		) * _map_radius
+		_clip_circle[i] = center + Vector2(cos(angle), sin(angle)) * _map_radius
 
 
 func _process(delta: float) -> void:
 	if not _player:
-		_player = (
-			get_tree().get_first_node_in_group("player")
-			as Node3D
-		)
+		_player = (get_tree().get_first_node_in_group("player") as Node3D)
 	# Fullscreen pan with arrow keys
 	if _fullscreen:
 		var pan_speed: float = 200.0 / _scale
@@ -119,9 +116,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _change_zoom(direction: int) -> void:
-	_zoom_idx = clampi(
-		_zoom_idx + direction, 0, ZOOM_LEVELS.size() - 1
-	)
+	_zoom_idx = clampi(_zoom_idx + direction, 0, ZOOM_LEVELS.size() - 1)
 	_scale = ZOOM_LEVELS[_zoom_idx]
 	_rebuild_clip_circle()
 
@@ -190,9 +185,7 @@ func _draw() -> void:
 	_draw_group_dots("npc_vehicle", player_pos, yaw, NPC_COLOR, 2.0)
 
 	# Police vehicles (red dots)
-	_draw_group_dots(
-		"police_vehicle", player_pos, yaw, POLICE_COLOR, 3.0
-	)
+	_draw_group_dots("police_vehicle", player_pos, yaw, POLICE_COLOR, 3.0)
 
 	# Police helicopter (distinct icon)
 	_draw_heli_icons(player_pos, yaw)
@@ -211,37 +204,29 @@ func _draw() -> void:
 
 	# Border
 	if _fullscreen:
-		draw_rect(
-			Rect2(Vector2.ZERO, size), BORDER_COLOR, false, 2.0
-		)
+		draw_rect(Rect2(Vector2.ZERO, size), BORDER_COLOR, false, 2.0)
 		# Zoom level indicator
-		var zoom_text := "Zoom: %dx  [+/-] zoom  [M] close" % (
-			_zoom_idx + 1
-		)
+		var zoom_text := "Zoom: %dx  [+/-] zoom  [M] close" % (_zoom_idx + 1)
 		draw_string(
 			ThemeDB.fallback_font,
 			Vector2(10, size.y - 10),
-			zoom_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14,
+			zoom_text,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1,
+			14,
 			Color(0.8, 0.8, 0.8, 0.7),
 		)
 	else:
-		draw_arc(
-			center, _map_radius, 0.0, TAU, 64,
-			BORDER_COLOR, 2.0
-		)
+		draw_arc(center, _map_radius, 0.0, TAU, 64, BORDER_COLOR, 2.0)
 
 
 func _draw_city_boundary(ppos: Vector3, yaw: float) -> void:
 	if not _boundary_cached:
-		var city_node := get_tree().get_first_node_in_group(
-			"city_manager"
-		)
+		var city_node := get_tree().get_first_node_in_group("city_manager")
 		if not city_node or not city_node.has_meta("city_boundary"):
 			return
 		_boundary = city_node.get_meta("city_boundary")
-		_boundary_polygon = _boundary.get_boundary_polygon(
-			BOUNDARY_SEGMENTS
-		)
+		_boundary_polygon = _boundary.get_boundary_polygon(BOUNDARY_SEGMENTS)
 		if city_node.has_meta("river_map"):
 			_river_map = city_node.get_meta("river_map")
 		if city_node.has_meta("biome_map"):
@@ -256,14 +241,10 @@ func _draw_city_boundary(ppos: Vector3, yaw: float) -> void:
 	map_pts.resize(_boundary_polygon.size())
 	for i in range(_boundary_polygon.size()):
 		var wp := _boundary_polygon[i]
-		map_pts[i] = _world_to_minimap(
-			Vector3(wp.x, 0.0, wp.y), ppos, yaw
-		)
+		map_pts[i] = _world_to_minimap(Vector3(wp.x, 0.0, wp.y), ppos, yaw)
 
 	# Clip polygon to minimap circle
-	var clipped: Array[PackedVector2Array] = (
-		Geometry2D.intersect_polygons(map_pts, _clip_circle)
-	)
+	var clipped: Array[PackedVector2Array] = Geometry2D.intersect_polygons(map_pts, _clip_circle)
 	for poly in clipped:
 		draw_colored_polygon(poly, CITY_BOUNDARY_COLOR)
 		# Close the polyline by appending the first point
@@ -279,46 +260,28 @@ func _draw_roads(ppos: Vector3, yaw: float) -> void:
 		var width := 2.0 if is_highway else 1.5
 
 		# N-S roads (along Z axis)
-		var rx: float = _grid.get_road_center_near(
-			ri, ppos.x
-		)
+		var rx: float = _grid.get_road_center_near(ri, ppos.x)
 		var draw_ns := true
 		if not is_highway and _boundary:
-			draw_ns = _boundary.get_signed_distance(
-				rx, ppos.z
-			) < 0.0
+			draw_ns = _boundary.get_signed_distance(rx, ppos.z) < 0.0
 		if draw_ns:
-			var top := _world_to_minimap(
-				Vector3(rx, 0.0, ppos.z - view_range), ppos, yaw
-			)
-			var bot := _world_to_minimap(
-				Vector3(rx, 0.0, ppos.z + view_range), ppos, yaw
-			)
+			var top := _world_to_minimap(Vector3(rx, 0.0, ppos.z - view_range), ppos, yaw)
+			var bot := _world_to_minimap(Vector3(rx, 0.0, ppos.z + view_range), ppos, yaw)
 			_draw_clipped_line(top, bot, ROAD_COLOR, width)
 
 		# E-W roads (along X axis)
-		var rz: float = _grid.get_road_center_near(
-			ri, ppos.z
-		)
+		var rz: float = _grid.get_road_center_near(ri, ppos.z)
 		var draw_ew := true
 		if not is_highway and _boundary:
-			draw_ew = _boundary.get_signed_distance(
-				ppos.x, rz
-			) < 0.0
+			draw_ew = _boundary.get_signed_distance(ppos.x, rz) < 0.0
 		if draw_ew:
-			var left := _world_to_minimap(
-				Vector3(ppos.x - view_range, 0.0, rz), ppos, yaw
-			)
-			var right := _world_to_minimap(
-				Vector3(ppos.x + view_range, 0.0, rz), ppos, yaw
-			)
+			var left := _world_to_minimap(Vector3(ppos.x - view_range, 0.0, rz), ppos, yaw)
+			var right := _world_to_minimap(Vector3(ppos.x + view_range, 0.0, rz), ppos, yaw)
 			_draw_clipped_line(left, right, ROAD_COLOR, width)
 
 
 func _draw_terrain(ppos: Vector3, yaw: float) -> void:
-	var city_node := get_tree().get_first_node_in_group(
-		"city_manager"
-	)
+	var city_node := get_tree().get_first_node_in_group("city_manager")
 	if not city_node:
 		return
 
@@ -342,9 +305,7 @@ func _draw_terrain(ppos: Vector3, yaw: float) -> void:
 		# Quick distance cull: skip chunks too far to overlap minimap
 		var world_dx: float = chunk_ox - ppos.x
 		var world_dz: float = chunk_oz - ppos.z
-		var world_dist: float = sqrt(
-			world_dx * world_dx + world_dz * world_dz
-		)
+		var world_dist: float = sqrt(world_dx * world_dx + world_dz * world_dz)
 		if world_dist > _map_radius / _scale + hs * 1.42:
 			continue
 
@@ -359,29 +320,17 @@ func _draw_terrain(ppos: Vector3, yaw: float) -> void:
 					var z1: float = z0 + sub_size
 					var cx: float = (x0 + x1) * 0.5
 					var cz: float = (z0 + z1) * 0.5
-					var h: float = _boundary.get_ground_height(
-						cx, cz
-					)
+					var h: float = _boundary.get_ground_height(cx, cz)
 					var col := _height_to_minimap_color(h)
 
 					var quad: PackedVector2Array = [
-						_world_to_minimap(
-							Vector3(x0, 0.0, z0), ppos, yaw
-						),
-						_world_to_minimap(
-							Vector3(x1, 0.0, z0), ppos, yaw
-						),
-						_world_to_minimap(
-							Vector3(x1, 0.0, z1), ppos, yaw
-						),
-						_world_to_minimap(
-							Vector3(x0, 0.0, z1), ppos, yaw
-						),
+						_world_to_minimap(Vector3(x0, 0.0, z0), ppos, yaw),
+						_world_to_minimap(Vector3(x1, 0.0, z0), ppos, yaw),
+						_world_to_minimap(Vector3(x1, 0.0, z1), ppos, yaw),
+						_world_to_minimap(Vector3(x0, 0.0, z1), ppos, yaw),
 					]
-					var clipped: Array[PackedVector2Array] = (
-						Geometry2D.intersect_polygons(
-							quad, _clip_circle
-						)
+					var clipped: Array[PackedVector2Array] = Geometry2D.intersect_polygons(
+						quad, _clip_circle
 					)
 					for poly in clipped:
 						draw_colored_polygon(poly, col)
@@ -400,21 +349,20 @@ func _draw_terrain(ppos: Vector3, yaw: float) -> void:
 				chunk_node.get_meta("biome", ""),
 				chunk_node.get_meta("has_water", false),
 			)
-			var clipped: Array[PackedVector2Array] = (
-				Geometry2D.intersect_polygons(
-					map_pts, _clip_circle
-				)
+			var clipped: Array[PackedVector2Array] = Geometry2D.intersect_polygons(
+				map_pts, _clip_circle
 			)
 			for poly in clipped:
 				draw_colored_polygon(poly, base_color)
 
-		var has_village: bool = chunk_node.get_meta(
-			"has_village", false
-		)
+		var has_village: bool = chunk_node.get_meta("has_village", false)
 		if has_village:
-			var vc: Vector2 = chunk_node.get_meta(
-				"village_center",
-				Vector2(chunk_ox, chunk_oz),
+			var vc: Vector2 = (
+				chunk_node
+				. get_meta(
+					"village_center",
+					Vector2(chunk_ox, chunk_oz),
+				)
 			)
 			var vpos := Vector3(vc.x, 0.0, vc.y)
 			var vmp := _world_to_minimap(vpos, ppos, yaw)
@@ -433,8 +381,12 @@ func _draw_terrain(ppos: Vector3, yaw: float) -> void:
 			continue
 		if not child.get_meta("has_stunt_park", false):
 			continue
-		var sc: Vector2 = child.get_meta(
-			"stunt_park_center", Vector2.ZERO,
+		var sc: Vector2 = (
+			child
+			. get_meta(
+				"stunt_park_center",
+				Vector2.ZERO,
+			)
 		)
 		var spos := Vector3(sc.x, 0.0, sc.y)
 		var smp := _world_to_minimap(spos, ppos, yaw)
@@ -459,12 +411,8 @@ func _draw_city_blocks(ppos: Vector3, yaw: float) -> void:
 		if absf(mid_x - ppos.x) > view_range + 50.0:
 			continue
 		for rz_i in range(_grid.GRID_SIZE):
-			var rz0: float = _grid.get_road_center_near(
-				rz_i, ppos.z
-			)
-			var rz1: float = _grid.get_road_center_near(
-				rz_i + 1, ppos.z
-			)
+			var rz0: float = _grid.get_road_center_near(rz_i, ppos.z)
+			var rz1: float = _grid.get_road_center_near(rz_i + 1, ppos.z)
 			var rwz0: float = _grid.get_road_width(rz_i) * 0.5
 			var rwz1: float = _grid.get_road_width(rz_i + 1) * 0.5
 			var bz0: float = rz0 + rwz0
@@ -476,23 +424,13 @@ func _draw_city_blocks(ppos: Vector3, yaw: float) -> void:
 			if _boundary.get_signed_distance(mid_x, mid_z) > 0:
 				continue
 			var quad: PackedVector2Array = [
-				_world_to_minimap(
-					Vector3(bx0, 0.0, bz0), ppos, yaw
-				),
-				_world_to_minimap(
-					Vector3(bx1, 0.0, bz0), ppos, yaw
-				),
-				_world_to_minimap(
-					Vector3(bx1, 0.0, bz1), ppos, yaw
-				),
-				_world_to_minimap(
-					Vector3(bx0, 0.0, bz1), ppos, yaw
-				),
+				_world_to_minimap(Vector3(bx0, 0.0, bz0), ppos, yaw),
+				_world_to_minimap(Vector3(bx1, 0.0, bz0), ppos, yaw),
+				_world_to_minimap(Vector3(bx1, 0.0, bz1), ppos, yaw),
+				_world_to_minimap(Vector3(bx0, 0.0, bz1), ppos, yaw),
 			]
-			var clipped: Array[PackedVector2Array] = (
-				Geometry2D.intersect_polygons(
-					quad, _clip_circle
-				)
+			var clipped: Array[PackedVector2Array] = Geometry2D.intersect_polygons(
+				quad, _clip_circle
 			)
 			for poly in clipped:
 				draw_colored_polygon(poly, BUILDING_COLOR)
@@ -503,27 +441,27 @@ func _draw_rivers(ppos: Vector3, yaw: float) -> void:
 		return
 	var grid_span: float = _grid.get_grid_span()
 	var view_range := _map_radius / _scale
-	var center_tile := _grid.get_chunk_coord(
-		Vector2(ppos.x, ppos.z)
-	)
+	var center_tile := _grid.get_chunk_coord(Vector2(ppos.x, ppos.z))
 	var scan := int(ceilf(view_range / grid_span)) + 1
 	for dy in range(-scan, scan + 1):
 		for dx in range(-scan, scan + 1):
-			var tile := Vector2i(
-				center_tile.x + dx, center_tile.y + dy
-			)
+			var tile := Vector2i(center_tile.x + dx, center_tile.y + dy)
 			var rd: Dictionary = _river_map.get_river_at(tile)
 			if rd.is_empty():
 				continue
 			var origin: Vector2 = _grid.get_chunk_origin(tile)
 			var hs: float = grid_span * 0.5
 			var entry := _river_edge_pt(
-				origin.x, origin.y, hs,
+				origin.x,
+				origin.y,
+				hs,
 				rd.get("entry_dir", 0),
 				rd.get("position", 0.5),
 			)
 			var exit_pt := _river_edge_pt(
-				origin.x, origin.y, hs,
+				origin.x,
+				origin.y,
+				hs,
 				rd.get("exit_dir", 2),
 				rd.get("position", 0.5),
 			)
@@ -548,15 +486,15 @@ func _draw_rural_roads(ppos: Vector3, yaw: float) -> void:
 			if h >= SEA_LEVEL:
 				var top := _world_to_minimap(
 					Vector3(rx, 0.0, ppos.z - view_range),
-					ppos, yaw,
+					ppos,
+					yaw,
 				)
 				var bot := _world_to_minimap(
 					Vector3(rx, 0.0, ppos.z + view_range),
-					ppos, yaw,
+					ppos,
+					yaw,
 				)
-				_draw_clipped_line(
-					top, bot, RURAL_ROAD_COLOR, 1.5
-				)
+				_draw_clipped_line(top, bot, RURAL_ROAD_COLOR, 1.5)
 		# E-W rural roads
 		var rz: float = _grid.get_road_center_near(hi, ppos.z)
 		if _boundary.get_signed_distance(ppos.x, rz) > 0.0:
@@ -564,20 +502,23 @@ func _draw_rural_roads(ppos: Vector3, yaw: float) -> void:
 			if h >= SEA_LEVEL:
 				var left := _world_to_minimap(
 					Vector3(ppos.x - view_range, 0.0, rz),
-					ppos, yaw,
+					ppos,
+					yaw,
 				)
 				var right := _world_to_minimap(
 					Vector3(ppos.x + view_range, 0.0, rz),
-					ppos, yaw,
+					ppos,
+					yaw,
 				)
-				_draw_clipped_line(
-					left, right, RURAL_ROAD_COLOR, 1.5
-				)
+				_draw_clipped_line(left, right, RURAL_ROAD_COLOR, 1.5)
 
 
 func _river_edge_pt(
-	ox: float, oz: float, hs: float,
-	dir: int, pos: float,
+	ox: float,
+	oz: float,
+	hs: float,
+	dir: int,
+	pos: float,
 ) -> Vector3:
 	var offset: float = (pos - 0.5) * hs * 2.0
 	match dir:
@@ -593,8 +534,11 @@ func _river_edge_pt(
 
 
 func _draw_group_dots(
-	group_name: String, ppos: Vector3, yaw: float,
-	color: Color, radius: float,
+	group_name: String,
+	ppos: Vector3,
+	yaw: float,
+	color: Color,
+	radius: float,
 ) -> void:
 	var nodes := get_tree().get_nodes_in_group(group_name)
 	var view_sq := (_map_radius / _scale) * (_map_radius / _scale)
@@ -612,9 +556,7 @@ func _draw_group_dots(
 
 
 func _draw_mission_markers(ppos: Vector3, yaw: float) -> void:
-	var markers := get_tree().get_nodes_in_group(
-		"mission_marker"
-	)
+	var markers := get_tree().get_nodes_in_group("mission_marker")
 	for marker in markers:
 		if not is_instance_valid(marker):
 			continue
@@ -632,9 +574,7 @@ func _draw_mission_markers(ppos: Vector3, yaw: float) -> void:
 
 
 func _draw_heli_icons(ppos: Vector3, yaw: float) -> void:
-	var helis := get_tree().get_nodes_in_group(
-		"police_helicopter"
-	)
+	var helis := get_tree().get_nodes_in_group("police_helicopter")
 	var view_sq := (_map_radius / _scale) * (_map_radius / _scale)
 	for heli in helis:
 		if not is_instance_valid(heli):
@@ -653,12 +593,14 @@ func _draw_heli_icons(ppos: Vector3, yaw: float) -> void:
 		draw_line(
 			mp + Vector2(-blade_len, 0.0),
 			mp + Vector2(blade_len, 0.0),
-			HELI_COLOR, 1.5,
+			HELI_COLOR,
+			1.5,
 		)
 		draw_line(
 			mp + Vector2(0.0, -blade_len),
 			mp + Vector2(0.0, blade_len),
-			HELI_COLOR, 1.5,
+			HELI_COLOR,
+			1.5,
 		)
 
 
@@ -684,7 +626,9 @@ func _draw_helipad_icons(ppos: Vector3, yaw: float) -> void:
 			ThemeDB.fallback_font,
 			mp - Vector2(4.5, 5.0),
 			"H",
-			HORIZONTAL_ALIGNMENT_LEFT, -1, 11,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1,
+			11,
 			HELIPAD_COLOR,
 		)
 
@@ -693,7 +637,9 @@ func _draw_player_arrow(_yaw: float) -> void:
 	var center := Vector2(_map_center, _map_center)
 	# Arrow points up (north) then rotated by negative yaw
 	var points: PackedVector2Array = [
-		Vector2(0, -8), Vector2(5, 6), Vector2(0, 3),
+		Vector2(0, -8),
+		Vector2(5, 6),
+		Vector2(0, 3),
 		Vector2(-5, 6),
 	]
 	# No rotation needed — arrow always points up,
@@ -706,8 +652,10 @@ func _draw_player_arrow(_yaw: float) -> void:
 func _draw_compass(yaw: float) -> void:
 	var center := Vector2(_map_center, _map_center)
 	var dirs := [
-		["N", Vector2(0, -1)], ["S", Vector2(0, 1)],
-		["E", Vector2(1, 0)], ["W", Vector2(-1, 0)],
+		["N", Vector2(0, -1)],
+		["S", Vector2(0, 1)],
+		["E", Vector2(1, 0)],
+		["W", Vector2(-1, 0)],
 	]
 	for d in dirs:
 		var label: String = d[0]
@@ -715,18 +663,22 @@ func _draw_compass(yaw: float) -> void:
 		# Rotate direction by yaw
 		var rot_x := dir.x * cos(yaw) - dir.y * sin(yaw)
 		var rot_y := dir.x * sin(yaw) + dir.y * cos(yaw)
-		var pos := center + Vector2(rot_x, rot_y) * (
-			_map_radius - 12.0
-		)
+		var pos := center + Vector2(rot_x, rot_y) * (_map_radius - 12.0)
 		draw_string(
-			ThemeDB.fallback_font, pos, label,
-			HORIZONTAL_ALIGNMENT_CENTER, -1, 12,
+			ThemeDB.fallback_font,
+			pos,
+			label,
+			HORIZONTAL_ALIGNMENT_CENTER,
+			-1,
+			12,
 			Color(0.9, 0.9, 0.9, 0.7),
 		)
 
 
 func _draw_diamond(
-	pos: Vector2, size: float, color: Color,
+	pos: Vector2,
+	size: float,
+	color: Color,
 ) -> void:
 	var pts: PackedVector2Array = [
 		Vector2(pos.x, pos.y - size),
@@ -743,19 +695,13 @@ func _height_to_minimap_color(h: float) -> Color:
 		col = Color(0.15, 0.35, 0.65)
 	elif h < 0.0:
 		var t := clampf((h - SEA_LEVEL) / -SEA_LEVEL, 0.0, 1.0)
-		col = Color(0.76, 0.70, 0.50).lerp(
-			Color(0.22, 0.45, 0.18), t
-		)
+		col = Color(0.76, 0.70, 0.50).lerp(Color(0.22, 0.45, 0.18), t)
 	elif h < 30.0:
 		var t := clampf((h - 20.0) / 10.0, 0.0, 1.0)
-		col = Color(0.22, 0.45, 0.18).lerp(
-			Color(0.45, 0.42, 0.38), t
-		)
+		col = Color(0.22, 0.45, 0.18).lerp(Color(0.45, 0.42, 0.38), t)
 	elif h < 50.0:
 		var t := clampf((h - 40.0) / 10.0, 0.0, 1.0)
-		col = Color(0.45, 0.42, 0.38).lerp(
-			Color(0.90, 0.90, 0.92), t
-		)
+		col = Color(0.45, 0.42, 0.38).lerp(Color(0.90, 0.90, 0.92), t)
 	else:
 		col = Color(0.90, 0.90, 0.92)
 	col.a = 0.5
@@ -763,7 +709,10 @@ func _height_to_minimap_color(h: float) -> Color:
 
 
 func _draw_clipped_line(
-	a: Vector2, b: Vector2, color: Color, width: float,
+	a: Vector2,
+	b: Vector2,
+	color: Color,
+	width: float,
 ) -> void:
 	# Only draw if at least one endpoint is in circle
 	if _in_circle(a) or _in_circle(b):
@@ -771,7 +720,9 @@ func _draw_clipped_line(
 
 
 func _world_to_minimap(
-	world_pos: Vector3, player_pos: Vector3, yaw: float,
+	world_pos: Vector3,
+	player_pos: Vector3,
+	yaw: float,
 ) -> Vector2:
 	var dx := world_pos.x - player_pos.x
 	var dz := world_pos.z - player_pos.z

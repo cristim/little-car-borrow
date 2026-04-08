@@ -5,9 +5,7 @@ extends GutTest
 ## nodes, making it hard to unit-test end-to-end. Instead we verify the
 ## source code constant directly via string inspection.
 
-const VehicleHealthScript = preload(
-	"res://scenes/vehicles/vehicle_health.gd"
-)
+const VehicleHealthScript = preload("res://scenes/vehicles/vehicle_health.gd")
 
 
 func test_explosion_impulse_value_is_500() -> void:
@@ -26,6 +24,7 @@ func test_explosion_impulse_value_is_500() -> void:
 # ---------------------------------------------------------------------------
 # take_damage — basic behavior
 # ---------------------------------------------------------------------------
+
 
 func _build_vehicle() -> RigidBody3D:
 	var rb := RigidBody3D.new()

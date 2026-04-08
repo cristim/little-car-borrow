@@ -2,9 +2,7 @@ extends GutTest
 ## Unit tests for chunk_builder_trees.gd — tree generation using MultiMesh
 ## for trunks and canopy variants with compound collision body.
 
-const TreesScript = preload(
-	"res://scenes/world/generator/chunk_builder_trees.gd"
-)
+const TreesScript = preload("res://scenes/world/generator/chunk_builder_trees.gd")
 const RoadGridScript = preload("res://src/road_grid.gd")
 
 var _grid: RefCounted
@@ -56,34 +54,39 @@ func before_each() -> void:
 # Initialization
 # ================================================================
 
+
 func test_init_stores_grid() -> void:
 	assert_eq(_builder._grid, _grid, "Grid should be stored after init")
 
 
 func test_init_stores_trunk_materials() -> void:
 	assert_eq(
-		_builder._trunk_mats.size(), 3,
+		_builder._trunk_mats.size(),
+		3,
 		"Should store 3 trunk materials",
 	)
 
 
 func test_init_stores_canopy_materials() -> void:
 	assert_eq(
-		_builder._canopy_mats.size(), 4,
+		_builder._canopy_mats.size(),
+		4,
 		"Should store 4 canopy materials",
 	)
 
 
 func test_init_stores_trunk_mesh() -> void:
 	assert_eq(
-		_builder._trunk_mesh, _trunk_mesh,
+		_builder._trunk_mesh,
+		_trunk_mesh,
 		"Trunk mesh should be stored after init",
 	)
 
 
 func test_init_stores_canopy_meshes() -> void:
 	assert_eq(
-		_builder._canopy_meshes.size(), TreesScript.CANOPY_VARIANTS,
+		_builder._canopy_meshes.size(),
+		TreesScript.CANOPY_VARIANTS,
 		"Should store 5 canopy meshes",
 	)
 
@@ -91,6 +94,7 @@ func test_init_stores_canopy_meshes() -> void:
 # ================================================================
 # Build output structure
 # ================================================================
+
 
 func test_build_adds_one_child_to_chunk() -> void:
 	var chunk := Node3D.new()
@@ -114,7 +118,8 @@ func test_trees_body_collision_layer() -> void:
 	_builder.build(chunk, Vector2i(0, 0), 0.0, 0.0)
 	var body := chunk.get_child(0) as StaticBody3D
 	assert_eq(
-		body.collision_layer, 2,
+		body.collision_layer,
+		2,
 		"Trees collision layer should be 2 (Static)",
 	)
 
@@ -125,7 +130,8 @@ func test_trees_body_collision_mask() -> void:
 	_builder.build(chunk, Vector2i(0, 0), 0.0, 0.0)
 	var body := chunk.get_child(0) as StaticBody3D
 	assert_eq(
-		body.collision_mask, 0,
+		body.collision_mask,
+		0,
 		"Trees collision mask should be 0",
 	)
 
@@ -144,6 +150,7 @@ func test_trees_body_in_static_group() -> void:
 # ================================================================
 # MultiMesh children
 # ================================================================
+
 
 func test_trunk_multimesh_created() -> void:
 	var chunk := Node3D.new()
@@ -169,7 +176,8 @@ func test_trunk_multimesh_has_instances() -> void:
 			var mmi := child as MultiMeshInstance3D
 			if mmi.name == "TrunksMM":
 				assert_gt(
-					mmi.multimesh.instance_count, 0,
+					mmi.multimesh.instance_count,
+					0,
 					"Trunk MultiMesh should have instances",
 				)
 				return
@@ -221,7 +229,8 @@ func test_canopy_multimeshes_created() -> void:
 			if mmi.name.begins_with("CanopyMM_"):
 				canopy_count += 1
 	assert_gt(
-		canopy_count, 0,
+		canopy_count,
+		0,
 		"Should have at least one CanopyMM_N MultiMeshInstance3D",
 	)
 
@@ -236,7 +245,8 @@ func test_canopy_multimeshes_have_instances() -> void:
 			var mmi := child as MultiMeshInstance3D
 			if mmi.name.begins_with("CanopyMM_"):
 				assert_gt(
-					mmi.multimesh.instance_count, 0,
+					mmi.multimesh.instance_count,
+					0,
 					"%s should have instances" % mmi.name,
 				)
 
@@ -263,6 +273,7 @@ func test_canopy_material_uses_vertex_colors() -> void:
 # Collision shapes for trunks
 # ================================================================
 
+
 func test_trees_body_has_collision_shapes() -> void:
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
@@ -273,7 +284,8 @@ func test_trees_body_has_collision_shapes() -> void:
 		if child is CollisionShape3D:
 			col_count += 1
 	assert_gt(
-		col_count, 0,
+		col_count,
+		0,
 		"Trees body should have collision shapes for trunks",
 	)
 
@@ -309,7 +321,8 @@ func test_trunk_count_matches_collision_count() -> void:
 			if mmi.name == "TrunksMM":
 				trunk_instance_count = mmi.multimesh.instance_count
 	assert_eq(
-		col_count, trunk_instance_count,
+		col_count,
+		trunk_instance_count,
 		"Collision shape count should match trunk instance count",
 	)
 
@@ -317,6 +330,7 @@ func test_trunk_count_matches_collision_count() -> void:
 # ================================================================
 # Determinism — same tile produces same output
 # ================================================================
+
 
 func test_build_is_deterministic_same_tile() -> void:
 	var tile := Vector2i(3, 7)
@@ -341,7 +355,8 @@ func test_build_is_deterministic_same_tile() -> void:
 		if child is CollisionShape3D:
 			col_b += 1
 	assert_eq(
-		col_a, col_b,
+		col_a,
+		col_b,
 		"Same tile should produce same collision count",
 	)
 
@@ -374,6 +389,7 @@ func test_different_tiles_produce_different_tree_counts() -> void:
 # Offset positioning
 # ================================================================
 
+
 func test_build_with_offset() -> void:
 	var span: float = _grid.get_grid_span()
 	var chunk := Node3D.new()
@@ -386,16 +402,19 @@ func test_build_with_offset() -> void:
 # Constants sanity
 # ================================================================
 
+
 func test_tree_spacing_positive() -> void:
 	assert_gt(
-		TreesScript.TREE_SPACING, 0.0,
+		TreesScript.TREE_SPACING,
+		0.0,
 		"Tree spacing should be positive",
 	)
 
 
 func test_canopy_variants_equals_five() -> void:
 	assert_eq(
-		TreesScript.CANOPY_VARIANTS, 5,
+		TreesScript.CANOPY_VARIANTS,
+		5,
 		"Should have 5 canopy variants",
 	)
 
@@ -403,6 +422,7 @@ func test_canopy_variants_equals_five() -> void:
 # ================================================================
 # _build_multimesh helper
 # ================================================================
+
 
 func test_build_multimesh_returns_valid_mmi() -> void:
 	var transforms: Array = []
@@ -416,14 +436,21 @@ func test_build_multimesh_returns_valid_mmi() -> void:
 	base_mat.albedo_color = Color(0.5, 0.5, 0.5)
 
 	var mesh := SphereMesh.new()
-	var mmi: MultiMeshInstance3D = _builder._build_multimesh(
-		mesh, transforms, colors, base_mat,
+	var mmi: MultiMeshInstance3D = (
+		_builder
+		. _build_multimesh(
+			mesh,
+			transforms,
+			colors,
+			base_mat,
+		)
 	)
 	add_child_autofree(mmi)
 	assert_not_null(mmi, "Should return a MultiMeshInstance3D")
 	assert_not_null(mmi.multimesh, "Should have a MultiMesh")
 	assert_eq(
-		mmi.multimesh.instance_count, 2,
+		mmi.multimesh.instance_count,
+		2,
 		"Should have 2 instances",
 	)
 	assert_true(
@@ -445,8 +472,14 @@ func test_build_multimesh_does_not_mutate_base_material() -> void:
 	base_mat.vertex_color_use_as_albedo = false
 
 	var mesh := SphereMesh.new()
-	var mmi: MultiMeshInstance3D = _builder._build_multimesh(
-		mesh, transforms, colors, base_mat,
+	var mmi: MultiMeshInstance3D = (
+		_builder
+		. _build_multimesh(
+			mesh,
+			transforms,
+			colors,
+			base_mat,
+		)
 	)
 	add_child_autofree(mmi)
 	assert_false(

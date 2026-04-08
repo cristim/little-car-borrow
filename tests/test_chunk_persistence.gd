@@ -27,13 +27,16 @@ func after_each() -> void:
 
 # --- Constants ---
 
+
 func test_chunks_dir_constant() -> void:
 	assert_eq(
-		ChunkPersistenceScript.CHUNKS_DIR, "user://chunks/",
+		ChunkPersistenceScript.CHUNKS_DIR,
+		"user://chunks/",
 	)
 
 
 # --- _init ---
+
 
 func test_init_creates_directory() -> void:
 	# The directory should exist after construction
@@ -44,6 +47,7 @@ func test_init_creates_directory() -> void:
 
 
 # --- save_tile / load_tile roundtrip ---
+
 
 func test_save_and_load_tile() -> void:
 	var data := {"biome": "forest", "height": 42.5}
@@ -75,6 +79,7 @@ func test_save_tile_with_nested_data() -> void:
 
 
 # --- load_tile ---
+
 
 func test_load_tile_nonexistent_returns_empty() -> void:
 	var loaded: Dictionary = _cp.load_tile(Vector2i(99999, 99999))
@@ -120,6 +125,7 @@ func test_load_tile_no_biome_key_gets_deleted() -> void:
 
 # --- has_tile ---
 
+
 func test_has_tile_false_when_not_saved() -> void:
 	assert_false(_cp.has_tile(Vector2i(88888, 88888)))
 
@@ -136,6 +142,7 @@ func test_has_tile_false_after_delete() -> void:
 
 
 # --- delete_tile ---
+
 
 func test_delete_tile_removes_file() -> void:
 	_cp.save_tile(_tile_a, {"biome": "test"})
@@ -154,12 +161,14 @@ func test_delete_tile_clears_dirty() -> void:
 	assert_eq(_cp.dirty_count(), 1)
 	_cp.delete_tile(_tile_a)
 	assert_eq(
-		_cp.dirty_count(), 0,
+		_cp.dirty_count(),
+		0,
 		"delete_tile should also clear dirty entry",
 	)
 
 
 # --- mark_dirty / dirty_count ---
+
 
 func test_dirty_count_starts_at_zero() -> void:
 	assert_eq(_cp.dirty_count(), 0)
@@ -176,19 +185,22 @@ func test_mark_dirty_same_tile_overwrites() -> void:
 	_cp.mark_dirty(_tile_a, {"biome": "first"})
 	_cp.mark_dirty(_tile_a, {"biome": "second"})
 	assert_eq(
-		_cp.dirty_count(), 1,
+		_cp.dirty_count(),
+		1,
 		"Marking same tile dirty again should not increase count",
 	)
 
 
 # --- flush_dirty ---
 
+
 func test_flush_dirty_saves_all() -> void:
 	_cp.mark_dirty(_tile_a, {"biome": "forest"})
 	_cp.mark_dirty(_tile_b, {"biome": "desert"})
 	_cp.flush_dirty()
 	assert_eq(
-		_cp.dirty_count(), 0,
+		_cp.dirty_count(),
+		0,
 		"flush_dirty should clear all dirty entries",
 	)
 	var a: Dictionary = _cp.load_tile(_tile_a)
@@ -213,6 +225,7 @@ func test_flush_dirty_overwrites_existing() -> void:
 
 # --- _tile_path ---
 
+
 func test_tile_path_format() -> void:
 	var path: String = _cp._tile_path(Vector2i(3, -7))
 	assert_eq(path, "user://chunks/3_-7.dat")
@@ -230,11 +243,13 @@ func test_tile_path_large_coords() -> void:
 
 # --- Multiple independent instances ---
 
+
 func test_two_instances_share_filesystem() -> void:
 	var cp2: RefCounted = ChunkPersistenceScript.new()
 	_cp.save_tile(_tile_a, {"biome": "shared"})
 	var loaded: Dictionary = cp2.load_tile(_tile_a)
 	assert_eq(
-		loaded["biome"], "shared",
+		loaded["biome"],
+		"shared",
 		"Second instance should read what first wrote",
 	)

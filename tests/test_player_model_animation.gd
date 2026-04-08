@@ -67,6 +67,7 @@ func _sim(delta: float, frames: int = 1) -> void:
 
 # -- Idle --
 
+
 func test_idle_joints_near_zero() -> void:
 	_parent.velocity = Vector3.ZERO
 	_sim(0.1, 10)
@@ -79,6 +80,7 @@ func test_idle_joints_near_zero() -> void:
 
 # -- Walk: multi-axis motion --
 
+
 func test_walk_arms_swing_opposite() -> void:
 	_parent.velocity = Vector3(0, 0, 3.0)
 	_sim(0.016, 30)
@@ -88,7 +90,9 @@ func test_walk_arms_swing_opposite() -> void:
 	var l_swing := _ls.rotation.x - avg
 	var r_swing := _rs.rotation.x - avg
 	assert_almost_eq(
-		l_swing, -r_swing, 0.01,
+		l_swing,
+		-r_swing,
+		0.01,
 		"Arm swing components opposite — L=%f R=%f" % [l_swing, r_swing],
 	)
 
@@ -119,7 +123,9 @@ func test_walk_legs_swing_opposite() -> void:
 	var l_swing := _lh.rotation.x - avg
 	var r_swing := _rh.rotation.x - avg
 	assert_almost_eq(
-		l_swing, -r_swing, 0.01,
+		l_swing,
+		-r_swing,
+		0.01,
 		"Leg swing components opposite — L=%f R=%f" % [l_swing, r_swing],
 	)
 
@@ -142,11 +148,14 @@ func test_walk_elbow_y_set() -> void:
 
 # -- Walk: symmetry --
 
+
 func test_walk_arms_mirrored_y() -> void:
 	_parent.velocity = Vector3(0, 0, 3.0)
 	_sim(0.016, 30)
 	assert_almost_eq(
-		_ls.rotation.y, -_rs.rotation.y, 0.001,
+		_ls.rotation.y,
+		-_rs.rotation.y,
+		0.001,
 		"Arm Y mirrored — L=%f R=%f" % [_ls.rotation.y, _rs.rotation.y],
 	)
 
@@ -155,7 +164,9 @@ func test_walk_arms_mirrored_z() -> void:
 	_parent.velocity = Vector3(0, 0, 3.0)
 	_sim(0.016, 30)
 	assert_almost_eq(
-		_ls.rotation.z, -_rs.rotation.z, 0.001,
+		_ls.rotation.z,
+		-_rs.rotation.z,
+		0.001,
 		"Arm Z mirrored — L=%f R=%f" % [_ls.rotation.z, _rs.rotation.z],
 	)
 
@@ -164,12 +175,15 @@ func test_walk_elbows_mirrored_y() -> void:
 	_parent.velocity = Vector3(0, 0, 3.0)
 	_sim(0.016, 30)
 	assert_almost_eq(
-		_le.rotation.y, -_re.rotation.y, 0.001,
+		_le.rotation.y,
+		-_re.rotation.y,
+		0.001,
 		"Elbow Y mirrored — L=%f R=%f" % [_le.rotation.y, _re.rotation.y],
 	)
 
 
 # -- Walk: new features --
+
 
 func test_walk_has_lateral_hip_sway() -> void:
 	_parent.velocity = Vector3(0, 0, 3.0)
@@ -193,7 +207,8 @@ func test_walk_has_forward_lean() -> void:
 	_parent.velocity = Vector3(0, 0, 3.0)
 	_sim(0.016, 60)
 	assert_gt(
-		_model.rotation.x, 0.01,
+		_model.rotation.x,
+		0.01,
 		"Walk should have slight forward lean — got %f" % _model.rotation.x,
 	)
 
@@ -211,9 +226,12 @@ func test_walk_bounce_peaks_at_mid_stance() -> void:
 		elif leg_spread < 0.02:
 			bounce_at_vertical = maxf(bounce_at_vertical, _model.position.y)
 	assert_gt(
-		bounce_at_vertical, bounce_at_spread,
-		"Bounce should peak at mid-stance — vert=%f spread=%f" \
-			% [bounce_at_vertical, bounce_at_spread],
+		bounce_at_vertical,
+		bounce_at_spread,
+		(
+			"Bounce should peak at mid-stance — vert=%f spread=%f"
+			% [bounce_at_vertical, bounce_at_spread]
+		),
 	)
 
 
@@ -232,9 +250,12 @@ func test_walk_hip_sway_toward_stance_leg() -> void:
 			sway_with_right_stance = _model.position.x
 	# Left back (stance) → sway should be negative (toward left)
 	assert_lt(
-		sway_with_left_stance, sway_with_right_stance,
-		"Sway toward stance leg — left=%f right=%f" \
-			% [sway_with_left_stance, sway_with_right_stance],
+		sway_with_left_stance,
+		sway_with_right_stance,
+		(
+			"Sway toward stance leg — left=%f right=%f"
+			% [sway_with_left_stance, sway_with_right_stance]
+		),
 	)
 
 
@@ -244,8 +265,10 @@ func test_walk_head_counters_pelvis_tilt() -> void:
 	if absf(_model.rotation.z) > 0.001:
 		assert_true(
 			sign(_head.rotation.z) != sign(_model.rotation.z),
-			"Head Z should oppose pelvis Z — head=%f body=%f" \
-				% [_head.rotation.z, _model.rotation.z],
+			(
+				"Head Z should oppose pelvis Z — head=%f body=%f"
+				% [_head.rotation.z, _model.rotation.z]
+			),
 		)
 
 
@@ -255,8 +278,10 @@ func test_walk_neck_counters_torso_twist() -> void:
 	if absf(_model.rotation.y) > 0.001:
 		assert_true(
 			sign(_neck.rotation.y) != sign(_model.rotation.y),
-			"Neck Y should oppose torso Y — neck=%f body=%f" \
-				% [_neck.rotation.y, _model.rotation.y],
+			(
+				"Neck Y should oppose torso Y — neck=%f body=%f"
+				% [_neck.rotation.y, _model.rotation.y]
+			),
 		)
 
 
@@ -266,8 +291,10 @@ func test_walk_neck_counters_pelvis_tilt() -> void:
 	if absf(_model.rotation.z) > 0.001:
 		assert_true(
 			sign(_neck.rotation.z) != sign(_model.rotation.z),
-			"Neck Z should oppose pelvis Z — neck=%f body=%f" \
-				% [_neck.rotation.z, _model.rotation.z],
+			(
+				"Neck Z should oppose pelvis Z — neck=%f body=%f"
+				% [_neck.rotation.z, _model.rotation.z]
+			),
 		)
 
 
@@ -280,8 +307,10 @@ func test_walk_contralateral_coordination() -> void:
 	# So when left arm forward (ls.x > 0), right hip should be positive too
 	assert_true(
 		sign(_ls.rotation.x) == sign(_rh.rotation.x),
-		"Left arm and right leg should swing together — arm=%f leg=%f" \
-			% [_ls.rotation.x, _rh.rotation.x],
+		(
+			"Left arm and right leg should swing together — arm=%f leg=%f"
+			% [_ls.rotation.x, _rh.rotation.x]
+		),
 	)
 
 
@@ -291,6 +320,8 @@ func test_walk_head_counters_torso_twist_y() -> void:
 	if absf(_model.rotation.y) > 0.001:
 		assert_true(
 			sign(_head.rotation.y) != sign(_model.rotation.y),
-			"Head Y should oppose torso Y — head=%f body=%f" \
-				% [_head.rotation.y, _model.rotation.y],
+			(
+				"Head Y should oppose torso Y — head=%f body=%f"
+				% [_head.rotation.y, _model.rotation.y]
+			),
 		)

@@ -69,7 +69,8 @@ func test_forward_lean() -> void:
 	_parent.velocity = Vector3(0, 0, 10.0)
 	_sim(0.016, 30)
 	assert_gt(
-		_model.rotation.x, 0.01,
+		_model.rotation.x,
+		0.01,
 		"Body should lean forward — got %f" % _model.rotation.x,
 	)
 
@@ -78,7 +79,8 @@ func test_vertical_bounce_non_negative() -> void:
 	_parent.velocity = Vector3(0, 0, 10.0)
 	_sim(0.016, 30)
 	assert_gte(
-		_model.position.y, 0.0,
+		_model.position.y,
+		0.0,
 		"Bounce should be >= 0 — got %f" % _model.position.y,
 	)
 
@@ -92,7 +94,8 @@ func test_arms_more_bent_than_walk() -> void:
 	_parent.velocity = Vector3(0, 0, 10.0)
 	_sim(0.016, 30)
 	assert_lt(
-		_le.rotation.x, walk_elbow,
+		_le.rotation.x,
+		walk_elbow,
 		"Run elbows more bent — run=%f walk=%f" % [_le.rotation.x, walk_elbow],
 	)
 
@@ -111,7 +114,8 @@ func test_stronger_torso_twist_than_walk() -> void:
 		_model._process(0.016)
 		run_max = maxf(run_max, absf(_model.rotation.y))
 	assert_gt(
-		run_max, walk_max,
+		run_max,
+		walk_max,
 		"Run twist > walk — run=%f walk=%f" % [run_max, walk_max],
 	)
 
@@ -130,7 +134,8 @@ func test_arm_z_sway_larger_than_walk() -> void:
 		_model._process(0.016)
 		run_z = maxf(run_z, absf(_ls.rotation.z))
 	assert_gt(
-		run_z, walk_z,
+		run_z,
+		walk_z,
 		"Run Z sway > walk — run=%f walk=%f" % [run_z, walk_z],
 	)
 
@@ -174,7 +179,8 @@ func test_run_bounce_larger_than_walk() -> void:
 		_model._process(0.016)
 		run_max = maxf(run_max, _model.position.y)
 	assert_gt(
-		run_max, walk_max,
+		run_max,
+		walk_max,
 		"Run bounce > walk — run=%f walk=%f" % [run_max, walk_max],
 	)
 
@@ -220,7 +226,8 @@ func test_run_hip_range_larger_than_walk() -> void:
 		run_max = maxf(run_max, _lh.rotation.x)
 	var run_range := run_max - run_min
 	assert_gt(
-		run_range, walk_range,
+		run_range,
+		walk_range,
 		"Run hip range > walk — run=%f walk=%f" % [run_range, walk_range],
 	)
 
@@ -231,6 +238,8 @@ func test_run_head_counters_torso_twist() -> void:
 	if absf(_model.rotation.y) > 0.001:
 		assert_true(
 			sign(_head.rotation.y) != sign(_model.rotation.y),
-			"Head Y should oppose torso Y — head=%f body=%f" \
-				% [_head.rotation.y, _model.rotation.y],
+			(
+				"Head Y should oppose torso Y — head=%f body=%f"
+				% [_head.rotation.y, _model.rotation.y]
+			),
 		)

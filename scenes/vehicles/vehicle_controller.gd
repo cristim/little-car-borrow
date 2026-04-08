@@ -12,7 +12,9 @@ func _physics_process(_delta: float) -> void:
 	if not active:
 		return
 
-	var steer: float = Input.get_action_strength("move_left") - Input.get_action_strength("move_right")
+	var steer: float = (
+		Input.get_action_strength("move_left") - Input.get_action_strength("move_right")
+	)
 	var throttle: float = Input.get_action_strength("move_forward")
 	var brake: float = Input.get_action_strength("move_backward")
 	var handbrake: float = 1.0 if Input.is_action_pressed("handbrake") else 0.0

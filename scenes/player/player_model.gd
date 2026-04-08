@@ -3,33 +3,33 @@ extends "res://src/character_model_base.gd"
 ## Reads velocity from the parent CharacterBody3D to drive limb swing.
 ## Shared walk/run constants and _animate_gait/_decay_gait live in the base class.
 
-const SWIM_DECAY_SPEED := 16.0     # faster decay leaving water so pose snaps out
+const SWIM_DECAY_SPEED := 16.0  # faster decay leaving water so pose snaps out
 const SWIM_FREQUENCY := 3.0
 const SWIM_ARM_AMPLITUDE := 1.2
 const SWIM_LEG_AMPLITUDE := 0.3
-const SWIM_ELBOW_MIN := 0.4        # slightly bent at catch
-const SWIM_ELBOW_MAX := 1.5        # ~85° peak pull bend
-const SWIM_ELBOW_RECOVERY := 1.4   # bent elbow during recovery (forearm dangles)
-const SWIM_ELBOW_Y_AMP := 0.5      # forearm sweeps inward during catch/pull
-const SWIM_BODY_PITCH := 1.45      # ~83° from vertical, ~7° from horizontal
-const SWIM_BODY_ROLL := 0.45       # ~26° each side
+const SWIM_ELBOW_MIN := 0.4  # slightly bent at catch
+const SWIM_ELBOW_MAX := 1.5  # ~85° peak pull bend
+const SWIM_ELBOW_RECOVERY := 1.4  # bent elbow during recovery (forearm dangles)
+const SWIM_ELBOW_Y_AMP := 0.5  # forearm sweeps inward during catch/pull
+const SWIM_BODY_PITCH := 1.45  # ~83° from vertical, ~7° from horizontal
+const SWIM_BODY_ROLL := 0.45  # ~26° each side
 const SWIM_ARM_Y_AMPLITUDE := 0.4
-const SWIM_ARM_Z_RECOVERY := 1.0   # high elbow during recovery (above water)
-const SWIM_ARM_Z_PULL := 0.1       # arm stays low during pull (underwater)
-const SWIM_ARM_OFFSET := PI        # standard opposition timing
-const SWIM_KICK_RATIO := 3.0       # 6-beat kick (3x arm frequency)
+const SWIM_ARM_Z_RECOVERY := 1.0  # high elbow during recovery (above water)
+const SWIM_ARM_Z_PULL := 0.1  # arm stays low during pull (underwater)
+const SWIM_ARM_OFFSET := PI  # standard opposition timing
+const SWIM_KICK_RATIO := 3.0  # 6-beat kick (3x arm frequency)
 const ELBOW_RATIO := 0.5
 const KNEE_RATIO := 0.7
-const KNEE_STANCE_FLEX := 0.12     # slight constant knee bend (~7°)
-const RUN_ELBOW_BASE := -1.5       # ~86° bent arms while running
-const WALK_ELBOW_BASE := -0.5      # noticeable bend while walking (~29°)
-const RUN_KNEE_LIFT := 0.5         # extra knee bend on forward swing
-const ELBOW_Y_ANGLE := 0.15        # forearms angle slightly inward
-const FLASH_ELBOW_UP := -0.3       # slight bend when looking up
-const FLASH_ELBOW_DOWN := -1.0     # deep bend when looking down
-const PITCH_UP := 0.8              # camera max pitch
-const PITCH_DOWN := -1.2           # camera min pitch
-const DEFAULT_GUN_ELBOW := -0.05   # fallback if weapon data unavailable
+const KNEE_STANCE_FLEX := 0.12  # slight constant knee bend (~7°)
+const RUN_ELBOW_BASE := -1.5  # ~86° bent arms while running
+const WALK_ELBOW_BASE := -0.5  # noticeable bend while walking (~29°)
+const RUN_KNEE_LIFT := 0.5  # extra knee bend on forward swing
+const ELBOW_Y_ANGLE := 0.15  # forearms angle slightly inward
+const FLASH_ELBOW_UP := -0.3  # slight bend when looking up
+const FLASH_ELBOW_DOWN := -1.0  # deep bend when looking down
+const PITCH_UP := 0.8  # camera max pitch
+const PITCH_DOWN := -1.2  # camera min pitch
+const DEFAULT_GUN_ELBOW := -0.05  # fallback if weapon data unavailable
 
 var _was_swimming := false
 
@@ -97,54 +97,52 @@ func _build_face_details() -> void:
 		return
 
 	# --- Eyes (iris + pupil combined as dark ovals on the front face) ---
-	_add_box(_head, "EyeLeft",  _mat_eye,
-		Vector3(0.050, 0.028, 0.010),
-		Vector3( 0.054, 0.030, 0.102))
-	_add_box(_head, "EyeRight", _mat_eye,
-		Vector3(0.050, 0.028, 0.010),
-		Vector3(-0.054, 0.030, 0.102))
+	_add_box(_head, "EyeLeft", _mat_eye, Vector3(0.050, 0.028, 0.010), Vector3(0.054, 0.030, 0.102))
+	_add_box(
+		_head, "EyeRight", _mat_eye, Vector3(0.050, 0.028, 0.010), Vector3(-0.054, 0.030, 0.102)
+	)
 
 	# --- Eyebrows (thin dark strips above eyes) ---
-	_add_box(_head, "BrowLeft",  _mat_eyebrow,
+	_add_box(
+		_head, "BrowLeft", _mat_eyebrow, Vector3(0.055, 0.012, 0.008), Vector3(0.053, 0.067, 0.100)
+	)
+	_add_box(
+		_head,
+		"BrowRight",
+		_mat_eyebrow,
 		Vector3(0.055, 0.012, 0.008),
-		Vector3( 0.053, 0.067, 0.100))
-	_add_box(_head, "BrowRight", _mat_eyebrow,
-		Vector3(0.055, 0.012, 0.008),
-		Vector3(-0.053, 0.067, 0.100))
+		Vector3(-0.053, 0.067, 0.100)
+	)
 
 	# --- Nose (small box protruding from mid-face) ---
-	_add_box(_head, "Nose", _mat_nose,
-		Vector3(0.030, 0.040, 0.025),
-		Vector3(0.0, -0.010, 0.108))
+	_add_box(_head, "Nose", _mat_nose, Vector3(0.030, 0.040, 0.025), Vector3(0.0, -0.010, 0.108))
 
 	# --- Mouth (thin dark strip below nose) ---
-	_add_box(_head, "Mouth", _mat_mouth,
-		Vector3(0.065, 0.014, 0.008),
-		Vector3(0.0, -0.063, 0.100))
+	_add_box(_head, "Mouth", _mat_mouth, Vector3(0.065, 0.014, 0.008), Vector3(0.0, -0.063, 0.100))
 
 	# --- Ears (small boxes on the sides of the head) ---
-	_add_box(_head, "EarLeft",  _mat_ear,
-		Vector3(0.020, 0.060, 0.040),
-		Vector3( 0.118, 0.000, 0.005))
-	_add_box(_head, "EarRight", _mat_ear,
-		Vector3(0.020, 0.060, 0.040),
-		Vector3(-0.118, 0.000, 0.005))
+	_add_box(_head, "EarLeft", _mat_ear, Vector3(0.020, 0.060, 0.040), Vector3(0.118, 0.000, 0.005))
+	_add_box(
+		_head, "EarRight", _mat_ear, Vector3(0.020, 0.060, 0.040), Vector3(-0.118, 0.000, 0.005)
+	)
 
 	# --- Hair cap (wider/deeper than head, sits on top) ---
-	_add_box(_head, "HairTop", _mat_hair,
-		Vector3(0.240, 0.055, 0.210),
-		Vector3(0.0, 0.152, 0.002))
+	_add_box(_head, "HairTop", _mat_hair, Vector3(0.240, 0.055, 0.210), Vector3(0.0, 0.152, 0.002))
 	# Side panels keep hair flush with head sides
-	_add_box(_head, "HairSideLeft",  _mat_hair,
+	_add_box(
+		_head, "HairSideLeft", _mat_hair, Vector3(0.028, 0.110, 0.185), Vector3(0.124, 0.090, 0.003)
+	)
+	_add_box(
+		_head,
+		"HairSideRight",
+		_mat_hair,
 		Vector3(0.028, 0.110, 0.185),
-		Vector3( 0.124, 0.090, 0.003))
-	_add_box(_head, "HairSideRight", _mat_hair,
-		Vector3(0.028, 0.110, 0.185),
-		Vector3(-0.124, 0.090, 0.003))
+		Vector3(-0.124, 0.090, 0.003)
+	)
 	# Back panel (behind head, negative Z)
-	_add_box(_head, "HairBack", _mat_hair,
-		Vector3(0.210, 0.070, 0.028),
-		Vector3(0.0, 0.082, -0.105))
+	_add_box(
+		_head, "HairBack", _mat_hair, Vector3(0.210, 0.070, 0.028), Vector3(0.0, 0.082, -0.105)
+	)
 
 
 ## Add hand meshes to both elbow pivots so the wrists end in visible hands.
@@ -158,24 +156,59 @@ func _build_hands() -> void:
 	# Mirror of the right hand: palm overlaps the forearm end so the wrist looks
 	# connected. Z is flipped to the front-facing side (+Z = world-up when aimed).
 	# The flashlight tube runs through the grip; its lower end protrudes past the fist.
-	_add_box(_left_elbow, "HandLeft_Palm", mat_skin,
-		Vector3(0.076, 0.056, 0.068), Vector3(0.000, -0.255, 0.032))
-	_add_box(_left_elbow, "HandLeft_Fingers", mat_skin,
-		Vector3(0.070, 0.010, 0.028), Vector3(0.000, -0.275, 0.052))
-	_add_box(_left_elbow, "HandLeft_Thumb", mat_skin,
-		Vector3(0.028, 0.048, 0.028), Vector3(0.048, -0.245, 0.015))
+	_add_box(
+		_left_elbow,
+		"HandLeft_Palm",
+		mat_skin,
+		Vector3(0.076, 0.056, 0.068),
+		Vector3(0.000, -0.255, 0.032)
+	)
+	_add_box(
+		_left_elbow,
+		"HandLeft_Fingers",
+		mat_skin,
+		Vector3(0.070, 0.010, 0.028),
+		Vector3(0.000, -0.275, 0.052)
+	)
+	_add_box(
+		_left_elbow,
+		"HandLeft_Thumb",
+		mat_skin,
+		Vector3(0.028, 0.048, 0.028),
+		Vector3(0.048, -0.245, 0.015)
+	)
 	# Tube mostly hidden inside fist; lower end protrudes ~3 cm past the palm.
-	_add_box(_left_elbow, "FlashlightBody", _mat_flashlight_body,
-		Vector3(0.020, 0.080, 0.020), Vector3(0.000, -0.275, 0.032))
+	_add_box(
+		_left_elbow,
+		"FlashlightBody",
+		_mat_flashlight_body,
+		Vector3(0.020, 0.080, 0.020),
+		Vector3(0.000, -0.275, 0.032)
+	)
 
 	# --- Right hand (grips gun) ---
 	# Same approach: one solid fist block + thin knuckle ridge + thumb.
-	_add_box(_right_elbow, "HandRight_Palm", mat_skin,
-		Vector3(0.076, 0.056, 0.068), Vector3(0.000, -0.255, -0.032))
-	_add_box(_right_elbow, "HandRight_Fingers", mat_skin,
-		Vector3(0.070, 0.010, 0.028), Vector3(0.000, -0.275, -0.052))
-	_add_box(_right_elbow, "HandRight_Thumb", mat_skin,
-		Vector3(0.028, 0.048, 0.028), Vector3(-0.048, -0.245, -0.015))
+	_add_box(
+		_right_elbow,
+		"HandRight_Palm",
+		mat_skin,
+		Vector3(0.076, 0.056, 0.068),
+		Vector3(0.000, -0.255, -0.032)
+	)
+	_add_box(
+		_right_elbow,
+		"HandRight_Fingers",
+		mat_skin,
+		Vector3(0.070, 0.010, 0.028),
+		Vector3(0.000, -0.275, -0.052)
+	)
+	_add_box(
+		_right_elbow,
+		"HandRight_Thumb",
+		mat_skin,
+		Vector3(0.028, 0.048, 0.028),
+		Vector3(-0.048, -0.245, -0.015)
+	)
 
 
 ## Helper: create a MeshInstance3D with a BoxMesh, attach to parent node.
@@ -238,9 +271,7 @@ func _process(delta: float) -> void:
 	var h_speed := Vector2(vel.x, vel.z).length()
 
 	if h_speed > 0.5:
-		var t := clampf(
-			(h_speed - 0.5) / (RUN_THRESHOLD - 0.5), 0.0, 1.0
-		)
+		var t := clampf((h_speed - 0.5) / (RUN_THRESHOLD - 0.5), 0.0, 1.0)
 		_animate_gait(delta, h_speed, t)
 
 		# Elbows: natural bend (walk) to pumped ~70° (run)
@@ -248,12 +279,16 @@ func _process(delta: float) -> void:
 		var elbow_base := lerpf(WALK_ELBOW_BASE, RUN_ELBOW_BASE, t)
 		var elbow_dyn := lerpf(0.15, ELBOW_RATIO, t)
 		var back_ext := lerpf(0.0, 0.15, t)
-		_left_elbow.rotation.x = elbow_base \
-			+ maxf(0.0, _left_shoulder.rotation.x) * elbow_dyn \
+		_left_elbow.rotation.x = (
+			elbow_base
+			+ maxf(0.0, _left_shoulder.rotation.x) * elbow_dyn
 			+ minf(0.0, _left_shoulder.rotation.x) * back_ext
-		_right_elbow.rotation.x = elbow_base \
-			+ maxf(0.0, _right_shoulder.rotation.x) * elbow_dyn \
+		)
+		_right_elbow.rotation.x = (
+			elbow_base
+			+ maxf(0.0, _right_shoulder.rotation.x) * elbow_dyn
 			+ minf(0.0, _right_shoulder.rotation.x) * back_ext
+		)
 
 		# Forearms angle slightly inward (natural arm hang)
 		var elbow_y := lerpf(ELBOW_Y_ANGLE * 0.5, ELBOW_Y_ANGLE, t)
@@ -265,24 +300,16 @@ func _process(delta: float) -> void:
 		var leg_amp := amp * 0.85
 		var l_swing_t := clampf(-_left_hip.rotation.x / leg_amp, 0.0, 1.0)
 		var r_swing_t := clampf(-_right_hip.rotation.x / leg_amp, 0.0, 1.0)
-		_left_knee.rotation.x = KNEE_STANCE_FLEX \
-			+ sin(l_swing_t * PI) * knee_lift
-		_right_knee.rotation.x = KNEE_STANCE_FLEX \
-			+ sin(r_swing_t * PI) * knee_lift
+		_left_knee.rotation.x = KNEE_STANCE_FLEX + sin(l_swing_t * PI) * knee_lift
+		_right_knee.rotation.x = KNEE_STANCE_FLEX + sin(r_swing_t * PI) * knee_lift
 	else:
 		_decay_gait(delta)
-		_left_elbow.rotation.x = lerpf(
-			_left_elbow.rotation.x, 0.0, delta * DECAY_SPEED)
-		_left_elbow.rotation.y = lerpf(
-			_left_elbow.rotation.y, 0.0, delta * DECAY_SPEED)
-		_right_elbow.rotation.x = lerpf(
-			_right_elbow.rotation.x, 0.0, delta * DECAY_SPEED)
-		_right_elbow.rotation.y = lerpf(
-			_right_elbow.rotation.y, 0.0, delta * DECAY_SPEED)
-		_left_knee.rotation.x = lerpf(
-			_left_knee.rotation.x, 0.0, delta * DECAY_SPEED)
-		_right_knee.rotation.x = lerpf(
-			_right_knee.rotation.x, 0.0, delta * DECAY_SPEED)
+		_left_elbow.rotation.x = lerpf(_left_elbow.rotation.x, 0.0, delta * DECAY_SPEED)
+		_left_elbow.rotation.y = lerpf(_left_elbow.rotation.y, 0.0, delta * DECAY_SPEED)
+		_right_elbow.rotation.x = lerpf(_right_elbow.rotation.x, 0.0, delta * DECAY_SPEED)
+		_right_elbow.rotation.y = lerpf(_right_elbow.rotation.y, 0.0, delta * DECAY_SPEED)
+		_left_knee.rotation.x = lerpf(_left_knee.rotation.x, 0.0, delta * DECAY_SPEED)
+		_right_knee.rotation.x = lerpf(_right_knee.rotation.x, 0.0, delta * DECAY_SPEED)
 
 	# Aim arms at crosshair using camera pitch (skip when hidden, e.g. driving)
 	if (parent as Node3D).visible:
@@ -303,9 +330,7 @@ func _aim_gun_arm(pitch: float) -> void:
 
 
 func _aim_flashlight_arm(pitch: float) -> void:
-	var t: float = clampf(
-		(pitch - PITCH_UP) / (PITCH_DOWN - PITCH_UP), 0.0, 1.0
-	)
+	var t: float = clampf((pitch - PITCH_UP) / (PITCH_DOWN - PITCH_UP), 0.0, 1.0)
 	var elbow: float = lerpf(FLASH_ELBOW_UP, FLASH_ELBOW_DOWN, t)
 	var total: float = -(PI / 2.0 + pitch)
 	_left_shoulder.rotation.x = total - elbow
@@ -417,8 +442,8 @@ func _apply_arm_stroke(
 	shoulder.rotation.x = -PI * 0.4 + swing - entry_t * 0.25
 
 	# Y: arm reaches outward during recovery, sweeps inward during pull
-	shoulder.rotation.y = sign_f * (
-		recovery_t * SWIM_ARM_Y_AMPLITUDE - pull_t * SWIM_ARM_Y_AMPLITUDE * 0.3
+	shoulder.rotation.y = (
+		sign_f * (recovery_t * SWIM_ARM_Y_AMPLITUDE - pull_t * SWIM_ARM_Y_AMPLITUDE * 0.3)
 	)
 
 	# Z: high elbow during recovery (above water), low during pull (underwater)

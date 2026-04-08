@@ -25,7 +25,10 @@ func init(
 
 
 func build(
-	chunk: Node3D, _tile: Vector2i, ox: float, oz: float,
+	chunk: Node3D,
+	_tile: Vector2i,
+	ox: float,
+	oz: float,
 	river_data: Dictionary,
 ) -> void:
 	if river_data.is_empty():
@@ -54,10 +57,14 @@ func build(
 		if h_ns > 0.5:
 			var bridge_len: float = rw * 2.0
 			var center := Vector3(
-				road_cx, h_ns + DECK_THICKNESS * 0.5, oz,
+				road_cx,
+				h_ns + DECK_THICKNESS * 0.5,
+				oz,
 			)
 			var deck_size := Vector3(
-				DECK_WIDTH, DECK_THICKNESS, bridge_len,
+				DECK_WIDTH,
+				DECK_THICKNESS,
+				bridge_len,
 			)
 			_city_script.st_add_box(st, center, deck_size)
 			_city_script.add_box_collision(body, center, deck_size)
@@ -65,23 +72,37 @@ func build(
 
 			# Railings
 			var rail_y: float = h_ns + DECK_THICKNESS + RAILING_HEIGHT * 0.5
-			_city_script.st_add_box(
-				st,
-				Vector3(
-					road_cx - DECK_WIDTH * 0.5, rail_y, oz,
-				),
-				Vector3(
-					RAILING_THICKNESS, RAILING_HEIGHT, bridge_len,
-				),
+			(
+				_city_script
+				. st_add_box(
+					st,
+					Vector3(
+						road_cx - DECK_WIDTH * 0.5,
+						rail_y,
+						oz,
+					),
+					Vector3(
+						RAILING_THICKNESS,
+						RAILING_HEIGHT,
+						bridge_len,
+					),
+				)
 			)
-			_city_script.st_add_box(
-				st,
-				Vector3(
-					road_cx + DECK_WIDTH * 0.5, rail_y, oz,
-				),
-				Vector3(
-					RAILING_THICKNESS, RAILING_HEIGHT, bridge_len,
-				),
+			(
+				_city_script
+				. st_add_box(
+					st,
+					Vector3(
+						road_cx + DECK_WIDTH * 0.5,
+						rail_y,
+						oz,
+					),
+					Vector3(
+						RAILING_THICKNESS,
+						RAILING_HEIGHT,
+						bridge_len,
+					),
+				)
 			)
 
 		# E-W road crossing
@@ -89,10 +110,14 @@ func build(
 		if h_ew > 0.5:
 			var bridge_len: float = rw * 2.0
 			var center := Vector3(
-				ox, h_ew + DECK_THICKNESS * 0.5, road_cz,
+				ox,
+				h_ew + DECK_THICKNESS * 0.5,
+				road_cz,
 			)
 			var deck_size := Vector3(
-				bridge_len, DECK_THICKNESS, DECK_WIDTH,
+				bridge_len,
+				DECK_THICKNESS,
+				DECK_WIDTH,
 			)
 			_city_script.st_add_box(st, center, deck_size)
 			_city_script.add_box_collision(body, center, deck_size)
@@ -100,23 +125,37 @@ func build(
 
 			# Railings
 			var rail_y: float = h_ew + DECK_THICKNESS + RAILING_HEIGHT * 0.5
-			_city_script.st_add_box(
-				st,
-				Vector3(
-					ox, rail_y, road_cz - DECK_WIDTH * 0.5,
-				),
-				Vector3(
-					bridge_len, RAILING_HEIGHT, RAILING_THICKNESS,
-				),
+			(
+				_city_script
+				. st_add_box(
+					st,
+					Vector3(
+						ox,
+						rail_y,
+						road_cz - DECK_WIDTH * 0.5,
+					),
+					Vector3(
+						bridge_len,
+						RAILING_HEIGHT,
+						RAILING_THICKNESS,
+					),
+				)
 			)
-			_city_script.st_add_box(
-				st,
-				Vector3(
-					ox, rail_y, road_cz + DECK_WIDTH * 0.5,
-				),
-				Vector3(
-					bridge_len, RAILING_HEIGHT, RAILING_THICKNESS,
-				),
+			(
+				_city_script
+				. st_add_box(
+					st,
+					Vector3(
+						ox,
+						rail_y,
+						road_cz + DECK_WIDTH * 0.5,
+					),
+					Vector3(
+						bridge_len,
+						RAILING_HEIGHT,
+						RAILING_THICKNESS,
+					),
+				)
 			)
 
 	if not has_verts:

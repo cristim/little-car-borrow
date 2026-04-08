@@ -3,10 +3,10 @@ extends GutTest
 
 const WalkScript = preload("res://scenes/pedestrians/states/pedestrian_walk.gd")
 
-
 # ---------------------------------------------------------------------------
 # Mock state machine
 # ---------------------------------------------------------------------------
+
 
 class MockStateMachine:
 	extends Node
@@ -21,6 +21,7 @@ class MockStateMachine:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 func _make_walk_state() -> Node:
 	var ped := CharacterBody3D.new()
@@ -45,6 +46,7 @@ func _make_walk_state() -> Node:
 # Constants
 # ---------------------------------------------------------------------------
 
+
 func test_walk_speed_constant() -> void:
 	assert_eq(WalkScript.WALK_SPEED, 1.4)
 
@@ -56,6 +58,7 @@ func test_turn_chance_constant() -> void:
 # ---------------------------------------------------------------------------
 # enter
 # ---------------------------------------------------------------------------
+
 
 func test_enter_resets_walk_timer() -> void:
 	var state := _make_walk_state()
@@ -112,6 +115,7 @@ func test_enter_randomizes_idle_interval() -> void:
 # ---------------------------------------------------------------------------
 # physics_update — movement
 # ---------------------------------------------------------------------------
+
 
 func test_physics_update_sets_velocity_from_direction() -> void:
 	var state := _make_walk_state()
@@ -185,6 +189,7 @@ func test_physics_update_accumulates_walk_timer() -> void:
 # physics_update — transition to idle
 # ---------------------------------------------------------------------------
 
+
 func test_transitions_to_idle_after_interval() -> void:
 	var state := _make_walk_state()
 	await get_tree().process_frame
@@ -239,6 +244,7 @@ func test_idle_transition_no_message() -> void:
 # Direction with zero magnitude does not crash look_at
 # ---------------------------------------------------------------------------
 
+
 func test_zero_direction_does_not_crash() -> void:
 	var state := _make_walk_state()
 	await get_tree().process_frame
@@ -254,6 +260,7 @@ func test_zero_direction_does_not_crash() -> void:
 # ---------------------------------------------------------------------------
 # Diagonal direction
 # ---------------------------------------------------------------------------
+
 
 func test_diagonal_direction_speed() -> void:
 	var state := _make_walk_state()

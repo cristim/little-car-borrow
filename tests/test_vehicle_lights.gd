@@ -2,9 +2,7 @@ extends GutTest
 ## Unit tests for vehicle_lights.gd — verify night mode toggling and
 ## time_changed signal signature.
 
-const VehicleLightsScript = preload(
-	"res://scenes/vehicles/vehicle_lights.gd"
-)
+const VehicleLightsScript = preload("res://scenes/vehicles/vehicle_lights.gd")
 
 
 func test_set_night_mode_true_shows_headlights_and_taillights() -> void:
@@ -47,15 +45,18 @@ func test_light_counts() -> void:
 	var lights: Node3D = VehicleLightsScript.new()
 	add_child_autofree(lights)
 	assert_eq(
-		lights._headlights.size(), 2,
+		lights._headlights.size(),
+		2,
 		"Should have 2 headlights",
 	)
 	assert_eq(
-		lights._taillights.size(), 2,
+		lights._taillights.size(),
+		2,
 		"Should have 2 taillights",
 	)
 	assert_eq(
-		lights._reverse_lights.size(), 2,
+		lights._reverse_lights.size(),
+		2,
 		"Should have 2 reverse lights",
 	)
 
@@ -95,6 +96,7 @@ func test_no_shadows_enabled() -> void:
 # initialize()
 # ---------------------------------------------------------------------------
 
+
 func test_initialize_sets_vehicle_ref() -> void:
 	var lights: Node3D = VehicleLightsScript.new()
 	add_child_autofree(lights)
@@ -114,6 +116,7 @@ func test_initialize_accepts_null() -> void:
 # ---------------------------------------------------------------------------
 # set_player_driving()
 # ---------------------------------------------------------------------------
+
 
 func test_set_player_driving_true() -> void:
 	var lights: Node3D = VehicleLightsScript.new()
@@ -136,6 +139,7 @@ func test_set_player_driving_false_resets_manual_states() -> void:
 # ---------------------------------------------------------------------------
 # toggle_lights()
 # ---------------------------------------------------------------------------
+
 
 func test_toggle_lights_during_day_turns_on() -> void:
 	var lights: Node3D = VehicleLightsScript.new()
@@ -176,6 +180,7 @@ func test_toggle_lights_during_night_toggles_back_on() -> void:
 # ---------------------------------------------------------------------------
 # disable() — power cut on water entry
 # ---------------------------------------------------------------------------
+
 
 func test_disable_turns_off_headlights() -> void:
 	var lights: Node3D = VehicleLightsScript.new()

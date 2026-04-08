@@ -1,9 +1,7 @@
 extends GutTest
 ## Tests for chunk_builder_helipad.gd
 
-const HelipadBuilder := preload(
-	"res://scenes/world/generator/chunk_builder_helipad.gd"
-)
+const HelipadBuilder := preload("res://scenes/world/generator/chunk_builder_helipad.gd")
 const RoadGrid := preload("res://src/road_grid.gd")
 
 var _builder: RefCounted = null
@@ -35,7 +33,8 @@ func test_build_adds_children_to_chunk() -> void:
 	_builder.build(_chunk, Vector2i(0, 0), 0.0, 0.0)
 	await get_tree().process_frame
 	assert_gt(
-		_chunk.get_child_count(), 0,
+		_chunk.get_child_count(),
+		0,
 		"build() should add at least one child to the chunk",
 	)
 
@@ -57,7 +56,8 @@ func test_helipad_on_ground_layer() -> void:
 	for child in _chunk.get_children():
 		if child is StaticBody3D and child.is_in_group("Road"):
 			assert_eq(
-				child.collision_layer, 1,
+				child.collision_layer,
+				1,
 				"Helipad pad should be on ground collision layer (1)",
 			)
 			return
@@ -92,7 +92,8 @@ func test_helicopter_spawned_above_ground() -> void:
 	for child in _chunk.get_children():
 		if child is CharacterBody3D and child.is_in_group("helicopter"):
 			assert_gt(
-				child.position.y, 0.0,
+				child.position.y,
+				0.0,
 				"Helicopter should spawn above ground level (Y > 0)",
 			)
 			return
@@ -146,7 +147,8 @@ func test_different_tiles_produce_different_positions() -> void:
 			break
 
 	assert_ne(
-		pos_a, pos_b,
+		pos_a,
+		pos_b,
 		"Helicopters in different tiles should spawn at different positions",
 	)
 

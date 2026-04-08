@@ -68,6 +68,7 @@ func get_yaw() -> float:
 # Ready / initialization
 # ==========================================================================
 
+
 func test_player_added_to_player_group() -> void:
 	assert_true(
 		_player.is_in_group("player"),
@@ -77,7 +78,8 @@ func test_player_added_to_player_group() -> void:
 
 func test_ready_sets_foot_context() -> void:
 	assert_eq(
-		InputManager.current_context, InputManager.Context.FOOT,
+		InputManager.current_context,
+		InputManager.Context.FOOT,
 		"InputManager should be in FOOT context after player _ready",
 	)
 
@@ -95,7 +97,8 @@ func test_initial_state_is_idle() -> void:
 		"StateMachine should have a current state",
 	)
 	assert_eq(
-		_state_machine.current_state.name, "Idle",
+		_state_machine.current_state.name,
+		"Idle",
 		"Initial state should be Idle",
 	)
 
@@ -103,6 +106,7 @@ func test_initial_state_is_idle() -> void:
 # ==========================================================================
 # Exported properties / defaults
 # ==========================================================================
+
 
 func test_default_walk_speed() -> void:
 	assert_eq(_player.walk_speed, 4.0, "Default walk speed")
@@ -124,6 +128,7 @@ func test_default_rotation_speed() -> void:
 # State variables
 # ==========================================================================
 
+
 func test_initial_nearest_vehicle_is_null() -> void:
 	assert_null(_player.nearest_vehicle, "nearest_vehicle starts null")
 
@@ -140,6 +145,7 @@ func test_initial_is_swimming_is_false() -> void:
 # Interaction area: vehicle entered
 # ==========================================================================
 
+
 func test_interaction_entered_sets_nearest_vehicle() -> void:
 	var vehicle := Node3D.new()
 	var zone := Area3D.new()
@@ -149,7 +155,8 @@ func test_interaction_entered_sets_nearest_vehicle() -> void:
 	# Emit signal manually (physics overlap won't fire in test)
 	_player._on_interaction_area_entered(zone)
 	assert_eq(
-		_player.nearest_vehicle, vehicle,
+		_player.nearest_vehicle,
+		vehicle,
 		"nearest_vehicle should be set to the zone's parent",
 	)
 
@@ -168,8 +175,7 @@ func test_interaction_entered_ignores_non_vehicle_zone() -> void:
 
 func test_interaction_entered_shows_steal_prompt() -> void:
 	var captured := []
-	var on_prompt := func(text: String) -> void:
-		captured.append(text)
+	var on_prompt := func(text: String) -> void: captured.append(text)
 	EventBus.show_interaction_prompt.connect(_on_prompt)
 	var vehicle := Node3D.new()
 	var zone := Area3D.new()
@@ -185,8 +191,7 @@ func test_interaction_entered_shows_steal_prompt() -> void:
 
 func test_interaction_entered_shows_board_prompt_for_boat() -> void:
 	var captured := []
-	var on_prompt := func(text: String) -> void:
-		captured.append(text)
+	var on_prompt := func(text: String) -> void: captured.append(text)
 	EventBus.show_interaction_prompt.connect(_on_prompt)
 	var vehicle := Node3D.new()
 	var boat_ctrl := Node.new()
@@ -207,6 +212,7 @@ func test_interaction_entered_shows_board_prompt_for_boat() -> void:
 # Interaction area: vehicle exited
 # ==========================================================================
 
+
 func test_interaction_exited_clears_nearest_vehicle() -> void:
 	var vehicle := Node3D.new()
 	var zone := Area3D.new()
@@ -223,8 +229,7 @@ func test_interaction_exited_clears_nearest_vehicle() -> void:
 
 func test_interaction_exited_emits_hide_prompt() -> void:
 	var captured := []
-	var on_hide := func() -> void:
-		captured.append(true)
+	var on_hide := func() -> void: captured.append(true)
 	EventBus.hide_interaction_prompt.connect(_on_hide)
 	var vehicle := Node3D.new()
 	var zone := Area3D.new()
@@ -247,7 +252,8 @@ func test_interaction_exited_ignores_non_vehicle_zone() -> void:
 	add_child_autofree(parent)
 	_player._on_interaction_area_exited(zone)
 	assert_eq(
-		_player.nearest_vehicle, vehicle,
+		_player.nearest_vehicle,
+		vehicle,
 		"nearest_vehicle should not change for non-vehicle zones",
 	)
 
@@ -263,7 +269,8 @@ func test_interaction_exited_ignores_different_vehicle() -> void:
 	_player.nearest_vehicle = vehicle_a
 	_player._on_interaction_area_exited(zone_b)
 	assert_eq(
-		_player.nearest_vehicle, vehicle_a,
+		_player.nearest_vehicle,
+		vehicle_a,
 		"Should not clear if a different vehicle's zone exits",
 	)
 
@@ -272,12 +279,15 @@ func test_interaction_exited_ignores_different_vehicle() -> void:
 # Physics process: rotation follows camera yaw
 # ==========================================================================
 
+
 func test_rotation_follows_camera_yaw_in_foot_mode() -> void:
 	InputManager.current_context = InputManager.Context.FOOT
 	_camera._yaw = 1.5
 	_player._physics_process(0.016)
 	assert_almost_eq(
-		_player.rotation.y, 1.5 + PI, 0.001,
+		_player.rotation.y,
+		1.5 + PI,
+		0.001,
 		"Player Y rotation should be camera yaw + PI",
 	)
 
@@ -288,7 +298,9 @@ func test_rotation_does_not_update_in_vehicle_mode() -> void:
 	_camera._yaw = 1.5
 	_player._physics_process(0.016)
 	assert_almost_eq(
-		_player.rotation.y, 0.0, 0.001,
+		_player.rotation.y,
+		0.0,
+		0.001,
 		"Rotation should not change in VEHICLE context",
 	)
 
@@ -297,16 +309,21 @@ func test_rotation_does_not_update_in_vehicle_mode() -> void:
 # Fall damage
 # ==========================================================================
 
+
 func test_fall_damage_min_height_constant() -> void:
 	assert_almost_eq(
-		PlayerScript.FALL_DAMAGE_MIN_HEIGHT, 3.0, 0.001,
+		PlayerScript.FALL_DAMAGE_MIN_HEIGHT,
+		3.0,
+		0.001,
 		"Safe fall threshold should be 3.0 m",
 	)
 
 
 func test_fall_damage_per_meter_constant() -> void:
 	assert_almost_eq(
-		PlayerScript.FALL_DAMAGE_PER_METER, 10.0, 0.001,
+		PlayerScript.FALL_DAMAGE_PER_METER,
+		10.0,
+		0.001,
 		"Damage rate should be 10 HP per metre beyond threshold",
 	)
 
@@ -318,7 +335,9 @@ func test_fall_peak_y_recorded_when_leaving_floor() -> void:
 	# Call _physics_process while off floor (is_on_floor() returns false by default)
 	_player._physics_process(0.016)
 	assert_almost_eq(
-		_player._fall_peak_y, 5.0, 0.01,
+		_player._fall_peak_y,
+		5.0,
+		0.01,
 		"_fall_peak_y should be set to y when leaving floor",
 	)
 
@@ -330,7 +349,9 @@ func test_fall_peak_y_tracks_highest_point() -> void:
 	_player.global_position = Vector3(0.0, 7.0, 0.0)
 	_player._physics_process(0.016)
 	assert_almost_eq(
-		_player._fall_peak_y, 7.0, 0.01,
+		_player._fall_peak_y,
+		7.0,
+		0.01,
 		"_fall_peak_y should update to highest point reached",
 	)
 

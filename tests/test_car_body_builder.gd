@@ -5,9 +5,7 @@ extends GutTest
 ## These are cosmetic and do not affect gameplay, so engine errors are
 ## treated as non-failures in this test file.
 
-const CarBuilderScript = preload(
-	"res://scenes/vehicles/car_body_builder.gd"
-)
+const CarBuilderScript = preload("res://scenes/vehicles/car_body_builder.gd")
 
 var _builder: RefCounted
 
@@ -25,6 +23,7 @@ func before_each() -> void:
 
 
 # --- Constants ---
+
 
 func test_ring_verts_is_twelve() -> void:
 	assert_eq(CarBuilderScript.RING_VERTS, 12)
@@ -93,6 +92,7 @@ func test_base_profiles_z_sorted() -> void:
 
 # --- _generate_profiles ---
 
+
 func test_generate_profiles_sedan_same_count_as_base() -> void:
 	var profiles: Array = _builder._generate_profiles("sedan")
 	assert_eq(profiles.size(), CarBuilderScript.BASE_PROFILES.size())
@@ -115,7 +115,8 @@ func test_generate_profiles_sports_narrower_cabin() -> void:
 	for i in range(sedan.size()):
 		if float(sedan[i].inset) > 0.01 and float(sports[i].inset) > 0.01:
 			assert_lt(
-				float(sports[i].yt), float(sedan[i].yt),
+				float(sports[i].yt),
+				float(sedan[i].yt),
 				"Sports cabin top should be lower than sedan",
 			)
 			return
@@ -128,7 +129,8 @@ func test_generate_profiles_suv_taller_cabin() -> void:
 	for i in range(sedan.size()):
 		if float(sedan[i].inset) > 0.01 and float(suv[i].inset) > 0.01:
 			assert_gt(
-				float(suv[i].yt), float(sedan[i].yt),
+				float(suv[i].yt),
+				float(sedan[i].yt),
 				"SUV cabin top should be higher than sedan",
 			)
 			return
@@ -138,14 +140,11 @@ func test_generate_profiles_suv_taller_cabin() -> void:
 func test_generate_profiles_hatchback_shorter_length() -> void:
 	var sedan: Array = _builder._generate_profiles("sedan")
 	var hatch: Array = _builder._generate_profiles("hatchback")
-	var sedan_len: float = absf(
-		float(sedan[sedan.size() - 1].z) - float(sedan[0].z)
-	)
-	var hatch_len: float = absf(
-		float(hatch[hatch.size() - 1].z) - float(hatch[0].z)
-	)
+	var sedan_len: float = absf(float(sedan[sedan.size() - 1].z) - float(sedan[0].z))
+	var hatch_len: float = absf(float(hatch[hatch.size() - 1].z) - float(hatch[0].z))
 	assert_lt(
-		hatch_len, sedan_len,
+		hatch_len,
+		sedan_len,
 		"Hatchback should be shorter than sedan",
 	)
 
@@ -155,14 +154,19 @@ func test_generate_profiles_unknown_variant_uses_base() -> void:
 	var unknown: Array = _builder._generate_profiles("nonexistent")
 	for i in range(sedan.size()):
 		assert_almost_eq(
-			float(sedan[i].z), float(unknown[i].z), 0.001,
+			float(sedan[i].z),
+			float(unknown[i].z),
+			0.001,
 		)
 		assert_almost_eq(
-			float(sedan[i].hw), float(unknown[i].hw), 0.001,
+			float(sedan[i].hw),
+			float(unknown[i].hw),
+			0.001,
 		)
 
 
 # --- _profile_to_ring ---
+
 
 func test_profile_to_ring_returns_12_vertices() -> void:
 	var profiles: Array = _builder._generate_profiles("sedan")
@@ -176,7 +180,9 @@ func test_profile_to_ring_all_same_z() -> void:
 	var expected_z: float = float(profiles[0].z)
 	for v in ring:
 		assert_almost_eq(
-			v.z, expected_z, 0.001,
+			v.z,
+			expected_z,
+			0.001,
 			"All ring vertices should have same z",
 		)
 
@@ -186,12 +192,16 @@ func test_profile_to_ring_symmetric_x() -> void:
 	var ring: PackedVector3Array = _builder._profile_to_ring(profiles[4])
 	# V0 (top-left) and V2 (top-right) should be symmetric
 	assert_almost_eq(
-		absf(ring[0].x), absf(ring[2].x), 0.001,
+		absf(ring[0].x),
+		absf(ring[2].x),
+		0.001,
 		"Top-left and top-right should be symmetric in x",
 	)
 	# V6 (bottom-right) and V8 (bottom-left) should be symmetric
 	assert_almost_eq(
-		absf(ring[6].x), absf(ring[8].x), 0.001,
+		absf(ring[6].x),
+		absf(ring[8].x),
+		0.001,
 		"Bottom-right and bottom-left should be symmetric in x",
 	)
 
@@ -207,6 +217,7 @@ func test_profile_to_ring_top_center_at_x_zero() -> void:
 
 # --- build_body ---
 
+
 func test_build_body_sedan_returns_array_mesh() -> void:
 	var mesh: ArrayMesh = _builder.build_body("sedan")
 	assert_not_null(mesh)
@@ -216,7 +227,8 @@ func test_build_body_sedan_returns_array_mesh() -> void:
 func test_build_body_sedan_has_two_surfaces() -> void:
 	var mesh: ArrayMesh = _builder.build_body("sedan")
 	assert_eq(
-		mesh.get_surface_count(), 2,
+		mesh.get_surface_count(),
+		2,
 		"Body should have 2 surfaces (loft + caps/bumpers)",
 	)
 
@@ -240,7 +252,8 @@ func test_build_body_vertex_count_multiple_of_three() -> void:
 	for s in range(mesh.get_surface_count()):
 		var verts: PackedVector3Array = mesh.surface_get_arrays(s)[Mesh.ARRAY_VERTEX]
 		assert_eq(
-			verts.size() % 3, 0,
+			verts.size() % 3,
+			0,
 			"Surface %d vertex count should be multiple of 3" % s,
 		)
 
@@ -252,6 +265,7 @@ func test_build_body_has_normals() -> void:
 
 
 # --- build_body all variants ---
+
 
 func test_build_body_sports() -> void:
 	var mesh: ArrayMesh = _builder.build_body("sports")
@@ -284,6 +298,7 @@ func test_build_body_pickup() -> void:
 
 
 # --- build_windows ---
+
 
 func test_build_windows_sedan_returns_dictionary() -> void:
 	var result: Dictionary = _builder.build_windows("sedan")
@@ -320,6 +335,7 @@ func test_build_windows_windshield_has_vertices() -> void:
 
 # --- build_interior ---
 
+
 func test_build_interior_sedan_returns_array_mesh() -> void:
 	var mesh: ArrayMesh = _builder.build_interior("sedan")
 	assert_true(mesh is ArrayMesh)
@@ -339,6 +355,7 @@ func test_build_interior_vertex_count_multiple_of_three() -> void:
 
 
 # --- build_floor ---
+
 
 func test_build_floor_sedan_returns_array_mesh() -> void:
 	var mesh: ArrayMesh = _builder.build_floor("sedan")
@@ -360,6 +377,7 @@ func test_build_floor_is_two_quads() -> void:
 
 # --- build_details ---
 
+
 func test_build_details_sedan_returns_array_mesh() -> void:
 	var mesh: ArrayMesh = _builder.build_details("sedan")
 	assert_true(mesh is ArrayMesh)
@@ -378,6 +396,7 @@ func test_build_details_vertex_count_multiple_of_three() -> void:
 
 
 # --- build_doors ---
+
 
 func test_build_doors_sedan_returns_dictionary() -> void:
 	var result: Dictionary = _builder.build_doors("sedan")
@@ -440,6 +459,7 @@ func test_build_doors_left_door_has_vertices() -> void:
 
 # --- All variants produce valid doors ---
 
+
 func test_build_doors_all_variants() -> void:
 	# Pickup has cabin_end_z=0.0 so no cabin-to-cabin segment for doors.
 	var doorless := ["pickup"]
@@ -463,6 +483,7 @@ func test_build_doors_all_variants() -> void:
 
 # --- All variants produce valid windows ---
 
+
 func test_build_windows_all_variants() -> void:
 	for variant in CarBuilderScript.VARIANT_OVERRIDES:
 		var result: Dictionary = _builder.build_windows(variant)
@@ -475,6 +496,7 @@ func test_build_windows_all_variants() -> void:
 
 
 # --- All variants produce valid interior ---
+
 
 func test_build_interior_all_variants() -> void:
 	for variant in CarBuilderScript.VARIANT_OVERRIDES:

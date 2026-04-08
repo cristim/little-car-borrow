@@ -24,9 +24,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if not _player:
-		_player = (
-			get_tree().get_first_node_in_group("player") as Node3D
-		)
+		_player = (get_tree().get_first_node_in_group("player") as Node3D)
 		if not _player:
 			return
 
@@ -67,9 +65,7 @@ func _refresh_available() -> void:
 	]
 
 	for _i in range(MAX_AVAILABLE):
-		var gen_name: String = generators[
-			_rng.randi() % generators.size()
-		]
+		var gen_name: String = generators[_rng.randi() % generators.size()]
 		var mission: Dictionary = call(gen_name)
 		if not mission.is_empty():
 			_available_missions.append(mission)
@@ -94,9 +90,7 @@ func accept_mission(mission_id: String) -> void:
 		# Theft skips pickup — go straight to needing the vehicle
 		_active_mission["state"] = "pickup"
 		EventBus.mission_started.emit(mission_id)
-		EventBus.mission_objective_updated.emit(
-			_active_mission.get("objective", "")
-		)
+		EventBus.mission_objective_updated.emit(_active_mission.get("objective", ""))
 	elif mtype == "taxi":
 		# Taxi: passenger is at start, skip to active
 		_active_mission["state"] = "active"
@@ -104,15 +98,11 @@ func accept_mission(mission_id: String) -> void:
 		if tl > 0.0:
 			_mission_timer = tl
 		EventBus.mission_started.emit(mission_id)
-		EventBus.mission_objective_updated.emit(
-			"Drive the passenger to the destination"
-		)
+		EventBus.mission_objective_updated.emit("Drive the passenger to the destination")
 	else:
 		_active_mission["state"] = "pickup"
 		EventBus.mission_started.emit(mission_id)
-		EventBus.mission_objective_updated.emit(
-			"Go to the pickup location"
-		)
+		EventBus.mission_objective_updated.emit("Go to the pickup location")
 
 
 func complete_mission() -> void:
@@ -123,9 +113,7 @@ func complete_mission() -> void:
 	_active_mission["state"] = "completed"
 
 	# Theft: remove the vehicle
-	var delivered_vehicle = _active_mission.get(
-		"_delivered_vehicle", null
-	)
+	var delivered_vehicle = _active_mission.get("_delivered_vehicle", null)
 	if delivered_vehicle and is_instance_valid(delivered_vehicle):
 		# Force player out first, then free next frame
 		EventBus.force_exit_vehicle.emit(delivered_vehicle)
@@ -155,7 +143,8 @@ func get_active_mission() -> Dictionary:
 
 
 func _on_marker_reached(
-	mission_id: String, marker_type: String,
+	mission_id: String,
+	marker_type: String,
 ) -> void:
 	# Start marker — accept the mission
 	if marker_type == "start":
@@ -205,9 +194,7 @@ func _on_vehicle_entered(vehicle: Node) -> void:
 		return
 
 	# Check if vehicle variant matches
-	var needed: String = _active_mission.get(
-		"vehicle_variant", ""
-	)
+	var needed: String = _active_mission.get("vehicle_variant", "")
 	var body := vehicle.get_node_or_null("Body") as Node3D
 	if not body:
 		return
@@ -216,12 +203,11 @@ func _on_vehicle_entered(vehicle: Node) -> void:
 	if variant_name == needed:
 		_active_mission["state"] = "active"
 		_active_mission["_delivered_vehicle"] = vehicle
-		EventBus.mission_objective_updated.emit(
-			"Deliver the %s to the garage" % needed
-		)
+		EventBus.mission_objective_updated.emit("Deliver the %s to the garage" % needed)
 
 
 # --- Mission generators ---
+
 
 func _generate_delivery() -> Dictionary:
 	var pp := _player.global_position
@@ -268,12 +254,14 @@ func _generate_taxi() -> Dictionary:
 
 func _generate_theft() -> Dictionary:
 	var variants := [
-		"sedan", "sports", "suv",
-		"hatchback", "van", "pickup",
+		"sedan",
+		"sports",
+		"suv",
+		"hatchback",
+		"van",
+		"pickup",
 	]
-	var variant: String = variants[
-		_rng.randi() % variants.size()
-	]
+	var variant: String = variants[_rng.randi() % variants.size()]
 	var pp := _player.global_position
 	var start := _gen_sidewalk_pos(pp, 40.0, 150.0)
 	var dropoff := _gen_sidewalk_pos(start, 200.0, 400.0)
@@ -295,6 +283,7 @@ func _generate_theft() -> Dictionary:
 
 # --- Helpers ---
 
+
 func _get_boundary():
 	if _boundary:
 		return _boundary
@@ -306,22 +295,18 @@ func _get_boundary():
 
 
 func _gen_sidewalk_pos(
-	near: Vector3, min_dist: float, max_dist: float,
+	near: Vector3,
+	min_dist: float,
+	max_dist: float,
 ) -> Vector3:
 	for _attempt in range(10):
 		var angle := _rng.randf() * TAU
 		var dist := _rng.randf_range(min_dist, max_dist)
-		var raw := near + Vector3(
-			cos(angle) * dist, 0.0, sin(angle) * dist
-		)
+		var raw := near + Vector3(cos(angle) * dist, 0.0, sin(angle) * dist)
 		# Snap to nearest sidewalk
 		var is_ns := _rng.randi() % 2 == 0
-		var road_idx := _grid.get_nearest_road_index(
-			raw.x if is_ns else raw.z
-		)
-		var rc: float = _grid.get_road_center_near(
-			road_idx, raw.x if is_ns else raw.z
-		)
+		var road_idx := _grid.get_nearest_road_index(raw.x if is_ns else raw.z)
+		var rc: float = _grid.get_road_center_near(road_idx, raw.x if is_ns else raw.z)
 		var rw: float = _grid.get_road_width(road_idx)
 		var sw := rc + rw * 0.5 + SIDEWALK_OFFSET
 		var pos: Vector3

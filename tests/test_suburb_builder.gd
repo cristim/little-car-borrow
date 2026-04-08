@@ -2,12 +2,8 @@ extends GutTest
 ## Unit tests for chunk_builder_suburb.gd — door, window and interior
 ## geometry added to suburban houses.
 
-const SuburbScript = preload(
-	"res://scenes/world/generator/chunk_builder_suburb.gd"
-)
-const BuilderScript = preload(
-	"res://scenes/world/generator/chunk_builder_buildings.gd"
-)
+const SuburbScript = preload("res://scenes/world/generator/chunk_builder_suburb.gd")
+const BuilderScript = preload("res://scenes/world/generator/chunk_builder_buildings.gd")
 const RoadGridScript = preload("res://src/road_grid.gd")
 
 
@@ -31,9 +27,11 @@ func _make_builder() -> RefCounted:
 # Constants
 # ==========================================================================
 
+
 func test_door_width_less_than_min_building_width() -> void:
 	assert_lt(
-		SuburbScript.DOOR_WIDTH, SuburbScript.HOUSE_WIN_W * 4.0,
+		SuburbScript.DOOR_WIDTH,
+		SuburbScript.HOUSE_WIN_W * 4.0,
 		"DOOR_WIDTH should be narrower than a wide face",
 	)
 
@@ -53,7 +51,8 @@ func test_house_win_margins_allow_windows_in_min_height_house() -> void:
 		- SuburbScript.HOUSE_WIN_MARGIN_TOP
 	)
 	assert_gte(
-		avail_h, SuburbScript.HOUSE_WIN_H,
+		avail_h,
+		SuburbScript.HOUSE_WIN_H,
 		"Margins should allow windows even in the shortest suburb house",
 	)
 
@@ -61,6 +60,7 @@ func test_house_win_margins_allow_windows_in_min_height_house() -> void:
 # ==========================================================================
 # build() — body structure
 # ==========================================================================
+
 
 func test_build_creates_static_body() -> void:
 	var builder = _make_builder()
@@ -86,6 +86,7 @@ func test_build_body_in_static_group() -> void:
 # ==========================================================================
 # Determinism
 # ==========================================================================
+
 
 func test_same_tile_produces_same_child_names() -> void:
 	var builder = _make_builder()
@@ -122,6 +123,7 @@ func test_same_tile_produces_same_child_names() -> void:
 # Windows
 # ==========================================================================
 
+
 func test_build_creates_suburb_window_meshes() -> void:
 	# Windows are now two shared-material nodes: WindowsOff and WindowsOn
 	var builder = _make_builder()
@@ -155,9 +157,7 @@ func test_window_mesh_has_material_override() -> void:
 	var body: Node = chunk.get_child(0)
 	for i in body.get_child_count():
 		var child := body.get_child(i)
-		if child is MeshInstance3D and (
-			child.name == "WindowsOff" or child.name == "WindowsOn"
-		):
+		if child is MeshInstance3D and (child.name == "WindowsOff" or child.name == "WindowsOn"):
 			assert_not_null(
 				(child as MeshInstance3D).material_override,
 				"%s must have material_override set" % child.name,
@@ -201,7 +201,8 @@ func test_window_mats_are_shared_across_chunks() -> void:
 	if mat1 == null or mat2 == null:
 		return
 	assert_eq(
-		mat1, mat2,
+		mat1,
+		mat2,
 		"Both chunks must share the same WindowsOff material (batching)",
 	)
 
@@ -209,6 +210,7 @@ func test_window_mats_are_shared_across_chunks() -> void:
 # ==========================================================================
 # Per-chunk window toggle metadata
 # ==========================================================================
+
 
 func test_body_in_building_chunk_group_when_windows_exist() -> void:
 	var builder = _make_builder()
@@ -248,6 +250,7 @@ func test_window_active_meta_all_false_initially() -> void:
 # Interior room
 # ==========================================================================
 
+
 func test_build_creates_interior_mesh_for_houses_with_doors() -> void:
 	# The interior mesh is named "SuburbInteriors" and appears when at least
 	# one house has a door wide enough to pass the check.
@@ -271,7 +274,8 @@ func test_build_creates_interior_mesh_for_houses_with_doors() -> void:
 	if int_node != null:
 		assert_not_null(int_node.mesh, "SuburbInteriors must have a mesh")
 		assert_gt(
-			int_node.mesh.get_surface_count(), 0,
+			int_node.mesh.get_surface_count(),
+			0,
 			"SuburbInteriors mesh must have at least one surface",
 		)
 
@@ -279,6 +283,7 @@ func test_build_creates_interior_mesh_for_houses_with_doors() -> void:
 # ==========================================================================
 # _add_house_windows_on_face — unit tests
 # ==========================================================================
+
 
 func test_house_windows_skipped_when_face_too_narrow() -> void:
 	var builder = SuburbScript.new()
@@ -291,10 +296,19 @@ func test_house_windows_skipped_when_face_too_narrow() -> void:
 	var rng := RandomNumberGenerator.new()
 
 	# Face too narrow: avail_w < HOUSE_WIN_W
-	builder._add_house_windows_on_face(
-		win_sts, win_count, win_st_has_data,
-		Vector3.ZERO, 0.5, 4.0,
-		Vector3(0, 0, -1), Vector3(1, 0, 0), rng,
+	(
+		builder
+		. _add_house_windows_on_face(
+			win_sts,
+			win_count,
+			win_st_has_data,
+			Vector3.ZERO,
+			0.5,
+			4.0,
+			Vector3(0, 0, -1),
+			Vector3(1, 0, 0),
+			rng,
+		)
 	)
 	for i in win_count:
 		assert_false(
@@ -314,10 +328,19 @@ func test_house_windows_skipped_when_face_too_short() -> void:
 	var rng := RandomNumberGenerator.new()
 
 	# Face too short: avail_h < HOUSE_WIN_H (height = 1.0m)
-	builder._add_house_windows_on_face(
-		win_sts, win_count, win_st_has_data,
-		Vector3.ZERO, 6.0, 1.0,
-		Vector3(0, 0, -1), Vector3(1, 0, 0), rng,
+	(
+		builder
+		. _add_house_windows_on_face(
+			win_sts,
+			win_count,
+			win_st_has_data,
+			Vector3.ZERO,
+			6.0,
+			1.0,
+			Vector3(0, 0, -1),
+			Vector3(1, 0, 0),
+			rng,
+		)
 	)
 	for i in win_count:
 		assert_false(
@@ -338,10 +361,19 @@ func test_house_windows_places_geometry_on_valid_face() -> void:
 	rng.seed = 42
 
 	# Wide, tall face should produce windows
-	builder._add_house_windows_on_face(
-		win_sts, win_count, win_st_has_data,
-		Vector3.ZERO, 10.0, 4.0,
-		Vector3(0, 0, -1), Vector3(1, 0, 0), rng,
+	(
+		builder
+		. _add_house_windows_on_face(
+			win_sts,
+			win_count,
+			win_st_has_data,
+			Vector3.ZERO,
+			10.0,
+			4.0,
+			Vector3(0, 0, -1),
+			Vector3(1, 0, 0),
+			rng,
+		)
 	)
 	var any_data := false
 	for i in win_count:
@@ -361,15 +393,25 @@ func test_house_windows_begun_sts_have_geometry() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 77
 
-	builder._add_house_windows_on_face(
-		win_sts, win_count, win_st_has_data,
-		Vector3.ZERO, 10.0, 4.0,
-		Vector3(0, 0, -1), Vector3(1, 0, 0), rng,
+	(
+		builder
+		. _add_house_windows_on_face(
+			win_sts,
+			win_count,
+			win_st_has_data,
+			Vector3.ZERO,
+			10.0,
+			4.0,
+			Vector3(0, 0, -1),
+			Vector3(1, 0, 0),
+			rng,
+		)
 	)
 	for i in win_count:
 		if win_st_has_data[i]:
 			var mesh := (win_sts[i] as SurfaceTool).commit()
 			assert_gt(
-				mesh.get_surface_count(), 0,
+				mesh.get_surface_count(),
+				0,
 				"ST[%d] has_data=true but produced no surface" % i,
 			)

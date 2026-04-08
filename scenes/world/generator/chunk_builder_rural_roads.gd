@@ -25,7 +25,10 @@ func init(
 
 
 func build(
-	chunk: Node3D, _tile: Vector2i, ox: float, oz: float,
+	chunk: Node3D,
+	_tile: Vector2i,
+	ox: float,
+	oz: float,
 	tile_data: Dictionary = {},
 ) -> void:
 	var span: float = _grid.get_grid_span()
@@ -161,7 +164,9 @@ func build(
 
 ## Collect unique road positions from two facing edges.
 func _collect_roads(
-	tile_data: Dictionary, dir_a: int, dir_b: int,
+	tile_data: Dictionary,
+	dir_a: int,
+	dir_b: int,
 ) -> Array:
 	var edges: Dictionary = tile_data.get("edges", {})
 	var seen: Dictionary = {}
@@ -182,7 +187,10 @@ func _collect_roads(
 
 func _add_quad(
 	st: SurfaceTool,
-	v0: Vector3, v1: Vector3, v2: Vector3, v3: Vector3,
+	v0: Vector3,
+	v1: Vector3,
+	v2: Vector3,
+	v3: Vector3,
 ) -> void:
 	# Two triangles: v0-v3-v1 and v1-v3-v2 (CCW from above)
 	st.add_vertex(v0)

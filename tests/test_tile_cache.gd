@@ -46,8 +46,12 @@ func test_size() -> void:
 
 
 func test_get_neighbor_edge_no_neighbor() -> void:
-	var edge: Dictionary = _cache.get_neighbor_edge(
-		Vector2i(0, 0), TP.NORTH,
+	var edge: Dictionary = (
+		_cache
+		. get_neighbor_edge(
+			Vector2i(0, 0),
+			TP.NORTH,
+		)
 	)
 	assert_true(edge.is_empty())
 
@@ -62,8 +66,12 @@ func test_get_neighbor_edge_returns_facing_edge() -> void:
 	_cache.set_tile_data(Vector2i(0, -1), neighbor_data)
 
 	# Query from (0, 0) looking NORTH — should get neighbor's SOUTH edge
-	var result: Dictionary = _cache.get_neighbor_edge(
-		Vector2i(0, 0), TP.NORTH,
+	var result: Dictionary = (
+		_cache
+		. get_neighbor_edge(
+			Vector2i(0, 0),
+			TP.NORTH,
+		)
 	)
 	assert_false(result.is_empty())
 	assert_eq(result["biome"], "residential")
@@ -77,8 +85,12 @@ func test_get_neighbor_edge_east() -> void:
 	}
 	_cache.set_tile_data(Vector2i(1, 0), neighbor_data)
 
-	var result: Dictionary = _cache.get_neighbor_edge(
-		Vector2i(0, 0), TP.EAST,
+	var result: Dictionary = (
+		_cache
+		. get_neighbor_edge(
+			Vector2i(0, 0),
+			TP.EAST,
+		)
 	)
 	assert_eq(result["biome"], "suburb")
 

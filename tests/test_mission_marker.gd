@@ -6,7 +6,6 @@ extends GutTest
 const MarkerScene = preload("res://scenes/missions/mission_marker.tscn")
 const MarkerScript = preload("res://scenes/missions/mission_marker.gd")
 
-
 var _marker: Node3D
 
 
@@ -19,13 +18,15 @@ func before_each() -> void:
 # Initial state and defaults
 # ================================================================
 
+
 func test_default_mission_id_empty() -> void:
 	assert_eq(_marker.mission_id, "", "Default mission_id should be empty")
 
 
 func test_default_marker_type_start() -> void:
 	assert_eq(
-		_marker.marker_type, "start",
+		_marker.marker_type,
+		"start",
 		"Default marker_type should be 'start'",
 	)
 
@@ -40,6 +41,7 @@ func test_added_to_mission_marker_group() -> void:
 # ================================================================
 # Scene structure
 # ================================================================
+
 
 func test_has_column_child() -> void:
 	var col := _marker.get_node_or_null("Column")
@@ -74,12 +76,14 @@ func test_trigger_has_collision_shape() -> void:
 # Trigger collision layers
 # ================================================================
 
+
 func test_trigger_collision_layer() -> void:
 	var trigger := _marker.get_node_or_null("Trigger") as Area3D
 	assert_not_null(trigger)
 	# Layer 9 = 256
 	assert_eq(
-		trigger.collision_layer, 256,
+		trigger.collision_layer,
+		256,
 		"Trigger collision_layer should be 256 (layer 9)",
 	)
 
@@ -89,7 +93,8 @@ func test_trigger_collision_mask_detects_player_and_vehicle() -> void:
 	assert_not_null(trigger)
 	# Mask 12 = layer 3 (4=player) + layer 4 (8=player vehicle)
 	assert_eq(
-		trigger.collision_mask, 12,
+		trigger.collision_mask,
+		12,
 		"Trigger collision_mask should be 12 (player + player vehicle)",
 	)
 
@@ -97,6 +102,7 @@ func test_trigger_collision_mask_detects_player_and_vehicle() -> void:
 # ================================================================
 # Signal connection
 # ================================================================
+
 
 func test_body_entered_signal_connected() -> void:
 	var trigger := _marker.get_node_or_null("Trigger") as Area3D
@@ -111,6 +117,7 @@ func test_body_entered_signal_connected() -> void:
 # set_marker_color
 # ================================================================
 
+
 func test_set_marker_color_changes_column_material() -> void:
 	var test_color := Color(1.0, 0.0, 0.0)
 	_marker.set_marker_color(test_color)
@@ -119,7 +126,8 @@ func test_set_marker_color_changes_column_material() -> void:
 	var mat := col.material_override as StandardMaterial3D
 	assert_not_null(mat, "Column should have material_override")
 	assert_eq(
-		mat.albedo_color, test_color,
+		mat.albedo_color,
+		test_color,
 		"Albedo color should match set color",
 	)
 
@@ -135,7 +143,8 @@ func test_set_marker_color_enables_emission() -> void:
 		"Emission should be enabled",
 	)
 	assert_eq(
-		mat.emission, test_color,
+		mat.emission,
+		test_color,
 		"Emission color should match set color",
 	)
 
@@ -146,7 +155,9 @@ func test_set_marker_color_emission_energy() -> void:
 	var col := _marker.get_node("Column") as MeshInstance3D
 	var mat := col.material_override as StandardMaterial3D
 	assert_almost_eq(
-		mat.emission_energy_multiplier, 0.8, 0.001,
+		mat.emission_energy_multiplier,
+		0.8,
+		0.001,
 		"Emission energy should be 0.8",
 	)
 
@@ -157,7 +168,8 @@ func test_set_marker_color_updates_light() -> void:
 
 	var light := _marker.get_node("Light") as OmniLight3D
 	assert_eq(
-		light.light_color, test_color,
+		light.light_color,
+		test_color,
 		"Light color should match set color",
 	)
 
@@ -166,11 +178,13 @@ func test_set_marker_color_updates_light() -> void:
 # Pulse animation (_process)
 # ================================================================
 
+
 func test_pulse_time_advances() -> void:
 	var initial: float = _marker._pulse_time
 	_marker._process(0.5)
 	assert_gt(
-		_marker._pulse_time, initial,
+		_marker._pulse_time,
+		initial,
 		"_pulse_time should advance after _process",
 	)
 
@@ -183,11 +197,15 @@ func test_pulse_scales_column_x_and_z() -> void:
 	# pulse = 1.0 + 0.1 * sin(3.0) = approximately 1.01411
 	var expected := 1.0 + 0.1 * sin(3.0)
 	assert_almost_eq(
-		col.scale.x, expected, 0.001,
+		col.scale.x,
+		expected,
+		0.001,
 		"Column scale.x should follow pulse formula",
 	)
 	assert_almost_eq(
-		col.scale.z, expected, 0.001,
+		col.scale.z,
+		expected,
+		0.001,
 		"Column scale.z should follow pulse formula",
 	)
 
@@ -195,6 +213,7 @@ func test_pulse_scales_column_x_and_z() -> void:
 # ================================================================
 # _on_body_entered - signal emission
 # ================================================================
+
 
 func test_body_in_player_group_emits_signal() -> void:
 	_marker.mission_id = "test_mission_1"
@@ -245,8 +264,7 @@ func test_non_player_body_does_not_emit() -> void:
 	_marker.marker_type = "pickup"
 
 	var result := {"received": false}
-	var handler := func(_mid: String, _mtype: String) -> void:
-		result["received"] = true
+	var handler := func(_mid: String, _mtype: String) -> void: result["received"] = true
 	EventBus.mission_marker_reached.connect(handler)
 
 	# NPC vehicle body - not in player group, layer 16 (NPC)
@@ -264,8 +282,7 @@ func test_static_body_no_player_group_does_not_emit() -> void:
 	_marker.mission_id = "test_mission_4"
 
 	var result := {"received": false}
-	var handler := func(_mid: String, _mtype: String) -> void:
-		result["received"] = true
+	var handler := func(_mid: String, _mtype: String) -> void: result["received"] = true
 	EventBus.mission_marker_reached.connect(handler)
 
 	var body := StaticBody3D.new()
@@ -282,6 +299,7 @@ func test_static_body_no_player_group_does_not_emit() -> void:
 # Mission ID and marker type assignment
 # ================================================================
 
+
 func test_mission_id_settable() -> void:
 	_marker.mission_id = "delivery_123"
 	assert_eq(_marker.mission_id, "delivery_123")
@@ -295,6 +313,7 @@ func test_marker_type_settable() -> void:
 # ================================================================
 # _snap_to_ground — ground-level placement
 # ================================================================
+
 
 func test_snap_to_ground_is_called_in_ready() -> void:
 	var src: String = MarkerScript.source_code

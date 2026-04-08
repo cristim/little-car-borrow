@@ -2,14 +2,12 @@ extends GutTest
 ## Tests for scenes/world/pedestrian_manager.gd — constants, spawn logic,
 ## time multiplier, biome filtering, and despawn behavior.
 
-const PedManagerScript = preload(
-	"res://scenes/world/pedestrian_manager.gd"
-)
-
+const PedManagerScript = preload("res://scenes/world/pedestrian_manager.gd")
 
 # ==========================================================================
 # Constants
 # ==========================================================================
+
 
 func test_spawn_radius() -> void:
 	assert_eq(PedManagerScript.SPAWN_RADIUS, 80.0)
@@ -67,6 +65,7 @@ func test_sea_level() -> void:
 # Initial state
 # ==========================================================================
 
+
 func test_pedestrians_array_starts_empty() -> void:
 	var mgr: Node = PedManagerScript.new()
 	add_child_autofree(mgr)
@@ -101,12 +100,14 @@ func test_player_velocity_starts_zero() -> void:
 # Time-of-day multiplier
 # ==========================================================================
 
+
 func test_time_changed_deep_night() -> void:
 	var mgr: Node = PedManagerScript.new()
 	add_child_autofree(mgr)
 	mgr._on_time_changed(3.0)
 	assert_eq(
-		mgr._time_multiplier, 0.3,
+		mgr._time_multiplier,
+		0.3,
 		"Deep night (3 AM) should reduce spawns to 30%",
 	)
 
@@ -116,7 +117,8 @@ func test_time_changed_late_night() -> void:
 	add_child_autofree(mgr)
 	mgr._on_time_changed(23.0)
 	assert_eq(
-		mgr._time_multiplier, 0.3,
+		mgr._time_multiplier,
+		0.3,
 		"Late night (11 PM) should reduce spawns to 30%",
 	)
 
@@ -126,7 +128,8 @@ func test_time_changed_dawn() -> void:
 	add_child_autofree(mgr)
 	mgr._on_time_changed(6.0)
 	assert_eq(
-		mgr._time_multiplier, 0.6,
+		mgr._time_multiplier,
+		0.6,
 		"Dawn (6 AM) should reduce spawns to 60%",
 	)
 
@@ -136,7 +139,8 @@ func test_time_changed_dusk() -> void:
 	add_child_autofree(mgr)
 	mgr._on_time_changed(21.0)
 	assert_eq(
-		mgr._time_multiplier, 0.6,
+		mgr._time_multiplier,
+		0.6,
 		"Dusk (9 PM) should reduce spawns to 60%",
 	)
 
@@ -146,7 +150,8 @@ func test_time_changed_daytime() -> void:
 	add_child_autofree(mgr)
 	mgr._on_time_changed(12.0)
 	assert_eq(
-		mgr._time_multiplier, 1.0,
+		mgr._time_multiplier,
+		1.0,
 		"Midday should have full spawn rate",
 	)
 
@@ -156,7 +161,8 @@ func test_time_changed_boundary_5am() -> void:
 	add_child_autofree(mgr)
 	mgr._on_time_changed(5.0)
 	assert_eq(
-		mgr._time_multiplier, 0.6,
+		mgr._time_multiplier,
+		0.6,
 		"Exactly 5 AM is dawn (between 5 and 7)",
 	)
 
@@ -166,7 +172,8 @@ func test_time_changed_boundary_7am() -> void:
 	add_child_autofree(mgr)
 	mgr._on_time_changed(7.0)
 	assert_eq(
-		mgr._time_multiplier, 1.0,
+		mgr._time_multiplier,
+		1.0,
 		"7 AM should be daytime",
 	)
 
@@ -176,7 +183,8 @@ func test_time_changed_boundary_20() -> void:
 	add_child_autofree(mgr)
 	mgr._on_time_changed(20.0)
 	assert_eq(
-		mgr._time_multiplier, 1.0,
+		mgr._time_multiplier,
+		1.0,
 		"8 PM should still be daytime",
 	)
 
@@ -184,6 +192,7 @@ func test_time_changed_boundary_20() -> void:
 # ==========================================================================
 # _is_city_biome logic (when _biome_map is null, falls back to boundary)
 # ==========================================================================
+
 
 func test_is_city_biome_with_null_biome_map_uses_boundary() -> void:
 	var mgr: Node = PedManagerScript.new()
@@ -202,6 +211,7 @@ func test_is_city_biome_with_null_biome_map_uses_boundary() -> void:
 # _make_terrain_noise static helper
 # ==========================================================================
 
+
 func test_make_terrain_noise_returns_noise() -> void:
 	var noise: FastNoiseLite = PedManagerScript._make_terrain_noise()
 	assert_not_null(noise)
@@ -218,6 +228,7 @@ func test_make_terrain_noise_returns_noise() -> void:
 # _on_pedestrian_killed removes from tracking
 # ==========================================================================
 
+
 func test_on_pedestrian_killed_removes_from_list() -> void:
 	var mgr: Node = PedManagerScript.new()
 	add_child_autofree(mgr)
@@ -227,7 +238,8 @@ func test_on_pedestrian_killed_removes_from_list() -> void:
 	assert_eq(mgr._pedestrians.size(), 1)
 	mgr._on_pedestrian_killed(fake_ped)
 	assert_eq(
-		mgr._pedestrians.size(), 0,
+		mgr._pedestrians.size(),
+		0,
 		"Killed pedestrian should be removed from tracking array",
 	)
 
@@ -245,6 +257,7 @@ func test_on_pedestrian_killed_ignores_unknown_ped() -> void:
 # ==========================================================================
 # _despawn_far with invalid nodes
 # ==========================================================================
+
 
 func test_despawn_far_removes_distant_pedestrians() -> void:
 	var mgr: Node = PedManagerScript.new()
@@ -264,6 +277,7 @@ func test_despawn_far_removes_distant_pedestrians() -> void:
 
 	mgr._despawn_far()
 	assert_eq(
-		mgr._pedestrians.size(), 0,
+		mgr._pedestrians.size(),
+		0,
 		"Distant pedestrians should be despawned",
 	)

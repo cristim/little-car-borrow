@@ -10,8 +10,8 @@ var _controller: Node = null
 
 func _ready() -> void:
 	add_to_group("helicopter")
-	collision_layer = 16   # NPC vehicles layer (same as traffic NPC)
-	collision_mask = 3     # ground (1) + static (2) — for landing
+	collision_layer = 16  # NPC vehicles layer (same as traffic NPC)
+	collision_mask = 3  # ground (1) + static (2) — for landing
 	_build_mesh()
 	_setup_interaction()
 	_controller = get_node_or_null("HelicopterController")
@@ -26,9 +26,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _build_mesh() -> void:
-	var builder: RefCounted = preload(
-		"res://scenes/vehicles/helicopter_body_builder.gd"
-	).new()
+	var builder: RefCounted = preload("res://scenes/vehicles/helicopter_body_builder.gd").new()
 
 	var body_mat := StandardMaterial3D.new()
 	body_mat.albedo_color = Color(0.15, 0.15, 0.18, 1.0)
@@ -114,9 +112,7 @@ func _build_mesh() -> void:
 	add_child(marker)
 
 	# Flight controller
-	var CtrlScript: GDScript = preload(
-		"res://scenes/vehicles/helicopter_controller.gd"
-	)
+	var CtrlScript: GDScript = preload("res://scenes/vehicles/helicopter_controller.gd")
 	_controller = CtrlScript.new()
 	_controller.name = "HelicopterController"
 	add_child(_controller)

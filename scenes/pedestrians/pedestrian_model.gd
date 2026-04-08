@@ -51,8 +51,8 @@ const EYE_COLORS: Array[Color] = [
 	Color(0.18, 0.22, 0.30),
 ]
 
-const WALK_ELBOW_BASE := -0.5      # base elbow fold when walking (~29°)
-const WALK_ELBOW_DYN := 0.15       # extra fold on forward shoulder swing
+const WALK_ELBOW_BASE := -0.5  # base elbow fold when walking (~29°)
+const WALK_ELBOW_DYN := 0.15  # extra fold on forward shoulder swing
 
 var _rng := RandomNumberGenerator.new()
 var _left_elbow: Node3D
@@ -220,27 +220,31 @@ func _build_face(
 	hair_mat: StandardMaterial3D,
 ) -> void:
 	# Eyes
-	_add_box(head, "EyeLeft",  eye_mat, Vector3(0.040, 0.022, 0.008), Vector3( 0.044, 0.024, 0.113))
+	_add_box(head, "EyeLeft", eye_mat, Vector3(0.040, 0.022, 0.008), Vector3(0.044, 0.024, 0.113))
 	_add_box(head, "EyeRight", eye_mat, Vector3(0.040, 0.022, 0.008), Vector3(-0.044, 0.024, 0.113))
 	# Eyebrows
-	_add_box(head, "BrowLeft",  brow_mat, Vector3(0.045, 0.010, 0.006), Vector3( 0.043, 0.055, 0.111))
-	_add_box(head, "BrowRight", brow_mat, Vector3(0.045, 0.010, 0.006), Vector3(-0.043, 0.055, 0.111))
+	_add_box(head, "BrowLeft", brow_mat, Vector3(0.045, 0.010, 0.006), Vector3(0.043, 0.055, 0.111))
+	_add_box(
+		head, "BrowRight", brow_mat, Vector3(0.045, 0.010, 0.006), Vector3(-0.043, 0.055, 0.111)
+	)
 	# Nose (protrudes from mid-face)
-	_add_box(head, "Nose",  skin_mat, Vector3(0.024, 0.033, 0.020), Vector3(0.0, -0.008, 0.119))
+	_add_box(head, "Nose", skin_mat, Vector3(0.024, 0.033, 0.020), Vector3(0.0, -0.008, 0.119))
 	# Mouth
 	_add_box(head, "Mouth", mouth_mat, Vector3(0.052, 0.011, 0.006), Vector3(0.0, -0.051, 0.111))
 	# Ears
-	_add_box(head, "EarLeft",  skin_mat, Vector3(0.016, 0.049, 0.033), Vector3( 0.118, 0.000, 0.004))
-	_add_box(head, "EarRight", skin_mat, Vector3(0.016, 0.049, 0.033), Vector3(-0.118, 0.000, 0.004))
+	_add_box(head, "EarLeft", skin_mat, Vector3(0.016, 0.049, 0.033), Vector3(0.118, 0.000, 0.004))
+	_add_box(
+		head, "EarRight", skin_mat, Vector3(0.016, 0.049, 0.033), Vector3(-0.118, 0.000, 0.004)
+	)
 	# Hair cap
-	_add_box(head, "HairTop", hair_mat,
-		Vector3(0.230, 0.045, 0.200), Vector3(0.0, 0.124, 0.002))
-	_add_box(head, "HairSideLeft", hair_mat,
-		Vector3(0.024, 0.090, 0.175), Vector3(0.122, 0.073, 0.003))
-	_add_box(head, "HairSideRight", hair_mat,
-		Vector3(0.024, 0.090, 0.175), Vector3(-0.122, 0.073, 0.003))
-	_add_box(head, "HairBack", hair_mat,
-		Vector3(0.200, 0.057, 0.026), Vector3(0.0, 0.067, -0.115))
+	_add_box(head, "HairTop", hair_mat, Vector3(0.230, 0.045, 0.200), Vector3(0.0, 0.124, 0.002))
+	_add_box(
+		head, "HairSideLeft", hair_mat, Vector3(0.024, 0.090, 0.175), Vector3(0.122, 0.073, 0.003)
+	)
+	_add_box(
+		head, "HairSideRight", hair_mat, Vector3(0.024, 0.090, 0.175), Vector3(-0.122, 0.073, 0.003)
+	)
+	_add_box(head, "HairBack", hair_mat, Vector3(0.200, 0.057, 0.026), Vector3(0.0, 0.067, -0.115))
 
 
 ## Helper: create a MeshInstance3D with a BoxMesh attached to parent.
@@ -277,13 +281,13 @@ func _process(delta: float) -> void:
 	if h_speed > 0.5:
 		_animate_gait(delta, h_speed, 0.0)
 		# Elbow bend: base fold + extra when arm swings forward
-		_left_elbow.rotation.x = WALK_ELBOW_BASE \
-			+ maxf(0.0, _left_shoulder.rotation.x) * WALK_ELBOW_DYN
-		_right_elbow.rotation.x = WALK_ELBOW_BASE \
-			+ maxf(0.0, _right_shoulder.rotation.x) * WALK_ELBOW_DYN
+		_left_elbow.rotation.x = (
+			WALK_ELBOW_BASE + maxf(0.0, _left_shoulder.rotation.x) * WALK_ELBOW_DYN
+		)
+		_right_elbow.rotation.x = (
+			WALK_ELBOW_BASE + maxf(0.0, _right_shoulder.rotation.x) * WALK_ELBOW_DYN
+		)
 	else:
 		_decay_gait(delta)
-		_left_elbow.rotation.x = lerpf(
-			_left_elbow.rotation.x, 0.0, delta * DECAY_SPEED)
-		_right_elbow.rotation.x = lerpf(
-			_right_elbow.rotation.x, 0.0, delta * DECAY_SPEED)
+		_left_elbow.rotation.x = lerpf(_left_elbow.rotation.x, 0.0, delta * DECAY_SPEED)
+		_right_elbow.rotation.x = lerpf(_right_elbow.rotation.x, 0.0, delta * DECAY_SPEED)

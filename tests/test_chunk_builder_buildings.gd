@@ -2,9 +2,7 @@ extends GutTest
 ## Unit tests for chunk_builder_buildings.gd — building mesh generation with
 ## per-palette MeshInstance3D, windows, roofs, interiors, and compound collision.
 
-const BuildingsScript = preload(
-	"res://scenes/world/generator/chunk_builder_buildings.gd"
-)
+const BuildingsScript = preload("res://scenes/world/generator/chunk_builder_buildings.gd")
 const RoadGridScript = preload("res://src/road_grid.gd")
 
 var _grid: RefCounted
@@ -46,13 +44,15 @@ func before_each() -> void:
 # Initialization
 # ================================================================
 
+
 func test_init_stores_grid() -> void:
 	assert_eq(_builder._grid, _grid, "Grid should be stored after init")
 
 
 func test_init_stores_building_materials() -> void:
 	assert_eq(
-		_builder._building_mats.size(), 4,
+		_builder._building_mats.size(),
+		4,
 		"Should store 4 building materials",
 	)
 
@@ -64,14 +64,16 @@ func test_init_stores_window_materials() -> void:
 
 func test_init_stores_interior_material() -> void:
 	assert_eq(
-		_builder._interior_mat, _interior_mat,
+		_builder._interior_mat,
+		_interior_mat,
 		"Interior material should be stored after init",
 	)
 
 
 func test_init_stores_roof_materials() -> void:
 	assert_eq(
-		_builder._roof_mats.size(), 3,
+		_builder._roof_mats.size(),
+		3,
 		"Should store 3 roof materials",
 	)
 
@@ -80,7 +82,8 @@ func test_init_without_roof_mats_defaults_empty() -> void:
 	var b := BuildingsScript.new()
 	b.init(_grid, _building_mats, _window_mat_off, _window_mat_on, _interior_mat)
 	assert_eq(
-		b._roof_mats.size(), 0,
+		b._roof_mats.size(),
+		0,
 		"Roof mats should default to empty array",
 	)
 
@@ -88,6 +91,7 @@ func test_init_without_roof_mats_defaults_empty() -> void:
 # ================================================================
 # Build output structure
 # ================================================================
+
 
 func test_build_adds_buildings_body_to_chunk() -> void:
 	var chunk := Node3D.new()
@@ -105,7 +109,8 @@ func test_buildings_body_collision_layer() -> void:
 	_builder.build(chunk, Vector2i(0, 0), 0.0, 0.0)
 	var body := chunk.get_child(0) as StaticBody3D
 	assert_eq(
-		body.collision_layer, 2,
+		body.collision_layer,
+		2,
 		"Buildings collision layer should be 2 (Static)",
 	)
 
@@ -116,7 +121,8 @@ func test_buildings_body_collision_mask() -> void:
 	_builder.build(chunk, Vector2i(0, 0), 0.0, 0.0)
 	var body := chunk.get_child(0) as StaticBody3D
 	assert_eq(
-		body.collision_mask, 0,
+		body.collision_mask,
+		0,
 		"Buildings collision mask should be 0",
 	)
 
@@ -142,7 +148,8 @@ func test_buildings_body_has_collision_shapes() -> void:
 		if child is CollisionShape3D:
 			col_count += 1
 	assert_gt(
-		col_count, 0,
+		col_count,
+		0,
 		"Buildings body should have collision shapes",
 	)
 
@@ -157,7 +164,8 @@ func test_buildings_body_has_mesh_children() -> void:
 		if child is MeshInstance3D:
 			mesh_count += 1
 	assert_gt(
-		mesh_count, 0,
+		mesh_count,
+		0,
 		"Buildings body should have at least one MeshInstance3D",
 	)
 
@@ -208,12 +216,17 @@ func test_building_meshes_use_correct_palette_material() -> void:
 		if child is MeshInstance3D:
 			var inst := child as MeshInstance3D
 			if inst.name.begins_with("BuildingsMat_"):
-				var idx_str: String = inst.name.substr(
-					"BuildingsMat_".length(),
+				var idx_str: String = (
+					inst
+					. name
+					. substr(
+						"BuildingsMat_".length(),
+					)
 				)
 				var idx: int = idx_str.to_int()
 				assert_eq(
-					inst.material_override, _building_mats[idx],
+					inst.material_override,
+					_building_mats[idx],
 					"Mesh %s should use palette material %d" % [inst.name, idx],
 				)
 
@@ -221,6 +234,7 @@ func test_building_meshes_use_correct_palette_material() -> void:
 # ================================================================
 # Window meshes
 # ================================================================
+
 
 func test_window_meshes_created() -> void:
 	var chunk := Node3D.new()
@@ -257,6 +271,7 @@ func test_window_meshes_have_valid_material() -> void:
 # ================================================================
 # Roof meshes
 # ================================================================
+
 
 func test_roof_meshes_created_for_short_buildings() -> void:
 	# With 10x10 blocks and 1-4 buildings each, statistically some will be short
@@ -295,6 +310,7 @@ func test_no_roof_meshes_when_no_roof_materials() -> void:
 # Interior meshes
 # ================================================================
 
+
 func test_interior_mesh_created() -> void:
 	# Interiors are generated for buildings with doors (h > 6, min face >= 3)
 	# With 100 blocks, statistically very likely to get at least one
@@ -321,7 +337,8 @@ func test_interior_mesh_has_interior_material() -> void:
 			var inst := child as MeshInstance3D
 			if inst.name == "Interiors":
 				assert_eq(
-					inst.material_override, _interior_mat,
+					inst.material_override,
+					_interior_mat,
 					"Interior mesh should use interior material",
 				)
 				return
@@ -330,6 +347,7 @@ func test_interior_mesh_has_interior_material() -> void:
 # ================================================================
 # Determinism — same tile produces same output
 # ================================================================
+
 
 func test_build_is_deterministic_same_tile() -> void:
 	var tile := Vector2i(7, 13)
@@ -354,7 +372,8 @@ func test_build_is_deterministic_same_tile() -> void:
 		if child is CollisionShape3D:
 			col_b += 1
 	assert_eq(
-		col_a, col_b,
+		col_a,
+		col_b,
 		"Same tile should produce same collision count",
 	)
 
@@ -367,7 +386,8 @@ func test_build_is_deterministic_same_tile() -> void:
 		if child is MeshInstance3D:
 			mesh_b += 1
 	assert_eq(
-		mesh_a, mesh_b,
+		mesh_a,
+		mesh_b,
 		"Same tile should produce same mesh count",
 	)
 
@@ -401,6 +421,7 @@ func test_different_tiles_produce_different_output() -> void:
 # Offset positioning
 # ================================================================
 
+
 func test_build_with_offset() -> void:
 	var span: float = _grid.get_grid_span()
 	var chunk := Node3D.new()
@@ -410,7 +431,8 @@ func test_build_with_offset() -> void:
 	var body := chunk.get_child(0) as StaticBody3D
 	assert_not_null(body, "First child should be StaticBody3D even with offset")
 	assert_gt(
-		body.get_child_count(), 0,
+		body.get_child_count(),
+		0,
 		"Body should have children even with offset",
 	)
 
@@ -419,13 +441,16 @@ func test_build_with_offset() -> void:
 # Constants sanity
 # ================================================================
 
+
 func test_door_dimensions_positive() -> void:
 	assert_gt(
-		BuildingsScript.DOOR_WIDTH, 0.0,
+		BuildingsScript.DOOR_WIDTH,
+		0.0,
 		"Door width should be positive",
 	)
 	assert_gt(
-		BuildingsScript.DOOR_HEIGHT, 0.0,
+		BuildingsScript.DOOR_HEIGHT,
+		0.0,
 		"Door height should be positive",
 	)
 
@@ -440,14 +465,16 @@ func test_interior_height_greater_than_door() -> void:
 
 func test_pitched_roof_threshold_positive() -> void:
 	assert_gt(
-		BuildingsScript.PITCHED_ROOF_THRESHOLD, 0.0,
+		BuildingsScript.PITCHED_ROOF_THRESHOLD,
+		0.0,
 		"Pitched roof threshold should be positive",
 	)
 
 
 func test_wall_thickness_positive() -> void:
 	assert_gt(
-		BuildingsScript.WALL_THICKNESS, 0.0,
+		BuildingsScript.WALL_THICKNESS,
+		0.0,
 		"Wall thickness should be positive",
 	)
 
@@ -456,23 +483,27 @@ func test_wall_thickness_positive() -> void:
 # Rooftop helipads
 # ================================================================
 
+
 func test_rooftop_helipad_min_height_positive() -> void:
 	assert_gt(
-		BuildingsScript.ROOFTOP_HELIPAD_MIN_H, 0.0,
+		BuildingsScript.ROOFTOP_HELIPAD_MIN_H,
+		0.0,
 		"Rooftop helipad minimum height should be positive",
 	)
 
 
 func test_rooftop_helipad_min_width_positive() -> void:
 	assert_gt(
-		BuildingsScript.ROOFTOP_HELIPAD_MIN_W, 0.0,
+		BuildingsScript.ROOFTOP_HELIPAD_MIN_W,
+		0.0,
 		"Rooftop helipad minimum width should be positive",
 	)
 
 
 func test_rooftop_helipads_per_chunk_positive() -> void:
 	assert_gt(
-		BuildingsScript.ROOFTOP_HELIPADS_PER_CHUNK, 0,
+		BuildingsScript.ROOFTOP_HELIPADS_PER_CHUNK,
+		0,
 		"ROOFTOP_HELIPADS_PER_CHUNK should be at least 1",
 	)
 

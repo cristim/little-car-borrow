@@ -2,9 +2,7 @@ extends GutTest
 ## Unit tests for scenes/missions/mission_marker_manager.gd
 ## Tests signal wiring, marker spawning/clearing, and mission lifecycle.
 
-const ManagerScript = preload(
-	"res://scenes/missions/mission_marker_manager.gd"
-)
+const ManagerScript = preload("res://scenes/missions/mission_marker_manager.gd")
 
 var _mgr: Node
 var _scene_root: Node3D
@@ -31,6 +29,7 @@ func _create_testable_manager() -> Node:
 # ================================================================
 # Constants
 # ================================================================
+
 
 func test_marker_colors_has_start() -> void:
 	assert_true(
@@ -75,65 +74,52 @@ func test_dropoff_color_is_yellow() -> void:
 # Signal connections
 # ================================================================
 
+
 func test_missions_refreshed_connected() -> void:
 	assert_true(
-		EventBus.missions_refreshed.is_connected(
-			_mgr._on_missions_refreshed
-		),
+		EventBus.missions_refreshed.is_connected(_mgr._on_missions_refreshed),
 		"missions_refreshed should be connected",
 	)
 
 
 func test_mission_available_connected() -> void:
 	assert_true(
-		EventBus.mission_available.is_connected(
-			_mgr._on_mission_available
-		),
+		EventBus.mission_available.is_connected(_mgr._on_mission_available),
 		"mission_available should be connected",
 	)
 
 
 func test_mission_started_connected() -> void:
 	assert_true(
-		EventBus.mission_started.is_connected(
-			_mgr._on_mission_started
-		),
+		EventBus.mission_started.is_connected(_mgr._on_mission_started),
 		"mission_started should be connected",
 	)
 
 
 func test_mission_completed_connected() -> void:
 	assert_true(
-		EventBus.mission_completed.is_connected(
-			_mgr._on_mission_done
-		),
+		EventBus.mission_completed.is_connected(_mgr._on_mission_done),
 		"mission_completed should be connected",
 	)
 
 
 func test_mission_failed_connected() -> void:
 	assert_true(
-		EventBus.mission_failed.is_connected(
-			_mgr._on_mission_done
-		),
+		EventBus.mission_failed.is_connected(_mgr._on_mission_done),
 		"mission_failed should be connected",
 	)
 
 
 func test_marker_reached_connected() -> void:
 	assert_true(
-		EventBus.mission_marker_reached.is_connected(
-			_mgr._on_marker_reached
-		),
+		EventBus.mission_marker_reached.is_connected(_mgr._on_marker_reached),
 		"mission_marker_reached should be connected",
 	)
 
 
 func test_vehicle_entered_connected() -> void:
 	assert_true(
-		EventBus.vehicle_entered.is_connected(
-			_mgr._on_vehicle_entered
-		),
+		EventBus.vehicle_entered.is_connected(_mgr._on_vehicle_entered),
 		"vehicle_entered should be connected",
 	)
 
@@ -141,6 +127,7 @@ func test_vehicle_entered_connected() -> void:
 # ================================================================
 # _on_mission_available
 # ================================================================
+
 
 func test_mission_available_spawns_start_marker() -> void:
 	var mission := {
@@ -173,19 +160,33 @@ func test_mission_available_missing_id_ignored() -> void:
 # _on_missions_refreshed
 # ================================================================
 
+
 func test_missions_refreshed_clears_all_markers() -> void:
 	# Spawn some markers first
-	_mgr._on_mission_available({
-		"id": "m1", "start_pos": Vector3.ZERO,
-	})
-	_mgr._on_mission_available({
-		"id": "m2", "start_pos": Vector3(5.0, 0.0, 5.0),
-	})
+	(
+		_mgr
+		. _on_mission_available(
+			{
+				"id": "m1",
+				"start_pos": Vector3.ZERO,
+			}
+		)
+	)
+	(
+		_mgr
+		. _on_mission_available(
+			{
+				"id": "m2",
+				"start_pos": Vector3(5.0, 0.0, 5.0),
+			}
+		)
+	)
 	assert_eq(_mgr._markers.size(), 2)
 
 	_mgr._on_missions_refreshed()
 	assert_eq(
-		_mgr._markers.size(), 0,
+		_mgr._markers.size(),
+		0,
 		"All markers should be cleared after refresh",
 	)
 
@@ -194,19 +195,38 @@ func test_missions_refreshed_clears_all_markers() -> void:
 # _on_mission_started
 # ================================================================
 
+
 func test_mission_started_clears_other_markers() -> void:
 	# Mock MissionManager.get_active_mission to return empty
 	_mgr._mock_active_mission = {}
 
-	_mgr._on_mission_available({
-		"id": "m1", "start_pos": Vector3.ZERO,
-	})
-	_mgr._on_mission_available({
-		"id": "m2", "start_pos": Vector3(5.0, 0.0, 5.0),
-	})
-	_mgr._on_mission_available({
-		"id": "m3", "start_pos": Vector3(10.0, 0.0, 0.0),
-	})
+	(
+		_mgr
+		. _on_mission_available(
+			{
+				"id": "m1",
+				"start_pos": Vector3.ZERO,
+			}
+		)
+	)
+	(
+		_mgr
+		. _on_mission_available(
+			{
+				"id": "m2",
+				"start_pos": Vector3(5.0, 0.0, 5.0),
+			}
+		)
+	)
+	(
+		_mgr
+		. _on_mission_available(
+			{
+				"id": "m3",
+				"start_pos": Vector3(10.0, 0.0, 0.0),
+			}
+		)
+	)
 
 	_mgr._on_mission_started("m2")
 
@@ -272,6 +292,7 @@ func test_mission_started_theft_no_immediate_marker() -> void:
 # _on_vehicle_entered (theft dropoff spawn)
 # ================================================================
 
+
 func test_vehicle_entered_spawns_theft_dropoff() -> void:
 	_mgr._mock_active_mission = {
 		"id": "th2",
@@ -316,7 +337,8 @@ func test_vehicle_entered_no_active_mission_ignored() -> void:
 	_mgr._on_vehicle_entered(vehicle)
 
 	assert_eq(
-		_mgr._markers.size(), 0,
+		_mgr._markers.size(),
+		0,
 		"No markers should be spawned without active mission",
 	)
 
@@ -340,7 +362,8 @@ func test_vehicle_entered_already_has_markers_ignored() -> void:
 	var count_after_second: int = (_mgr._markers["th3"] as Array).size()
 
 	assert_eq(
-		count_after_first, count_after_second,
+		count_after_first,
+		count_after_second,
 		"Should not double-spawn markers",
 	)
 
@@ -348,6 +371,7 @@ func test_vehicle_entered_already_has_markers_ignored() -> void:
 # ================================================================
 # _on_marker_reached
 # ================================================================
+
 
 func test_marker_reached_pickup_clears_and_spawns_dropoff() -> void:
 	_mgr._mock_active_mission = {
@@ -386,18 +410,32 @@ func test_marker_reached_non_pickup_type_ignored() -> void:
 # _on_mission_done
 # ================================================================
 
+
 func test_mission_done_clears_all_markers() -> void:
-	_mgr._on_mission_available({
-		"id": "m1", "start_pos": Vector3.ZERO,
-	})
-	_mgr._on_mission_available({
-		"id": "m2", "start_pos": Vector3(5.0, 0.0, 5.0),
-	})
+	(
+		_mgr
+		. _on_mission_available(
+			{
+				"id": "m1",
+				"start_pos": Vector3.ZERO,
+			}
+		)
+	)
+	(
+		_mgr
+		. _on_mission_available(
+			{
+				"id": "m2",
+				"start_pos": Vector3(5.0, 0.0, 5.0),
+			}
+		)
+	)
 
 	_mgr._on_mission_done("m1")
 
 	assert_eq(
-		_mgr._markers.size(), 0,
+		_mgr._markers.size(),
+		0,
 		"All markers should be cleared on mission done",
 	)
 
@@ -405,6 +443,7 @@ func test_mission_done_clears_all_markers() -> void:
 # ================================================================
 # _clear_markers
 # ================================================================
+
 
 func test_clear_markers_nonexistent_id_safe() -> void:
 	# Should not crash
@@ -427,6 +466,7 @@ func test_clear_markers_removes_from_dict() -> void:
 # _spawn_marker
 # ================================================================
 
+
 func test_spawn_marker_sets_position() -> void:
 	var pos := Vector3(42.0, 0.0, 77.0)
 	_mgr._spawn_marker("sp1", "start", pos)
@@ -443,11 +483,13 @@ func test_spawn_marker_sets_mission_id_and_type() -> void:
 	var arr: Array = _mgr._markers["sp2"]
 	var marker: Node3D = arr[0]
 	assert_eq(
-		marker.get_meta("mission_id", ""), "sp2",
+		marker.get_meta("mission_id", ""),
+		"sp2",
 		"Marker mission_id should be set",
 	)
 	assert_eq(
-		marker.get_meta("marker_type", ""), "dropoff",
+		marker.get_meta("marker_type", ""),
+		"dropoff",
 		"Marker marker_type should be set",
 	)
 
@@ -473,6 +515,7 @@ func test_spawn_marker_unknown_type_uses_white() -> void:
 # TestableMarkerManager — subclass that avoids scene dependencies
 # ================================================================
 
+
 class TestableMarkerManager:
 	extends "res://scenes/missions/mission_marker_manager.gd"
 
@@ -480,7 +523,9 @@ class TestableMarkerManager:
 	var _mock_active_mission: Dictionary = {}
 
 	func _spawn_marker(
-		mid: String, mtype: String, pos: Vector3,
+		mid: String,
+		mtype: String,
+		pos: Vector3,
 	) -> void:
 		# Create a simple Node3D stub instead of instantiating the scene
 		var marker := Node3D.new()
@@ -515,14 +560,10 @@ class TestableMarkerManager:
 		if mtype == "theft":
 			pass
 		elif mtype == "taxi":
-			var dp: Vector3 = mission.get(
-				"dropoff_pos", Vector3.ZERO
-			)
+			var dp: Vector3 = mission.get("dropoff_pos", Vector3.ZERO)
 			_spawn_marker(mission_id, "dropoff", dp)
 		else:
-			var pp: Vector3 = mission.get(
-				"pickup_pos", Vector3.ZERO
-			)
+			var pp: Vector3 = mission.get("pickup_pos", Vector3.ZERO)
 			_spawn_marker(mission_id, "pickup", pp)
 
 	func _on_vehicle_entered(_vehicle: Node) -> void:
@@ -544,7 +585,5 @@ class TestableMarkerManager:
 		if mission.is_empty():
 			return
 		var mid: String = mission.get("id", "")
-		var dp: Vector3 = mission.get(
-			"dropoff_pos", Vector3.ZERO
-		)
+		var dp: Vector3 = mission.get("dropoff_pos", Vector3.ZERO)
 		_spawn_marker(mid, "dropoff", dp)

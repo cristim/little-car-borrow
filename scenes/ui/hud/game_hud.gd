@@ -99,13 +99,9 @@ func _on_timer(time_remaining: float) -> void:
 	var secs := int(time_remaining) % 60
 	timer_label.text = "%d:%02d" % [mins, secs]
 	if time_remaining < 15.0:
-		timer_label.add_theme_color_override(
-			"font_color", Color(1.0, 0.3, 0.3)
-		)
+		timer_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
 	else:
-		timer_label.add_theme_color_override(
-			"font_color", Color(1.0, 1.0, 1.0)
-		)
+		timer_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
 
 
 func _on_mission_completed(_mission_id: String) -> void:
@@ -121,9 +117,7 @@ func _on_mission_completed(_mission_id: String) -> void:
 
 func _on_mission_failed(_mission_id: String) -> void:
 	reward_label.text = "MISSION FAILED"
-	reward_label.add_theme_color_override(
-		"font_color", Color(1.0, 0.3, 0.3)
-	)
+	reward_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
 	reward_label.visible = true
 	_reward_timer = 3.0
 	objective_label.visible = false
@@ -152,9 +146,7 @@ func _on_vehicle_exited(_vehicle: Node) -> void:
 
 func _on_died() -> void:
 	death_label.visible = true
-	death_label.add_theme_color_override(
-		"font_color", Color(0.8, 0.1, 0.1)
-	)
+	death_label.add_theme_color_override("font_color", Color(0.8, 0.1, 0.1))
 	# Show restart prompt after a short delay
 	get_tree().create_timer(2.0).timeout.connect(_show_restart_prompt)
 

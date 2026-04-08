@@ -3,13 +3,11 @@ extends GutTest
 ## and collision decomposition.
 
 const CityScript = preload("res://scenes/world/city.gd")
-const BuilderScript = preload(
-	"res://scenes/world/generator/chunk_builder_buildings.gd"
-)
+const BuilderScript = preload("res://scenes/world/generator/chunk_builder_buildings.gd")
 const RoadGridScript = preload("res://src/road_grid.gd")
 
-
 # --- st_add_quad tests ---
+
 
 func test_st_add_quad_emits_six_vertices() -> void:
 	var st := SurfaceTool.new()
@@ -24,7 +22,8 @@ func test_st_add_quad_emits_six_vertices() -> void:
 	var arrays := mesh.surface_get_arrays(0)
 	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	assert_eq(
-		verts.size(), 6,
+		verts.size(),
+		6,
 		"st_add_quad should emit 6 vertices (2 triangles)",
 	)
 
@@ -53,22 +52,31 @@ func test_st_add_quad_winding_order() -> void:
 
 # --- st_add_face_with_door tests ---
 
+
 func test_face_with_door_emits_eighteen_vertices() -> void:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var face_center := Vector3(0, 5, -5)
-	CityScript.st_add_face_with_door(
-		st, face_center,
-		10.0, 10.0,
-		Vector3(0, 0, -1), Vector3(1, 0, 0),
-		1.2, 2.2,
+	(
+		CityScript
+		. st_add_face_with_door(
+			st,
+			face_center,
+			10.0,
+			10.0,
+			Vector3(0, 0, -1),
+			Vector3(1, 0, 0),
+			1.2,
+			2.2,
+		)
 	)
 	st.generate_normals()
 	var mesh := st.commit()
 	var arrays := mesh.surface_get_arrays(0)
 	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	assert_eq(
-		verts.size(), 18,
+		verts.size(),
+		18,
 		"Face with door should emit 18 vertices (3 quads x 6 verts)",
 	)
 
@@ -80,11 +88,18 @@ func test_face_with_door_leaves_opening() -> void:
 	var face_center := Vector3(0, 5, -5)
 	var door_w := 1.2
 	var door_h := 2.2
-	CityScript.st_add_face_with_door(
-		st, face_center,
-		10.0, 10.0,
-		Vector3(0, 0, -1), Vector3(1, 0, 0),
-		door_w, door_h,
+	(
+		CityScript
+		. st_add_face_with_door(
+			st,
+			face_center,
+			10.0,
+			10.0,
+			Vector3(0, 0, -1),
+			Vector3(1, 0, 0),
+			door_w,
+			door_h,
+		)
 	)
 	st.generate_normals()
 	var mesh := st.commit()
@@ -97,12 +112,8 @@ func test_face_with_door_leaves_opening() -> void:
 	var door_top_y := bottom_y + door_h  # 2.2
 	var margin := 0.01
 	for v in verts:
-		var in_door_x: bool = (
-			v.x > -door_half_w + margin and v.x < door_half_w - margin
-		)
-		var in_door_y: bool = (
-			v.y > bottom_y + margin and v.y < door_top_y - margin
-		)
+		var in_door_x: bool = v.x > -door_half_w + margin and v.x < door_half_w - margin
+		var in_door_y: bool = v.y > bottom_y + margin and v.y < door_top_y - margin
 		assert_false(
 			in_door_x and in_door_y,
 			"No vertex should be strictly inside the door opening",
@@ -110,6 +121,7 @@ func test_face_with_door_leaves_opening() -> void:
 
 
 # --- _add_building_with_door exterior tests ---
+
 
 func _make_builder() -> RefCounted:
 	var builder = BuilderScript.new()
@@ -140,7 +152,8 @@ func test_door_building_exterior_vertex_count() -> void:
 	var arrays := mesh.surface_get_arrays(0)
 	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	assert_eq(
-		verts.size(), 42,
+		verts.size(),
+		42,
 		"Door building exterior should emit 42 vertices",
 	)
 
@@ -153,22 +166,29 @@ func test_door_building_all_faces_produce_geometry() -> void:
 		ext_st.begin(Mesh.PRIMITIVE_TRIANGLES)
 		var int_st := SurfaceTool.new()
 		int_st.begin(Mesh.PRIMITIVE_TRIANGLES)
-		builder._add_building_with_door(
-			ext_st, int_st,
-			Vector3(0, 5, 0), Vector3(10, 10, 10),
-			face_idx,
+		(
+			builder
+			. _add_building_with_door(
+				ext_st,
+				int_st,
+				Vector3(0, 5, 0),
+				Vector3(10, 10, 10),
+				face_idx,
+			)
 		)
 		ext_st.generate_normals()
 		var mesh := ext_st.commit()
 		var arrays := mesh.surface_get_arrays(0)
 		var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 		assert_eq(
-			verts.size(), 42,
+			verts.size(),
+			42,
 			"Face %d should emit 42 exterior vertices" % face_idx,
 		)
 
 
 # --- Interior room tests ---
+
 
 func test_interior_room_vertex_count() -> void:
 	# Interior: floor (6) + ceiling (6) + 3 solid walls (6 each = 18) +
@@ -178,16 +198,23 @@ func test_interior_room_vertex_count() -> void:
 	ext_st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var int_st := SurfaceTool.new()
 	int_st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	builder._add_building_with_door(
-		ext_st, int_st,
-		Vector3(0, 5, 0), Vector3(10, 10, 10), 0,
+	(
+		builder
+		. _add_building_with_door(
+			ext_st,
+			int_st,
+			Vector3(0, 5, 0),
+			Vector3(10, 10, 10),
+			0,
+		)
 	)
 	int_st.generate_normals()
 	var mesh := int_st.commit()
 	var arrays := mesh.surface_get_arrays(0)
 	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	assert_eq(
-		verts.size(), 48,
+		verts.size(),
+		48,
 		"Interior room should emit 48 vertices",
 	)
 
@@ -201,8 +228,15 @@ func test_interior_floor_above_ground() -> void:
 	int_st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var center := Vector3(0, 5, 0)
 	var size := Vector3(10, 10, 10)
-	builder._add_building_with_door(
-		ext_st, int_st, center, size, 0,
+	(
+		builder
+		. _add_building_with_door(
+			ext_st,
+			int_st,
+			center,
+			size,
+			0,
+		)
 	)
 	int_st.generate_normals()
 	var mesh := int_st.commit()
@@ -214,12 +248,14 @@ func test_interior_floor_above_ground() -> void:
 		if v.y < min_y:
 			min_y = v.y
 	assert_gt(
-		min_y, building_bottom,
+		min_y,
+		building_bottom,
 		"Interior floor should be above building bottom (z-fight)",
 	)
 
 
 # --- Collision shape tests ---
+
 
 func test_door_building_collision_shape_count() -> void:
 	# Door building collision: 3 solid walls + 3 split door wall pieces
@@ -235,7 +271,8 @@ func test_door_building_collision_shape_count() -> void:
 		if body.get_child(i) is CollisionShape3D:
 			shape_count += 1
 	assert_eq(
-		shape_count, 8,
+		shape_count,
+		8,
 		"Door building should have 8 collision shapes",
 	)
 
@@ -276,7 +313,8 @@ func test_build_deterministic_with_interiors() -> void:
 	for i in body2.get_child_count():
 		names2.append(_strip_id(body2.get_child(i).name))
 	assert_eq(
-		names1, names2,
+		names1,
+		names2,
 		"Same tile should produce deterministic child list",
 	)
 

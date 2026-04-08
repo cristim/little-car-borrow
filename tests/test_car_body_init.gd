@@ -14,6 +14,7 @@ func before_all() -> void:
 # Constants
 # ==========================================================================
 
+
 func test_glass_color() -> void:
 	assert_true(_src.contains("Color(0.6, 0.75, 0.85, 0.4)"))
 
@@ -30,6 +31,7 @@ func test_interior_color() -> void:
 # Builder preloaded
 # ==========================================================================
 
+
 func test_builder_is_preloaded() -> void:
 	var init: Node3D = Node3D.new()
 	init.set_script(_script)
@@ -40,6 +42,7 @@ func test_builder_is_preloaded() -> void:
 # ==========================================================================
 # _ready() skips when CarBody has mesh or missing
 # ==========================================================================
+
 
 func test_ready_skips_when_no_carbody_child() -> void:
 	var init: Node3D = Node3D.new()
@@ -65,6 +68,7 @@ func test_ready_skips_when_carbody_has_mesh() -> void:
 # ==========================================================================
 # _ready() builds meshes when CarBody has no mesh
 # ==========================================================================
+
 
 func test_ready_assigns_body_mesh() -> void:
 	var init: Node3D = Node3D.new()
@@ -101,6 +105,7 @@ func test_body_material_is_red() -> void:
 # ==========================================================================
 # Interior and details generation
 # ==========================================================================
+
 
 func test_interior_child_created() -> void:
 	var init: Node3D = Node3D.new()
@@ -143,6 +148,7 @@ func test_floor_child_created() -> void:
 # Door pivot setup
 # ==========================================================================
 
+
 func test_setup_door_pivot_with_pivot_nodes() -> void:
 	var init: Node3D = Node3D.new()
 	var car_body := MeshInstance3D.new()
@@ -173,6 +179,7 @@ func test_door_pivot_missing_does_not_crash() -> void:
 # ==========================================================================
 # Source code structure
 # ==========================================================================
+
 
 func test_builds_sedan_variant() -> void:
 	assert_true(_src.contains('"sedan"'), "Should build sedan variant")

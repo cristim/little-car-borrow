@@ -13,7 +13,7 @@ func _ready() -> void:
 	gravity_scale = 1.2
 	mass = 75.0
 	collision_layer = 0  # doesn't collide with anything as a layer
-	collision_mask = 3   # bounces off ground + static
+	collision_mask = 3  # bounces off ground + static
 
 	# Add a capsule collision shape matching pedestrian
 	var col := CollisionShape3D.new()
@@ -50,11 +50,16 @@ func launch(vehicle_velocity: Vector3) -> void:
 	# Random spin for tumbling
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
-	apply_torque_impulse(Vector3(
-		rng.randf_range(-1.0, 1.0) * SPIN_TORQUE,
-		rng.randf_range(-1.0, 1.0) * SPIN_TORQUE,
-		rng.randf_range(-1.0, 1.0) * SPIN_TORQUE,
-	) * mass)
+	apply_torque_impulse(
+		(
+			Vector3(
+				rng.randf_range(-1.0, 1.0) * SPIN_TORQUE,
+				rng.randf_range(-1.0, 1.0) * SPIN_TORQUE,
+				rng.randf_range(-1.0, 1.0) * SPIN_TORQUE,
+			)
+			* mass
+		)
+	)
 
 
 func copy_visual_from(source: Node3D) -> void:
@@ -66,21 +71,14 @@ func copy_visual_from(source: Node3D) -> void:
 	_copy_meshes_recursive(model, self, model.global_transform)
 
 
-func _copy_meshes_recursive(
-	node: Node, parent: Node, root_xform: Transform3D
-) -> void:
+func _copy_meshes_recursive(node: Node, parent: Node, root_xform: Transform3D) -> void:
 	for child in node.get_children():
 		if child is MeshInstance3D:
 			var mesh_copy := MeshInstance3D.new()
 			mesh_copy.mesh = (child as MeshInstance3D).mesh
-			mesh_copy.material_override = (
-				(child as MeshInstance3D).material_override
-			)
+			mesh_copy.material_override = ((child as MeshInstance3D).material_override)
 			# Flatten global position relative to model root
-			var local_xform: Transform3D = (
-				root_xform.inverse()
-				* (child as Node3D).global_transform
-			)
+			var local_xform: Transform3D = root_xform.inverse() * (child as Node3D).global_transform
 			mesh_copy.transform = local_xform
 			parent.add_child(mesh_copy)
 		if child.get_child_count() > 0:
@@ -92,9 +90,7 @@ func _set_alpha(alpha: float) -> void:
 		if child is MeshInstance3D:
 			var mat = (child as MeshInstance3D).material_override
 			if mat is StandardMaterial3D:
-				(mat as StandardMaterial3D).transparency = (
-					BaseMaterial3D.TRANSPARENCY_ALPHA
-				)
+				(mat as StandardMaterial3D).transparency = (BaseMaterial3D.TRANSPARENCY_ALPHA)
 				var c: Color = (mat as StandardMaterial3D).albedo_color
 				c.a = alpha
 				(mat as StandardMaterial3D).albedo_color = c

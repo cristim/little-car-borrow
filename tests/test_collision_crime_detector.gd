@@ -2,10 +2,7 @@ extends GutTest
 ## Unit tests for collision_crime_detector.gd crime detection from
 ## vehicle collisions: speed thresholds, cooldowns, crime types.
 
-const DetectorScript = preload(
-	"res://scenes/vehicles/collision_crime_detector.gd"
-)
-
+const DetectorScript = preload("res://scenes/vehicles/collision_crime_detector.gd")
 
 var _detector: Node
 var _vehicle: RigidBody3D
@@ -32,16 +29,19 @@ func _consume_engine_errors() -> void:
 # Constants
 # ================================================================
 
+
 func test_min_collision_speed() -> void:
 	assert_eq(
-		DetectorScript.MIN_COLLISION_SPEED, 15.0,
+		DetectorScript.MIN_COLLISION_SPEED,
+		15.0,
 		"MIN_COLLISION_SPEED should be 15.0 km/h",
 	)
 
 
 func test_crime_cooldown() -> void:
 	assert_eq(
-		DetectorScript.CRIME_COOLDOWN, 1.0,
+		DetectorScript.CRIME_COOLDOWN,
+		1.0,
 		"CRIME_COOLDOWN should be 1.0 seconds",
 	)
 
@@ -50,10 +50,12 @@ func test_crime_cooldown() -> void:
 # Vehicle enter/exit
 # ================================================================
 
+
 func test_on_vehicle_entered_sets_vehicle() -> void:
 	_detector._on_vehicle_entered(_vehicle)
 	assert_eq(
-		_detector._vehicle, _vehicle,
+		_detector._vehicle,
+		_vehicle,
 		"Entering a vehicle should store it",
 	)
 
@@ -113,7 +115,8 @@ func test_enter_new_vehicle_disconnects_old() -> void:
 		"New vehicle should be connected",
 	)
 	assert_eq(
-		_detector._vehicle, vehicle2,
+		_detector._vehicle,
+		vehicle2,
 		"_vehicle should be updated to new vehicle",
 	)
 
@@ -132,6 +135,7 @@ func test_enter_non_rigidbody_sets_null() -> void:
 # ================================================================
 # Collision filtering
 # ================================================================
+
 
 func test_body_entered_ignored_below_speed_threshold() -> void:
 	_detector._on_vehicle_entered(_vehicle)
@@ -198,6 +202,7 @@ func test_body_entered_ignored_when_no_vehicle() -> void:
 # Crime detection by body type
 # ================================================================
 
+
 func test_hit_vehicle_crime() -> void:
 	_detector._on_vehicle_entered(_vehicle)
 	_vehicle.linear_velocity = Vector3(0, 0, -20.0 / 3.6)
@@ -256,6 +261,7 @@ func test_hit_police_officer_crime() -> void:
 # Cooldown behavior
 # ================================================================
 
+
 func test_cooldown_prevents_duplicate_crime() -> void:
 	_detector._on_vehicle_entered(_vehicle)
 	_vehicle.linear_velocity = Vector3(0, 0, -20.0 / 3.6)
@@ -276,7 +282,9 @@ func test_cooldown_prevents_duplicate_crime() -> void:
 
 	# Cooldown should not have been reset (second hit was suppressed)
 	assert_almost_eq(
-		cooldown_after_first, cooldown_after_second, 0.01,
+		cooldown_after_first,
+		cooldown_after_second,
+		0.01,
 		"Second hit during cooldown should not reset the timer",
 	)
 
@@ -329,12 +337,15 @@ func test_different_crime_types_have_independent_cooldowns() -> void:
 # _process cooldown tick-down
 # ================================================================
 
+
 func test_process_decrements_cooldowns() -> void:
 	_detector._cooldowns["hit_vehicle"] = 1.0
 	_detector._process(0.5)
 
 	assert_almost_eq(
-		_detector._cooldowns["hit_vehicle"], 0.5, 0.01,
+		_detector._cooldowns["hit_vehicle"],
+		0.5,
+		0.01,
 		"Cooldown should decrement by delta",
 	)
 
@@ -376,6 +387,7 @@ func test_process_with_no_cooldowns() -> void:
 # ================================================================
 # Speed threshold edge cases
 # ================================================================
+
 
 func test_speed_exactly_at_threshold_does_not_trigger() -> void:
 	_detector._on_vehicle_entered(_vehicle)

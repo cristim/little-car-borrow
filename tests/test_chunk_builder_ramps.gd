@@ -1,9 +1,7 @@
 extends GutTest
 ## Unit tests for chunk_builder_ramps.gd stunt park generation.
 
-const RampsScript = preload(
-	"res://scenes/world/generator/chunk_builder_ramps.gd"
-)
+const RampsScript = preload("res://scenes/world/generator/chunk_builder_ramps.gd")
 const RoadGridScript = preload("res://src/road_grid.gd")
 
 var _grid: RefCounted
@@ -23,13 +21,15 @@ func before_each() -> void:
 # Initialization
 # ================================================================
 
+
 func test_init_stores_grid() -> void:
 	assert_eq(_builder._grid, _grid, "init should store grid reference")
 
 
 func test_init_stores_ramp_mat() -> void:
 	assert_eq(
-		_builder._ramp_mat, _ramp_mat,
+		_builder._ramp_mat,
+		_ramp_mat,
 		"init should store ramp material",
 	)
 
@@ -37,6 +37,7 @@ func test_init_stores_ramp_mat() -> void:
 # ================================================================
 # Determinism -- same tile always produces same output
 # ================================================================
+
 
 func test_build_deterministic_for_same_tile() -> void:
 	var tile := Vector2i(3, 7)
@@ -52,7 +53,8 @@ func test_build_deterministic_for_same_tile() -> void:
 	_builder.build(chunk2, tile, ox, oz)
 
 	assert_eq(
-		chunk1.get_child_count(), chunk2.get_child_count(),
+		chunk1.get_child_count(),
+		chunk2.get_child_count(),
 		"Same tile should produce same child count",
 	)
 
@@ -86,6 +88,7 @@ func test_different_tiles_can_differ() -> void:
 # ~90% of tiles produce no stunt park (probabilistic check)
 # ================================================================
 
+
 func test_most_tiles_have_no_stunt_park() -> void:
 	var park_count := 0
 	var total := 200
@@ -111,6 +114,7 @@ func test_most_tiles_have_no_stunt_park() -> void:
 # ================================================================
 # When a stunt park IS placed, verify structure
 # ================================================================
+
 
 func _find_stunt_park_tile() -> Vector2i:
 	var span: float = _grid.get_grid_span()
@@ -201,7 +205,8 @@ func test_ramps_have_collision_shape() -> void:
 				if sub is CollisionShape3D:
 					has_col = true
 					assert_not_null(
-						sub.shape, "CollisionShape3D should have a shape",
+						sub.shape,
+						"CollisionShape3D should have a shape",
 					)
 			assert_true(
 				has_col,
@@ -297,7 +302,8 @@ func test_fence_has_material_override() -> void:
 			)
 			var mat: StandardMaterial3D = child.material_override
 			assert_eq(
-				mat.albedo_color, Color(0.5, 0.5, 0.5),
+				mat.albedo_color,
+				Color(0.5, 0.5, 0.5),
 				"Fence material should be grey",
 			)
 			break
@@ -306,6 +312,7 @@ func test_fence_has_material_override() -> void:
 # ================================================================
 # Tile without stunt park produces no children
 # ================================================================
+
 
 func test_no_park_tile_produces_empty_chunk() -> void:
 	var span: float = _grid.get_grid_span()
@@ -316,7 +323,8 @@ func test_no_park_tile_produces_empty_chunk() -> void:
 		_builder.build(chunk, tile, span * float(tile.x), span * float(tile.y))
 		if not chunk.has_meta("has_stunt_park"):
 			assert_eq(
-				chunk.get_child_count(), 0,
+				chunk.get_child_count(),
+				0,
 				"Non-park tile should produce no children",
 			)
 			return
@@ -326,6 +334,7 @@ func test_no_park_tile_produces_empty_chunk() -> void:
 # ================================================================
 # Constants sanity
 # ================================================================
+
 
 func test_fence_height_positive() -> void:
 	assert_true(
@@ -355,10 +364,12 @@ func test_collision_layer_is_ground() -> void:
 	for child in chunk.get_children():
 		if child is StaticBody3D and child.name.begins_with("Ramp_"):
 			assert_eq(
-				child.collision_layer, 1,
+				child.collision_layer,
+				1,
 				"Ramp collision layer should be ground (1)",
 			)
 			assert_eq(
-				child.collision_mask, 0,
+				child.collision_mask,
+				0,
 				"Ramp collision mask should be 0",
 			)

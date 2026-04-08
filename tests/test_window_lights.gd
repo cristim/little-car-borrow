@@ -4,16 +4,12 @@ extends GutTest
 ## and night-time toggling logic.
 
 const CityScript = preload("res://scenes/world/city.gd")
-const BuilderScript = preload(
-	"res://scenes/world/generator/chunk_builder_buildings.gd"
-)
-const DayNightEnvScript = preload(
-	"res://scenes/world/day_night_environment.gd"
-)
+const BuilderScript = preload("res://scenes/world/generator/chunk_builder_buildings.gd")
+const DayNightEnvScript = preload("res://scenes/world/day_night_environment.gd")
 const RoadGridScript = preload("res://src/road_grid.gd")
 
-
 # --- city.gd material pool tests ---
+
 
 func test_city_has_window_mat_off_var() -> void:
 	# Verify city.gd declares _window_mat_off (populated after _ready)
@@ -35,6 +31,7 @@ func test_city_has_window_mat_on_var() -> void:
 
 
 # --- chunk_builder_buildings.gd tests ---
+
 
 func test_builder_init_stores_window_mat_off() -> void:
 	var builder = BuilderScript.new()
@@ -64,9 +61,15 @@ func test_build_creates_window_mesh_instances() -> void:
 	var mats: Array[StandardMaterial3D] = []
 	for _i in 3:
 		mats.append(StandardMaterial3D.new())
-	builder.init(
-		grid, mats, StandardMaterial3D.new(), StandardMaterial3D.new(),
-		StandardMaterial3D.new(),
+	(
+		builder
+		. init(
+			grid,
+			mats,
+			StandardMaterial3D.new(),
+			StandardMaterial3D.new(),
+			StandardMaterial3D.new(),
+		)
 	)
 
 	var chunk := Node3D.new()
@@ -93,9 +96,15 @@ func test_build_deterministic_with_same_tile() -> void:
 	var mats: Array[StandardMaterial3D] = []
 	for _i in 3:
 		mats.append(StandardMaterial3D.new())
-	builder.init(
-		grid, mats, StandardMaterial3D.new(), StandardMaterial3D.new(),
-		StandardMaterial3D.new(),
+	(
+		builder
+		. init(
+			grid,
+			mats,
+			StandardMaterial3D.new(),
+			StandardMaterial3D.new(),
+			StandardMaterial3D.new(),
+		)
 	)
 
 	# Build same tile twice — group meshes metadata should have same size
@@ -140,17 +149,20 @@ func test_window_meshes_use_correct_materials() -> void:
 		if child is MeshInstance3D:
 			if child.name == "WindowsOff":
 				assert_eq(
-					(child as MeshInstance3D).material_override, mat_off,
+					(child as MeshInstance3D).material_override,
+					mat_off,
 					"WindowsOff should reference mat_off",
 				)
 			elif child.name == "WindowsOn":
 				assert_eq(
-					(child as MeshInstance3D).material_override, mat_on,
+					(child as MeshInstance3D).material_override,
+					mat_on,
 					"WindowsOn should reference mat_on",
 				)
 
 
 # --- day_night_environment.gd per-chunk toggling tests ---
+
 
 func test_builder_stores_win_group_meshes_meta() -> void:
 	var builder = BuilderScript.new()
@@ -158,9 +170,15 @@ func test_builder_stores_win_group_meshes_meta() -> void:
 	var mats: Array[StandardMaterial3D] = []
 	for _i in 3:
 		mats.append(StandardMaterial3D.new())
-	builder.init(
-		grid, mats, StandardMaterial3D.new(), StandardMaterial3D.new(),
-		StandardMaterial3D.new(),
+	(
+		builder
+		. init(
+			grid,
+			mats,
+			StandardMaterial3D.new(),
+			StandardMaterial3D.new(),
+			StandardMaterial3D.new(),
+		)
 	)
 
 	var chunk := Node3D.new()
@@ -181,9 +199,15 @@ func test_builder_window_active_all_false_initially() -> void:
 	var mats: Array[StandardMaterial3D] = []
 	for _i in 3:
 		mats.append(StandardMaterial3D.new())
-	builder.init(
-		grid, mats, StandardMaterial3D.new(), StandardMaterial3D.new(),
-		StandardMaterial3D.new(),
+	(
+		builder
+		. init(
+			grid,
+			mats,
+			StandardMaterial3D.new(),
+			StandardMaterial3D.new(),
+			StandardMaterial3D.new(),
+		)
 	)
 
 	var chunk := Node3D.new()
@@ -207,9 +231,15 @@ func test_builder_adds_body_to_building_chunk_group() -> void:
 	var mats: Array[StandardMaterial3D] = []
 	for _i in 3:
 		mats.append(StandardMaterial3D.new())
-	builder.init(
-		grid, mats, StandardMaterial3D.new(), StandardMaterial3D.new(),
-		StandardMaterial3D.new(),
+	(
+		builder
+		. init(
+			grid,
+			mats,
+			StandardMaterial3D.new(),
+			StandardMaterial3D.new(),
+			StandardMaterial3D.new(),
+		)
 	)
 
 	var chunk := Node3D.new()
@@ -229,6 +259,7 @@ func test_builder_adds_body_to_building_chunk_group() -> void:
 # st_add_windows_on_face_indep — per-window material independence
 # ==========================================================================
 
+
 func test_indep_uses_multiple_groups_on_tall_face() -> void:
 	# A tall, wide face should have rows×cols > win_count, so with random
 	# per-window assignment we expect more than one group to be used.
@@ -243,11 +274,19 @@ func test_indep_uses_multiple_groups_on_tall_face() -> void:
 	rng.seed = 12345  # deterministic
 
 	# A 20m wide × 30m tall face has plenty of windows
-	CityScript.st_add_windows_on_face_indep(
-		win_sts, win_count, win_st_has_data,
-		Vector3.ZERO, 20.0, 30.0,
-		Vector3(0, 0, -1), Vector3(1, 0, 0),
-		rng,
+	(
+		CityScript
+		. st_add_windows_on_face_indep(
+			win_sts,
+			win_count,
+			win_st_has_data,
+			Vector3.ZERO,
+			20.0,
+			30.0,
+			Vector3(0, 0, -1),
+			Vector3(1, 0, 0),
+			rng,
+		)
 	)
 
 	var groups_used := 0
@@ -255,7 +294,8 @@ func test_indep_uses_multiple_groups_on_tall_face() -> void:
 		if win_st_has_data[i]:
 			groups_used += 1
 	assert_gt(
-		groups_used, 1,
+		groups_used,
+		1,
 		"A large face should distribute windows across multiple material groups",
 	)
 
@@ -271,11 +311,19 @@ func test_indep_skips_narrow_face() -> void:
 
 	var rng := RandomNumberGenerator.new()
 
-	CityScript.st_add_windows_on_face_indep(
-		win_sts, win_count, win_st_has_data,
-		Vector3.ZERO, 1.0, 20.0,  # only 1m wide — too narrow
-		Vector3(0, 0, -1), Vector3(1, 0, 0),
-		rng,
+	(
+		CityScript
+		. st_add_windows_on_face_indep(
+			win_sts,
+			win_count,
+			win_st_has_data,
+			Vector3.ZERO,
+			1.0,
+			20.0,  # only 1m wide — too narrow
+			Vector3(0, 0, -1),
+			Vector3(1, 0, 0),
+			rng,
+		)
 	)
 
 	for i in win_count:
@@ -297,17 +345,26 @@ func test_indep_all_begun_sts_have_geometry() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 99
 
-	CityScript.st_add_windows_on_face_indep(
-		win_sts, win_count, win_st_has_data,
-		Vector3.ZERO, 20.0, 30.0,
-		Vector3(0, 0, -1), Vector3(1, 0, 0),
-		rng,
+	(
+		CityScript
+		. st_add_windows_on_face_indep(
+			win_sts,
+			win_count,
+			win_st_has_data,
+			Vector3.ZERO,
+			20.0,
+			30.0,
+			Vector3(0, 0, -1),
+			Vector3(1, 0, 0),
+			rng,
+		)
 	)
 
 	for i in win_count:
 		if win_st_has_data[i]:
 			var mesh := (win_sts[i] as SurfaceTool).commit()
 			assert_gt(
-				mesh.get_surface_count(), 0,
+				mesh.get_surface_count(),
+				0,
 				"ST[%d] has_data=true but produced no mesh surface" % i,
 			)

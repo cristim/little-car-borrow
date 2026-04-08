@@ -33,7 +33,8 @@ func _process(_delta: float) -> void:
 	var active: bool = speed > SPEED_THRESHOLD
 	var intensity := clampf(
 		(speed - SPEED_THRESHOLD) / (MAX_SPRAY_SPEED - SPEED_THRESHOLD),
-		0.0, 1.0,
+		0.0,
+		1.0,
 	)
 
 	if _port_spray:

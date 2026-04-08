@@ -55,18 +55,13 @@ func build(chunk: Node3D, ox: float, oz: float) -> void:
 		var cx: float = _grid.get_road_center_local(i) + ox
 		var lamp_x: float = cx + rw * 0.5 + sw * 0.5
 		for j in range(_grid.GRID_SIZE):
-			var z_start: float = (
-				_grid.get_road_center_local(j) + _grid.get_road_width(j) * 0.5
-			)
+			var z_start: float = _grid.get_road_center_local(j) + _grid.get_road_width(j) * 0.5
 			var z_end: float = (
-				_grid.get_road_center_local(j + 1)
-				- _grid.get_road_width(j + 1) * 0.5
+				_grid.get_road_center_local(j + 1) - _grid.get_road_width(j + 1) * 0.5
 			)
 			if z_end - z_start < 5.0:
 				continue
-			positions.append(
-				Vector3(lamp_x, sh, (z_start + z_end) * 0.5 + oz)
-			)
+			positions.append(Vector3(lamp_x, sh, (z_start + z_end) * 0.5 + oz))
 
 	# Lights on the bottom sidewalk of each E-W road, one per block at midpoint.
 	for j in range(_grid.GRID_SIZE + 1):
@@ -74,26 +69,19 @@ func build(chunk: Node3D, ox: float, oz: float) -> void:
 		var cz: float = _grid.get_road_center_local(j) + oz
 		var lamp_z: float = cz + rw * 0.5 + sw * 0.5
 		for i in range(_grid.GRID_SIZE):
-			var x_start: float = (
-				_grid.get_road_center_local(i) + _grid.get_road_width(i) * 0.5
-			)
+			var x_start: float = _grid.get_road_center_local(i) + _grid.get_road_width(i) * 0.5
 			var x_end: float = (
-				_grid.get_road_center_local(i + 1)
-				- _grid.get_road_width(i + 1) * 0.5
+				_grid.get_road_center_local(i + 1) - _grid.get_road_width(i + 1) * 0.5
 			)
 			if x_end - x_start < 5.0:
 				continue
-			positions.append(
-				Vector3((x_start + x_end) * 0.5 + ox, sh, lamp_z)
-			)
+			positions.append(Vector3((x_start + x_end) * 0.5 + ox, sh, lamp_z))
 
 	if positions.is_empty():
 		return
 
 	var count := positions.size()
-	var show_lights := (
-		DayNightManager.is_night() or DayNightManager.is_dusk_or_dawn()
-	)
+	var show_lights := DayNightManager.is_night() or DayNightManager.is_dusk_or_dawn()
 
 	# Poles MultiMesh
 	var pole_mm := MultiMesh.new()
@@ -103,8 +91,7 @@ func build(chunk: Node3D, ox: float, oz: float) -> void:
 	for i in range(count):
 		var pos := positions[i]
 		pole_mm.set_instance_transform(
-			i, Transform3D(Basis.IDENTITY,
-				Vector3(pos.x, pos.y + POLE_HEIGHT * 0.5, pos.z))
+			i, Transform3D(Basis.IDENTITY, Vector3(pos.x, pos.y + POLE_HEIGHT * 0.5, pos.z))
 		)
 	var pole_node := MultiMeshInstance3D.new()
 	pole_node.name = "StreetlightPoles"
@@ -121,8 +108,7 @@ func build(chunk: Node3D, ox: float, oz: float) -> void:
 	for i in range(count):
 		var pos := positions[i]
 		lamp_mm.set_instance_transform(
-			i, Transform3D(Basis.IDENTITY,
-				Vector3(pos.x, pos.y + POLE_HEIGHT, pos.z))
+			i, Transform3D(Basis.IDENTITY, Vector3(pos.x, pos.y + POLE_HEIGHT, pos.z))
 		)
 	var lamp_node := MultiMeshInstance3D.new()
 	lamp_node.name = "StreetlightLamps"

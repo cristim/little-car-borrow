@@ -15,6 +15,7 @@ func _build_ui_sounds() -> Node:
 # Constants
 # ================================================================
 
+
 func test_constants() -> void:
 	var snd := _build_ui_sounds()
 	assert_eq(snd.SAMPLE_RATE, 22050.0, "Sample rate should be 22050")
@@ -25,6 +26,7 @@ func test_constants() -> void:
 # ================================================================
 # Initialization
 # ================================================================
+
 
 func test_ready_creates_audio_player() -> void:
 	var snd := _build_ui_sounds()
@@ -72,8 +74,12 @@ func test_ready_connects_wanted_signal() -> void:
 	await get_tree().process_frame
 
 	assert_true(
-		EventBus.wanted_level_changed.is_connected(
-			snd._on_wanted_level_changed,
+		(
+			EventBus
+			. wanted_level_changed
+			. is_connected(
+				snd._on_wanted_level_changed,
+			)
 		),
 		"Should connect to wanted_level_changed signal",
 	)
@@ -83,6 +89,7 @@ func test_ready_connects_wanted_signal() -> void:
 # Wanted level tone queue
 # ================================================================
 
+
 func test_wanted_level_1_queues_one_ascending_tone() -> void:
 	var snd := _build_ui_sounds()
 	await get_tree().process_frame
@@ -91,7 +98,9 @@ func test_wanted_level_1_queues_one_ascending_tone() -> void:
 
 	assert_eq(snd._tone_queue.size(), 1, "Level 1 should queue 1 tone")
 	assert_almost_eq(
-		snd._tone_queue[0], 440.0, 0.01,
+		snd._tone_queue[0],
+		440.0,
+		0.01,
 		"First tone should be BASE_FREQ",
 	)
 
@@ -154,6 +163,7 @@ func test_wanted_via_event_bus_signal() -> void:
 # ================================================================
 # Process / tone consumption
 # ================================================================
+
 
 func test_initial_state_empty_queue() -> void:
 	var snd := _build_ui_sounds()

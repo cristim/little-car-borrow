@@ -2,14 +2,12 @@ extends GutTest
 ## Tests for scenes/world/traffic_manager.gd — constants, variant weights,
 ## biome filtering, time multiplier, material init, and despawn logic.
 
-const TrafficManagerScript = preload(
-	"res://scenes/world/traffic_manager.gd"
-)
-
+const TrafficManagerScript = preload("res://scenes/world/traffic_manager.gd")
 
 # ==========================================================================
 # Constants
 # ==========================================================================
+
 
 func test_spawn_radius() -> void:
 	assert_eq(TrafficManagerScript.SPAWN_RADIUS, 150.0)
@@ -71,7 +69,8 @@ func test_interior_color() -> void:
 
 func test_highway_indices() -> void:
 	assert_eq(
-		TrafficManagerScript.HIGHWAY_INDICES, [0, 5],
+		TrafficManagerScript.HIGHWAY_INDICES,
+		[0, 5],
 		"Highway indices should be [0, 5]",
 	)
 
@@ -80,9 +79,11 @@ func test_highway_indices() -> void:
 # Vehicle variants
 # ==========================================================================
 
+
 func test_six_variants_defined() -> void:
 	assert_eq(
-		TrafficManagerScript.VARIANTS.size(), 6,
+		TrafficManagerScript.VARIANTS.size(),
+		6,
 		"Should have 6 body variants",
 	)
 
@@ -102,7 +103,8 @@ func test_variant_names() -> void:
 func test_all_variants_have_positive_weight() -> void:
 	for v in TrafficManagerScript.VARIANTS:
 		assert_gt(
-			v.weight, 0,
+			v.weight,
+			0,
 			"Variant %s should have positive weight" % v.name,
 		)
 
@@ -110,7 +112,8 @@ func test_all_variants_have_positive_weight() -> void:
 func test_all_variants_have_positive_mass_mult() -> void:
 	for v in TrafficManagerScript.VARIANTS:
 		assert_gt(
-			v.mass_mult, 0.0,
+			v.mass_mult,
+			0.0,
 			"Variant %s should have positive mass multiplier" % v.name,
 		)
 
@@ -125,7 +128,8 @@ func test_sedan_has_highest_weight() -> void:
 		if v.weight > max_weight:
 			max_weight = v.weight
 	assert_eq(
-		sedan_weight, max_weight,
+		sedan_weight,
+		max_weight,
 		"Sedan should have the highest spawn weight",
 	)
 
@@ -140,6 +144,7 @@ func test_total_weight_is_sum_of_all() -> void:
 # ==========================================================================
 # Initial state
 # ==========================================================================
+
 
 func test_vehicles_array_starts_empty() -> void:
 	var mgr: Node = TrafficManagerScript.new()
@@ -174,6 +179,7 @@ func test_player_velocity_starts_zero() -> void:
 # ==========================================================================
 # _is_road_grid_biome static helper
 # ==========================================================================
+
 
 func test_is_road_grid_biome_city_center() -> void:
 	assert_true(
@@ -233,6 +239,7 @@ func test_is_road_grid_biome_empty_false() -> void:
 # Time-of-day multiplier
 # ==========================================================================
 
+
 func test_time_changed_deep_night() -> void:
 	var mgr: Node = TrafficManagerScript.new()
 	add_child_autofree(mgr)
@@ -273,7 +280,8 @@ func test_time_changed_boundary_5am() -> void:
 	add_child_autofree(mgr)
 	mgr._on_time_changed(5.0)
 	assert_eq(
-		mgr._time_multiplier, 0.7,
+		mgr._time_multiplier,
+		0.7,
 		"Exactly 5 AM is dawn (between 5 and 7)",
 	)
 
@@ -289,6 +297,7 @@ func test_time_changed_boundary_7am() -> void:
 # _on_vehicle_stolen callback
 # ==========================================================================
 
+
 func test_on_vehicle_stolen_removes_from_list() -> void:
 	var mgr: Node = TrafficManagerScript.new()
 	add_child_autofree(mgr)
@@ -297,7 +306,8 @@ func test_on_vehicle_stolen_removes_from_list() -> void:
 	mgr._vehicles.append(fake)
 	mgr._on_vehicle_stolen(fake)
 	assert_eq(
-		mgr._vehicles.size(), 0,
+		mgr._vehicles.size(),
+		0,
 		"Stolen vehicle should be removed from tracking",
 	)
 
@@ -312,7 +322,8 @@ func test_on_vehicle_stolen_ignores_unknown() -> void:
 	mgr._vehicles.append(tracked)
 	mgr._on_vehicle_stolen(unknown)
 	assert_eq(
-		mgr._vehicles.size(), 1,
+		mgr._vehicles.size(),
+		1,
 		"Unknown vehicle should not affect tracked list",
 	)
 
@@ -320,6 +331,7 @@ func test_on_vehicle_stolen_ignores_unknown() -> void:
 # ==========================================================================
 # _pick_weighted_variant
 # ==========================================================================
+
 
 func test_pick_weighted_variant_returns_valid_index() -> void:
 	var mgr: Node = TrafficManagerScript.new()
@@ -336,6 +348,7 @@ func test_pick_weighted_variant_returns_valid_index() -> void:
 # ==========================================================================
 # _despawn_far with invalid nodes
 # ==========================================================================
+
 
 func test_despawn_far_removes_distant_vehicles() -> void:
 	var mgr: Node = TrafficManagerScript.new()
@@ -354,7 +367,8 @@ func test_despawn_far_removes_distant_vehicles() -> void:
 
 	mgr._despawn_far()
 	assert_eq(
-		mgr._vehicles.size(), 0,
+		mgr._vehicles.size(),
+		0,
 		"Distant vehicles should be despawned",
 	)
 
@@ -362,6 +376,7 @@ func test_despawn_far_removes_distant_vehicles() -> void:
 # ==========================================================================
 # _make_terrain_noise static helper
 # ==========================================================================
+
 
 func test_make_terrain_noise() -> void:
 	var noise: FastNoiseLite = TrafficManagerScript._make_terrain_noise()
@@ -375,11 +390,13 @@ func test_make_terrain_noise() -> void:
 # Car colors
 # ==========================================================================
 
+
 func test_ten_car_colors_defined() -> void:
 	var mgr: Node = TrafficManagerScript.new()
 	add_child_autofree(mgr)
 	assert_eq(
-		mgr._car_colors.size(), 10,
+		mgr._car_colors.size(),
+		10,
 		"Should have 10 car color options",
 	)
 
@@ -387,6 +404,7 @@ func test_ten_car_colors_defined() -> void:
 # ==========================================================================
 # Spawn view-cone rejection (vehicles must not pop into player's view)
 # ==========================================================================
+
 
 func test_spawn_rejects_forward_hemisphere() -> void:
 	var src: String = TrafficManagerScript.source_code
@@ -400,8 +418,11 @@ func test_spawn_forward_rejection_is_unconditional() -> void:
 	# The old code had a probabilistic rejection (70% chance).
 	# The fix must always reject — no randf() chance mixed in.
 	var src: String = TrafficManagerScript.source_code
-	var dot_idx: int = src.find(
-		"h_vel.normalized().dot(offset.normalized()) > 0.0",
+	var dot_idx: int = (
+		src
+		. find(
+			"h_vel.normalized().dot(offset.normalized()) > 0.0",
+		)
 	)
 	assert_gte(dot_idx, 0, "Forward dot check must exist")
 	# The continue immediately follows — no randf() in between
@@ -415,6 +436,7 @@ func test_spawn_forward_rejection_is_unconditional() -> void:
 # ==========================================================================
 # Spawn altitude fix (vehicles must not fall from the sky)
 # ==========================================================================
+
 
 func test_spawn_uses_signed_distance_for_city_check() -> void:
 	var src: String = TrafficManagerScript.source_code

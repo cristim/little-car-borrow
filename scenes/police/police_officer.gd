@@ -27,7 +27,7 @@ func _ready() -> void:
 	_rng.randomize()
 	add_to_group("police_officer")
 	collision_layer = 4  # NPC layer
-	collision_mask = 3   # Static + Ground
+	collision_mask = 3  # Static + Ground
 
 	_build_model()
 
@@ -46,10 +46,7 @@ func _physics_process(delta: float) -> void:
 		return
 
 	if not _player:
-		_player = (
-			get_tree().get_first_node_in_group("player")
-			as Node3D
-		)
+		_player = (get_tree().get_first_node_in_group("player") as Node3D)
 		if not _player:
 			return
 
@@ -138,9 +135,7 @@ func _play_gunshot() -> void:
 	add_child(player)
 	player.play()
 
-	var playback: AudioStreamGeneratorPlayback = (
-		player.get_stream_playback()
-	)
+	var playback: AudioStreamGeneratorPlayback = player.get_stream_playback()
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	# Short noise burst = gunshot
@@ -185,19 +180,11 @@ func _animate_limbs(delta: float, h_dist: float) -> void:
 			_right_shoulder.rotation.x = -PI / 2.0
 	else:
 		# Decay to idle
-		_left_shoulder.rotation.x = lerpf(
-			_left_shoulder.rotation.x, 0.0, delta * 8.0
-		)
-		_left_hip.rotation.x = lerpf(
-			_left_hip.rotation.x, 0.0, delta * 8.0
-		)
-		_right_hip.rotation.x = lerpf(
-			_right_hip.rotation.x, 0.0, delta * 8.0
-		)
+		_left_shoulder.rotation.x = lerpf(_left_shoulder.rotation.x, 0.0, delta * 8.0)
+		_left_hip.rotation.x = lerpf(_left_hip.rotation.x, 0.0, delta * 8.0)
+		_right_hip.rotation.x = lerpf(_right_hip.rotation.x, 0.0, delta * 8.0)
 		if _shoot_pose_timer <= 0.0:
-			_right_shoulder.rotation.x = lerpf(
-				_right_shoulder.rotation.x, 0.0, delta * 8.0
-			)
+			_right_shoulder.rotation.x = lerpf(_right_shoulder.rotation.x, 0.0, delta * 8.0)
 		else:
 			_right_shoulder.rotation.x = -PI / 2.0
 		_anim_phase = 0.0

@@ -3,10 +3,10 @@ extends GutTest
 
 const RagdollScript = preload("res://scenes/pedestrians/pedestrian_ragdoll.gd")
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 func _make_ragdoll() -> RigidBody3D:
 	var rb := RigidBody3D.new()
@@ -35,6 +35,7 @@ func _make_source_with_model() -> Node3D:
 # Constants
 # ---------------------------------------------------------------------------
 
+
 func test_despawn_time_constant() -> void:
 	assert_eq(RagdollScript.DESPAWN_TIME, 5.0)
 
@@ -50,6 +51,7 @@ func test_spin_torque_constant() -> void:
 # ---------------------------------------------------------------------------
 # _ready — physics setup
 # ---------------------------------------------------------------------------
+
 
 func test_ready_sets_gravity_scale() -> void:
 	var ragdoll := _make_ragdoll()
@@ -160,6 +162,7 @@ func test_ready_physics_material_friction() -> void:
 # launch
 # ---------------------------------------------------------------------------
 
+
 func test_launch_applies_upward_impulse() -> void:
 	var ragdoll := _make_ragdoll()
 	add_child_autofree(ragdoll)
@@ -202,6 +205,7 @@ func test_launch_impulse_direction() -> void:
 # copy_visual_from
 # ---------------------------------------------------------------------------
 
+
 func test_copy_visual_from_pedestrian_model() -> void:
 	var ragdoll := _make_ragdoll()
 	add_child_autofree(ragdoll)
@@ -214,7 +218,8 @@ func test_copy_visual_from_pedestrian_model() -> void:
 	var child_count_after := ragdoll.get_child_count()
 
 	assert_gt(
-		child_count_after, child_count_before,
+		child_count_after,
+		child_count_before,
 		"Should copy mesh children from source",
 	)
 
@@ -260,9 +265,7 @@ func test_copy_visual_preserves_mesh_reference() -> void:
 	add_child_autofree(source)
 	await get_tree().process_frame
 
-	var original_mesh := (
-		source.get_node("PedestrianModel").get_child(0) as MeshInstance3D
-	).mesh
+	var original_mesh := (source.get_node("PedestrianModel").get_child(0) as MeshInstance3D).mesh
 
 	ragdoll.copy_visual_from(source)
 
@@ -300,6 +303,7 @@ func test_copy_visual_preserves_material() -> void:
 # _set_alpha
 # ---------------------------------------------------------------------------
 
+
 func test_set_alpha_changes_material_transparency() -> void:
 	var ragdoll := _make_ragdoll()
 	add_child_autofree(ragdoll)
@@ -316,7 +320,8 @@ func test_set_alpha_changes_material_transparency() -> void:
 	ragdoll._set_alpha(0.5)
 
 	assert_eq(
-		mat.transparency, BaseMaterial3D.TRANSPARENCY_ALPHA,
+		mat.transparency,
+		BaseMaterial3D.TRANSPARENCY_ALPHA,
 		"Should set transparency mode",
 	)
 	assert_almost_eq(mat.albedo_color.a, 0.5, 0.001)
@@ -367,6 +372,7 @@ func test_set_alpha_skips_non_mesh_children() -> void:
 # ---------------------------------------------------------------------------
 # _process — timer and despawn
 # ---------------------------------------------------------------------------
+
 
 func test_timer_starts_at_zero() -> void:
 	var ragdoll := _make_ragdoll()

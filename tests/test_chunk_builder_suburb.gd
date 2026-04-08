@@ -1,13 +1,9 @@
 extends GutTest
 ## Unit tests for chunk_builder_suburb.gd suburb building generation.
 
-const SuburbScript = preload(
-	"res://scenes/world/generator/chunk_builder_suburb.gd"
-)
+const SuburbScript = preload("res://scenes/world/generator/chunk_builder_suburb.gd")
 const RoadGridScript = preload("res://src/road_grid.gd")
-const BuildingsScript = preload(
-	"res://scenes/world/generator/chunk_builder_buildings.gd"
-)
+const BuildingsScript = preload("res://scenes/world/generator/chunk_builder_buildings.gd")
 
 var _grid: RefCounted
 var _builder: RefCounted
@@ -45,27 +41,31 @@ func before_each() -> void:
 # Initialization
 # ================================================================
 
+
 func test_init_stores_grid() -> void:
 	assert_eq(_builder._grid, _grid, "init should store grid reference")
 
 
 func test_init_stores_building_mats() -> void:
 	assert_eq(
-		_builder._building_mats.size(), 3,
+		_builder._building_mats.size(),
+		3,
 		"init should store building materials",
 	)
 
 
 func test_init_stores_roof_mats() -> void:
 	assert_eq(
-		_builder._roof_mats.size(), 2,
+		_builder._roof_mats.size(),
+		2,
 		"init should store roof materials",
 	)
 
 
 func test_init_stores_bld_builder() -> void:
 	assert_eq(
-		_builder._bld_builder, _bld_builder,
+		_builder._bld_builder,
+		_bld_builder,
 		"init should store building builder reference",
 	)
 
@@ -74,9 +74,11 @@ func test_init_stores_bld_builder() -> void:
 # Constants
 # ================================================================
 
+
 func test_max_buildings_per_block() -> void:
 	assert_eq(
-		SuburbScript.MAX_BUILDINGS_PER_BLOCK, 2,
+		SuburbScript.MAX_BUILDINGS_PER_BLOCK,
+		2,
 		"MAX_BUILDINGS_PER_BLOCK should be 2",
 	)
 
@@ -98,6 +100,7 @@ func test_min_height_positive() -> void:
 # ================================================================
 # _get_block_center
 # ================================================================
+
 
 func test_get_block_center_returns_vector2() -> void:
 	var center: Vector2 = _builder._get_block_center(0, 0)
@@ -132,6 +135,7 @@ func test_get_block_center_within_grid_span() -> void:
 # Build behavior
 # ================================================================
 
+
 func test_build_creates_suburb_body() -> void:
 	var span: float = _grid.get_grid_span()
 	# Try several tiles; ~50% block chance means most tiles produce something
@@ -140,15 +144,21 @@ func test_build_creates_suburb_body() -> void:
 		var tile := Vector2i(tx + 50, tx * 3)
 		var chunk := Node3D.new()
 		add_child_autofree(chunk)
-		_builder.build(
-			chunk, tile,
-			span * float(tile.x), span * float(tile.y),
+		(
+			_builder
+			. build(
+				chunk,
+				tile,
+				span * float(tile.x),
+				span * float(tile.y),
+			)
 		)
 		for child in chunk.get_children():
 			if child is StaticBody3D and child.name == "SuburbBuildings":
 				found_body = true
 				assert_eq(
-					child.collision_layer, 2,
+					child.collision_layer,
+					2,
 					"Suburb body collision layer should be Static (2)",
 				)
 				assert_true(
@@ -168,9 +178,14 @@ func test_build_creates_material_meshes() -> void:
 		var tile := Vector2i(tx + 50, tx * 3)
 		var chunk := Node3D.new()
 		add_child_autofree(chunk)
-		_builder.build(
-			chunk, tile,
-			span * float(tile.x), span * float(tile.y),
+		(
+			_builder
+			. build(
+				chunk,
+				tile,
+				span * float(tile.x),
+				span * float(tile.y),
+			)
 		)
 		for child in chunk.get_children():
 			if child is StaticBody3D and child.name == "SuburbBuildings":
@@ -178,7 +193,8 @@ func test_build_creates_material_meshes() -> void:
 					if sub is MeshInstance3D and sub.name.begins_with("SuburbMat_"):
 						found_mesh = true
 						assert_not_null(
-							sub.mesh, "Suburb mesh should not be null",
+							sub.mesh,
+							"Suburb mesh should not be null",
 						)
 						assert_not_null(
 							sub.material_override,
@@ -197,9 +213,14 @@ func test_build_creates_roof_meshes() -> void:
 		var tile := Vector2i(tx + 50, tx * 3)
 		var chunk := Node3D.new()
 		add_child_autofree(chunk)
-		_builder.build(
-			chunk, tile,
-			span * float(tile.x), span * float(tile.y),
+		(
+			_builder
+			. build(
+				chunk,
+				tile,
+				span * float(tile.x),
+				span * float(tile.y),
+			)
 		)
 		for child in chunk.get_children():
 			if child is StaticBody3D and child.name == "SuburbBuildings":
@@ -207,7 +228,8 @@ func test_build_creates_roof_meshes() -> void:
 					if sub is MeshInstance3D and sub.name.begins_with("SuburbRoofs_"):
 						found_roof = true
 						assert_not_null(
-							sub.mesh, "Roof mesh should not be null",
+							sub.mesh,
+							"Roof mesh should not be null",
 						)
 				break
 		if found_roof:
@@ -221,9 +243,14 @@ func test_build_has_collision_shapes() -> void:
 		var tile := Vector2i(tx + 50, tx * 3)
 		var chunk := Node3D.new()
 		add_child_autofree(chunk)
-		_builder.build(
-			chunk, tile,
-			span * float(tile.x), span * float(tile.y),
+		(
+			_builder
+			. build(
+				chunk,
+				tile,
+				span * float(tile.x),
+				span * float(tile.y),
+			)
 		)
 		for child in chunk.get_children():
 			if child is StaticBody3D and child.name == "SuburbBuildings":
@@ -247,6 +274,7 @@ func test_build_has_collision_shapes() -> void:
 # Determinism
 # ================================================================
 
+
 func test_build_deterministic() -> void:
 	var span: float = _grid.get_grid_span()
 	var tile := Vector2i(55, 10)
@@ -262,7 +290,8 @@ func test_build_deterministic() -> void:
 	_builder.build(chunk2, tile, ox, oz)
 
 	assert_eq(
-		chunk1.get_child_count(), chunk2.get_child_count(),
+		chunk1.get_child_count(),
+		chunk2.get_child_count(),
 		"Same tile should produce same child count",
 	)
 
@@ -286,6 +315,7 @@ func _count_collision_shapes(chunk: Node3D) -> int:
 # ~50% block occupancy (probabilistic)
 # ================================================================
 
+
 func test_roughly_half_blocks_have_buildings() -> void:
 	# With GRID_SIZE=10 -> 100 blocks, ~50% = ~50 occupied
 	# Across a few tiles we can check collision shape counts are reasonable
@@ -296,9 +326,14 @@ func test_roughly_half_blocks_have_buildings() -> void:
 		var tile := Vector2i(tx + 100, tx * 7)
 		var chunk := Node3D.new()
 		add_child_autofree(chunk)
-		_builder.build(
-			chunk, tile,
-			span * float(tile.x), span * float(tile.y),
+		(
+			_builder
+			. build(
+				chunk,
+				tile,
+				span * float(tile.x),
+				span * float(tile.y),
+			)
 		)
 		total_cols += _count_collision_shapes(chunk)
 
@@ -317,6 +352,7 @@ func test_roughly_half_blocks_have_buildings() -> void:
 # ================================================================
 # No buildings without materials
 # ================================================================
+
 
 func test_build_with_no_roof_mats() -> void:
 	var no_roof_builder := SuburbScript.new()

@@ -3,10 +3,10 @@ extends GutTest
 
 const IdleScript = preload("res://scenes/pedestrians/states/pedestrian_idle.gd")
 
-
 # ---------------------------------------------------------------------------
 # Mock state machine
 # ---------------------------------------------------------------------------
+
 
 class MockStateMachine:
 	extends Node
@@ -21,6 +21,7 @@ class MockStateMachine:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 func _make_idle_state() -> Node:
 	var ped := CharacterBody3D.new()
@@ -43,6 +44,7 @@ func _make_idle_state() -> Node:
 # ---------------------------------------------------------------------------
 # enter
 # ---------------------------------------------------------------------------
+
 
 func test_enter_resets_timer() -> void:
 	var state := _make_idle_state()
@@ -80,6 +82,7 @@ func test_enter_randomizes_rng() -> void:
 # ---------------------------------------------------------------------------
 # physics_update — stops horizontal movement
 # ---------------------------------------------------------------------------
+
 
 func test_physics_update_zeroes_horizontal_velocity() -> void:
 	var state := _make_idle_state()
@@ -135,6 +138,7 @@ func test_physics_update_increments_timer() -> void:
 # physics_update — transition to walk
 # ---------------------------------------------------------------------------
 
+
 func test_transitions_to_walk_after_duration() -> void:
 	var state := _make_idle_state()
 	await get_tree().process_frame
@@ -180,7 +184,10 @@ func test_walk_direction_is_cardinal() -> void:
 	await get_tree().process_frame
 
 	var cardinal_dirs: Array[Vector3] = [
-		Vector3.FORWARD, Vector3.BACK, Vector3.LEFT, Vector3.RIGHT,
+		Vector3.FORWARD,
+		Vector3.BACK,
+		Vector3.LEFT,
+		Vector3.RIGHT,
 	]
 
 	# Run several times to test randomness

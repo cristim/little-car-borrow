@@ -38,7 +38,10 @@ func init(
 
 
 func build(
-	chunk: Node3D, tile: Vector2i, ox: float, oz: float,
+	chunk: Node3D,
+	tile: Vector2i,
+	ox: float,
+	oz: float,
 ) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(tile) ^ 0xBEEF
@@ -53,18 +56,12 @@ func build(
 	var village_center := Vector3.ZERO
 	var found := false
 	for _attempt in range(VILLAGE_SEARCH_ATTEMPTS):
-		var test_x: float = ox + rng.randf_range(
-			-span * 0.3, span * 0.3
-		)
-		var test_z: float = oz + rng.randf_range(
-			-span * 0.3, span * 0.3
-		)
+		var test_x: float = ox + rng.randf_range(-span * 0.3, span * 0.3)
+		var test_z: float = oz + rng.randf_range(-span * 0.3, span * 0.3)
 		if _is_flat_enough(test_x, test_z):
 			var center_h: float = _sample_height(test_x, test_z)
 			if center_h > 1.0:
-				village_center = Vector3(
-					test_x, center_h, test_z
-				)
+				village_center = Vector3(test_x, center_h, test_z)
 				found = true
 				break
 
@@ -73,14 +70,15 @@ func build(
 		return
 
 	chunk.set_meta("has_village", true)
-	chunk.set_meta(
-		"village_center",
-		Vector2(village_center.x, village_center.z),
+	(
+		chunk
+		. set_meta(
+			"village_center",
+			Vector2(village_center.x, village_center.z),
+		)
 	)
 
-	var count := rng.randi_range(
-		MIN_VILLAGE_BUILDINGS, MAX_VILLAGE_BUILDINGS
-	)
+	var count := rng.randi_range(MIN_VILLAGE_BUILDINGS, MAX_VILLAGE_BUILDINGS)
 	var mat_count := _building_mats.size()
 
 	var body := StaticBody3D.new()
@@ -125,17 +123,21 @@ func build(
 		var center := Vector3(bx, by + bh * 0.5, bz)
 		var bsize := Vector3(bw, bh, bd)
 
-		_city_script.st_add_box_no_bottom(
-			sts[mat_idx], center, bsize
-		)
+		_city_script.st_add_box_no_bottom(sts[mat_idx], center, bsize)
 		st_used[mat_idx] = true
 		_city_script.add_box_collision(body, center, bsize)
 
 		# All village buildings get pitched roofs
 		if roof_count > 0 and _bld_builder:
 			var ri := rng.randi() % roof_count
-			_bld_builder._st_add_pitched_roof(
-				roof_sts[ri], center, bsize, rng,
+			(
+				_bld_builder
+				. _st_add_pitched_roof(
+					roof_sts[ri],
+					center,
+					bsize,
+					rng,
+				)
 			)
 			roof_st_used[ri] = true
 
@@ -200,9 +202,7 @@ func _sample_height(wx: float, wz: float) -> float:
 	if edge_dist < 0.0:
 		return 0.0  # inside city
 
-	var fade: float = clampf(
-		edge_dist / (grid_span * 3.0), 0.0, 1.0
-	)
+	var fade: float = clampf(edge_dist / (grid_span * 3.0), 0.0, 1.0)
 	var max_h: float = lerpf(20.0, 80.0, fade)
 	var h: float = n * max_h - 6.0
 
@@ -214,7 +214,9 @@ func _sample_height(wx: float, wz: float) -> float:
 	var in_ocean := -wx > shore_start
 	if in_ocean:
 		var west_t: float = clampf(
-			(-wx - shore_start) / (shore_end - shore_start), 0.0, 1.0,
+			(-wx - shore_start) / (shore_end - shore_start),
+			0.0,
+			1.0,
 		)
 		h -= west_t * west_t * 100.0
 

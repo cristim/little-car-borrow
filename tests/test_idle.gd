@@ -4,15 +4,16 @@ extends GutTest
 const IdleScript = preload("res://scenes/player/states/idle.gd")
 const PlayerScript = preload("res://scenes/player/player.gd")
 
-
 # ---------------------------------------------------------------------------
 # Stubs
 # ---------------------------------------------------------------------------
+
 
 class StubStateMachine:
 	extends Node
 	var last_transition := ""
 	var last_msg: Dictionary = {}
+
 	func transition_to(name: String, msg: Dictionary = {}) -> void:
 		last_transition = name
 		last_msg = msg
@@ -63,7 +64,9 @@ func before_each() -> void:
 
 func after_each() -> void:
 	# Clean up any pressed actions
-	for action in ["move_forward", "move_backward", "move_left", "move_right", "sprint", "interact"]:
+	for action in [
+		"move_forward", "move_backward", "move_left", "move_right", "sprint", "interact"
+	]:
 		if Input.is_action_pressed(action):
 			Input.action_release(action)
 
@@ -71,6 +74,7 @@ func after_each() -> void:
 # ---------------------------------------------------------------------------
 # enter() tests
 # ---------------------------------------------------------------------------
+
 
 func test_enter_shows_steal_prompt_when_car_nearby() -> void:
 	var vehicle := Node3D.new()
@@ -80,7 +84,9 @@ func test_enter_shows_steal_prompt_when_car_nearby() -> void:
 	watch_signals(EventBus)
 	_state.enter()
 	assert_signal_emitted_with_parameters(
-		EventBus, "show_interaction_prompt", ["Hold F to steal"],
+		EventBus,
+		"show_interaction_prompt",
+		["Hold F to steal"],
 	)
 
 
@@ -95,7 +101,9 @@ func test_enter_shows_board_prompt_when_boat_nearby() -> void:
 	watch_signals(EventBus)
 	_state.enter()
 	assert_signal_emitted_with_parameters(
-		EventBus, "show_interaction_prompt", ["Hold F to board"],
+		EventBus,
+		"show_interaction_prompt",
+		["Hold F to board"],
 	)
 
 
@@ -111,6 +119,7 @@ func test_enter_does_not_emit_prompt_when_no_vehicle() -> void:
 # exit() tests
 # ---------------------------------------------------------------------------
 
+
 func test_exit_does_not_hide_interaction_prompt() -> void:
 	watch_signals(EventBus)
 	_state.exit()
@@ -120,6 +129,7 @@ func test_exit_does_not_hide_interaction_prompt() -> void:
 # ---------------------------------------------------------------------------
 # handle_input() tests
 # ---------------------------------------------------------------------------
+
 
 func test_interact_with_vehicle_transitions_to_entering() -> void:
 	var vehicle := Node3D.new()
@@ -145,6 +155,7 @@ func test_interact_without_vehicle_does_nothing() -> void:
 # ---------------------------------------------------------------------------
 # physics_update() — movement transitions
 # ---------------------------------------------------------------------------
+
 
 func test_physics_update_transitions_to_walking_with_input() -> void:
 	Input.action_press("move_forward")
@@ -172,11 +183,13 @@ func test_physics_update_decelerates_horizontal_velocity() -> void:
 	_state.physics_update(0.016)
 	# move_toward should reduce velocity toward zero
 	assert_lte(
-		absf(_player.velocity.x), 2.0,
+		absf(_player.velocity.x),
+		2.0,
 		"X velocity should not increase",
 	)
 	assert_lte(
-		absf(_player.velocity.z), 2.0,
+		absf(_player.velocity.z),
+		2.0,
 		"Z velocity should not increase",
 	)
 
@@ -185,10 +198,11 @@ func test_physics_update_decelerates_horizontal_velocity() -> void:
 # Jump — source-level verification
 # ---------------------------------------------------------------------------
 
+
 func test_idle_checks_jump_input_on_floor() -> void:
 	var src: String = IdleScript.source_code
 	assert_true(
-		src.contains("is_action_just_pressed(\"jump\")"),
+		src.contains('is_action_just_pressed("jump")'),
 		"Idle state should check for jump input when on floor",
 	)
 

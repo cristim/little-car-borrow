@@ -57,6 +57,7 @@ func _on_weapon_switched(idx: int) -> void:
 # Initial state
 # ==========================================================================
 
+
 func test_initial_not_armed() -> void:
 	assert_false(_pw._armed, "Should start unarmed")
 
@@ -85,6 +86,7 @@ func test_ready_finds_player_model() -> void:
 # ==========================================================================
 # Draw weapon
 # ==========================================================================
+
 
 func test_draw_weapon_sets_armed() -> void:
 	_pw._draw_weapon(0)
@@ -140,6 +142,7 @@ func test_draw_weapon_muzzle_flash_hidden() -> void:
 # Holster
 # ==========================================================================
 
+
 func test_holster_clears_armed() -> void:
 	_pw._draw_weapon(0)
 	_pw._holster()
@@ -151,7 +154,8 @@ func test_holster_emits_negative_one() -> void:
 	_weapon_signals.clear()
 	_pw._holster()
 	assert_has(
-		_weapon_signals, -1,
+		_weapon_signals,
+		-1,
 		"Should emit weapon_switched(-1) on holster",
 	)
 
@@ -181,12 +185,14 @@ func test_holster_when_already_holstered() -> void:
 # Switch weapon (no-op if same + armed)
 # ==========================================================================
 
+
 func test_switch_weapon_noop_when_same_and_armed() -> void:
 	_pw._draw_weapon(1)
 	_weapon_signals.clear()
 	_pw._switch_weapon(1)
 	assert_eq(
-		_weapon_signals.size(), 0,
+		_weapon_signals.size(),
+		0,
 		"Switching to same armed weapon should be a no-op",
 	)
 
@@ -202,6 +208,7 @@ func test_switch_weapon_draws_if_different() -> void:
 # ==========================================================================
 # Cycle weapon
 # ==========================================================================
+
 
 func test_cycle_forward_from_zero() -> void:
 	_pw._cycle_weapon(1)
@@ -232,6 +239,7 @@ func test_cycle_stays_if_all_others_locked() -> void:
 # Unlock weapon
 # ==========================================================================
 
+
 func test_unlock_weapon_sets_flag() -> void:
 	_pw._unlocked[2] = false
 	_pw.unlock_weapon(2)
@@ -241,8 +249,7 @@ func test_unlock_weapon_sets_flag() -> void:
 func test_unlock_weapon_emits_signal() -> void:
 	_pw._unlocked[3] = false
 	var captured := []
-	var on_unlock := func(idx: int) -> void:
-		captured.append(idx)
+	var on_unlock := func(idx: int) -> void: captured.append(idx)
 	EventBus.weapon_unlocked.connect(on_unlock)
 	_pw.unlock_weapon(3)
 	EventBus.weapon_unlocked.disconnect(on_unlock)
@@ -254,8 +261,7 @@ func test_unlock_weapon_emits_signal() -> void:
 func test_unlock_weapon_shows_notification() -> void:
 	_pw._unlocked[1] = false
 	var captured := []
-	var on_notif := func(text: String, _dur: float) -> void:
-		captured.append(text)
+	var on_notif := func(text: String, _dur: float) -> void: captured.append(text)
 	EventBus.show_notification.connect(on_notif)
 	_pw.unlock_weapon(1)
 	EventBus.show_notification.disconnect(on_notif)
@@ -269,8 +275,7 @@ func test_unlock_weapon_shows_notification() -> void:
 
 func test_unlock_already_unlocked_is_noop() -> void:
 	var signal_count := 0
-	var on_unlock := func(_idx: int) -> void:
-		signal_count += 1
+	var on_unlock := func(_idx: int) -> void: signal_count += 1
 	EventBus.weapon_unlocked.connect(on_unlock)
 	_pw.unlock_weapon(0)  # Already unlocked
 	EventBus.weapon_unlocked.disconnect(on_unlock)
@@ -291,11 +296,14 @@ func test_unlock_rejects_out_of_bounds() -> void:
 # Cooldown
 # ==========================================================================
 
+
 func test_cooldown_decreases_over_time() -> void:
 	_pw._cooldown = 1.0
 	_pw._process(0.1)
 	assert_almost_eq(
-		_pw._cooldown, 0.9, 0.01,
+		_pw._cooldown,
+		0.9,
+		0.01,
 		"Cooldown should decrease by delta",
 	)
 
@@ -310,13 +318,16 @@ func test_cooldown_can_go_negative() -> void:
 # Muzzle flash timer
 # ==========================================================================
 
+
 func test_flash_timer_decreases() -> void:
 	_pw._draw_weapon(0)
 	_pw._muzzle_flash.visible = true
 	_pw._flash_timer = 0.06
 	_pw._process(0.03)
 	assert_almost_eq(
-		_pw._flash_timer, 0.03, 0.01,
+		_pw._flash_timer,
+		0.03,
+		0.01,
 		"Flash timer should decrease",
 	)
 	assert_true(
@@ -340,49 +351,66 @@ func test_flash_timer_hides_muzzle_flash() -> void:
 # Weapon constants
 # ==========================================================================
 
+
 func test_weapons_array_size() -> void:
 	assert_eq(WeaponScript.WEAPONS.size(), 4, "Should have 4 weapons")
 
 
 func test_weapon_ranges() -> void:
 	assert_almost_eq(
-		float(WeaponScript.WEAPONS[0]["range"]), 80.0, 0.01, "Pistol range 80 m",
+		float(WeaponScript.WEAPONS[0]["range"]),
+		80.0,
+		0.01,
+		"Pistol range 80 m",
 	)
 	assert_almost_eq(
-		float(WeaponScript.WEAPONS[1]["range"]), 70.0, 0.01, "SMG range 70 m",
+		float(WeaponScript.WEAPONS[1]["range"]),
+		70.0,
+		0.01,
+		"SMG range 70 m",
 	)
 	assert_almost_eq(
-		float(WeaponScript.WEAPONS[2]["range"]), 40.0, 0.01, "Shotgun range 40 m",
+		float(WeaponScript.WEAPONS[2]["range"]),
+		40.0,
+		0.01,
+		"Shotgun range 40 m",
 	)
 	assert_almost_eq(
-		float(WeaponScript.WEAPONS[3]["range"]), 200.0, 0.01, "Rifle range 200 m",
+		float(WeaponScript.WEAPONS[3]["range"]),
+		200.0,
+		0.01,
+		"Rifle range 200 m",
 	)
 
 
 func test_vehicle_impulse_positive() -> void:
 	assert_gt(
-		WeaponScript.VEHICLE_IMPULSE, 0.0,
+		WeaponScript.VEHICLE_IMPULSE,
+		0.0,
 		"VEHICLE_IMPULSE should be positive",
 	)
 
 
 func test_max_world_decals_positive() -> void:
 	assert_gt(
-		WeaponScript.MAX_WORLD_DECALS, 0,
+		WeaponScript.MAX_WORLD_DECALS,
+		0,
 		"MAX_WORLD_DECALS should be positive",
 	)
 
 
 func test_max_blood_decals_positive() -> void:
 	assert_gt(
-		WeaponScript.MAX_BLOOD_DECALS, 0,
+		WeaponScript.MAX_BLOOD_DECALS,
+		0,
 		"MAX_BLOOD_DECALS should be positive",
 	)
 
 
 func test_muzzle_flash_time_positive() -> void:
 	assert_gt(
-		WeaponScript.MUZZLE_FLASH_TIME, 0.0,
+		WeaponScript.MUZZLE_FLASH_TIME,
+		0.0,
 		"MUZZLE_FLASH_TIME should be positive",
 	)
 
@@ -390,6 +418,7 @@ func test_muzzle_flash_time_positive() -> void:
 # ==========================================================================
 # Apply spread
 # ==========================================================================
+
 
 func test_apply_spread_zero_returns_same_direction() -> void:
 	var dir := Vector3(0.0, 0.0, -1.0)
@@ -420,16 +449,19 @@ func test_apply_spread_nonzero_changes_direction() -> void:
 # Decal pool management
 # ==========================================================================
 
+
 func test_world_decals_start_empty() -> void:
 	assert_eq(
-		_pw._world_decals.size(), 0,
+		_pw._world_decals.size(),
+		0,
 		"World decals should start empty",
 	)
 
 
 func test_blood_decals_start_empty() -> void:
 	assert_eq(
-		_pw._blood_decals.size(), 0,
+		_pw._blood_decals.size(),
+		0,
 		"Blood decals should start empty",
 	)
 
@@ -437,6 +469,7 @@ func test_blood_decals_start_empty() -> void:
 # ==========================================================================
 # Dead state blocks weapon logic
 # ==========================================================================
+
 
 func test_process_returns_early_when_dead() -> void:
 	GameManager.is_dead = true
@@ -448,7 +481,9 @@ func test_process_returns_early_when_dead() -> void:
 	_pw._cooldown = 1.0
 	_pw._process(0.1)
 	assert_almost_eq(
-		_pw._cooldown, 0.9, 0.01,
+		_pw._cooldown,
+		0.9,
+		0.01,
 		"Cooldown should still tick when dead",
 	)
 
@@ -456,6 +491,7 @@ func test_process_returns_early_when_dead() -> void:
 # ==========================================================================
 # Draw then switch replaces mesh
 # ==========================================================================
+
 
 func test_draw_then_switch_replaces_gun_mesh() -> void:
 	_pw._draw_weapon(0)
@@ -470,6 +506,7 @@ func test_draw_then_switch_replaces_gun_mesh() -> void:
 # Setup gun mesh without elbow (edge case)
 # ==========================================================================
 
+
 func test_setup_gun_mesh_noop_without_elbow() -> void:
 	_pw._elbow = null
 	_pw._draw_weapon(0)
@@ -483,6 +520,7 @@ func test_setup_gun_mesh_noop_without_elbow() -> void:
 # ==========================================================================
 # Ray origin and blood position (source-level verification)
 # ==========================================================================
+
 
 func test_shoot_uses_player_camera_pivot_as_ray_origin() -> void:
 	var script: GDScript = WeaponScript as GDScript

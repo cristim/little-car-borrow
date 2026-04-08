@@ -7,9 +7,7 @@ const MARKER_COLORS := {
 	"dropoff": Color(1.0, 0.9, 0.2),
 }
 
-var _marker_scene: PackedScene = preload(
-	"res://scenes/missions/mission_marker.tscn"
-)
+var _marker_scene: PackedScene = preload("res://scenes/missions/mission_marker.tscn")
 var _markers: Dictionary = {}  # mission_id -> Array[Node3D]
 
 
@@ -19,9 +17,7 @@ func _ready() -> void:
 	EventBus.mission_started.connect(_on_mission_started)
 	EventBus.mission_completed.connect(_on_mission_done)
 	EventBus.mission_failed.connect(_on_mission_done)
-	EventBus.mission_marker_reached.connect(
-		_on_marker_reached
-	)
+	EventBus.mission_marker_reached.connect(_on_marker_reached)
 	EventBus.vehicle_entered.connect(_on_vehicle_entered)
 
 
@@ -37,9 +33,7 @@ func _on_mission_available(mission_data: Dictionary) -> void:
 	var mid: String = mission_data.get("id", "")
 	if mid.is_empty():
 		return
-	var pos: Vector3 = mission_data.get(
-		"start_pos", Vector3.ZERO
-	)
+	var pos: Vector3 = mission_data.get("start_pos", Vector3.ZERO)
 	_spawn_marker(mid, "start", pos)
 
 
@@ -66,14 +60,10 @@ func _on_mission_started(mission_id: String) -> void:
 		pass
 	elif mtype == "taxi":
 		# Taxi: passenger at start, spawn dropoff immediately
-		var dp: Vector3 = mission.get(
-			"dropoff_pos", Vector3.ZERO
-		)
+		var dp: Vector3 = mission.get("dropoff_pos", Vector3.ZERO)
 		_spawn_marker(mission_id, "dropoff", dp)
 	else:
-		var pp: Vector3 = mission.get(
-			"pickup_pos", Vector3.ZERO
-		)
+		var pp: Vector3 = mission.get("pickup_pos", Vector3.ZERO)
 		_spawn_marker(mission_id, "pickup", pp)
 
 
@@ -94,7 +84,8 @@ func _on_vehicle_entered(_vehicle: Node) -> void:
 
 
 func _on_marker_reached(
-	mission_id: String, marker_type: String,
+	mission_id: String,
+	marker_type: String,
 ) -> void:
 	if marker_type == "pickup":
 		# Clear pickup marker, spawn dropoff
@@ -112,7 +103,9 @@ func _on_mission_done(_mission_id: String) -> void:
 
 
 func _spawn_marker(
-	mid: String, mtype: String, pos: Vector3,
+	mid: String,
+	mtype: String,
+	pos: Vector3,
 ) -> void:
 	var marker: Node3D = _marker_scene.instantiate()
 	marker.position = pos

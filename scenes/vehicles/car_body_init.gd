@@ -74,12 +74,26 @@ func _ready() -> void:
 	var doors: Dictionary = _builder.build_doors("sedan")
 	if doors.size() > 0:
 		_setup_door_pivot(
-			"LeftDoorPivot", doors, "LeftDoor", "LeftDoorInner",
-			"LeftDoorWindow", "left_pivot", body_mat, int_mat, glass_mat,
+			"LeftDoorPivot",
+			doors,
+			"LeftDoor",
+			"LeftDoorInner",
+			"LeftDoorWindow",
+			"left_pivot",
+			body_mat,
+			int_mat,
+			glass_mat,
 		)
 		_setup_door_pivot(
-			"RightDoorPivot", doors, "RightDoor", "RightDoorInner",
-			"RightDoorWindow", "right_pivot", body_mat, int_mat, glass_mat,
+			"RightDoorPivot",
+			doors,
+			"RightDoor",
+			"RightDoorInner",
+			"RightDoorWindow",
+			"right_pivot",
+			body_mat,
+			int_mat,
+			glass_mat,
 		)
 
 

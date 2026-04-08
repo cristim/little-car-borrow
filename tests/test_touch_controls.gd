@@ -60,8 +60,7 @@ func test_auto_sprint_at_high_magnitude() -> void:
 	await get_tree().process_frame
 
 	assert_true(
-		Input.is_action_pressed("sprint"),
-		"sprint should be active when joystick magnitude > 0.8"
+		Input.is_action_pressed("sprint"), "sprint should be active when joystick magnitude > 0.8"
 	)
 
 	# Pull back below threshold
@@ -103,16 +102,14 @@ func test_release_all_fingers_clears_state() -> void:
 func test_button_positions_computed_on_layout() -> void:
 	var tc: Control = _create_touch_controls()
 
-	assert_eq(
-		tc._button_positions.size(), 4,
-		"Should have 4 button positions after layout"
-	)
+	assert_eq(tc._button_positions.size(), 4, "Should have 4 button positions after layout")
 
 	# Pause button should be near top-right
 	var pause_btn: Dictionary = tc._button_positions[3]
 	assert_eq(pause_btn["name"], "pause", "Last button should be pause")
-	assert_gt(pause_btn["center"].x, tc._viewport_size.x * 0.5,
-		"Pause button should be on right half")
+	assert_gt(
+		pause_btn["center"].x, tc._viewport_size.x * 0.5, "Pause button should be on right half"
+	)
 
 
 func test_touch_start_assigns_joystick_finger() -> void:
@@ -178,11 +175,11 @@ func test_joystick_drag_clamps_to_radius() -> void:
 
 	# Thumb should be clamped to radius distance from center
 	var dist := tc._joystick_thumb.distance_to(tc._joystick_center)
-	assert_almost_eq(dist, tc.JOY_RADIUS, 0.1,
-		"Thumb should be clamped to JOY_RADIUS")
+	assert_almost_eq(dist, tc.JOY_RADIUS, 0.1, "Thumb should be clamped to JOY_RADIUS")
 
 	# Direction should be normalized to ~1.0 on X
-	assert_almost_eq(tc._joystick_direction.x, 1.0, 0.01,
-		"Direction X should be ~1.0 when dragged far right")
+	assert_almost_eq(
+		tc._joystick_direction.x, 1.0, 0.01, "Direction X should be ~1.0 when dragged far right"
+	)
 
 	tc._on_touch_end(0)

@@ -24,9 +24,11 @@ func before_each() -> void:
 # Constants
 # ================================================================
 
+
 func test_save_path() -> void:
 	assert_eq(
-		SettingsScript.SAVE_PATH, "user://settings.cfg",
+		SettingsScript.SAVE_PATH,
+		"user://settings.cfg",
 		"SAVE_PATH should be user://settings.cfg",
 	)
 
@@ -39,6 +41,7 @@ func test_section_constants() -> void:
 # ================================================================
 # save / load roundtrip
 # ================================================================
+
 
 func test_save_creates_config_file() -> void:
 	_sm.save()
@@ -79,7 +82,9 @@ func test_audio_volume_roundtrip() -> void:
 	_sm.load_settings()
 	var vol: float = _audio.get_bus_volume("SFX")
 	assert_almost_eq(
-		vol, 0.7, 0.05,
+		vol,
+		0.7,
+		0.05,
 		"SFX volume should be restored to 0.7 after load",
 	)
 
@@ -111,14 +116,20 @@ func test_load_restores_multiple_bus_volumes() -> void:
 	_sm.load_settings()
 
 	assert_almost_eq(
-		_audio.get_bus_volume("SFX"), 0.5, 0.05,
+		_audio.get_bus_volume("SFX"),
+		0.5,
+		0.05,
 		"SFX volume should be restored",
 	)
 	assert_almost_eq(
-		_audio.get_bus_volume("Music"), 0.3, 0.05,
+		_audio.get_bus_volume("Music"),
+		0.3,
+		0.05,
 		"Music volume should be restored",
 	)
 	assert_almost_eq(
-		_audio.get_bus_volume("Ambient"), 0.8, 0.05,
+		_audio.get_bus_volume("Ambient"),
+		0.8,
+		0.05,
 		"Ambient volume should be restored",
 	)

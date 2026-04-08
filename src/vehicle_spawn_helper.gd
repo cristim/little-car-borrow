@@ -34,9 +34,12 @@ static func probe_spawn_surface(
 	result.sd = sd
 
 	# Centre raycast — Ground layer only (mask 1) to exclude buildings.
-	var rq := PhysicsRayQueryParameters3D.create(
-		Vector3(spawn_pos.x, 80.0, spawn_pos.z),
-		Vector3(spawn_pos.x, -5.0, spawn_pos.z),
+	var rq := (
+		PhysicsRayQueryParameters3D
+		. create(
+			Vector3(spawn_pos.x, 80.0, spawn_pos.z),
+			Vector3(spawn_pos.x, -5.0, spawn_pos.z),
+		)
 	)
 	rq.collision_mask = 1
 	var hit: Dictionary = space.intersect_ray(rq)
@@ -63,14 +66,19 @@ static func probe_spawn_surface(
 	var max_surface_y: float = surface_y
 	var corner_h: Array[float] = [surface_y, surface_y, surface_y, surface_y]
 	var offsets: Array[Vector2] = [
-		Vector2(-FP_X, -FP_Z), Vector2(FP_X, -FP_Z),
-		Vector2(-FP_X, FP_Z),  Vector2(FP_X, FP_Z),
+		Vector2(-FP_X, -FP_Z),
+		Vector2(FP_X, -FP_Z),
+		Vector2(-FP_X, FP_Z),
+		Vector2(FP_X, FP_Z),
 	]
 	for fi in range(4):
 		var fo: Vector2 = offsets[fi]
-		var fq := PhysicsRayQueryParameters3D.create(
-			Vector3(spawn_pos.x + fo.x, 80.0, spawn_pos.z + fo.y),
-			Vector3(spawn_pos.x + fo.x, -5.0, spawn_pos.z + fo.y),
+		var fq := (
+			PhysicsRayQueryParameters3D
+			. create(
+				Vector3(spawn_pos.x + fo.x, 80.0, spawn_pos.z + fo.y),
+				Vector3(spawn_pos.x + fo.x, -5.0, spawn_pos.z + fo.y),
+			)
 		)
 		fq.collision_mask = 1
 		var fhit: Dictionary = space.intersect_ray(fq)
@@ -113,9 +121,12 @@ static func apply_terrain_tilt(vehicle: Node3D, terrain_normal: Vector3, yaw: fl
 ## true, cull the vehicle instead of unfreezing to prevent physics ejection.
 static func is_embedded(v: Node, world: World3D) -> bool:
 	var vp: Vector3 = (v as Node3D).global_position
-	var uq := PhysicsRayQueryParameters3D.create(
-		Vector3(vp.x, vp.y + 2.0, vp.z),
-		Vector3(vp.x, vp.y - 1.0, vp.z),
+	var uq := (
+		PhysicsRayQueryParameters3D
+		. create(
+			Vector3(vp.x, vp.y + 2.0, vp.z),
+			Vector3(vp.x, vp.y - 1.0, vp.z),
+		)
 	)
 	uq.collision_mask = 1
 	var uhit: Dictionary = world.direct_space_state.intersect_ray(uq)

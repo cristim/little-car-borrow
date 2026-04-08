@@ -1,6 +1,6 @@
 .PHONY: run lint format test coverage clean export-web
 
-GODOT := godot
+GODOT := $(or $(wildcard $(HOME)/bin/godot),godot)
 VENV := .venv/bin
 
 run:
@@ -23,6 +23,8 @@ test:
 
 coverage:
 	$(GODOT) --path . --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests/ -gexit \
+		--coverage-output /tmp/godot_coverage.json \
+		--coverage-format json \
 		--coverage-include "res://src/*" \
 		--coverage-threshold 80
 

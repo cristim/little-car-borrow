@@ -14,6 +14,7 @@ func before_all() -> void:
 # Default state
 # ==========================================================================
 
+
 func test_default_variant_is_speedboat() -> void:
 	var init: Node3D = Node3D.new()
 	init.set_script(_script)
@@ -24,6 +25,7 @@ func test_default_variant_is_speedboat() -> void:
 # ==========================================================================
 # Material initialization
 # ==========================================================================
+
 
 func test_hull_material_created_on_ready() -> void:
 	var init: Node3D = Node3D.new()
@@ -118,6 +120,7 @@ func test_glass_material_color_has_alpha() -> void:
 # _ready() skips when Hull already has mesh
 # ==========================================================================
 
+
 func test_ready_skips_build_when_hull_has_mesh() -> void:
 	var init: Node3D = Node3D.new()
 	var hull := MeshInstance3D.new()
@@ -142,6 +145,7 @@ func test_ready_skips_when_no_hull_child() -> void:
 # ==========================================================================
 # Source code structure verification
 # ==========================================================================
+
 
 func test_ready_calls_init_materials() -> void:
 	assert_true(

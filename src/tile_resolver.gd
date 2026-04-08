@@ -70,15 +70,12 @@ func _adjust_biome_for_neighbors(tile: Vector2i, biome: String) -> String:
 
 ## Find a biome compatible with the neighbor when the candidate isn't.
 func _find_compatible_biome(
-	candidate: String, neighbor_biome: String,
+	candidate: String,
+	neighbor_biome: String,
 ) -> String:
 	# Try to find a biome that works as a bridge
-	var candidate_neighbors: Array = TileProfile.BIOME_ADJACENCY.get(
-		candidate, []
-	)
-	var neighbor_neighbors: Array = TileProfile.BIOME_ADJACENCY.get(
-		neighbor_biome, []
-	)
+	var candidate_neighbors: Array = TileProfile.BIOME_ADJACENCY.get(candidate, [])
+	var neighbor_neighbors: Array = TileProfile.BIOME_ADJACENCY.get(neighbor_biome, [])
 	# Find intersection
 	for b: String in candidate_neighbors:
 		if b in neighbor_neighbors:
@@ -109,15 +106,15 @@ func _compute_edge(tile: Vector2i, biome: String, dir: int) -> Dictionary:
 
 ## City edge: flat height, roads at road_grid positions.
 func _compute_city_edge(
-	_tile: Vector2i, biome: String, _dir: int,
+	_tile: Vector2i,
+	biome: String,
+	_dir: int,
 	neighbor_edge: Dictionary,
 ) -> Dictionary:
 	# If neighbor already has an edge facing us, match it
 	if not neighbor_edge.is_empty():
 		# Return matching edge with our biome
-		var heights: PackedFloat32Array = neighbor_edge.get(
-			"heights", PackedFloat32Array()
-		)
+		var heights: PackedFloat32Array = neighbor_edge.get("heights", PackedFloat32Array())
 		var roads: Array = neighbor_edge.get("roads", [])
 		var river: Dictionary = neighbor_edge.get("river", {})
 		return TileProfile.create_edge(biome, roads, heights, river)
@@ -128,7 +125,9 @@ func _compute_city_edge(
 
 ## Terrain edge: heights from terrain noise, roads from neighbors.
 func _compute_terrain_edge(
-	tile: Vector2i, biome: String, dir: int,
+	tile: Vector2i,
+	biome: String,
+	dir: int,
 	neighbor_edge: Dictionary,
 ) -> Dictionary:
 	# Heights: match neighbor if available, else sample from terrain
@@ -151,8 +150,11 @@ func _compute_terrain_edge(
 	# River: from river_map if available
 	var river: Dictionary = {}
 	if _river_map:
-		var river_data: Dictionary = _river_map.get_river_at(
-			tile,
+		var river_data: Dictionary = (
+			_river_map
+			. get_river_at(
+				tile,
+			)
 		)
 		if not river_data.is_empty():
 			# Check if river crosses this edge

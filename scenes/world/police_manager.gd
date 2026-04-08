@@ -20,15 +20,9 @@ var _boundary = BoundaryScript.new()
 var _biome_map: RefCounted  # fetched from city_manager meta
 var _police_scene: PackedScene = preload("res://scenes/vehicles/police_vehicle.tscn")
 var _ai_script: GDScript = preload("res://scenes/vehicles/police_ai_controller.gd")
-var _vehicle_health_script: GDScript = preload(
-	"res://scenes/vehicles/vehicle_health.gd"
-)
-var _vehicle_lights_script: GDScript = preload(
-	"res://scenes/vehicles/vehicle_lights.gd"
-)
-var _water_detector_script: GDScript = preload(
-	"res://scenes/vehicles/vehicle_water_detector.gd"
-)
+var _vehicle_health_script: GDScript = preload("res://scenes/vehicles/vehicle_health.gd")
+var _vehicle_lights_script: GDScript = preload("res://scenes/vehicles/vehicle_lights.gd")
+var _water_detector_script: GDScript = preload("res://scenes/vehicles/vehicle_water_detector.gd")
 var _spawn_helper: GDScript = preload("res://src/vehicle_spawn_helper.gd")
 
 var _police: Array[Node] = []
@@ -39,9 +33,7 @@ var _launch_check_timer := 0.0
 var _despawn_timer := 0.0
 var _despawning := false
 var _helicopter: CharacterBody3D = null
-var _heli_script: GDScript = preload(
-	"res://scenes/vehicles/helicopter_ai.gd"
-)
+var _heli_script: GDScript = preload("res://scenes/vehicles/helicopter_ai.gd")
 
 
 func _ready() -> void:
@@ -83,8 +75,7 @@ func _process(delta: float) -> void:
 				var vy: float = (v as RigidBody3D).linear_velocity.y
 				var ai_node: Node = v.get_node_or_null("PoliceAIController")
 				var in_grace: bool = ai_node != null and ai_node._spawn_grace > 0.0
-				var threshold: float = LAUNCH_VEL_THRESHOLD if in_grace \
-					else LAUNCH_VEL_POST_GRACE
+				var threshold: float = LAUNCH_VEL_THRESHOLD if in_grace else LAUNCH_VEL_POST_GRACE
 				if vy > threshold:
 					launched.append(v)
 		for v in launched:
@@ -168,15 +159,11 @@ func _try_spawn() -> void:
 			var heading_north := (player_pos.z + along) > player_pos.z
 			if heading_north:
 				direction = 0
-				spawn_pos = Vector3(
-					road_center + lane_offset, 0.5, player_pos.z + along
-				)
+				spawn_pos = Vector3(road_center + lane_offset, 0.5, player_pos.z + along)
 				yaw = 0.0
 			else:
 				direction = 1
-				spawn_pos = Vector3(
-					road_center - lane_offset, 0.5, player_pos.z + along
-				)
+				spawn_pos = Vector3(road_center - lane_offset, 0.5, player_pos.z + along)
 				yaw = PI
 		else:
 			var lane_offset := rw / 4.0
@@ -184,15 +171,11 @@ func _try_spawn() -> void:
 			var heading_east := (player_pos.x + along) < player_pos.x
 			if heading_east:
 				direction = 2
-				spawn_pos = Vector3(
-					player_pos.x + along, 0.5, road_center + lane_offset
-				)
+				spawn_pos = Vector3(player_pos.x + along, 0.5, road_center + lane_offset)
 				yaw = -PI / 2.0
 			else:
 				direction = 3
-				spawn_pos = Vector3(
-					player_pos.x + along, 0.5, road_center - lane_offset
-				)
+				spawn_pos = Vector3(player_pos.x + along, 0.5, road_center - lane_offset)
 				yaw = PI / 2.0
 
 		var dist := spawn_pos.distance_to(player_pos)
@@ -203,9 +186,7 @@ func _try_spawn() -> void:
 			continue
 
 		var space: PhysicsDirectSpaceState3D = _player.get_world_3d().direct_space_state
-		var probe: Dictionary = _spawn_helper.probe_spawn_surface(
-			space, _boundary, spawn_pos
-		)
+		var probe: Dictionary = _spawn_helper.probe_spawn_surface(space, _boundary, spawn_pos)
 		if not probe.ok:
 			continue
 		spawn_pos.y = probe.surface_y + 0.25
@@ -213,16 +194,15 @@ func _try_spawn() -> void:
 
 		var too_close := false
 		for v in _police:
-			if is_instance_valid(v) and spawn_pos.distance_to(
-				(v as Node3D).global_position
-			) < MIN_VEHICLE_DIST:
+			if (
+				is_instance_valid(v)
+				and spawn_pos.distance_to((v as Node3D).global_position) < MIN_VEHICLE_DIST
+			):
 				too_close = true
 				break
 		if not too_close:
 			for v in get_tree().get_nodes_in_group("npc_vehicle"):
-				if spawn_pos.distance_to(
-					(v as Node3D).global_position
-				) < MIN_VEHICLE_DIST:
+				if spawn_pos.distance_to((v as Node3D).global_position) < MIN_VEHICLE_DIST:
 					too_close = true
 					break
 		if too_close:
@@ -282,9 +262,7 @@ func _despawn_far() -> void:
 			else:
 				var want_frozen: bool = d >= LOD_FREEZE_DIST
 				if not want_frozen and (v as RigidBody3D).freeze:
-					if _spawn_helper.is_embedded(
-						v, get_tree().current_scene.get_world_3d()
-					):
+					if _spawn_helper.is_embedded(v, get_tree().current_scene.get_world_3d()):
 						to_remove.append(v)
 						continue
 				v.freeze = want_frozen
@@ -306,9 +284,7 @@ func _spawn_helicopter() -> void:
 	if _helicopter and is_instance_valid(_helicopter):
 		return
 	# Check group in case a despawning helicopter is still flying away
-	if not get_tree().get_nodes_in_group(
-		"police_helicopter"
-	).is_empty():
+	if not get_tree().get_nodes_in_group("police_helicopter").is_empty():
 		return
 	if not _player:
 		return
@@ -317,9 +293,7 @@ func _spawn_helicopter() -> void:
 	heli.set_script(_heli_script)
 
 	var angle := _rng.randf_range(0.0, TAU)
-	var offset := Vector3(
-		sin(angle) * 200.0, 50.0, cos(angle) * 200.0
-	)
+	var offset := Vector3(sin(angle) * 200.0, 50.0, cos(angle) * 200.0)
 	heli.position = _player.global_position + offset
 
 	get_tree().current_scene.add_child(heli)

@@ -38,9 +38,11 @@ func after_each() -> void:
 # Constants
 # ================================================================
 
+
 func test_max_health() -> void:
 	assert_eq(
-		GameManagerScript.MAX_HEALTH, 100.0,
+		GameManagerScript.MAX_HEALTH,
+		100.0,
 		"MAX_HEALTH should be 100.0",
 	)
 
@@ -48,6 +50,7 @@ func test_max_health() -> void:
 # ================================================================
 # add_money
 # ================================================================
+
 
 func test_add_money_increases_balance() -> void:
 	GameManager.add_money(100)
@@ -57,7 +60,8 @@ func test_add_money_increases_balance() -> void:
 func test_add_money_tracks_total_earnings() -> void:
 	GameManager.add_money(200)
 	assert_eq(
-		GameManager.total_earnings, 200,
+		GameManager.total_earnings,
+		200,
 		"total_earnings should track positive",
 	)
 
@@ -67,7 +71,8 @@ func test_add_negative_does_not_track_earnings() -> void:
 	var earnings_before: int = GameManager.total_earnings
 	GameManager.add_money(-50)
 	assert_eq(
-		GameManager.total_earnings, earnings_before,
+		GameManager.total_earnings,
+		earnings_before,
 		"Negative amounts should not add to total_earnings",
 	)
 
@@ -79,7 +84,8 @@ func test_add_money_emits_signal() -> void:
 	GameManager.add_money(50)
 	EventBus.player_money_changed.disconnect(cb)
 	assert_eq(
-		received, [50],
+		received,
+		[50],
 		"Should emit player_money_changed with new total",
 	)
 
@@ -93,6 +99,7 @@ func test_add_money_accumulates() -> void:
 # ================================================================
 # deduct_money
 # ================================================================
+
 
 func test_deduct_money_success() -> void:
 	GameManager.money = 100
@@ -111,11 +118,10 @@ func test_deduct_money_exact_balance() -> void:
 func test_deduct_money_insufficient() -> void:
 	GameManager.money = 50
 	var result: bool = GameManager.deduct_money(100)
-	assert_false(
-		result, "Deducting more than balance should return false"
-	)
+	assert_false(result, "Deducting more than balance should return false")
 	assert_eq(
-		GameManager.money, 50,
+		GameManager.money,
+		50,
 		"Money should not change on failure",
 	)
 
@@ -128,7 +134,8 @@ func test_deduct_money_emits_signal_on_success() -> void:
 	GameManager.deduct_money(30)
 	EventBus.player_money_changed.disconnect(cb)
 	assert_eq(
-		received, [70],
+		received,
+		[70],
 		"Should emit with new balance after deduction",
 	)
 
@@ -141,7 +148,8 @@ func test_deduct_money_no_signal_on_failure() -> void:
 	GameManager.deduct_money(100)
 	EventBus.player_money_changed.disconnect(cb)
 	assert_eq(
-		received.size(), 0,
+		received.size(),
+		0,
 		"Should not emit signal on failed deduction",
 	)
 
@@ -150,10 +158,13 @@ func test_deduct_money_no_signal_on_failure() -> void:
 # take_damage
 # ================================================================
 
+
 func test_take_damage_reduces_health() -> void:
 	GameManager.take_damage(30.0)
 	assert_almost_eq(
-		GameManager.health, 70.0, 0.01,
+		GameManager.health,
+		70.0,
+		0.01,
 		"Health should be reduced by damage",
 	)
 
@@ -165,18 +176,16 @@ func test_take_damage_emits_health_signal() -> void:
 	GameManager.take_damage(25.0)
 	EventBus.player_health_changed.disconnect(cb)
 	assert_eq(received.size(), 1, "Should emit health_changed once")
-	assert_almost_eq(
-		received[0][0], 75.0, 0.01, "Current health should be 75"
-	)
-	assert_almost_eq(
-		received[0][1], 100.0, 0.01, "Max health should be 100"
-	)
+	assert_almost_eq(received[0][0], 75.0, 0.01, "Current health should be 75")
+	assert_almost_eq(received[0][1], 100.0, 0.01, "Max health should be 100")
 
 
 func test_take_damage_does_not_go_negative() -> void:
 	GameManager.take_damage(150.0)
 	assert_almost_eq(
-		GameManager.health, 0.0, 0.01,
+		GameManager.health,
+		0.0,
+		0.01,
 		"Health should not go below 0",
 	)
 
@@ -196,7 +205,9 @@ func test_take_damage_ignored_when_dead() -> void:
 	GameManager.health = 0.0
 	GameManager.take_damage(50.0)
 	assert_almost_eq(
-		GameManager.health, 0.0, 0.01,
+		GameManager.health,
+		0.0,
+		0.01,
 		"Damage should be ignored when dead",
 	)
 
@@ -205,7 +216,9 @@ func test_multiple_damage_accumulates() -> void:
 	GameManager.take_damage(30.0)
 	GameManager.take_damage(20.0)
 	assert_almost_eq(
-		GameManager.health, 50.0, 0.01,
+		GameManager.health,
+		50.0,
+		0.01,
 		"Damage should accumulate",
 	)
 
@@ -214,11 +227,14 @@ func test_multiple_damage_accumulates() -> void:
 # heal
 # ================================================================
 
+
 func test_heal_increases_health() -> void:
 	GameManager.health = 50.0
 	GameManager.heal(30.0)
 	assert_almost_eq(
-		GameManager.health, 80.0, 0.01,
+		GameManager.health,
+		80.0,
+		0.01,
 		"Heal should increase health",
 	)
 
@@ -227,7 +243,9 @@ func test_heal_does_not_exceed_max() -> void:
 	GameManager.health = 90.0
 	GameManager.heal(50.0)
 	assert_almost_eq(
-		GameManager.health, GameManagerScript.MAX_HEALTH, 0.01,
+		GameManager.health,
+		GameManagerScript.MAX_HEALTH,
+		0.01,
 		"Health should not exceed MAX_HEALTH",
 	)
 
@@ -248,7 +266,9 @@ func test_heal_ignored_when_dead() -> void:
 	GameManager.health = 0.0
 	GameManager.heal(50.0)
 	assert_almost_eq(
-		GameManager.health, 0.0, 0.01,
+		GameManager.health,
+		0.0,
+		0.01,
 		"Heal should be ignored when dead",
 	)
 
@@ -257,11 +277,13 @@ func test_heal_ignored_when_dead() -> void:
 # _on_mission_completed
 # ================================================================
 
+
 func test_mission_completed_increments_count() -> void:
 	var before: int = GameManager.missions_completed
 	GameManager._on_mission_completed("test_mission")
 	assert_eq(
-		GameManager.missions_completed, before + 1,
+		GameManager.missions_completed,
+		before + 1,
 		"Should increment missions_completed",
 	)
 
@@ -270,7 +292,8 @@ func test_mission_completed_signal_triggers_handler() -> void:
 	var before: int = GameManager.missions_completed
 	EventBus.mission_completed.emit("some_mission")
 	assert_eq(
-		GameManager.missions_completed, before + 1,
+		GameManager.missions_completed,
+		before + 1,
 		"EventBus signal should trigger mission counter",
 	)
 
@@ -278,6 +301,7 @@ func test_mission_completed_signal_triggers_handler() -> void:
 # ================================================================
 # save/load progress
 # ================================================================
+
 
 func test_save_and_load_roundtrip() -> void:
 	GameManager.money = 999
@@ -292,11 +316,13 @@ func test_save_and_load_roundtrip() -> void:
 
 	assert_eq(GameManager.money, 999, "Money should persist")
 	assert_eq(
-		GameManager.missions_completed, 5,
+		GameManager.missions_completed,
+		5,
 		"Missions completed should persist",
 	)
 	assert_eq(
-		GameManager.total_earnings, 1500,
+		GameManager.total_earnings,
+		1500,
 		"Total earnings should persist",
 	)
 
@@ -316,6 +342,7 @@ func test_load_emits_money_signal() -> void:
 # ================================================================
 # Death
 # ================================================================
+
 
 func test_die_sets_is_dead() -> void:
 	GameManager._die()
@@ -339,6 +366,7 @@ func test_lethal_damage_emits_died_only_once() -> void:
 	GameManager.take_damage(50.0)  # should be ignored (is_dead)
 	EventBus.player_died.disconnect(cb)
 	assert_eq(
-		received.size(), 1,
+		received.size(),
+		1,
 		"player_died should only emit once",
 	)

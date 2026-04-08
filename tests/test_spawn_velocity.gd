@@ -6,12 +6,8 @@ extends GutTest
 ## The velocity logic is inline in _process(), so we verify the source code
 ## contains the vehicle-aware pattern (same approach as test_vehicle_health.gd).
 
-const TrafficManagerScript = preload(
-	"res://scenes/world/traffic_manager.gd"
-)
-const PedestrianManagerScript = preload(
-	"res://scenes/world/pedestrian_manager.gd"
-)
+const TrafficManagerScript = preload("res://scenes/world/traffic_manager.gd")
+const PedestrianManagerScript = preload("res://scenes/world/pedestrian_manager.gd")
 
 
 func test_traffic_manager_reads_current_vehicle() -> void:

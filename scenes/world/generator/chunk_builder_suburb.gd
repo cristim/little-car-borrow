@@ -121,17 +121,27 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 				# Pick a door face and check it's wide enough
 				var door_face := rng.randi_range(0, 3)
 				var face_w: float = size.x if door_face <= 1 else size.z
-				var has_door := (
-					face_w >= DOOR_WIDTH + 0.5
-					and _bld_builder != null
-				)
+				var has_door := face_w >= DOOR_WIDTH + 0.5 and _bld_builder != null
 
 				if has_door:
-					_bld_builder._add_building_with_door(
-						sts[mi], int_st, center, size, door_face,
+					(
+						_bld_builder
+						. _add_building_with_door(
+							sts[mi],
+							int_st,
+							center,
+							size,
+							door_face,
+						)
 					)
-					_bld_builder._add_building_collision_with_door(
-						body, center, size, door_face,
+					(
+						_bld_builder
+						. _add_building_collision_with_door(
+							body,
+							center,
+							size,
+							door_face,
+						)
 					)
 					door_infos.append([center, size, door_face])
 					has_interiors = true
@@ -142,15 +152,26 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 
 				# Windows on all faces except the door face
 				_add_house_windows(
-					win_sts, win_count, win_st_has_data,
-					center, size, door_face if has_door else -1, rng,
+					win_sts,
+					win_count,
+					win_st_has_data,
+					center,
+					size,
+					door_face if has_door else -1,
+					rng,
 				)
 
 				# Pitched roof on all suburb houses
 				if roof_count > 0 and _bld_builder:
 					var ri := rng.randi() % roof_count
-					_bld_builder._st_add_pitched_roof(
-						roof_sts[ri], center, size, rng,
+					(
+						_bld_builder
+						. _st_add_pitched_roof(
+							roof_sts[ri],
+							center,
+							size,
+							rng,
+						)
 					)
 					roof_st_used[ri] = true
 
@@ -231,8 +252,14 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 	chunk.add_child(body)
 
 	for di: Array in door_infos:
-		_bld_builder._create_door_node(
-			chunk, di[0] as Vector3, di[1] as Vector3, di[2] as int,
+		(
+			_bld_builder
+			. _create_door_node(
+				chunk,
+				di[0] as Vector3,
+				di[1] as Vector3,
+				di[2] as int,
+			)
 		)
 
 
@@ -249,22 +276,23 @@ func _add_house_windows(
 	var hx := size.x * 0.5
 	var hz := size.z * 0.5
 	var faces: Array[Array] = [
-		[center + Vector3(0, 0, -hz), size.x,
-			Vector3(0, 0, -1), Vector3(1, 0, 0)],
-		[center + Vector3(0, 0, hz), size.x,
-			Vector3(0, 0, 1), Vector3(-1, 0, 0)],
-		[center + Vector3(-hx, 0, 0), size.z,
-			Vector3(-1, 0, 0), Vector3(0, 0, -1)],
-		[center + Vector3(hx, 0, 0), size.z,
-			Vector3(1, 0, 0), Vector3(0, 0, 1)],
+		[center + Vector3(0, 0, -hz), size.x, Vector3(0, 0, -1), Vector3(1, 0, 0)],
+		[center + Vector3(0, 0, hz), size.x, Vector3(0, 0, 1), Vector3(-1, 0, 0)],
+		[center + Vector3(-hx, 0, 0), size.z, Vector3(-1, 0, 0), Vector3(0, 0, -1)],
+		[center + Vector3(hx, 0, 0), size.z, Vector3(1, 0, 0), Vector3(0, 0, 1)],
 	]
 	for i in range(4):
 		if i == door_face:
 			continue
 		_add_house_windows_on_face(
-			win_sts, win_count, win_st_has_data,
-			faces[i][0] as Vector3, faces[i][1] as float, size.y,
-			faces[i][2] as Vector3, faces[i][3] as Vector3,
+			win_sts,
+			win_count,
+			win_st_has_data,
+			faces[i][0] as Vector3,
+			faces[i][1] as float,
+			size.y,
+			faces[i][2] as Vector3,
+			faces[i][3] as Vector3,
 			rng,
 		)
 
@@ -286,17 +314,12 @@ func _add_house_windows_on_face(
 	if avail_w < HOUSE_WIN_W or avail_h < HOUSE_WIN_H:
 		return
 
-	var cols := int(
-		(avail_w + HOUSE_WIN_GAP_X) / (HOUSE_WIN_W + HOUSE_WIN_GAP_X)
-	)
+	var cols := int((avail_w + HOUSE_WIN_GAP_X) / (HOUSE_WIN_W + HOUSE_WIN_GAP_X))
 	if cols <= 0:
 		return
 
 	var offset := normal * 0.02
-	var row_y := (
-		face_center.y - face_height * 0.5
-		+ HOUSE_WIN_MARGIN_BOT + HOUSE_WIN_H * 0.5
-	)
+	var row_y := face_center.y - face_height * 0.5 + HOUSE_WIN_MARGIN_BOT + HOUSE_WIN_H * 0.5
 	var total_w := cols * HOUSE_WIN_W + (cols - 1) * HOUSE_WIN_GAP_X
 	var start_x := -total_w * 0.5 + HOUSE_WIN_W * 0.5
 	var up := Vector3.UP
@@ -320,13 +343,21 @@ func _add_house_windows_on_face(
 
 func _get_block_center(bx: int, bz: int) -> Vector2:
 	var cx: float = (
-		_grid.get_road_center_local(bx) + _grid.get_road_width(bx) * 0.5
-		+ _grid.get_road_center_local(bx + 1)
-		- _grid.get_road_width(bx + 1) * 0.5
-	) * 0.5
+		(
+			_grid.get_road_center_local(bx)
+			+ _grid.get_road_width(bx) * 0.5
+			+ _grid.get_road_center_local(bx + 1)
+			- _grid.get_road_width(bx + 1) * 0.5
+		)
+		* 0.5
+	)
 	var cz: float = (
-		_grid.get_road_center_local(bz) + _grid.get_road_width(bz) * 0.5
-		+ _grid.get_road_center_local(bz + 1)
-		- _grid.get_road_width(bz + 1) * 0.5
-	) * 0.5
+		(
+			_grid.get_road_center_local(bz)
+			+ _grid.get_road_width(bz) * 0.5
+			+ _grid.get_road_center_local(bz + 1)
+			- _grid.get_road_width(bz + 1) * 0.5
+		)
+		* 0.5
+	)
 	return Vector2(cx, cz)

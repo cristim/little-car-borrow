@@ -6,10 +6,10 @@ extends GutTest
 const _SCRIPT_PATH := "res://scenes/vehicles/police_siren.gd"
 const SirenScript = preload(_SCRIPT_PATH)
 
-
 # ==========================================================================
 # Constants — frequency and timing
 # ==========================================================================
+
 
 func test_sample_rate() -> void:
 	assert_eq(SirenScript.SAMPLE_RATE, 22050.0)
@@ -65,6 +65,7 @@ func test_yelp_duration_less_than_interval() -> void:
 # Default state
 # ==========================================================================
 
+
 func test_default_siren_inactive() -> void:
 	var siren: AudioStreamPlayer3D = SirenScript.new()
 	add_child_autofree(siren)
@@ -110,6 +111,7 @@ func test_default_am_phase_zero() -> void:
 # ==========================================================================
 # _ready — audio generator setup
 # ==========================================================================
+
 
 func test_ready_creates_generator_stream() -> void:
 	var siren: AudioStreamPlayer3D = SirenScript.new()
@@ -165,6 +167,7 @@ func test_ready_starts_playing() -> void:
 # Mode switching — source verification
 # ==========================================================================
 
+
 func test_wail_to_yelp_transition_source() -> void:
 	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
 	assert_true(
@@ -194,6 +197,7 @@ func test_mode_timer_resets_on_transition() -> void:
 # ==========================================================================
 # Audio generation — source verification
 # ==========================================================================
+
 
 func test_pushes_silence_when_inactive() -> void:
 	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code

@@ -29,23 +29,28 @@ func after_each() -> void:
 # Constants
 # ================================================================
 
+
 func test_cycle_duration() -> void:
 	assert_eq(
-		DayNightScript.CYCLE_DURATION, 1200.0,
+		DayNightScript.CYCLE_DURATION,
+		1200.0,
 		"Cycle should be 1200 seconds",
 	)
 
 
 func test_hours_per_second() -> void:
 	assert_almost_eq(
-		DayNightScript.HOURS_PER_SECOND, 24.0 / 1200.0, 0.0001,
+		DayNightScript.HOURS_PER_SECOND,
+		24.0 / 1200.0,
+		0.0001,
 		"HOURS_PER_SECOND should be 24/1200",
 	)
 
 
 func test_emit_interval() -> void:
 	assert_eq(
-		DayNightScript.EMIT_INTERVAL, 0.5,
+		DayNightScript.EMIT_INTERVAL,
+		0.5,
 		"EMIT_INTERVAL should be 0.5 game-hours",
 	)
 
@@ -54,16 +59,19 @@ func test_emit_interval() -> void:
 # Initial state
 # ================================================================
 
+
 func test_initial_hour() -> void:
 	assert_eq(
-		DayNightManager.current_hour, 18.0,
+		DayNightManager.current_hour,
+		18.0,
 		"Should start at 18.0 (6 PM)",
 	)
 
 
 func test_initial_time_speed() -> void:
 	assert_eq(
-		DayNightManager.time_speed, 1.0,
+		DayNightManager.time_speed,
+		1.0,
 		"Default time_speed should be 1.0",
 	)
 
@@ -71,6 +79,7 @@ func test_initial_time_speed() -> void:
 # ================================================================
 # is_night
 # ================================================================
+
 
 func test_is_night_at_midnight() -> void:
 	DayNightManager.current_hour = 0.0
@@ -121,6 +130,7 @@ func test_is_night_at_23() -> void:
 # ================================================================
 # is_dusk_or_dawn
 # ================================================================
+
 
 func test_dawn_at_5am() -> void:
 	DayNightManager.current_hour = 5.0
@@ -188,10 +198,13 @@ func test_not_dusk_or_dawn_at_3am() -> void:
 # get_sun_progress
 # ================================================================
 
+
 func test_sun_progress_at_midnight() -> void:
 	DayNightManager.current_hour = 0.0
 	assert_almost_eq(
-		DayNightManager.get_sun_progress(), 0.0, 0.001,
+		DayNightManager.get_sun_progress(),
+		0.0,
+		0.001,
 		"Sun progress at midnight should be 0.0",
 	)
 
@@ -199,7 +212,9 @@ func test_sun_progress_at_midnight() -> void:
 func test_sun_progress_at_noon() -> void:
 	DayNightManager.current_hour = 12.0
 	assert_almost_eq(
-		DayNightManager.get_sun_progress(), 0.5, 0.001,
+		DayNightManager.get_sun_progress(),
+		0.5,
+		0.001,
 		"Sun progress at noon should be 0.5",
 	)
 
@@ -207,7 +222,9 @@ func test_sun_progress_at_noon() -> void:
 func test_sun_progress_at_6pm() -> void:
 	DayNightManager.current_hour = 18.0
 	assert_almost_eq(
-		DayNightManager.get_sun_progress(), 0.75, 0.001,
+		DayNightManager.get_sun_progress(),
+		0.75,
+		0.001,
 		"Sun progress at 6 PM should be 0.75",
 	)
 
@@ -216,12 +233,15 @@ func test_sun_progress_at_6pm() -> void:
 # _process — time advancement
 # ================================================================
 
+
 func test_process_advances_time() -> void:
 	var start: float = DayNightManager.current_hour
 	DayNightManager._process(1.0)
 	var expected: float = start + DayNightScript.HOURS_PER_SECOND * 1.0
 	assert_almost_eq(
-		DayNightManager.current_hour, fmod(expected, 24.0), 0.001,
+		DayNightManager.current_hour,
+		fmod(expected, 24.0),
+		0.001,
 		"_process should advance current_hour",
 	)
 
@@ -230,7 +250,8 @@ func test_process_wraps_at_24() -> void:
 	DayNightManager.current_hour = 23.99
 	DayNightManager._process(10.0)
 	assert_lt(
-		DayNightManager.current_hour, 24.0,
+		DayNightManager.current_hour,
+		24.0,
 		"current_hour should wrap via fmod and stay < 24",
 	)
 
@@ -241,7 +262,9 @@ func test_time_speed_multiplier() -> void:
 	DayNightManager._process(1.0)
 	var expected: float = 12.0 + DayNightScript.HOURS_PER_SECOND * 2.0
 	assert_almost_eq(
-		DayNightManager.current_hour, expected, 0.001,
+		DayNightManager.current_hour,
+		expected,
+		0.001,
 		"time_speed=2 should double advancement rate",
 	)
 
@@ -251,6 +274,8 @@ func test_zero_time_speed_freezes_time() -> void:
 	DayNightManager.time_speed = 0.0
 	DayNightManager._process(100.0)
 	assert_almost_eq(
-		DayNightManager.current_hour, 12.0, 0.001,
+		DayNightManager.current_hour,
+		12.0,
+		0.001,
 		"time_speed=0 should freeze time",
 	)

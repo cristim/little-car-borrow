@@ -112,7 +112,8 @@ func test_all_biomes_have_adjacency_entry() -> void:
 	for biome: String in TP.BIOME_ADJACENCY:
 		var neighbors: Array = TP.BIOME_ADJACENCY[biome]
 		assert_gt(
-			neighbors.size(), 0,
+			neighbors.size(),
+			0,
 			"Biome %s should have at least one neighbor" % biome,
 		)
 
@@ -124,6 +125,5 @@ func test_adjacency_is_symmetric() -> void:
 			var reverse: Array = TP.BIOME_ADJACENCY.get(biome_b, [])
 			assert_true(
 				biome_a in reverse,
-				"Adjacency should be symmetric: %s -> %s but not reverse"
-				% [biome_a, biome_b],
+				"Adjacency should be symmetric: %s -> %s but not reverse" % [biome_a, biome_b],
 			)

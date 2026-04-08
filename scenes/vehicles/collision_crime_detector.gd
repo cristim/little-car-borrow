@@ -5,9 +5,7 @@ extends Node
 const MIN_COLLISION_SPEED := 15.0
 const CRIME_COOLDOWN := 1.0
 
-var _ragdoll_script: GDScript = preload(
-	"res://scenes/pedestrians/pedestrian_ragdoll.gd"
-)
+var _ragdoll_script: GDScript = preload("res://scenes/pedestrians/pedestrian_ragdoll.gd")
 var _vehicle: RigidBody3D = null
 var _cooldowns: Dictionary = {}
 

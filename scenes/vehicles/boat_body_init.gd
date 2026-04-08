@@ -14,9 +14,7 @@ func _ready() -> void:
 
 	var hull := get_node_or_null("Hull") as MeshInstance3D
 	if hull and not hull.mesh:
-		var builder = preload(
-			"res://scenes/vehicles/boat_body_builder.gd"
-		).new()
+		var builder = preload("res://scenes/vehicles/boat_body_builder.gd").new()
 		var result: Dictionary = builder.build(variant)
 		hull.mesh = result["hull"]
 		hull.material_override = _hull_mat

@@ -92,16 +92,17 @@ func _try_spawn() -> void:
 			continue
 
 		# Only spawn in city biomes (road grid sidewalks)
-		var spawn_tile := _grid.get_chunk_coord(
-			Vector2(spawn_pos.x, spawn_pos.z),
+		var spawn_tile := (
+			_grid
+			. get_chunk_coord(
+				Vector2(spawn_pos.x, spawn_pos.z),
+			)
 		)
 		if not _is_city_biome(spawn_tile):
 			continue
 
 		# Adjust spawn height to terrain level outside city
-		var ground_y: float = _boundary.get_ground_height(
-			spawn_pos.x, spawn_pos.z
-		)
+		var ground_y: float = _boundary.get_ground_height(spawn_pos.x, spawn_pos.z)
 		if ground_y < SEA_LEVEL:
 			continue
 		spawn_pos.y = ground_y + 0.15
@@ -117,9 +118,10 @@ func _try_spawn() -> void:
 
 		var too_close := false
 		for p in _pedestrians:
-			if is_instance_valid(p) and spawn_pos.distance_to(
-				(p as Node3D).global_position
-			) < MIN_PED_DIST:
+			if (
+				is_instance_valid(p)
+				and spawn_pos.distance_to((p as Node3D).global_position) < MIN_PED_DIST
+			):
 				too_close = true
 				break
 		if too_close:

@@ -22,7 +22,10 @@ func init(grid: RefCounted, boundary: RefCounted) -> void:
 
 
 func build(
-	chunk: Node3D, _tile: Vector2i, ox: float, oz: float,
+	chunk: Node3D,
+	_tile: Vector2i,
+	ox: float,
+	oz: float,
 	river_data: Dictionary,
 ) -> void:
 	if river_data.is_empty():
@@ -83,8 +86,11 @@ func build(
 
 
 func _edge_point(
-	ox: float, oz: float, hs: float,
-	dir: int, pos: float,
+	ox: float,
+	oz: float,
+	hs: float,
+	dir: int,
+	pos: float,
 ) -> Vector3:
 	var offset: float = (pos - 0.5) * hs * 2.0
 	match dir:

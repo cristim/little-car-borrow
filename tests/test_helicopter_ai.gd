@@ -1,9 +1,7 @@
 extends GutTest
 ## Unit tests for helicopter AI scene tree, states, and despawn.
 
-const HeliScript = preload(
-	"res://scenes/vehicles/helicopter_ai.gd"
-)
+const HeliScript = preload("res://scenes/vehicles/helicopter_ai.gd")
 
 var _heli: CharacterBody3D = null
 
@@ -17,6 +15,7 @@ func before_each() -> void:
 # ==========================================================================
 # Scene tree construction
 # ==========================================================================
+
 
 func test_has_body_child() -> void:
 	var body := _heli.get_node_or_null("Body")
@@ -46,9 +45,7 @@ func test_has_tail_rotor_pivot() -> void:
 
 
 func test_has_tail_rotor_mesh() -> void:
-	var mesh := _heli.get_node_or_null(
-		"TailRotorPivot/TailRotorMesh"
-	)
+	var mesh := _heli.get_node_or_null("TailRotorPivot/TailRotorMesh")
 	assert_not_null(mesh, "Should have TailRotorMesh")
 	assert_true(mesh is MeshInstance3D)
 
@@ -75,6 +72,7 @@ func test_has_rotor_audio() -> void:
 # Group membership
 # ==========================================================================
 
+
 func test_in_police_helicopter_group() -> void:
 	assert_true(
 		_heli.is_in_group("police_helicopter"),
@@ -86,16 +84,19 @@ func test_in_police_helicopter_group() -> void:
 # Collision setup
 # ==========================================================================
 
+
 func test_collision_layer_zero() -> void:
 	assert_eq(
-		_heli.collision_layer, 0,
+		_heli.collision_layer,
+		0,
 		"Helicopter should not be on any collision layer",
 	)
 
 
 func test_collision_mask_static_only() -> void:
 	assert_eq(
-		_heli.collision_mask, 2,
+		_heli.collision_mask,
+		2,
 		"Helicopter should only collide with Static layer",
 	)
 
@@ -104,9 +105,11 @@ func test_collision_mask_static_only() -> void:
 # State transitions
 # ==========================================================================
 
+
 func test_initial_state_is_approach() -> void:
 	assert_eq(
-		_heli._state, HeliScript.HeliState.APPROACH,
+		_heli._state,
+		HeliScript.HeliState.APPROACH,
 		"Initial state should be APPROACH",
 	)
 
@@ -114,7 +117,8 @@ func test_initial_state_is_approach() -> void:
 func test_begin_despawn_sets_state() -> void:
 	_heli.begin_despawn()
 	assert_eq(
-		_heli._state, HeliScript.HeliState.DESPAWNING,
+		_heli._state,
+		HeliScript.HeliState.DESPAWNING,
 		"begin_despawn should set state to DESPAWNING",
 	)
 
@@ -132,7 +136,8 @@ func test_begin_despawn_idempotent() -> void:
 	_heli.begin_despawn()
 	_heli.begin_despawn()
 	assert_eq(
-		_heli._state, HeliScript.HeliState.DESPAWNING,
+		_heli._state,
+		HeliScript.HeliState.DESPAWNING,
 		"Calling begin_despawn twice should not crash",
 	)
 
@@ -141,10 +146,12 @@ func test_begin_despawn_idempotent() -> void:
 # Searchlight properties
 # ==========================================================================
 
+
 func test_searchlight_range() -> void:
 	var light: SpotLight3D = _heli.get_node("Searchlight")
 	assert_eq(
-		light.spot_range, HeliScript.SPOTLIGHT_RANGE,
+		light.spot_range,
+		HeliScript.SPOTLIGHT_RANGE,
 		"Searchlight range should match constant",
 	)
 
@@ -152,7 +159,8 @@ func test_searchlight_range() -> void:
 func test_searchlight_angle() -> void:
 	var light: SpotLight3D = _heli.get_node("Searchlight")
 	assert_eq(
-		light.spot_angle, HeliScript.SPOTLIGHT_ANGLE,
+		light.spot_angle,
+		HeliScript.SPOTLIGHT_ANGLE,
 		"Searchlight angle should match constant",
 	)
 

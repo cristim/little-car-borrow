@@ -18,6 +18,7 @@ func _build_prompt() -> PanelContainer:
 # Initialization
 # ================================================================
 
+
 func test_ready_hides_prompt() -> void:
 	var prompt := _build_prompt()
 	await get_tree().process_frame
@@ -48,6 +49,7 @@ func test_ready_connects_hide_signal() -> void:
 # ================================================================
 # Show prompt
 # ================================================================
+
 
 func test_show_sets_text_and_visibility() -> void:
 	var prompt := _build_prompt()
@@ -84,6 +86,7 @@ func test_show_with_empty_string() -> void:
 # Hide prompt
 # ================================================================
 
+
 func test_hide_makes_prompt_invisible() -> void:
 	var prompt := _build_prompt()
 	await get_tree().process_frame
@@ -107,6 +110,7 @@ func test_hide_when_already_hidden() -> void:
 # ================================================================
 # Show then hide cycle
 # ================================================================
+
 
 func test_show_hide_show_cycle() -> void:
 	var prompt := _build_prompt()

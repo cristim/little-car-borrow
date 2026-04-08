@@ -30,33 +30,59 @@ func _build_pistol(root: Node3D) -> void:
 	# muzzle_local_z = -0.12 (muzzle_z=-0.2 + 0.08 = -0.12)
 	root.set_meta("muzzle_local_pos", Vector3(0.0, 0.0, -0.12))
 
-	_add_cylinder(
-		root, "Barrel", 0.012, 0.14,
-		Vector3(0.0, 0.01, -0.05), Vector3.ZERO, metal_dark
+	_add_cylinder(root, "Barrel", 0.012, 0.14, Vector3(0.0, 0.01, -0.05), Vector3.ZERO, metal_dark)
+	_add_box(
+		root, "Slide", Vector3(0.05, 0.035, 0.16), Vector3(0.0, 0.0, -0.02), Vector3.ZERO, metal_mid
 	)
 	_add_box(
-		root, "Slide", Vector3(0.05, 0.035, 0.16),
-		Vector3(0.0, 0.0, -0.02), Vector3.ZERO, metal_mid
+		root,
+		"Frame",
+		Vector3(0.045, 0.025, 0.1),
+		Vector3(0.0, -0.02, 0.01),
+		Vector3.ZERO,
+		metal_dark
 	)
 	_add_box(
-		root, "Frame", Vector3(0.045, 0.025, 0.1),
-		Vector3(0.0, -0.02, 0.01), Vector3.ZERO, metal_dark
+		root,
+		"Grip",
+		Vector3(0.04, 0.07, 0.035),
+		Vector3(0.0, -0.06, 0.04),
+		Vector3(0.2, 0.0, 0.0),
+		grip
 	)
 	_add_box(
-		root, "Grip", Vector3(0.04, 0.07, 0.035),
-		Vector3(0.0, -0.06, 0.04), Vector3(0.2, 0.0, 0.0), grip
-	)
-	_add_box(
-		root, "TriggerGuard", Vector3(0.01, 0.025, 0.04),
-		Vector3(0.0, -0.04, 0.01), Vector3.ZERO, metal_dark
+		root,
+		"TriggerGuard",
+		Vector3(0.01, 0.025, 0.04),
+		Vector3(0.0, -0.04, 0.01),
+		Vector3.ZERO,
+		metal_dark
 	)
 	# Iron sights
-	_add_box(root, "FrontSight", Vector3(0.004, 0.013, 0.005),
-		Vector3(0.0, 0.026, -0.10), Vector3.ZERO, metal_dark)
-	_add_box(root, "RearSightL", Vector3(0.006, 0.011, 0.005),
-		Vector3(-0.013, 0.023, 0.015), Vector3.ZERO, metal_dark)
-	_add_box(root, "RearSightR", Vector3(0.006, 0.011, 0.005),
-		Vector3( 0.013, 0.023, 0.015), Vector3.ZERO, metal_dark)
+	_add_box(
+		root,
+		"FrontSight",
+		Vector3(0.004, 0.013, 0.005),
+		Vector3(0.0, 0.026, -0.10),
+		Vector3.ZERO,
+		metal_dark
+	)
+	_add_box(
+		root,
+		"RearSightL",
+		Vector3(0.006, 0.011, 0.005),
+		Vector3(-0.013, 0.023, 0.015),
+		Vector3.ZERO,
+		metal_dark
+	)
+	_add_box(
+		root,
+		"RearSightR",
+		Vector3(0.006, 0.011, 0.005),
+		Vector3(0.013, 0.023, 0.015),
+		Vector3.ZERO,
+		metal_dark
+	)
 
 
 func _build_smg(root: Node3D) -> void:
@@ -68,36 +94,65 @@ func _build_smg(root: Node3D) -> void:
 	# muzzle_local_z = -0.17 (muzzle_z=-0.25 + 0.08 = -0.17)
 	root.set_meta("muzzle_local_pos", Vector3(0.0, 0.0, -0.17))
 
-	_add_cylinder(
-		root, "Barrel", 0.012, 0.12,
-		Vector3(0.0, 0.0, -0.11), Vector3.ZERO, metal_dark
+	_add_cylinder(root, "Barrel", 0.012, 0.12, Vector3(0.0, 0.0, -0.11), Vector3.ZERO, metal_dark)
+	_add_box(
+		root,
+		"BarrelShroud",
+		Vector3(0.045, 0.04, 0.1),
+		Vector3(0.0, 0.0, -0.07),
+		Vector3.ZERO,
+		metal_mid
 	)
 	_add_box(
-		root, "BarrelShroud", Vector3(0.045, 0.04, 0.1),
-		Vector3(0.0, 0.0, -0.07), Vector3.ZERO, metal_mid
+		root,
+		"Receiver",
+		Vector3(0.055, 0.06, 0.12),
+		Vector3(0.0, 0.0, 0.01),
+		Vector3.ZERO,
+		metal_dark
 	)
 	_add_box(
-		root, "Receiver", Vector3(0.055, 0.06, 0.12),
-		Vector3(0.0, 0.0, 0.01), Vector3.ZERO, metal_dark
+		root,
+		"Grip",
+		Vector3(0.035, 0.06, 0.03),
+		Vector3(0.0, -0.05, 0.04),
+		Vector3(0.15, 0.0, 0.0),
+		grip
 	)
 	_add_box(
-		root, "Grip", Vector3(0.035, 0.06, 0.03),
-		Vector3(0.0, -0.05, 0.04), Vector3(0.15, 0.0, 0.0), grip
+		root,
+		"Magazine",
+		Vector3(0.035, 0.08, 0.02),
+		Vector3(0.0, -0.06, 0.0),
+		Vector3(0.1, 0.0, 0.0),
+		mag
 	)
 	_add_box(
-		root, "Magazine", Vector3(0.035, 0.08, 0.02),
-		Vector3(0.0, -0.06, 0.0), Vector3(0.1, 0.0, 0.0), mag
-	)
-	_add_box(
-		root, "StockStub", Vector3(0.04, 0.035, 0.06),
-		Vector3(0.0, -0.005, 0.1), Vector3.ZERO, metal_dark
+		root,
+		"StockStub",
+		Vector3(0.04, 0.035, 0.06),
+		Vector3(0.0, -0.005, 0.1),
+		Vector3.ZERO,
+		metal_dark
 	)
 	# Front sight post
-	_add_box(root, "FrontSight", Vector3(0.005, 0.015, 0.005),
-		Vector3(0.0, 0.030, -0.155), Vector3.ZERO, metal_dark)
+	_add_box(
+		root,
+		"FrontSight",
+		Vector3(0.005, 0.015, 0.005),
+		Vector3(0.0, 0.030, -0.155),
+		Vector3.ZERO,
+		metal_dark
+	)
 	# Charging handle stub (right side of receiver)
-	_add_box(root, "ChargingHandle", Vector3(0.018, 0.010, 0.012),
-		Vector3(0.035, 0.010, -0.010), Vector3.ZERO, metal_mid)
+	_add_box(
+		root,
+		"ChargingHandle",
+		Vector3(0.018, 0.010, 0.012),
+		Vector3(0.035, 0.010, -0.010),
+		Vector3.ZERO,
+		metal_mid
+	)
 
 
 func _build_shotgun(root: Node3D) -> void:
@@ -109,40 +164,58 @@ func _build_shotgun(root: Node3D) -> void:
 	# muzzle_local_z = -0.22 (muzzle_z=-0.3 + 0.08 = -0.22)
 	root.set_meta("muzzle_local_pos", Vector3(0.0, 0.0, -0.22))
 
+	_add_cylinder(root, "Barrel", 0.018, 0.25, Vector3(0.0, 0.01, -0.1), Vector3.ZERO, metal_dark)
 	_add_cylinder(
-		root, "Barrel", 0.018, 0.25,
-		Vector3(0.0, 0.01, -0.1), Vector3.ZERO, metal_dark
-	)
-	_add_cylinder(
-		root, "PumpTube", 0.012, 0.12,
-		Vector3(0.0, -0.02, -0.06), Vector3.ZERO, metal_mid
+		root, "PumpTube", 0.012, 0.12, Vector3(0.0, -0.02, -0.06), Vector3.ZERO, metal_mid
 	)
 	_add_box(
-		root, "PumpGrip", Vector3(0.04, 0.035, 0.06),
-		Vector3(0.0, -0.02, -0.06), Vector3.ZERO, grip
+		root, "PumpGrip", Vector3(0.04, 0.035, 0.06), Vector3(0.0, -0.02, -0.06), Vector3.ZERO, grip
 	)
 	_add_box(
-		root, "Receiver", Vector3(0.06, 0.05, 0.1),
-		Vector3(0.0, 0.0, 0.03), Vector3.ZERO, metal_dark
+		root,
+		"Receiver",
+		Vector3(0.06, 0.05, 0.1),
+		Vector3(0.0, 0.0, 0.03),
+		Vector3.ZERO,
+		metal_dark
 	)
 	_add_box(
-		root, "Stock", Vector3(0.04, 0.05, 0.12),
-		Vector3(0.0, -0.005, 0.14), Vector3(0.08, 0.0, 0.0), wood
+		root,
+		"Stock",
+		Vector3(0.04, 0.05, 0.12),
+		Vector3(0.0, -0.005, 0.14),
+		Vector3(0.08, 0.0, 0.0),
+		wood
 	)
 	_add_box(
-		root, "StockEnd", Vector3(0.04, 0.06, 0.03),
-		Vector3(0.0, -0.005, 0.21), Vector3.ZERO, wood
+		root, "StockEnd", Vector3(0.04, 0.06, 0.03), Vector3(0.0, -0.005, 0.21), Vector3.ZERO, wood
 	)
 	_add_box(
-		root, "TriggerGuard", Vector3(0.01, 0.02, 0.04),
-		Vector3(0.0, -0.035, 0.04), Vector3.ZERO, metal_dark
+		root,
+		"TriggerGuard",
+		Vector3(0.01, 0.02, 0.04),
+		Vector3(0.0, -0.035, 0.04),
+		Vector3.ZERO,
+		metal_dark
 	)
 	# Front bead sight at barrel tip
-	_add_box(root, "FrontBead", Vector3(0.007, 0.015, 0.007),
-		Vector3(0.0, 0.023, -0.22), Vector3.ZERO, metal_mid)
+	_add_box(
+		root,
+		"FrontBead",
+		Vector3(0.007, 0.015, 0.007),
+		Vector3(0.0, 0.023, -0.22),
+		Vector3.ZERO,
+		metal_mid
+	)
 	# Ejection port (right side, darker inset)
-	_add_box(root, "EjectionPort", Vector3(0.024, 0.007, 0.036),
-		Vector3(0.033, 0.018, 0.025), Vector3.ZERO, metal_dark)
+	_add_box(
+		root,
+		"EjectionPort",
+		Vector3(0.024, 0.007, 0.036),
+		Vector3(0.033, 0.018, 0.025),
+		Vector3.ZERO,
+		metal_dark
+	)
 
 
 func _build_rifle(root: Node3D) -> void:
@@ -155,55 +228,94 @@ func _build_rifle(root: Node3D) -> void:
 	# muzzle_local_z = -0.32 (muzzle_z=-0.4 + 0.08 = -0.32)
 	root.set_meta("muzzle_local_pos", Vector3(0.0, 0.0, -0.32))
 
-	_add_cylinder(
-		root, "Barrel", 0.01, 0.3,
-		Vector3(0.0, 0.0, -0.17), Vector3.ZERO, metal_dark
+	_add_cylinder(root, "Barrel", 0.01, 0.3, Vector3(0.0, 0.0, -0.17), Vector3.ZERO, metal_dark)
+	_add_box(
+		root,
+		"Handguard",
+		Vector3(0.035, 0.03, 0.12),
+		Vector3(0.0, 0.0, -0.08),
+		Vector3.ZERO,
+		metal_mid
 	)
 	_add_box(
-		root, "Handguard", Vector3(0.035, 0.03, 0.12),
-		Vector3(0.0, 0.0, -0.08), Vector3.ZERO, metal_mid
+		root,
+		"Receiver",
+		Vector3(0.04, 0.04, 0.14),
+		Vector3(0.0, 0.0, 0.05),
+		Vector3.ZERO,
+		metal_dark
+	)
+	_add_cylinder(root, "Scope", 0.012, 0.1, Vector3(0.0, 0.035, 0.0), Vector3.ZERO, metal_mid)
+	_add_box(
+		root,
+		"ScopeMount1",
+		Vector3(0.008, 0.012, 0.008),
+		Vector3(0.0, 0.025, -0.02),
+		Vector3.ZERO,
+		metal_dark
 	)
 	_add_box(
-		root, "Receiver", Vector3(0.04, 0.04, 0.14),
-		Vector3(0.0, 0.0, 0.05), Vector3.ZERO, metal_dark
-	)
-	_add_cylinder(
-		root, "Scope", 0.012, 0.1,
-		Vector3(0.0, 0.035, 0.0), Vector3.ZERO, metal_mid
-	)
-	_add_box(
-		root, "ScopeMount1", Vector3(0.008, 0.012, 0.008),
-		Vector3(0.0, 0.025, -0.02), Vector3.ZERO, metal_dark
+		root,
+		"ScopeMount2",
+		Vector3(0.008, 0.012, 0.008),
+		Vector3(0.0, 0.025, 0.02),
+		Vector3.ZERO,
+		metal_dark
 	)
 	_add_box(
-		root, "ScopeMount2", Vector3(0.008, 0.012, 0.008),
-		Vector3(0.0, 0.025, 0.02), Vector3.ZERO, metal_dark
+		root,
+		"Magazine",
+		Vector3(0.025, 0.06, 0.02),
+		Vector3(0.0, -0.04, 0.04),
+		Vector3(0.05, 0.0, 0.0),
+		mag
 	)
 	_add_box(
-		root, "Magazine", Vector3(0.025, 0.06, 0.02),
-		Vector3(0.0, -0.04, 0.04), Vector3(0.05, 0.0, 0.0), mag
+		root,
+		"Grip",
+		Vector3(0.03, 0.05, 0.025),
+		Vector3(0.0, -0.04, 0.08),
+		Vector3(0.2, 0.0, 0.0),
+		grip
 	)
 	_add_box(
-		root, "Grip", Vector3(0.03, 0.05, 0.025),
-		Vector3(0.0, -0.04, 0.08), Vector3(0.2, 0.0, 0.0), grip
+		root, "Stock", Vector3(0.035, 0.04, 0.1), Vector3(0.0, -0.005, 0.17), Vector3.ZERO, wood
 	)
 	_add_box(
-		root, "Stock", Vector3(0.035, 0.04, 0.1),
-		Vector3(0.0, -0.005, 0.17), Vector3.ZERO, wood
-	)
-	_add_box(
-		root, "StockPad", Vector3(0.035, 0.05, 0.015),
-		Vector3(0.0, -0.005, 0.225), Vector3.ZERO, grip
+		root,
+		"StockPad",
+		Vector3(0.035, 0.05, 0.015),
+		Vector3(0.0, -0.005, 0.225),
+		Vector3.ZERO,
+		grip
 	)
 	# Charging handle (right side)
-	_add_box(root, "ChargingHandle", Vector3(0.016, 0.009, 0.012),
-		Vector3(0.026, 0.008, 0.050), Vector3.ZERO, metal_dark)
+	_add_box(
+		root,
+		"ChargingHandle",
+		Vector3(0.016, 0.009, 0.012),
+		Vector3(0.026, 0.008, 0.050),
+		Vector3.ZERO,
+		metal_dark
+	)
 	# Muzzle flash hider at barrel tip
-	_add_box(root, "MuzzleDevice", Vector3(0.016, 0.016, 0.028),
-		Vector3(0.0, 0.0, -0.310), Vector3.ZERO, metal_mid)
+	_add_box(
+		root,
+		"MuzzleDevice",
+		Vector3(0.016, 0.016, 0.028),
+		Vector3(0.0, 0.0, -0.310),
+		Vector3.ZERO,
+		metal_mid
+	)
 	# Scope eyepiece (larger rear bell)
-	_add_box(root, "ScopeEyepiece", Vector3(0.040, 0.033, 0.020),
-		Vector3(0.0, 0.035, 0.090), Vector3.ZERO, metal_dark)
+	_add_box(
+		root,
+		"ScopeEyepiece",
+		Vector3(0.040, 0.033, 0.020),
+		Vector3(0.0, 0.035, 0.090),
+		Vector3.ZERO,
+		metal_dark
+	)
 
 
 func _add_box(
@@ -252,9 +364,7 @@ func _add_cylinder(
 	return mi
 
 
-func _mat(
-	color: Color, metallic: float, roughness: float
-) -> StandardMaterial3D:
+func _mat(color: Color, metallic: float, roughness: float) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
 	m.albedo_color = color
 	m.metallic = metallic

@@ -46,6 +46,7 @@ func after_each() -> void:
 # Initialization
 # ================================================================
 
+
 func test_ready_hides_everything() -> void:
 	var menu := _build_menu()
 	await get_tree().process_frame
@@ -69,6 +70,7 @@ func test_ready_sets_process_mode_always() -> void:
 # ================================================================
 # Pause
 # ================================================================
+
 
 func test_pause_shows_overlay_and_panel() -> void:
 	var menu := _build_menu()
@@ -147,6 +149,7 @@ func test_pause_saves_previous_context() -> void:
 # Resume
 # ================================================================
 
+
 func test_resume_hides_everything() -> void:
 	var menu := _build_menu()
 	await get_tree().process_frame
@@ -211,6 +214,7 @@ func test_resume_restores_foot_context() -> void:
 # Resume button
 # ================================================================
 
+
 func test_on_resume_pressed_calls_resume() -> void:
 	var menu := _build_menu()
 	await get_tree().process_frame
@@ -225,6 +229,7 @@ func test_on_resume_pressed_calls_resume() -> void:
 # ================================================================
 # Controls sub-panel
 # ================================================================
+
 
 func test_on_controls_pressed_shows_controls_panel() -> void:
 	var menu := _build_menu()
@@ -241,6 +246,7 @@ func test_on_controls_pressed_shows_controls_panel() -> void:
 # Audio sub-panel
 # ================================================================
 
+
 func test_on_audio_pressed_shows_audio_panel() -> void:
 	var menu := _build_menu()
 	await get_tree().process_frame
@@ -255,6 +261,7 @@ func test_on_audio_pressed_shows_audio_panel() -> void:
 # ================================================================
 # Pause/resume cycle
 # ================================================================
+
 
 func test_pause_resume_pause_cycle() -> void:
 	var menu := _build_menu()
@@ -277,6 +284,7 @@ func test_pause_resume_pause_cycle() -> void:
 # ================================================================
 # Initial previous context default
 # ================================================================
+
 
 func test_default_previous_context_is_foot() -> void:
 	var menu := _build_menu()

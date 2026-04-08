@@ -1,14 +1,12 @@
 extends GutTest
 ## Tests for PedestrianModel procedural mesh (scenes/pedestrians/pedestrian_model.gd).
 
-const PedestrianModelScript = preload(
-	"res://scenes/pedestrians/pedestrian_model.gd"
-)
-
+const PedestrianModelScript = preload("res://scenes/pedestrians/pedestrian_model.gd")
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 func _make_model() -> Node3D:
 	var model := Node3D.new()
@@ -76,37 +74,43 @@ func _right_forearm_mesh(model: Node3D) -> MeshInstance3D:
 # Constants
 # ---------------------------------------------------------------------------
 
+
 func test_shirt_colors_count() -> void:
 	assert_gte(
-		PedestrianModelScript.SHIRT_COLORS.size(), 8,
+		PedestrianModelScript.SHIRT_COLORS.size(),
+		8,
 		"Should have at least 8 shirt colour options",
 	)
 
 
 func test_pant_colors_count() -> void:
 	assert_gte(
-		PedestrianModelScript.PANT_COLORS.size(), 4,
+		PedestrianModelScript.PANT_COLORS.size(),
+		4,
 		"Should have at least 4 pant colour options",
 	)
 
 
 func test_skin_colors_count() -> void:
 	assert_eq(
-		PedestrianModelScript.SKIN_COLORS.size(), 4,
+		PedestrianModelScript.SKIN_COLORS.size(),
+		4,
 		"Should have 4 skin colour options",
 	)
 
 
 func test_hair_colors_count() -> void:
 	assert_gte(
-		PedestrianModelScript.HAIR_COLORS.size(), 4,
+		PedestrianModelScript.HAIR_COLORS.size(),
+		4,
 		"Should have at least 4 hair colour options",
 	)
 
 
 func test_eye_colors_count() -> void:
 	assert_gte(
-		PedestrianModelScript.EYE_COLORS.size(), 2,
+		PedestrianModelScript.EYE_COLORS.size(),
+		2,
 		"Should have at least 2 eye colour options",
 	)
 
@@ -135,6 +139,7 @@ func test_walk_animation_constants_defined() -> void:
 # ---------------------------------------------------------------------------
 # _ready — direct child structure (6 children)
 # ---------------------------------------------------------------------------
+
 
 func test_ready_creates_six_direct_children() -> void:
 	var model := _make_model()
@@ -176,6 +181,7 @@ func test_hip_and_shoulder_pivots_are_node3d() -> void:
 # Torso
 # ---------------------------------------------------------------------------
 
+
 func test_torso_uses_box_mesh() -> void:
 	var model := _make_model()
 	add_child_autofree(model)
@@ -207,6 +213,7 @@ func test_torso_position() -> void:
 # ---------------------------------------------------------------------------
 # Head pivot and base mesh
 # ---------------------------------------------------------------------------
+
 
 func test_head_pivot_position() -> void:
 	var model := _make_model()
@@ -245,6 +252,7 @@ func test_head_base_at_pivot_centre() -> void:
 # Face details
 # ---------------------------------------------------------------------------
 
+
 func test_head_pivot_has_thirteen_children() -> void:
 	var model := _make_model()
 	add_child_autofree(model)
@@ -259,7 +267,7 @@ func test_face_has_eye_nodes() -> void:
 	await get_tree().process_frame
 
 	var pivot := _head_pivot(model)
-	assert_not_null(pivot.get_node_or_null("EyeLeft"),  "EyeLeft should exist")
+	assert_not_null(pivot.get_node_or_null("EyeLeft"), "EyeLeft should exist")
 	assert_not_null(pivot.get_node_or_null("EyeRight"), "EyeRight should exist")
 
 
@@ -269,7 +277,7 @@ func test_face_has_brow_nodes() -> void:
 	await get_tree().process_frame
 
 	var pivot := _head_pivot(model)
-	assert_not_null(pivot.get_node_or_null("BrowLeft"),  "BrowLeft should exist")
+	assert_not_null(pivot.get_node_or_null("BrowLeft"), "BrowLeft should exist")
 	assert_not_null(pivot.get_node_or_null("BrowRight"), "BrowRight should exist")
 
 
@@ -279,7 +287,7 @@ func test_face_has_nose_mouth() -> void:
 	await get_tree().process_frame
 
 	var pivot := _head_pivot(model)
-	assert_not_null(pivot.get_node_or_null("Nose"),  "Nose should exist")
+	assert_not_null(pivot.get_node_or_null("Nose"), "Nose should exist")
 	assert_not_null(pivot.get_node_or_null("Mouth"), "Mouth should exist")
 
 
@@ -289,7 +297,7 @@ func test_face_has_ears() -> void:
 	await get_tree().process_frame
 
 	var pivot := _head_pivot(model)
-	assert_not_null(pivot.get_node_or_null("EarLeft"),  "EarLeft should exist")
+	assert_not_null(pivot.get_node_or_null("EarLeft"), "EarLeft should exist")
 	assert_not_null(pivot.get_node_or_null("EarRight"), "EarRight should exist")
 
 
@@ -299,10 +307,10 @@ func test_face_has_hair_parts() -> void:
 	await get_tree().process_frame
 
 	var pivot := _head_pivot(model)
-	assert_not_null(pivot.get_node_or_null("HairTop"),       "HairTop should exist")
-	assert_not_null(pivot.get_node_or_null("HairSideLeft"),  "HairSideLeft should exist")
+	assert_not_null(pivot.get_node_or_null("HairTop"), "HairTop should exist")
+	assert_not_null(pivot.get_node_or_null("HairSideLeft"), "HairSideLeft should exist")
 	assert_not_null(pivot.get_node_or_null("HairSideRight"), "HairSideRight should exist")
-	assert_not_null(pivot.get_node_or_null("HairBack"),      "HairBack should exist")
+	assert_not_null(pivot.get_node_or_null("HairBack"), "HairBack should exist")
 
 
 func test_face_details_are_mesh_instances() -> void:
@@ -332,6 +340,7 @@ func test_nose_protrudes_more_than_eyes() -> void:
 # ---------------------------------------------------------------------------
 # Hip pivots (legs)
 # ---------------------------------------------------------------------------
+
 
 func test_hip_pivots_have_one_child_each() -> void:
 	var model := _make_model()
@@ -392,6 +401,7 @@ func test_leg_mesh_hangs_below_hip_pivot() -> void:
 # ---------------------------------------------------------------------------
 # Shoulder pivots (arms)
 # ---------------------------------------------------------------------------
+
 
 func test_shoulder_pivots_have_two_children_each() -> void:
 	# Upper arm mesh (child 0) + ElbowPivot (child 1)
@@ -454,16 +464,19 @@ func test_arm_mesh_hangs_below_shoulder_pivot() -> void:
 # Material assignment
 # ---------------------------------------------------------------------------
 
+
 func test_torso_and_arms_share_shirt_material() -> void:
 	var model := _make_model()
 	add_child_autofree(model)
 	await get_tree().process_frame
 
 	var torso_mat := (model.get_child(0) as MeshInstance3D).material_override
-	assert_eq(torso_mat, _left_arm_mesh(model).material_override,
-		"Torso and left arm share shirt mat")
-	assert_eq(torso_mat, _right_arm_mesh(model).material_override,
-		"Torso and right arm share shirt mat")
+	assert_eq(
+		torso_mat, _left_arm_mesh(model).material_override, "Torso and left arm share shirt mat"
+	)
+	assert_eq(
+		torso_mat, _right_arm_mesh(model).material_override, "Torso and right arm share shirt mat"
+	)
 
 
 func test_legs_share_pant_material() -> void:
@@ -484,8 +497,9 @@ func test_shirt_and_pant_are_different_materials() -> void:
 	await get_tree().process_frame
 
 	var torso_mat := (model.get_child(0) as MeshInstance3D).material_override
-	assert_ne(torso_mat, _left_leg_mesh(model).material_override,
-		"Shirt and pant materials should differ")
+	assert_ne(
+		torso_mat, _left_leg_mesh(model).material_override, "Shirt and pant materials should differ"
+	)
 
 
 func test_head_base_uses_skin_material() -> void:
@@ -509,6 +523,7 @@ func test_materials_are_standard_material_3d() -> void:
 # ---------------------------------------------------------------------------
 # Colour palettes
 # ---------------------------------------------------------------------------
+
 
 func test_shirt_color_from_palette() -> void:
 	var model := _make_model()
@@ -576,6 +591,7 @@ func test_eye_color_from_palette() -> void:
 # Scale / height variation
 # ---------------------------------------------------------------------------
 
+
 func test_scale_is_uniform() -> void:
 	var model := _make_model()
 	add_child_autofree(model)
@@ -598,6 +614,7 @@ func test_scale_within_range() -> void:
 # Walk animation — functional
 # ---------------------------------------------------------------------------
 
+
 func test_shoulder_pivots_rotate_when_walking() -> void:
 	var ped := CharacterBody3D.new()
 	add_child_autofree(ped)
@@ -615,8 +632,7 @@ func test_shoulder_pivots_rotate_when_walking() -> void:
 	var right_shoulder := model.get_child(5) as Node3D
 	# After a few frames at walk speed the arm pivots must have rotated
 	var arms_moved := (
-		absf(left_shoulder.rotation.x) > 0.001
-		or absf(right_shoulder.rotation.x) > 0.001
+		absf(left_shoulder.rotation.x) > 0.001 or absf(right_shoulder.rotation.x) > 0.001
 	)
 	assert_true(arms_moved, "Shoulder pivots should rotate when walking")
 
@@ -636,10 +652,7 @@ func test_hip_pivots_rotate_when_walking() -> void:
 
 	var left_hip := model.get_child(2) as Node3D
 	var right_hip := model.get_child(3) as Node3D
-	var legs_moved := (
-		absf(left_hip.rotation.x) > 0.001
-		or absf(right_hip.rotation.x) > 0.001
-	)
+	var legs_moved := absf(left_hip.rotation.x) > 0.001 or absf(right_hip.rotation.x) > 0.001
 	assert_true(legs_moved, "Hip pivots should rotate when walking")
 
 
@@ -661,7 +674,8 @@ func test_pivots_decay_when_still() -> void:
 	await get_tree().process_frame
 
 	assert_lt(
-		absf(left_shoulder.rotation.x), 0.5,
+		absf(left_shoulder.rotation.x),
+		0.5,
 		"Shoulder rotation should decay when pedestrian is still",
 	)
 
@@ -669,6 +683,7 @@ func test_pivots_decay_when_still() -> void:
 # ---------------------------------------------------------------------------
 # Randomness
 # ---------------------------------------------------------------------------
+
 
 func test_two_models_produce_shirt_variety() -> void:
 	var colors_seen := {}
@@ -711,6 +726,7 @@ func test_two_models_can_have_different_scales() -> void:
 # Elbow pivots
 # ---------------------------------------------------------------------------
 
+
 func test_elbow_pivots_exist() -> void:
 	var model := _make_model()
 	add_child_autofree(model)
@@ -737,11 +753,15 @@ func test_elbow_pivot_position() -> void:
 	await get_tree().process_frame
 
 	assert_almost_eq(
-		_left_elbow_pivot(model).position.y, -0.27, 0.001,
+		_left_elbow_pivot(model).position.y,
+		-0.27,
+		0.001,
 		"Elbow pivot should be at y=-0.27 from shoulder pivot",
 	)
 	assert_almost_eq(
-		_right_elbow_pivot(model).position.y, -0.27, 0.001,
+		_right_elbow_pivot(model).position.y,
+		-0.27,
+		0.001,
 		"Right elbow pivot should be at y=-0.27 from shoulder pivot",
 	)
 
@@ -780,7 +800,8 @@ func test_forearm_hangs_below_elbow_pivot() -> void:
 	await get_tree().process_frame
 
 	assert_lt(
-		_left_forearm_mesh(model).position.y, 0.0,
+		_left_forearm_mesh(model).position.y,
+		0.0,
 		"Forearm should hang below elbow pivot (y < 0)",
 	)
 
@@ -812,7 +833,8 @@ func test_elbow_rotates_when_walking() -> void:
 
 	var left_elbow := _left_elbow_pivot(model)
 	assert_lt(
-		left_elbow.rotation.x, -0.1,
+		left_elbow.rotation.x,
+		-0.1,
 		"Elbow should be bent (rotation.x < -0.1) when walking",
 	)
 
@@ -833,6 +855,7 @@ func test_elbow_decays_when_still() -> void:
 	await get_tree().process_frame
 
 	assert_gt(
-		left_elbow.rotation.x, -0.8,
+		left_elbow.rotation.x,
+		-0.8,
 		"Elbow should decay toward 0 when still",
 	)

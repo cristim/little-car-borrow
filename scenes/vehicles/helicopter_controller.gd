@@ -8,16 +8,16 @@ extends Node
 ##   Space (jump)    — collective up (ascend)
 ##   Shift (sprint)  — collective down (descend)
 
-const ASCEND_FORCE := 24.0   # m/s vertical when ascending
-const DESCEND_FORCE := 8.0   # m/s vertical when descending
-const HOVER_SINK := 1.5      # very slow passive sink when no vertical input
+const ASCEND_FORCE := 24.0  # m/s vertical when ascending
+const DESCEND_FORCE := 8.0  # m/s vertical when descending
+const HOVER_SINK := 1.5  # very slow passive sink when no vertical input
 const FORWARD_SPEED := 42.0  # m/s forward
-const BACK_SPEED := 15.0     # m/s reverse
-const YAW_SPEED := 1.8       # rad/s yaw
-const TILT_MAX := 0.22        # max visual tilt (radians)
-const TILT_RATE := 4.0        # visual tilt animation speed
-const ROTOR_SPIN := 20.0      # main rotor animation speed (rad/s)
-const TAIL_ROTOR_SPIN := 32.0 # tail rotor animation speed (rad/s)
+const BACK_SPEED := 15.0  # m/s reverse
+const YAW_SPEED := 1.8  # rad/s yaw
+const TILT_MAX := 0.22  # max visual tilt (radians)
+const TILT_RATE := 4.0  # visual tilt animation speed
+const ROTOR_SPIN := 20.0  # main rotor animation speed (rad/s)
+const TAIL_ROTOR_SPIN := 32.0  # tail rotor animation speed (rad/s)
 
 var active := false:
 	set(value):
@@ -41,26 +41,17 @@ func physics_update(delta: float, heli: CharacterBody3D) -> void:
 		return
 
 	_fwd_input = (
-		Input.get_action_strength("move_forward")
-		- Input.get_action_strength("move_backward")
+		Input.get_action_strength("move_forward") - Input.get_action_strength("move_backward")
 	)
-	_yaw_input = (
-		Input.get_action_strength("move_left")
-		- Input.get_action_strength("move_right")
-	)
-	_asc_input = (
-		Input.get_action_strength("jump")
-		- Input.get_action_strength("sprint")
-	)
+	_yaw_input = (Input.get_action_strength("move_left") - Input.get_action_strength("move_right"))
+	_asc_input = (Input.get_action_strength("jump") - Input.get_action_strength("sprint"))
 
 	# Yaw
 	heli.rotation.y += _yaw_input * YAW_SPEED * delta
 
 	# Horizontal movement along helicopter forward axis
 	var forward: Vector3 = -heli.global_transform.basis.z
-	var fwd_spd: float = _fwd_input * (
-		FORWARD_SPEED if _fwd_input > 0.0 else BACK_SPEED
-	)
+	var fwd_spd: float = _fwd_input * (FORWARD_SPEED if _fwd_input > 0.0 else BACK_SPEED)
 
 	# Vertical
 	var vert_vel: float

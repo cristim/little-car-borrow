@@ -1,9 +1,7 @@
 extends GutTest
 ## Unit tests for chunk_builder_rural_trees.gd tree generation.
 
-const TreesScript = preload(
-	"res://scenes/world/generator/chunk_builder_rural_trees.gd"
-)
+const TreesScript = preload("res://scenes/world/generator/chunk_builder_rural_trees.gd")
 const RoadGridScript = preload("res://src/road_grid.gd")
 const BoundaryScript = preload("res://src/city_boundary.gd")
 
@@ -56,9 +54,16 @@ func before_each() -> void:
 		_canopy_meshes.append(m)
 
 	_builder = TreesScript.new()
-	_builder.init(
-		_grid, _trunk_mats, _canopy_mats,
-		_trunk_mesh, _canopy_meshes, _boundary,
+	(
+		_builder
+		. init(
+			_grid,
+			_trunk_mats,
+			_canopy_mats,
+			_trunk_mesh,
+			_canopy_meshes,
+			_boundary,
+		)
 	)
 
 
@@ -66,26 +71,31 @@ func before_each() -> void:
 # Initialization
 # ================================================================
 
+
 func test_init_stores_grid() -> void:
 	assert_eq(_builder._grid, _grid, "init should store grid reference")
 
 
 func test_init_stores_boundary() -> void:
 	assert_eq(
-		_builder._boundary, _boundary, "init should store boundary reference",
+		_builder._boundary,
+		_boundary,
+		"init should store boundary reference",
 	)
 
 
 func test_init_stores_trunk_mats() -> void:
 	assert_eq(
-		_builder._trunk_mats.size(), 2,
+		_builder._trunk_mats.size(),
+		2,
 		"init should store trunk materials",
 	)
 
 
 func test_init_stores_canopy_meshes() -> void:
 	assert_eq(
-		_builder._canopy_meshes.size(), TreesScript.CANOPY_VARIANTS,
+		_builder._canopy_meshes.size(),
+		TreesScript.CANOPY_VARIANTS,
 		"init should store all canopy mesh variants",
 	)
 
@@ -93,6 +103,7 @@ func test_init_stores_canopy_meshes() -> void:
 # ================================================================
 # _get_biome_density (static)
 # ================================================================
+
 
 func test_biome_density_forest() -> void:
 	var d: Dictionary = TreesScript._get_biome_density("forest")
@@ -126,7 +137,8 @@ func test_biome_density_default_and_empty() -> void:
 
 	var e: Dictionary = TreesScript._get_biome_density("")
 	assert_eq(
-		e["min_clusters"], 2,
+		e["min_clusters"],
+		2,
 		"Empty biome string should return default density",
 	)
 
@@ -135,9 +147,16 @@ func test_biome_density_default_and_empty() -> void:
 # _near_village
 # ================================================================
 
+
 func test_near_village_false_when_no_village() -> void:
-	var result: bool = _builder._near_village(
-		0.0, 0.0, false, Vector2.ZERO,
+	var result: bool = (
+		_builder
+		. _near_village(
+			0.0,
+			0.0,
+			false,
+			Vector2.ZERO,
+		)
 	)
 	assert_false(result, "Should return false when has_village is false")
 
@@ -158,13 +177,25 @@ func test_near_village_boundary() -> void:
 	var vc := Vector2(0.0, 0.0)
 	var clearance: float = TreesScript.VILLAGE_CLEARANCE
 	# Just inside clearance
-	var result_in: bool = _builder._near_village(
-		clearance - 1.0, 0.0, true, vc,
+	var result_in: bool = (
+		_builder
+		. _near_village(
+			clearance - 1.0,
+			0.0,
+			true,
+			vc,
+		)
 	)
 	assert_true(result_in, "Should return true just inside clearance")
 	# Just outside clearance
-	var result_out: bool = _builder._near_village(
-		clearance + 1.0, 0.0, true, vc,
+	var result_out: bool = (
+		_builder
+		. _near_village(
+			clearance + 1.0,
+			0.0,
+			true,
+			vc,
+		)
 	)
 	assert_false(result_out, "Should return false just outside clearance")
 
@@ -172,6 +203,7 @@ func test_near_village_boundary() -> void:
 # ================================================================
 # _near_highway
 # ================================================================
+
 
 func test_near_highway_at_ns_road() -> void:
 	var span: float = _grid.get_grid_span()
@@ -188,8 +220,14 @@ func test_near_highway_far_from_roads() -> void:
 	var ox := span * 5.0
 	var oz := 0.0
 	# Position far from any highway
-	var result: bool = _builder._near_highway(
-		ox + 999.0, oz + 999.0, ox, oz,
+	var result: bool = (
+		_builder
+		. _near_highway(
+			ox + 999.0,
+			oz + 999.0,
+			ox,
+			oz,
+		)
 	)
 	assert_false(result, "Position far from highways should not be near")
 
@@ -197,6 +235,7 @@ func test_near_highway_far_from_roads() -> void:
 # ================================================================
 # Build behavior
 # ================================================================
+
 
 func test_build_creates_tree_body_on_terrain() -> void:
 	var span: float = _grid.get_grid_span()
@@ -211,7 +250,8 @@ func test_build_creates_tree_body_on_terrain() -> void:
 		if child is StaticBody3D and child.name == "RuralTrees":
 			found_body = true
 			assert_eq(
-				child.collision_layer, 2,
+				child.collision_layer,
+				2,
 				"Tree body collision layer should be Static (2)",
 			)
 			assert_true(
@@ -309,8 +349,10 @@ func test_build_with_village_meta_avoids_village() -> void:
 	# Village version should have fewer or equal trees
 	assert_true(
 		count_village <= count_no_village,
-		"Village chunk should have fewer trees (village=%d, no_village=%d)"
-		% [count_village, count_no_village],
+		(
+			"Village chunk should have fewer trees (village=%d, no_village=%d)"
+			% [count_village, count_no_village]
+		),
 	)
 
 
@@ -355,9 +397,11 @@ func test_build_at_city_center_produces_no_trees() -> void:
 # Constants sanity
 # ================================================================
 
+
 func test_constants_sanity() -> void:
 	assert_eq(
-		TreesScript.CANOPY_VARIANTS, 6,
+		TreesScript.CANOPY_VARIANTS,
+		6,
 		"CANOPY_VARIANTS should be 6",
 	)
 	assert_true(

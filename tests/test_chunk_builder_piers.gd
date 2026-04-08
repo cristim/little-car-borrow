@@ -2,12 +2,9 @@ extends GutTest
 ## Unit tests for chunk_builder_piers.gd pier geometry, boat spawning,
 ## and coastal edge detection.
 
-const PiersScript = preload(
-	"res://scenes/world/generator/chunk_builder_piers.gd"
-)
+const PiersScript = preload("res://scenes/world/generator/chunk_builder_piers.gd")
 const RoadGridScript = preload("res://src/road_grid.gd")
 const BoundaryScript = preload("res://src/city_boundary.gd")
-
 
 var _grid: RefCounted
 var _noise: FastNoiseLite
@@ -46,6 +43,7 @@ func _consume_engine_errors() -> void:
 # Initialization
 # ================================================================
 
+
 func test_init_sets_grid() -> void:
 	assert_not_null(_builder._grid, "init should set _grid")
 
@@ -77,7 +75,9 @@ func test_wood_material_color() -> void:
 
 func test_wood_material_roughness() -> void:
 	assert_almost_eq(
-		_builder._wood_mat.roughness, 0.8, 0.01,
+		_builder._wood_mat.roughness,
+		0.8,
+		0.01,
 		"Wood roughness should be 0.8",
 	)
 
@@ -86,13 +86,16 @@ func test_wood_material_roughness() -> void:
 # Constants
 # ================================================================
 
+
 func test_sea_level_constant() -> void:
 	assert_eq(PiersScript.SEA_LEVEL, -2.0, "SEA_LEVEL should be -2.0")
 
 
 func test_pier_chance_constant() -> void:
 	assert_almost_eq(
-		PiersScript.PIER_CHANCE, 0.4, 0.001,
+		PiersScript.PIER_CHANCE,
+		0.4,
+		0.001,
 		"PIER_CHANCE should be 0.4",
 	)
 
@@ -105,7 +108,9 @@ func test_pier_dimensions() -> void:
 
 func test_piling_constants() -> void:
 	assert_almost_eq(
-		PiersScript.PILING_RADIUS, 0.15, 0.001,
+		PiersScript.PILING_RADIUS,
+		0.15,
+		0.001,
 		"PILING_RADIUS should be 0.15",
 	)
 	assert_eq(PiersScript.PILING_COUNT, 6, "PILING_COUNT should be 6")
@@ -123,6 +128,7 @@ func test_boat_variants() -> void:
 # Build on city tile (no pier - heights are 0, inside city)
 # ================================================================
 
+
 func test_build_no_pier_on_city_tile() -> void:
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
@@ -139,6 +145,7 @@ func test_build_no_pier_on_city_tile() -> void:
 # Build on coastal tile (pier possible)
 # ================================================================
 
+
 func test_build_can_create_pier_on_coastal_tile() -> void:
 	var span: float = _grid.get_grid_span()
 	var found_pier := false
@@ -148,8 +155,14 @@ func test_build_can_create_pier_on_coastal_tile() -> void:
 			var chunk := Node3D.new()
 			add_child_autofree(chunk)
 			var tile := Vector2i(tx, tz)
-			_builder.build(
-				chunk, tile, span * float(tx), span * float(tz),
+			(
+				_builder
+				. build(
+					chunk,
+					tile,
+					span * float(tx),
+					span * float(tz),
+				)
 			)
 			if chunk.has_meta("has_pier") and chunk.get_meta("has_pier"):
 				found_pier = true
@@ -172,8 +185,14 @@ func test_pier_sets_metadata() -> void:
 			var chunk := Node3D.new()
 			add_child_autofree(chunk)
 			var tile := Vector2i(tx, tz)
-			_builder.build(
-				chunk, tile, span * float(tx), span * float(tz),
+			(
+				_builder
+				. build(
+					chunk,
+					tile,
+					span * float(tx),
+					span * float(tz),
+				)
 			)
 			if chunk.has_meta("has_pier") and chunk.get_meta("has_pier"):
 				_consume_engine_errors()
@@ -200,8 +219,14 @@ func test_pier_has_static_body() -> void:
 			var chunk := Node3D.new()
 			add_child_autofree(chunk)
 			var tile := Vector2i(tx, tz)
-			_builder.build(
-				chunk, tile, span * float(tx), span * float(tz),
+			(
+				_builder
+				. build(
+					chunk,
+					tile,
+					span * float(tx),
+					span * float(tz),
+				)
 			)
 			if chunk.has_meta("has_pier") and chunk.get_meta("has_pier"):
 				var found_body := false
@@ -228,8 +253,14 @@ func test_pier_body_in_road_group() -> void:
 			var chunk := Node3D.new()
 			add_child_autofree(chunk)
 			var tile := Vector2i(tx, tz)
-			_builder.build(
-				chunk, tile, span * float(tx), span * float(tz),
+			(
+				_builder
+				. build(
+					chunk,
+					tile,
+					span * float(tx),
+					span * float(tz),
+				)
 			)
 			if chunk.has_meta("has_pier") and chunk.get_meta("has_pier"):
 				for child in chunk.get_children():
@@ -253,19 +284,27 @@ func test_pier_body_collision_layer() -> void:
 			var chunk := Node3D.new()
 			add_child_autofree(chunk)
 			var tile := Vector2i(tx, tz)
-			_builder.build(
-				chunk, tile, span * float(tx), span * float(tz),
+			(
+				_builder
+				. build(
+					chunk,
+					tile,
+					span * float(tx),
+					span * float(tz),
+				)
 			)
 			if chunk.has_meta("has_pier") and chunk.get_meta("has_pier"):
 				for child in chunk.get_children():
 					if child is StaticBody3D and child.name == "Pier":
 						_consume_engine_errors()
 						assert_eq(
-							child.collision_layer, 1,
+							child.collision_layer,
+							1,
 							"Pier collision_layer should be 1 (Ground)",
 						)
 						assert_eq(
-							child.collision_mask, 0,
+							child.collision_mask,
+							0,
 							"Pier collision_mask should be 0",
 						)
 						return
@@ -282,8 +321,14 @@ func test_pier_has_mesh_child() -> void:
 			var chunk := Node3D.new()
 			add_child_autofree(chunk)
 			var tile := Vector2i(tx, tz)
-			_builder.build(
-				chunk, tile, span * float(tx), span * float(tz),
+			(
+				_builder
+				. build(
+					chunk,
+					tile,
+					span * float(tx),
+					span * float(tz),
+				)
 			)
 			if chunk.has_meta("has_pier") and chunk.get_meta("has_pier"):
 				for child in chunk.get_children():
@@ -312,8 +357,14 @@ func test_pier_mesh_uses_wood_material() -> void:
 			var chunk := Node3D.new()
 			add_child_autofree(chunk)
 			var tile := Vector2i(tx, tz)
-			_builder.build(
-				chunk, tile, span * float(tx), span * float(tz),
+			(
+				_builder
+				. build(
+					chunk,
+					tile,
+					span * float(tx),
+					span * float(tz),
+				)
 			)
 			if chunk.has_meta("has_pier") and chunk.get_meta("has_pier"):
 				for child in chunk.get_children():
@@ -340,8 +391,14 @@ func test_pier_has_collision_shape() -> void:
 			var chunk := Node3D.new()
 			add_child_autofree(chunk)
 			var tile := Vector2i(tx, tz)
-			_builder.build(
-				chunk, tile, span * float(tx), span * float(tz),
+			(
+				_builder
+				. build(
+					chunk,
+					tile,
+					span * float(tx),
+					span * float(tz),
+				)
 			)
 			if chunk.has_meta("has_pier") and chunk.get_meta("has_pier"):
 				for child in chunk.get_children():
@@ -366,6 +423,7 @@ func test_pier_has_collision_shape() -> void:
 # Boat spawning
 # ================================================================
 
+
 func test_pier_spawns_boats() -> void:
 	var span: float = _grid.get_grid_span()
 
@@ -374,8 +432,14 @@ func test_pier_spawns_boats() -> void:
 			var chunk := Node3D.new()
 			add_child_autofree(chunk)
 			var tile := Vector2i(tx, tz)
-			_builder.build(
-				chunk, tile, span * float(tx), span * float(tz),
+			(
+				_builder
+				. build(
+					chunk,
+					tile,
+					span * float(tx),
+					span * float(tz),
+				)
 			)
 			if chunk.has_meta("has_pier") and chunk.get_meta("has_pier"):
 				var boat_count := 0
@@ -401,8 +465,14 @@ func test_boat_has_interaction_zone() -> void:
 			var chunk := Node3D.new()
 			add_child_autofree(chunk)
 			var tile := Vector2i(tx, tz)
-			_builder.build(
-				chunk, tile, span * float(tx), span * float(tz),
+			(
+				_builder
+				. build(
+					chunk,
+					tile,
+					span * float(tx),
+					span * float(tz),
+				)
 			)
 			if chunk.has_meta("has_pier") and chunk.get_meta("has_pier"):
 				for child in chunk.get_children():
@@ -431,8 +501,14 @@ func test_boat_has_door_marker() -> void:
 			var chunk := Node3D.new()
 			add_child_autofree(chunk)
 			var tile := Vector2i(tx, tz)
-			_builder.build(
-				chunk, tile, span * float(tx), span * float(tz),
+			(
+				_builder
+				. build(
+					chunk,
+					tile,
+					span * float(tx),
+					span * float(tz),
+				)
 			)
 			if chunk.has_meta("has_pier") and chunk.get_meta("has_pier"):
 				for child in chunk.get_children():
@@ -461,19 +537,27 @@ func test_boat_collision_layers() -> void:
 			var chunk := Node3D.new()
 			add_child_autofree(chunk)
 			var tile := Vector2i(tx, tz)
-			_builder.build(
-				chunk, tile, span * float(tx), span * float(tz),
+			(
+				_builder
+				. build(
+					chunk,
+					tile,
+					span * float(tx),
+					span * float(tz),
+				)
 			)
 			if chunk.has_meta("has_pier") and chunk.get_meta("has_pier"):
 				for child in chunk.get_children():
 					if child is RigidBody3D and child.name == "Boat":
 						_consume_engine_errors()
 						assert_eq(
-							child.collision_layer, 16,
+							child.collision_layer,
+							16,
 							"Boat collision_layer should be 16 (NPC vehicles)",
 						)
 						assert_eq(
-							child.collision_mask, 7,
+							child.collision_mask,
+							7,
 							"Boat collision_mask should be 7 (ground+static+player)",
 						)
 						return
@@ -485,6 +569,7 @@ func test_boat_collision_layers() -> void:
 # ================================================================
 # Determinism
 # ================================================================
+
 
 func test_build_deterministic_same_tile() -> void:
 	var span: float = _grid.get_grid_span()
@@ -504,11 +589,13 @@ func test_build_deterministic_same_tile() -> void:
 	var has2: bool = chunk2.has_meta("has_pier") and chunk2.get_meta("has_pier")
 	_consume_engine_errors()
 	assert_eq(
-		has1, has2,
+		has1,
+		has2,
 		"Same tile should produce same pier decision",
 	)
 	assert_eq(
-		chunk1.get_child_count(), chunk2.get_child_count(),
+		chunk1.get_child_count(),
+		chunk2.get_child_count(),
 		"Same tile should produce same child count",
 	)
 
@@ -516,6 +603,7 @@ func test_build_deterministic_same_tile() -> void:
 # ================================================================
 # _find_shore_edge
 # ================================================================
+
 
 func test_boat_spawned_beyond_pier_tip() -> void:
 	# Boats must not spawn under the pier deck (which extends to PIER_LENGTH).

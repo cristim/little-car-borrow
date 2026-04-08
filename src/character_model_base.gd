@@ -98,22 +98,14 @@ func _decay_gait(delta: float) -> void:
 	rotation.z = lerpf(rotation.z, 0.0, delta * DECAY_SPEED)
 	position.y = lerpf(position.y, 0.0, delta * DECAY_SPEED)
 	position.x = lerpf(position.x, 0.0, delta * DECAY_SPEED)
-	_left_shoulder.rotation.x = lerpf(
-		_left_shoulder.rotation.x, 0.0, delta * DECAY_SPEED)
-	_left_shoulder.rotation.y = lerpf(
-		_left_shoulder.rotation.y, 0.0, delta * DECAY_SPEED)
-	_left_shoulder.rotation.z = lerpf(
-		_left_shoulder.rotation.z, 0.0, delta * DECAY_SPEED)
-	_right_shoulder.rotation.x = lerpf(
-		_right_shoulder.rotation.x, 0.0, delta * DECAY_SPEED)
-	_right_shoulder.rotation.y = lerpf(
-		_right_shoulder.rotation.y, 0.0, delta * DECAY_SPEED)
-	_right_shoulder.rotation.z = lerpf(
-		_right_shoulder.rotation.z, 0.0, delta * DECAY_SPEED)
-	_left_hip.rotation.x = lerpf(
-		_left_hip.rotation.x, 0.0, delta * DECAY_SPEED)
-	_right_hip.rotation.x = lerpf(
-		_right_hip.rotation.x, 0.0, delta * DECAY_SPEED)
+	_left_shoulder.rotation.x = lerpf(_left_shoulder.rotation.x, 0.0, delta * DECAY_SPEED)
+	_left_shoulder.rotation.y = lerpf(_left_shoulder.rotation.y, 0.0, delta * DECAY_SPEED)
+	_left_shoulder.rotation.z = lerpf(_left_shoulder.rotation.z, 0.0, delta * DECAY_SPEED)
+	_right_shoulder.rotation.x = lerpf(_right_shoulder.rotation.x, 0.0, delta * DECAY_SPEED)
+	_right_shoulder.rotation.y = lerpf(_right_shoulder.rotation.y, 0.0, delta * DECAY_SPEED)
+	_right_shoulder.rotation.z = lerpf(_right_shoulder.rotation.z, 0.0, delta * DECAY_SPEED)
+	_left_hip.rotation.x = lerpf(_left_hip.rotation.x, 0.0, delta * DECAY_SPEED)
+	_right_hip.rotation.x = lerpf(_right_hip.rotation.x, 0.0, delta * DECAY_SPEED)
 	if _head:
 		_head.rotation.y = lerpf(_head.rotation.y, 0.0, delta * DECAY_SPEED)
 		_head.rotation.z = lerpf(_head.rotation.z, 0.0, delta * DECAY_SPEED)

@@ -14,6 +14,7 @@ func before_all() -> void:
 # Constants
 # ==========================================================================
 
+
 func test_sea_level_is_negative_2() -> void:
 	assert_true(_src.contains("SEA_LEVEL := -2.0"))
 
@@ -73,12 +74,16 @@ func test_set_passenger_adjusts_mass() -> void:
 	add_child_autofree(body)
 	ctrl.set_passenger(75.0)
 	assert_almost_eq(
-		body.mass, 875.0, 0.01,
+		body.mass,
+		875.0,
+		0.01,
 		"Boat mass should be base + passenger (800 + 75 = 875)",
 	)
 	ctrl.set_passenger(0.0)
 	assert_almost_eq(
-		body.mass, 800.0, 0.01,
+		body.mass,
+		800.0,
+		0.01,
 		"Boat mass should return to base when passenger removed",
 	)
 
@@ -86,6 +91,7 @@ func test_set_passenger_adjusts_mass() -> void:
 # ==========================================================================
 # Initial state
 # ==========================================================================
+
 
 func test_active_defaults_false() -> void:
 	var ctrl: Node = Node.new()
@@ -114,6 +120,7 @@ func test_body_set_with_rigidbody_parent() -> void:
 # ==========================================================================
 # _ready() body configuration
 # ==========================================================================
+
 
 func test_ready_sets_linear_damp() -> void:
 	var body := RigidBody3D.new()
@@ -145,7 +152,8 @@ func test_ready_sets_custom_center_of_mass() -> void:
 		"Should use custom center of mass mode",
 	)
 	assert_eq(
-		body.center_of_mass, Vector3(0.0, -0.8, 0.0),
+		body.center_of_mass,
+		Vector3(0.0, -0.8, 0.0),
 		"Center of mass should be low for stability",
 	)
 
@@ -153,6 +161,7 @@ func test_ready_sets_custom_center_of_mass() -> void:
 # ==========================================================================
 # Physics behavior — source verification
 # ==========================================================================
+
 
 func test_buoyancy_runs_before_active_check() -> void:
 	var buoyancy_idx: int = _src.find("_apply_buoyancy()")

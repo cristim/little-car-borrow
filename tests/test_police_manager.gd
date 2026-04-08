@@ -2,14 +2,12 @@ extends GutTest
 ## Tests for scenes/world/police_manager.gd — constants, wanted level
 ## scaling, despawn logic, helicopter management, and max police caps.
 
-const PoliceManagerScript = preload(
-	"res://scenes/world/police_manager.gd"
-)
-
+const PoliceManagerScript = preload("res://scenes/world/police_manager.gd")
 
 # ==========================================================================
 # Constants
 # ==========================================================================
+
 
 func test_spawn_radius() -> void:
 	assert_eq(PoliceManagerScript.SPAWN_RADIUS, 180.0)
@@ -55,6 +53,7 @@ func test_sea_level() -> void:
 # Initial state
 # ==========================================================================
 
+
 func test_police_array_starts_empty() -> void:
 	var mgr: Node = PoliceManagerScript.new()
 	add_child_autofree(mgr)
@@ -89,13 +88,15 @@ func test_helicopter_starts_null() -> void:
 # _get_max_police — wanted level scaling
 # ==========================================================================
 
+
 func test_max_police_level_0() -> void:
 	var mgr: Node = PoliceManagerScript.new()
 	add_child_autofree(mgr)
 	var saved := WantedLevelManager.wanted_level
 	WantedLevelManager.wanted_level = 0
 	assert_eq(
-		mgr._get_max_police(), 0,
+		mgr._get_max_police(),
+		0,
 		"Level 0 should have 0 police",
 	)
 	WantedLevelManager.wanted_level = saved
@@ -168,7 +169,8 @@ func test_max_police_negative_level() -> void:
 	var saved := WantedLevelManager.wanted_level
 	WantedLevelManager.wanted_level = -1
 	assert_eq(
-		mgr._get_max_police(), 0,
+		mgr._get_max_police(),
+		0,
 		"Negative level should return 0 police",
 	)
 	WantedLevelManager.wanted_level = saved
@@ -180,7 +182,8 @@ func test_max_police_out_of_range_level() -> void:
 	var saved := WantedLevelManager.wanted_level
 	WantedLevelManager.wanted_level = 99
 	assert_eq(
-		mgr._get_max_police(), 0,
+		mgr._get_max_police(),
+		0,
 		"Out-of-range level should return 0 police",
 	)
 	WantedLevelManager.wanted_level = saved
@@ -189,6 +192,7 @@ func test_max_police_out_of_range_level() -> void:
 # ==========================================================================
 # _on_wanted_level_changed callback
 # ==========================================================================
+
 
 func test_wanted_level_zero_starts_despawning() -> void:
 	var mgr: Node = PoliceManagerScript.new()
@@ -232,6 +236,7 @@ func test_wanted_level_positive_stops_despawning() -> void:
 # _despawn_one
 # ==========================================================================
 
+
 func test_despawn_one_removes_last_vehicle() -> void:
 	var mgr: Node = PoliceManagerScript.new()
 	add_child_autofree(mgr)
@@ -243,7 +248,8 @@ func test_despawn_one_removes_last_vehicle() -> void:
 	mgr._police.append(v2)
 	mgr._despawn_one()
 	assert_eq(
-		mgr._police.size(), 1,
+		mgr._police.size(),
+		1,
 		"Should remove one vehicle",
 	)
 
@@ -258,6 +264,7 @@ func test_despawn_one_on_empty_does_nothing() -> void:
 # ==========================================================================
 # _despawn_far with invalid nodes
 # ==========================================================================
+
 
 func test_despawn_far_removes_distant_vehicles() -> void:
 	var mgr: Node = PoliceManagerScript.new()
@@ -276,7 +283,8 @@ func test_despawn_far_removes_distant_vehicles() -> void:
 
 	mgr._despawn_far()
 	assert_eq(
-		mgr._police.size(), 0,
+		mgr._police.size(),
+		0,
 		"Distant vehicles should be despawned",
 	)
 
@@ -284,6 +292,7 @@ func test_despawn_far_removes_distant_vehicles() -> void:
 # ==========================================================================
 # _make_terrain_noise static helper
 # ==========================================================================
+
 
 func test_make_terrain_noise_matches_city() -> void:
 	var noise: FastNoiseLite = PoliceManagerScript._make_terrain_noise()
@@ -299,6 +308,7 @@ func test_make_terrain_noise_matches_city() -> void:
 # ==========================================================================
 # Helicopter despawn with null/invalid reference
 # ==========================================================================
+
 
 func test_despawn_helicopter_null_clears_ref() -> void:
 	var mgr: Node = PoliceManagerScript.new()

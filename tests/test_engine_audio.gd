@@ -14,6 +14,7 @@ func before_all() -> void:
 # Constants
 # ==========================================================================
 
+
 func test_sample_rate_is_22050() -> void:
 	assert_true(_src.contains("SAMPLE_RATE := 22050.0"))
 
@@ -62,6 +63,7 @@ func test_sub_amp() -> void:
 # Initial state
 # ==========================================================================
 
+
 func test_initial_smooth_volume() -> void:
 	assert_true(_src.contains("_smooth_volume := 0.15"))
 
@@ -91,6 +93,7 @@ func test_initial_phases_are_zero() -> void:
 # ==========================================================================
 # _ready() setup
 # ==========================================================================
+
 
 func test_ready_randomizes_rng() -> void:
 	assert_true(
@@ -144,6 +147,7 @@ func test_ready_calls_play() -> void:
 # ==========================================================================
 # _process() logic
 # ==========================================================================
+
 
 func test_process_guards_on_playback_and_vehicle() -> void:
 	assert_true(

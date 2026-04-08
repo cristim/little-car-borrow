@@ -3,9 +3,7 @@ extends GutTest
 ## _create_door_node() helper in chunk_builder_buildings.gd.
 
 const DoorScript = preload("res://scenes/world/building_door.gd")
-const BuilderScript = preload(
-	"res://scenes/world/generator/chunk_builder_buildings.gd"
-)
+const BuilderScript = preload("res://scenes/world/generator/chunk_builder_buildings.gd")
 const RoadGridScript = preload("res://src/road_grid.gd")
 
 
@@ -34,23 +32,27 @@ func _make_builder() -> RefCounted:
 # Constants
 # ==========================================================================
 
+
 func test_open_angle_is_negative() -> void:
 	assert_lt(
-		DoorScript.OPEN_ANGLE, 0.0,
+		DoorScript.OPEN_ANGLE,
+		0.0,
 		"OPEN_ANGLE should be negative (swing inward)",
 	)
 
 
 func test_anim_duration_is_positive() -> void:
 	assert_gt(
-		DoorScript.ANIM_DURATION, 0.0,
+		DoorScript.ANIM_DURATION,
+		0.0,
 		"ANIM_DURATION should be positive",
 	)
 
 
 func test_auto_close_delay_is_positive() -> void:
 	assert_gt(
-		DoorScript.AUTO_CLOSE_DELAY, 0.0,
+		DoorScript.AUTO_CLOSE_DELAY,
+		0.0,
 		"AUTO_CLOSE_DELAY should be positive",
 	)
 
@@ -58,6 +60,7 @@ func test_auto_close_delay_is_positive() -> void:
 # ==========================================================================
 # Initial state
 # ==========================================================================
+
 
 func test_door_starts_closed() -> void:
 	var door := _make_door()
@@ -75,7 +78,9 @@ func test_base_rot_y_set_from_node_rotation() -> void:
 	door.rotation.y = PI / 2.0
 	add_child_autofree(door)
 	assert_almost_eq(
-		door._base_rot_y, PI / 2.0, 0.001,
+		door._base_rot_y,
+		PI / 2.0,
+		0.001,
 		"_base_rot_y should be initialized from rotation.y in _ready",
 	)
 
@@ -83,6 +88,7 @@ func test_base_rot_y_set_from_node_rotation() -> void:
 # ==========================================================================
 # _toggle()
 # ==========================================================================
+
 
 func test_toggle_opens_closed_door() -> void:
 	var door := _make_door()
@@ -118,7 +124,9 @@ func test_toggle_back_restores_base_rotation() -> void:
 	door._toggle()
 	await get_tree().create_timer(DoorScript.ANIM_DURATION + 0.1).timeout
 	assert_almost_eq(
-		door.rotation.y, base_y, 0.02,
+		door.rotation.y,
+		base_y,
+		0.02,
 		"After close tween rotation.y should return to base",
 	)
 
@@ -143,12 +151,19 @@ func test_toggle_respects_nonzero_base_rotation() -> void:
 # _create_door_node()
 # ==========================================================================
 
+
 func test_create_door_node_adds_child_to_chunk() -> void:
 	var builder := _make_builder()
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
-	builder._create_door_node(
-		chunk, Vector3(0, 5, 0), Vector3(10, 10, 10), 0,
+	(
+		builder
+		. _create_door_node(
+			chunk,
+			Vector3(0, 5, 0),
+			Vector3(10, 10, 10),
+			0,
+		)
 	)
 	assert_gt(chunk.get_child_count(), 0, "Should add a door node to chunk")
 
@@ -157,8 +172,14 @@ func test_create_door_node_is_node3d() -> void:
 	var builder := _make_builder()
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
-	builder._create_door_node(
-		chunk, Vector3(0, 5, 0), Vector3(10, 10, 10), 0,
+	(
+		builder
+		. _create_door_node(
+			chunk,
+			Vector3(0, 5, 0),
+			Vector3(10, 10, 10),
+			0,
+		)
 	)
 	assert_true(chunk.get_child(0) is Node3D, "Door node should be a Node3D")
 
@@ -167,8 +188,14 @@ func test_create_door_node_has_interaction_zone() -> void:
 	var builder := _make_builder()
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
-	builder._create_door_node(
-		chunk, Vector3(0, 5, 0), Vector3(10, 10, 10), 0,
+	(
+		builder
+		. _create_door_node(
+			chunk,
+			Vector3(0, 5, 0),
+			Vector3(10, 10, 10),
+			0,
+		)
 	)
 	var door: Node = chunk.get_child(0)
 	var zone: Node = door.get_node_or_null("InteractionZone")
@@ -180,13 +207,20 @@ func test_create_door_node_zone_collision_mask_is_player_layer() -> void:
 	var builder := _make_builder()
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
-	builder._create_door_node(
-		chunk, Vector3(0, 5, 0), Vector3(10, 10, 10), 0,
+	(
+		builder
+		. _create_door_node(
+			chunk,
+			Vector3(0, 5, 0),
+			Vector3(10, 10, 10),
+			0,
+		)
 	)
 	var door: Node = chunk.get_child(0)
 	var zone: Area3D = door.get_node_or_null("InteractionZone") as Area3D
 	assert_eq(
-		zone.collision_mask, 4,
+		zone.collision_mask,
+		4,
 		"InteractionZone must mask player layer (bit 3 = value 4)",
 	)
 
@@ -195,8 +229,14 @@ func test_create_door_node_has_door_mesh() -> void:
 	var builder := _make_builder()
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
-	builder._create_door_node(
-		chunk, Vector3(0, 5, 0), Vector3(10, 10, 10), 0,
+	(
+		builder
+		. _create_door_node(
+			chunk,
+			Vector3(0, 5, 0),
+			Vector3(10, 10, 10),
+			0,
+		)
 	)
 	var door: Node = chunk.get_child(0)
 	var mesh: Node = door.get_node_or_null("DoorMesh")
@@ -209,12 +249,20 @@ func test_create_door_node_at_ground_level() -> void:
 	var builder := _make_builder()
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
-	builder._create_door_node(
-		chunk, Vector3(10, 5, 10), Vector3(10, 10, 10), 0,
+	(
+		builder
+		. _create_door_node(
+			chunk,
+			Vector3(10, 5, 10),
+			Vector3(10, 10, 10),
+			0,
+		)
 	)
 	var door: Node3D = chunk.get_child(0) as Node3D
 	assert_almost_eq(
-		door.position.y, 0.0, 0.01,
+		door.position.y,
+		0.0,
+		0.01,
 		"Hinge should be at ground level (center.y - size.y/2)",
 	)
 
@@ -224,11 +272,18 @@ func test_create_door_node_all_four_faces_succeed() -> void:
 	for face in range(4):
 		var chunk := Node3D.new()
 		add_child_autofree(chunk)
-		builder._create_door_node(
-			chunk, Vector3(0, 5, 0), Vector3(10, 10, 10), face,
+		(
+			builder
+			. _create_door_node(
+				chunk,
+				Vector3(0, 5, 0),
+				Vector3(10, 10, 10),
+				face,
+			)
 		)
 		assert_gt(
-			chunk.get_child_count(), 0,
+			chunk.get_child_count(),
+			0,
 			"Face %d should produce a door node" % face,
 		)
 
@@ -237,12 +292,20 @@ func test_create_door_face0_rotation_is_zero() -> void:
 	var builder := _make_builder()
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
-	builder._create_door_node(
-		chunk, Vector3(0, 5, 0), Vector3(10, 10, 10), 0,
+	(
+		builder
+		. _create_door_node(
+			chunk,
+			Vector3(0, 5, 0),
+			Vector3(10, 10, 10),
+			0,
+		)
 	)
 	var door: Node3D = chunk.get_child(0) as Node3D
 	assert_almost_eq(
-		door.rotation.y, 0.0, 0.001,
+		door.rotation.y,
+		0.0,
+		0.001,
 		"Face 0 door rotation.y should be 0",
 	)
 
@@ -251,12 +314,20 @@ func test_create_door_face1_rotation_is_pi() -> void:
 	var builder := _make_builder()
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
-	builder._create_door_node(
-		chunk, Vector3(0, 5, 0), Vector3(10, 10, 10), 1,
+	(
+		builder
+		. _create_door_node(
+			chunk,
+			Vector3(0, 5, 0),
+			Vector3(10, 10, 10),
+			1,
+		)
 	)
 	var door: Node3D = chunk.get_child(0) as Node3D
 	assert_almost_eq(
-		door.rotation.y, PI, 0.001,
+		door.rotation.y,
+		PI,
+		0.001,
 		"Face 1 door rotation.y should be PI",
 	)
 
@@ -265,8 +336,14 @@ func test_create_door_mesh_has_box_shape() -> void:
 	var builder := _make_builder()
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
-	builder._create_door_node(
-		chunk, Vector3(0, 5, 0), Vector3(10, 10, 10), 0,
+	(
+		builder
+		. _create_door_node(
+			chunk,
+			Vector3(0, 5, 0),
+			Vector3(10, 10, 10),
+			0,
+		)
 	)
 	var door: Node = chunk.get_child(0)
 	var mesh_inst: MeshInstance3D = door.get_node_or_null("DoorMesh") as MeshInstance3D
@@ -278,8 +355,14 @@ func test_create_door_node_has_door_body() -> void:
 	var builder := _make_builder()
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
-	builder._create_door_node(
-		chunk, Vector3(0, 5, 0), Vector3(10, 10, 10), 0,
+	(
+		builder
+		. _create_door_node(
+			chunk,
+			Vector3(0, 5, 0),
+			Vector3(10, 10, 10),
+			0,
+		)
 	)
 	var door: Node = chunk.get_child(0)
 	var body: Node = door.get_node_or_null("DoorBody")
@@ -291,13 +374,20 @@ func test_create_door_body_collision_layer_is_static() -> void:
 	var builder := _make_builder()
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
-	builder._create_door_node(
-		chunk, Vector3(0, 5, 0), Vector3(10, 10, 10), 0,
+	(
+		builder
+		. _create_door_node(
+			chunk,
+			Vector3(0, 5, 0),
+			Vector3(10, 10, 10),
+			0,
+		)
 	)
 	var door: Node = chunk.get_child(0)
 	var body: StaticBody3D = door.get_node_or_null("DoorBody") as StaticBody3D
 	assert_eq(
-		body.collision_layer, 2,
+		body.collision_layer,
+		2,
 		"DoorBody collision_layer should be 2 (Static layer)",
 	)
 
@@ -305,6 +395,7 @@ func test_create_door_body_collision_layer_is_static() -> void:
 # ==========================================================================
 # build() integration — door nodes appear as chunk children
 # ==========================================================================
+
 
 func test_build_adds_door_nodes_to_chunk() -> void:
 	var builder := _make_builder()
@@ -321,6 +412,7 @@ func test_build_adds_door_nodes_to_chunk() -> void:
 # ==========================================================================
 # Auto-close timer
 # ==========================================================================
+
 
 func test_auto_close_timer_child_exists_after_ready() -> void:
 	var door := _make_door()

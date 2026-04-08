@@ -45,9 +45,15 @@ func test_boundary_radius_within_expected_range() -> void:
 		var r: float = _boundary.get_boundary_radius_at_angle(angle)
 		assert_true(
 			r >= min_expected and r <= max_expected,
-			"Radius %f at angle %f should be in [%f, %f]" % [
-				r, angle, min_expected, max_expected,
-			],
+			(
+				"Radius %f at angle %f should be in [%f, %f]"
+				% [
+					r,
+					angle,
+					min_expected,
+					max_expected,
+				]
+			),
 		)
 
 
@@ -55,7 +61,9 @@ func test_boundary_seamless_at_zero_twopi() -> void:
 	var r0: float = _boundary.get_boundary_radius_at_angle(0.0)
 	var r_tau: float = _boundary.get_boundary_radius_at_angle(TAU)
 	assert_almost_eq(
-		r0, r_tau, 0.01,
+		r0,
+		r_tau,
+		0.01,
 		"Boundary should be seamless at 0 and TAU",
 	)
 
@@ -78,7 +86,8 @@ func test_boundary_deterministic() -> void:
 		var r1: float = _boundary.get_boundary_radius_at_angle(angle)
 		var r2: float = b2.get_boundary_radius_at_angle(angle)
 		assert_eq(
-			r1, r2,
+			r1,
+			r2,
 			"Two instances should produce same radius at angle %f" % angle,
 		)
 
@@ -86,7 +95,8 @@ func test_boundary_deterministic() -> void:
 func test_polygon_has_correct_point_count() -> void:
 	var poly: PackedVector2Array = _boundary.get_boundary_polygon(72)
 	assert_eq(
-		poly.size(), 72,
+		poly.size(),
+		72,
 		"Polygon should have 72 points",
 	)
 
@@ -161,9 +171,16 @@ func test_mesh_height_bounded_by_corners() -> void:
 		var mh: float = b.get_mesh_height(wx, wz)
 		assert_true(
 			mh >= lo - 0.001 and mh <= hi + 0.001,
-			"get_mesh_height(%g,%g)=%g must be within corner range [%g,%g]" % [
-				wx, wz, mh, lo, hi,
-			],
+			(
+				"get_mesh_height(%g,%g)=%g must be within corner range [%g,%g]"
+				% [
+					wx,
+					wz,
+					mh,
+					lo,
+					hi,
+				]
+			),
 		)
 
 
@@ -184,8 +201,8 @@ func test_mesh_height_matches_corners_exactly_on_grid() -> void:
 
 func test_rural_trees_source_uses_mesh_height() -> void:
 	var src: String = (
-		load("res://scenes/world/generator/chunk_builder_rural_trees.gd") as GDScript
-	).source_code
+		(load("res://scenes/world/generator/chunk_builder_rural_trees.gd") as GDScript).source_code
+	)
 	assert_true(
 		src.contains("get_mesh_height"),
 		"Rural tree builder must use get_mesh_height for tree placement",

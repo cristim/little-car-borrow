@@ -19,9 +19,7 @@ var _wood_mat: StandardMaterial3D = null
 func init(grid: RefCounted, boundary: RefCounted) -> void:
 	_grid = grid
 	_boundary = boundary
-	_boat_builder = preload(
-		"res://scenes/vehicles/boat_body_builder.gd"
-	).new()
+	_boat_builder = preload("res://scenes/vehicles/boat_body_builder.gd").new()
 
 	_wood_mat = StandardMaterial3D.new()
 	_wood_mat.albedo_color = Color(0.45, 0.30, 0.15)
@@ -60,8 +58,10 @@ func _find_shore_edge(ox: float, oz: float, hs: float) -> Dictionary:
 	var grid := 8
 	var step: float = (hs * 2.0) / float(grid)
 	var dirs: Array[Vector3] = [
-		Vector3(-1, 0, 0), Vector3(1, 0, 0),
-		Vector3(0, 0, -1), Vector3(0, 0, 1),
+		Vector3(-1, 0, 0),
+		Vector3(1, 0, 0),
+		Vector3(0, 0, -1),
+		Vector3(0, 0, 1),
 	]
 	var check_dist: float = PIER_LENGTH * 3.0  # look further for water
 
@@ -78,8 +78,12 @@ func _find_shore_edge(ox: float, oz: float, hs: float) -> Dictionary:
 			for d: Vector3 in dirs:
 				var water_x: float = sx + d.x * check_dist
 				var water_z: float = sz + d.z * check_dist
-				var water_h: float = _boundary.get_ground_height(
-					water_x, water_z,
+				var water_h: float = (
+					_boundary
+					. get_ground_height(
+						water_x,
+						water_z,
+					)
 				)
 				if water_h < SEA_LEVEL:
 					return {
@@ -91,7 +95,9 @@ func _find_shore_edge(ox: float, oz: float, hs: float) -> Dictionary:
 
 
 func _build_pier_geometry(
-	chunk: Node3D, shore_pos: Vector3, pier_dir: Vector3,
+	chunk: Node3D,
+	shore_pos: Vector3,
+	pier_dir: Vector3,
 ) -> void:
 	var deck_y: float = SEA_LEVEL + PIER_HEIGHT
 
@@ -152,9 +158,7 @@ func _build_pier_geometry(
 	# Pilings (vertical columns)
 	for i in range(PILING_COUNT):
 		var t: float = float(i + 1) / float(PILING_COUNT + 1)
-		var base: Vector3 = shore_pos.lerp(
-			shore_pos + pier_dir * PIER_LENGTH, t
-		)
+		var base: Vector3 = shore_pos.lerp(shore_pos + pier_dir * PIER_LENGTH, t)
 		for side in [-1.0, 1.0]:
 			var piling_pos: Vector3 = base + cross * hw * 0.8 * side
 			piling_pos.y = SEA_LEVEL - 1.5
@@ -174,12 +178,8 @@ func _build_pier_geometry(
 	var col := CollisionShape3D.new()
 	var box := BoxShape3D.new()
 	var box_thickness := 0.5
-	var col_len_x: float = (
-		PIER_LENGTH * absf(pier_dir.x) + PIER_WIDTH * absf(pier_dir.z)
-	)
-	var col_len_z: float = (
-		PIER_LENGTH * absf(pier_dir.z) + PIER_WIDTH * absf(pier_dir.x)
-	)
+	var col_len_x: float = PIER_LENGTH * absf(pier_dir.x) + PIER_WIDTH * absf(pier_dir.z)
+	var col_len_z: float = PIER_LENGTH * absf(pier_dir.z) + PIER_WIDTH * absf(pier_dir.x)
 	box.size = Vector3(col_len_x, box_thickness, col_len_z)
 	col.shape = box
 	# Centre the box so its top face sits flush with the deck surface.
@@ -192,7 +192,9 @@ func _build_pier_geometry(
 
 
 func _add_piling(
-	st: SurfaceTool, bottom: Vector3, top: Vector3,
+	st: SurfaceTool,
+	bottom: Vector3,
+	top: Vector3,
 ) -> void:
 	# Simple box column
 	var r := PILING_RADIUS
@@ -219,19 +221,37 @@ func _add_piling(
 	var v7 := Vector3(cx - hx, top.y, cz + hz)
 
 	# 4 side faces
-	st.add_vertex(v0); st.add_vertex(v2); st.add_vertex(v1)
-	st.add_vertex(v0); st.add_vertex(v3); st.add_vertex(v2)
-	st.add_vertex(v5); st.add_vertex(v6); st.add_vertex(v4)
-	st.add_vertex(v4); st.add_vertex(v6); st.add_vertex(v7)
-	st.add_vertex(v4); st.add_vertex(v7); st.add_vertex(v0)
-	st.add_vertex(v0); st.add_vertex(v7); st.add_vertex(v3)
-	st.add_vertex(v1); st.add_vertex(v2); st.add_vertex(v5)
-	st.add_vertex(v5); st.add_vertex(v2); st.add_vertex(v6)
+	st.add_vertex(v0)
+	st.add_vertex(v2)
+	st.add_vertex(v1)
+	st.add_vertex(v0)
+	st.add_vertex(v3)
+	st.add_vertex(v2)
+	st.add_vertex(v5)
+	st.add_vertex(v6)
+	st.add_vertex(v4)
+	st.add_vertex(v4)
+	st.add_vertex(v6)
+	st.add_vertex(v7)
+	st.add_vertex(v4)
+	st.add_vertex(v7)
+	st.add_vertex(v0)
+	st.add_vertex(v0)
+	st.add_vertex(v7)
+	st.add_vertex(v3)
+	st.add_vertex(v1)
+	st.add_vertex(v2)
+	st.add_vertex(v5)
+	st.add_vertex(v5)
+	st.add_vertex(v2)
+	st.add_vertex(v6)
 
 
 func _spawn_boats(
-	chunk: Node3D, _tile: Vector2i,
-	shore_pos: Vector3, pier_dir: Vector3,
+	chunk: Node3D,
+	_tile: Vector2i,
+	shore_pos: Vector3,
+	pier_dir: Vector3,
 	rng: RandomNumberGenerator,
 ) -> void:
 	var cross := pier_dir.cross(Vector3.UP).normalized()
@@ -255,15 +275,17 @@ func _spawn_boats(
 
 
 func _build_boat_node(
-	mesh_data: Dictionary, variant: String,
-	pos: Vector3, facing: Vector3,
+	mesh_data: Dictionary,
+	variant: String,
+	pos: Vector3,
+	facing: Vector3,
 ) -> RigidBody3D:
 	var boat := RigidBody3D.new()
 	boat.name = "Boat"
 	boat.mass = 800.0
 	boat.gravity_scale = 1.0
 	boat.collision_layer = 16  # NPC vehicles
-	boat.collision_mask = 7    # ground + static + player
+	boat.collision_mask = 7  # ground + static + player
 	boat.position = pos
 
 	# Bow faces toward water (forward = -Z, so rotate so -Z aligns with facing)
@@ -280,9 +302,7 @@ func _build_boat_node(
 	# Body node with meshes
 	var body := Node3D.new()
 	body.name = "Body"
-	var BoatBodyScript: GDScript = preload(
-		"res://scenes/vehicles/boat_body_init.gd"
-	)
+	var BoatBodyScript: GDScript = preload("res://scenes/vehicles/boat_body_init.gd")
 	body.set_script(BoatBodyScript)
 	body.set("variant", variant)
 
@@ -315,9 +335,7 @@ func _build_boat_node(
 	boat.add_child(engine_pivot)
 
 	# Boat controller
-	var BoatCtrlScript: GDScript = preload(
-		"res://scenes/vehicles/boat_controller.gd"
-	)
+	var BoatCtrlScript: GDScript = preload("res://scenes/vehicles/boat_controller.gd")
 	var ctrl := Node.new()
 	ctrl.name = "BoatController"
 	ctrl.set_script(BoatCtrlScript)
@@ -331,7 +349,7 @@ func _build_boat_node(
 	zone.name = "InteractionZone"
 	zone.add_to_group("vehicle_interaction")
 	zone.collision_layer = 256  # Interaction zones
-	zone.collision_mask = 4     # Player
+	zone.collision_mask = 4  # Player
 	var zone_col := CollisionShape3D.new()
 	var sphere := SphereShape3D.new()
 	sphere.radius = 4.0
@@ -346,9 +364,7 @@ func _build_boat_node(
 	boat.add_child(marker)
 
 	# Boat audio
-	var BoatAudioScript = load(
-		"res://scenes/vehicles/boat_audio.gd"
-	)
+	var BoatAudioScript = load("res://scenes/vehicles/boat_audio.gd")
 	if BoatAudioScript:
 		var audio := AudioStreamPlayer3D.new()
 		audio.name = "BoatAudio"
@@ -356,9 +372,7 @@ func _build_boat_node(
 		boat.add_child(audio)
 
 	# Wake effects
-	var BoatWakeScript = load(
-		"res://scenes/vehicles/boat_wake.gd"
-	)
+	var BoatWakeScript = load("res://scenes/vehicles/boat_wake.gd")
 	if BoatWakeScript:
 		var wake := Node3D.new()
 		wake.name = "BoatWake"

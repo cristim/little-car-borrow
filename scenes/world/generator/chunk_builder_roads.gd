@@ -30,6 +30,7 @@ func build(chunk: Node3D, ox: float, oz: float, span: float) -> void:
 
 # --- Roads: 22 segments -> 1 merged mesh + 1 compound body ---
 
+
 func _build_roads(chunk: Node3D, ox: float, oz: float, span: float) -> void:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -56,14 +57,8 @@ func _build_roads(chunk: Node3D, ox: float, oz: float, span: float) -> void:
 		var w: float = _grid.get_road_width(i)
 		var cx: float = _grid.get_road_center_local(i) + ox
 		for j in range(_grid.GRID_SIZE):
-			var z0: float = (
-				_grid.get_road_center_local(j)
-				+ _grid.get_road_width(j) * 0.5
-			)
-			var z1: float = (
-				_grid.get_road_center_local(j + 1)
-				- _grid.get_road_width(j + 1) * 0.5
-			)
+			var z0: float = _grid.get_road_center_local(j) + _grid.get_road_width(j) * 0.5
+			var z1: float = _grid.get_road_center_local(j + 1) - _grid.get_road_width(j + 1) * 0.5
 			var seg_len := z1 - z0
 			if seg_len <= 0.0:
 				continue
@@ -87,6 +82,7 @@ func _build_roads(chunk: Node3D, ox: float, oz: float, span: float) -> void:
 
 # --- Block ground: 100 blocks -> 1 merged mesh + 1 compound body ---
 
+
 func _build_block_ground(chunk: Node3D, ox: float, oz: float) -> void:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -101,15 +97,11 @@ func _build_block_ground(chunk: Node3D, ox: float, oz: float) -> void:
 
 	for bx in range(_grid.GRID_SIZE):
 		for bz in range(_grid.GRID_SIZE):
-			var x_start: float = (
-				_grid.get_road_center_local(bx) + _grid.get_road_width(bx) * 0.5
-			)
+			var x_start: float = _grid.get_road_center_local(bx) + _grid.get_road_width(bx) * 0.5
 			var x_end: float = (
 				_grid.get_road_center_local(bx + 1) - _grid.get_road_width(bx + 1) * 0.5
 			)
-			var z_start: float = (
-				_grid.get_road_center_local(bz) + _grid.get_road_width(bz) * 0.5
-			)
+			var z_start: float = _grid.get_road_center_local(bz) + _grid.get_road_width(bz) * 0.5
 			var z_end: float = (
 				_grid.get_road_center_local(bz + 1) - _grid.get_road_width(bz + 1) * 0.5
 			)
@@ -136,6 +128,7 @@ func _build_block_ground(chunk: Node3D, ox: float, oz: float) -> void:
 
 # --- Sidewalks: ~440 segments -> 1 merged mesh + 1 compound body ---
 
+
 func _build_sidewalks(chunk: Node3D, ox: float, oz: float) -> void:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -157,9 +150,7 @@ func _build_sidewalks(chunk: Node3D, ox: float, oz: float) -> void:
 		var rw: float = _grid.get_road_width(i)
 		var cx: float = _grid.get_road_center_local(i) + ox
 		for j in range(_grid.GRID_SIZE):
-			var z_start: float = (
-				_grid.get_road_center_local(j) + _grid.get_road_width(j) * 0.5
-			)
+			var z_start: float = _grid.get_road_center_local(j) + _grid.get_road_width(j) * 0.5
 			var z_end: float = (
 				_grid.get_road_center_local(j + 1) - _grid.get_road_width(j + 1) * 0.5
 			)
@@ -170,30 +161,25 @@ func _build_sidewalks(chunk: Node3D, ox: float, oz: float) -> void:
 			# Left sidewalk
 			var lc := Vector3(cx - rw * 0.5 - sw * 0.5, cy, seg_cz)
 			_city_script.st_add_box(st, lc, Vector3(sw, sh, seg_len))
-			_city_script.add_sidewalk_collision(
-				body, lc, sw, seg_len, sh, rr, "z"
-			)
+			_city_script.add_sidewalk_collision(body, lc, sw, seg_len, sh, rr, "z")
 
 			# Right sidewalk
 			var rc := Vector3(cx + rw * 0.5 + sw * 0.5, cy, seg_cz)
 			_city_script.st_add_box(st, rc, Vector3(sw, sh, seg_len))
-			_city_script.add_sidewalk_collision(
-				body, rc, sw, seg_len, sh, rr, "z"
-			)
+			_city_script.add_sidewalk_collision(body, rc, sw, seg_len, sh, rr, "z")
 
 	# E-W road sidewalks — trimmed by sw at each end to avoid corner overlap
 	for j in range(_grid.GRID_SIZE + 1):
 		var rw: float = _grid.get_road_width(j)
 		var cz: float = _grid.get_road_center_local(j) + oz
 		for i in range(_grid.GRID_SIZE):
+			# inset past N-S sidewalk
 			var x_start: float = (
-				_grid.get_road_center_local(i) + _grid.get_road_width(i) * 0.5
-				+ sw  # inset past N-S sidewalk
+				_grid.get_road_center_local(i) + _grid.get_road_width(i) * 0.5 + sw
 			)
 			var x_end: float = (
-				_grid.get_road_center_local(i + 1) - _grid.get_road_width(i + 1) * 0.5
-				- sw  # inset past N-S sidewalk
-			)
+				_grid.get_road_center_local(i + 1) - _grid.get_road_width(i + 1) * 0.5 - sw
+			)  # inset past N-S sidewalk
 			var seg_len := x_end - x_start
 			if seg_len <= 0.0:
 				continue
@@ -203,16 +189,12 @@ func _build_sidewalks(chunk: Node3D, ox: float, oz: float) -> void:
 			# Top sidewalk
 			var tc := Vector3(seg_cx, cy, cz - rw * 0.5 - sw * 0.5)
 			_city_script.st_add_box(st, tc, Vector3(seg_len, sh, sw))
-			_city_script.add_sidewalk_collision(
-				body, tc, sw, seg_len, sh, rr, "x"
-			)
+			_city_script.add_sidewalk_collision(body, tc, sw, seg_len, sh, rr, "x")
 
 			# Bottom sidewalk
 			var bc := Vector3(seg_cx, cy, cz + rw * 0.5 + sw * 0.5)
 			_city_script.st_add_box(st, bc, Vector3(seg_len, sh, sw))
-			_city_script.add_sidewalk_collision(
-				body, bc, sw, seg_len, sh, rr, "x"
-			)
+			_city_script.add_sidewalk_collision(body, bc, sw, seg_len, sh, rr, "x")
 
 	st.generate_normals()
 	var mesh := st.commit()

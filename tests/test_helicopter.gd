@@ -15,6 +15,7 @@ func before_each() -> void:
 
 # --- Structure ---
 
+
 func test_helicopter_is_character_body() -> void:
 	assert_true(_heli is CharacterBody3D, "Helicopter should be a CharacterBody3D")
 
@@ -60,7 +61,8 @@ func test_door_marker_offset_to_left() -> void:
 	var marker := _heli.get_node_or_null("DoorMarker") as Marker3D
 	assert_not_null(marker)
 	assert_lt(
-		marker.position.x, 0.0,
+		marker.position.x,
+		0.0,
 		"DoorMarker should be to the left (negative X) of helicopter",
 	)
 
@@ -83,19 +85,19 @@ func test_interaction_area_collision_layer_256() -> void:
 	var area := _heli.get_node_or_null("InteractionArea") as Area3D
 	assert_not_null(area)
 	assert_eq(
-		area.collision_layer, 256,
+		area.collision_layer,
+		256,
 		"InteractionArea collision_layer should be 256",
 	)
 
 
 func test_helicopter_has_controller() -> void:
 	var ctrl := _heli.get_node_or_null("HelicopterController")
-	assert_not_null(
-		ctrl, "Helicopter should have a HelicopterController child node"
-	)
+	assert_not_null(ctrl, "Helicopter should have a HelicopterController child node")
 
 
 # --- Controller ---
+
 
 func test_controller_inactive_by_default() -> void:
 	var ctrl := _heli.get_node_or_null("HelicopterController")
@@ -123,6 +125,7 @@ func test_controller_deactivate_clears_inputs() -> void:
 
 # --- Collision layers ---
 
+
 func test_helicopter_collision_layer_is_npc_vehicles() -> void:
 	assert_eq(_heli.collision_layer, 16, "Parked helicopter should be on NPC layer (16)")
 
@@ -136,23 +139,27 @@ func test_helicopter_collision_mask_includes_ground() -> void:
 
 # --- Speed and rotor constants ---
 
+
 func test_controller_forward_speed_is_fast() -> void:
 	assert_gte(
-		ControllerScript.FORWARD_SPEED, 40.0,
+		ControllerScript.FORWARD_SPEED,
+		40.0,
 		"FORWARD_SPEED should be at least 40 m/s",
 	)
 
 
 func test_controller_rotor_spin_fast_enough() -> void:
 	assert_gte(
-		ControllerScript.ROTOR_SPIN, 15.0,
+		ControllerScript.ROTOR_SPIN,
+		15.0,
 		"ROTOR_SPIN should be at least 15 rad/s for realistic appearance",
 	)
 
 
 func test_controller_has_tail_rotor_spin_constant() -> void:
 	assert_gte(
-		ControllerScript.TAIL_ROTOR_SPIN, 20.0,
+		ControllerScript.TAIL_ROTOR_SPIN,
+		20.0,
 		"TAIL_ROTOR_SPIN should be at least 20 rad/s",
 	)
 
@@ -171,7 +178,8 @@ func test_fuselage_has_two_surfaces() -> void:
 	var fuse: MeshInstance3D = _heli.get_node_or_null("Body/Fuselage") as MeshInstance3D
 	assert_not_null(fuse)
 	assert_eq(
-		fuse.mesh.get_surface_count(), 2,
+		fuse.mesh.get_surface_count(),
+		2,
 		"Fuselage mesh should have 2 surfaces (solid + glass)",
 	)
 
@@ -210,5 +218,3 @@ func test_rotor_raised_above_fuselage_top() -> void:
 	var rotor: Node3D = _heli.get_node_or_null("Body/Rotor") as Node3D
 	assert_not_null(rotor, "Rotor node should exist")
 	assert_gt(rotor.position.y, 1.4, "Rotor hub should be above y=1.4 to clear pilot")
-
-

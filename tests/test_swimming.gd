@@ -4,14 +4,15 @@ extends GutTest
 
 const SwimmingScript = preload("res://scenes/player/states/swimming.gd")
 
-
 # ---------------------------------------------------------------------------
 # Stubs
 # ---------------------------------------------------------------------------
 
+
 class StubCamera:
 	extends Node3D
 	var _yaw := 0.0
+
 	func get_yaw() -> float:
 		return _yaw
 
@@ -20,6 +21,7 @@ class StubStateMachine:
 	extends Node
 	var last_transition := ""
 	var last_msg: Dictionary = {}
+
 	func transition_to(name: String, msg: Dictionary = {}) -> void:
 		last_transition = name
 		last_msg = msg
@@ -69,7 +71,9 @@ func before_each() -> void:
 
 
 func after_each() -> void:
-	for action in ["move_forward", "move_backward", "move_left", "move_right", "sprint", "interact"]:
+	for action in [
+		"move_forward", "move_backward", "move_left", "move_right", "sprint", "interact"
+	]:
 		if Input.is_action_pressed(action):
 			Input.action_release(action)
 
@@ -77,6 +81,7 @@ func after_each() -> void:
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
+
 
 func test_swim_speed_is_positive() -> void:
 	assert_gt(SwimmingScript.SWIM_SPEED, 0.0)
@@ -93,6 +98,7 @@ func test_buoyancy_force_is_positive() -> void:
 # ---------------------------------------------------------------------------
 # enter() tests
 # ---------------------------------------------------------------------------
+
 
 func test_enter_sets_is_swimming_true() -> void:
 	_state.enter()
@@ -122,13 +128,16 @@ func test_enter_shows_board_prompt_for_nearby_boat() -> void:
 	watch_signals(EventBus)
 	_state.enter()
 	assert_signal_emitted_with_parameters(
-		EventBus, "show_interaction_prompt", ["Hold F to board"],
+		EventBus,
+		"show_interaction_prompt",
+		["Hold F to board"],
 	)
 
 
 # ---------------------------------------------------------------------------
 # exit() tests
 # ---------------------------------------------------------------------------
+
 
 func test_exit_sets_is_swimming_false() -> void:
 	_state.enter()
@@ -147,12 +156,14 @@ func test_exit_emits_player_exited_water() -> void:
 # physics_update() — buoyancy
 # ---------------------------------------------------------------------------
 
+
 func test_buoyancy_pushes_player_up_when_below_surface() -> void:
 	_player.global_position.y = SwimmingScript.SEA_LEVEL - 1.0
 	_player.velocity = Vector3.ZERO
 	_state.physics_update(0.016)
 	assert_gt(
-		_player.velocity.y, 0.0,
+		_player.velocity.y,
+		0.0,
 		"Buoyancy should push player upward when below water surface",
 	)
 
@@ -162,7 +173,8 @@ func test_velocity_y_damps_when_above_surface() -> void:
 	_player.velocity = Vector3(0.0, 5.0, 0.0)
 	_state.physics_update(0.016)
 	assert_lt(
-		_player.velocity.y, 5.0,
+		_player.velocity.y,
+		5.0,
 		"Velocity Y should damp when above surface",
 	)
 
@@ -170,6 +182,7 @@ func test_velocity_y_damps_when_above_surface() -> void:
 # ---------------------------------------------------------------------------
 # physics_update() — horizontal movement
 # ---------------------------------------------------------------------------
+
 
 func test_swim_forward_at_swim_speed() -> void:
 	_player.global_position.y = SwimmingScript.SEA_LEVEL
@@ -196,11 +209,13 @@ func test_no_input_decelerates_horizontal() -> void:
 	_player.velocity = Vector3(3.0, 0.0, 3.0)
 	_state.physics_update(0.016)
 	assert_lt(
-		absf(_player.velocity.x), 3.0,
+		absf(_player.velocity.x),
+		3.0,
 		"X should decelerate without input",
 	)
 	assert_lt(
-		absf(_player.velocity.z), 3.0,
+		absf(_player.velocity.z),
+		3.0,
 		"Z should decelerate without input",
 	)
 
@@ -209,6 +224,7 @@ func test_no_input_decelerates_horizontal() -> void:
 # physics_update() — exit conditions
 # ---------------------------------------------------------------------------
 
+
 func test_exits_to_idle_when_on_floor_above_water() -> void:
 	_player.global_position.y = SwimmingScript.SEA_LEVEL + 1.0
 	# CharacterBody3D.is_on_floor() depends on physics, so we test the logic
@@ -216,7 +232,8 @@ func test_exits_to_idle_when_on_floor_above_water() -> void:
 	_player.global_position.y = SwimmingScript.SEA_LEVEL - 1.0
 	_state.physics_update(0.016)
 	assert_eq(
-		_sm.last_transition, "",
+		_sm.last_transition,
+		"",
 		"Should not exit to idle when below water level",
 	)
 
@@ -224,6 +241,7 @@ func test_exits_to_idle_when_on_floor_above_water() -> void:
 # ---------------------------------------------------------------------------
 # handle_input() tests
 # ---------------------------------------------------------------------------
+
 
 func test_interact_with_boat_transitions_to_entering() -> void:
 	var boat := Node3D.new()
@@ -249,7 +267,8 @@ func test_interact_with_car_does_not_transition() -> void:
 	event.pressed = true
 	_state.handle_input(event)
 	assert_eq(
-		_sm.last_transition, "",
+		_sm.last_transition,
+		"",
 		"Should not allow entering car from water",
 	)
 
@@ -267,6 +286,7 @@ func test_interact_without_vehicle_does_nothing() -> void:
 # _is_over_water() and _get_ground_height()
 # ---------------------------------------------------------------------------
 
+
 func test_is_over_water_returns_false_without_city_manager() -> void:
 	# No city_manager group nodes exist
 	var result: bool = _state._is_over_water(Vector3.ZERO)
@@ -281,6 +301,7 @@ func test_get_ground_height_returns_zero_without_city_manager() -> void:
 # ---------------------------------------------------------------------------
 # _get_camera_relative_direction()
 # ---------------------------------------------------------------------------
+
 
 func test_camera_direction_returns_normalized_vector() -> void:
 	_pcam._yaw = 0.0

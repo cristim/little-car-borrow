@@ -7,8 +7,8 @@ extends Node3D
 ## are clearly visible.  Releasing V smoothly returns the camera to the
 ## default behind-player position.
 
-const INSPECT_SPRING := 2.0   # arm length while inspecting
-const INSPECT_LERP := 8.0     # how fast the extra orbit decays on release
+const INSPECT_SPRING := 2.0  # arm length while inspecting
+const INSPECT_LERP := 8.0  # how fast the extra orbit decays on release
 
 const FACE_CAM_SPRING := 1.8  # kept for test compatibility
 const FACE_CAM_PITCH := -0.05
@@ -28,7 +28,7 @@ var _inspect_yaw := 0.0
 var _inspect_pitch := 0.0
 
 # Blend state
-var _face_cam_t := 0.0    # 0 = normal spring, 1 = inspect spring
+var _face_cam_t := 0.0  # 0 = normal spring, 1 = inspect spring
 var _blend_spring := 3.5  # current arm length
 
 var _v_held := false
@@ -51,9 +51,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		# Inspect mode: mouse accumulates the temporary orbit offset.
 		_inspect_yaw -= event.relative.x * mouse_sensitivity
 		_inspect_pitch -= event.relative.y * mouse_sensitivity
-		_inspect_pitch = clampf(
-			_inspect_pitch, min_pitch - _pitch, max_pitch - _pitch
-		)
+		_inspect_pitch = clampf(_inspect_pitch, min_pitch - _pitch, max_pitch - _pitch)
 	else:
 		# Normal orbit: mouse moves the persistent camera yaw/pitch.
 		_yaw -= event.relative.x * mouse_sensitivity

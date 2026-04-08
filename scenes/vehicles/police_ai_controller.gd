@@ -34,7 +34,7 @@ const YIELD_THROTTLE_MAX := 0.15
 
 # Line-of-sight
 const LOS_RANGE := 100.0
-const LOS_LOCK_RANGE := 80.0   # within this distance, chase is never abandoned
+const LOS_LOCK_RANGE := 80.0  # within this distance, chase is never abandoned
 const LOS_LOST_TIMEOUT := 40.0
 const LOS_CHECK_INTERVAL := 0.2
 
@@ -68,9 +68,7 @@ var _los_check_timer := 0.0
 var _los_cached := false
 
 # Officer spawning
-var _officer_script: GDScript = preload(
-	"res://scenes/police/police_officer.gd"
-)
+var _officer_script: GDScript = preload("res://scenes/police/police_officer.gd")
 var _officers_spawned := 0
 var _dismount_timer := 0.0
 
@@ -104,9 +102,7 @@ func _physics_process(delta: float) -> void:
 	# Distance-based LOD — skip AI entirely for very far vehicles
 	var cam := get_viewport().get_camera_3d()
 	if cam:
-		var cam_dist := _vehicle.global_position.distance_to(
-			cam.global_position
-		)
+		var cam_dist := _vehicle.global_position.distance_to(cam.global_position)
 		if cam_dist > LOD_FREEZE_DIST:
 			return
 
@@ -196,8 +192,7 @@ func _update_ai_state(delta: float) -> void:
 	# Within LOS_LOCK_RANGE the player is considered visible regardless of
 	# raycast result — prevents quitting while the player is right there.
 	var player_dist: float = (
-		_vehicle.global_position.distance_to(_get_player_vehicle_pos())
-		if _vehicle else INF
+		_vehicle.global_position.distance_to(_get_player_vehicle_pos()) if _vehicle else INF
 	)
 	if _los_cached or player_dist <= LOS_LOCK_RANGE:
 		_los_lost_timer = 0.0
@@ -306,10 +301,7 @@ func _try_dismount(delta: float) -> void:
 	var officer := CharacterBody3D.new()
 	officer.set_script(_officer_script)
 	var side := _vehicle.global_transform.basis.x * 2.0
-	officer.global_position = (
-		_vehicle.global_position + side
-		+ Vector3(0.0, 0.5, 0.0)
-	)
+	officer.global_position = (_vehicle.global_position + side + Vector3(0.0, 0.5, 0.0))
 	get_tree().current_scene.add_child(officer)
 
 	_officers_spawned += 1
@@ -353,9 +345,7 @@ func _drive(_delta: float) -> void:
 				var cross_y := forward.cross(to_wp.normalized()).y
 				var dot_p := forward.dot(to_wp.normalized())
 				heading_err = atan2(cross_y, dot_p)
-				steer = _calc_pursuit_steer(
-					heading_err, PURSUIT_STEER_GAIN
-				)
+				steer = _calc_pursuit_steer(heading_err, PURSUIT_STEER_GAIN)
 			else:
 				steer = 0.0
 		elif dist > 1.0:
@@ -363,9 +353,7 @@ func _drive(_delta: float) -> void:
 			var cross_y := forward.cross(to_player.normalized()).y
 			var dot_p := forward.dot(to_player.normalized())
 			heading_err = atan2(cross_y, dot_p)
-			steer = _calc_pursuit_steer(
-				heading_err, PURSUIT_STEER_GAIN
-			)
+			steer = _calc_pursuit_steer(heading_err, PURSUIT_STEER_GAIN)
 		else:
 			steer = 0.0
 	else:
@@ -383,8 +371,10 @@ func _drive(_delta: float) -> void:
 	# Reduce cruise speed for sharp turns during pursuit
 	if pursuing:
 		cruise = _calc_pursuit_cruise(
-			absf(heading_err), cruise,
-			PURSUIT_TURN_SLOW_ANGLE, PURSUIT_MIN_TURN_SPEED,
+			absf(heading_err),
+			cruise,
+			PURSUIT_TURN_SLOW_ANGLE,
+			PURSUIT_MIN_TURN_SPEED,
 		)
 
 	var speed_kmh := _vehicle.linear_velocity.length() * 3.6
@@ -401,10 +391,7 @@ func _drive(_delta: float) -> void:
 			brake = bp.hard_brake
 			throttle = bp.hard_throttle
 		elif _dist_to_ahead < bp.soft_dist:
-			var t: float = (
-				(_dist_to_ahead - bp.hard_dist)
-				/ (bp.soft_dist - bp.hard_dist)
-			)
+			var t: float = (_dist_to_ahead - bp.hard_dist) / (bp.soft_dist - bp.hard_dist)
 			brake = maxf(brake, SOFT_BRAKE_FACTOR * (1.0 - t))
 			throttle = lerpf(SOFT_THROTTLE_MIN, throttle, t)
 
@@ -437,12 +424,14 @@ func _compute_patrol_steer(forward: Vector3) -> float:
 	if absf(lane_error) > OFF_ROAD_THRESHOLD:
 		steer += clampf(
 			-lane_error * OFF_ROAD_LANE_GAIN,
-			-OFF_ROAD_LANE_MAX, OFF_ROAD_LANE_MAX,
+			-OFF_ROAD_LANE_MAX,
+			OFF_ROAD_LANE_MAX,
 		)
 	else:
 		steer += clampf(
 			-lane_error * LANE_STEER_GAIN,
-			-LANE_STEER_MAX, LANE_STEER_MAX,
+			-LANE_STEER_MAX,
+			LANE_STEER_MAX,
 		)
 	return steer
 
@@ -452,8 +441,10 @@ static func _calc_pursuit_steer(heading_err: float, gain: float) -> float:
 
 
 static func _calc_pursuit_cruise(
-	heading_err_abs: float, base_cruise: float,
-	slow_angle: float, min_speed: float,
+	heading_err_abs: float,
+	base_cruise: float,
+	slow_angle: float,
+	min_speed: float,
 ) -> float:
 	if heading_err_abs <= slow_angle:
 		return base_cruise
@@ -463,7 +454,9 @@ static func _calc_pursuit_cruise(
 
 
 static func _calc_wall_steer(
-	wall_urgency: float, steer_avoidance: float, current_steer: float,
+	wall_urgency: float,
+	steer_avoidance: float,
+	current_steer: float,
 ) -> float:
 	var wall_steer: float
 	if absf(steer_avoidance) > 0.1:
@@ -492,7 +485,9 @@ func _calc_brake_params(pursuing: bool, hitting_pedestrian: bool) -> Dictionary:
 
 
 static func _should_yield(
-	cross_traffic: bool, yield_timer: float, max_yield: float,
+	cross_traffic: bool,
+	yield_timer: float,
+	max_yield: float,
 ) -> bool:
 	if not cross_traffic:
 		return false
@@ -500,7 +495,9 @@ static func _should_yield(
 
 
 static func _calc_escape_steer(
-	ai_state: int, steer_avoidance: float, lane_err: float,
+	ai_state: int,
+	steer_avoidance: float,
+	lane_err: float,
 ) -> float:
 	if ai_state == AIState.PURSUE:
 		if absf(steer_avoidance) > 0.1:
@@ -539,7 +536,9 @@ func _process_escape(delta: float) -> void:
 	# During pursuit: use raycast avoidance; during patrol: use lane error
 	var lane_err := _get_lane_error() if _ai_state != AIState.PURSUE else 0.0
 	var escape_steer := _calc_escape_steer(
-		_ai_state, _steer_avoidance, lane_err,
+		_ai_state,
+		_steer_avoidance,
+		lane_err,
 	)
 
 	_vehicle.steering_input = escape_steer
@@ -577,18 +576,14 @@ func _cast_rays() -> void:
 	var left_dist := SIDE_RAY_LENGTH + 1.0
 	var right_dist := SIDE_RAY_LENGTH + 1.0
 
-	var lq := PhysicsRayQueryParameters3D.create(
-		from, from + left_dir * SIDE_RAY_LENGTH
-	)
+	var lq := PhysicsRayQueryParameters3D.create(from, from + left_dir * SIDE_RAY_LENGTH)
 	lq.collision_mask = RAY_MASK
 	lq.exclude = exclude
 	var lr := space.intersect_ray(lq)
 	if lr:
 		left_dist = from.distance_to(lr.position)
 
-	var rq := PhysicsRayQueryParameters3D.create(
-		from, from + right_dir * SIDE_RAY_LENGTH
-	)
+	var rq := PhysicsRayQueryParameters3D.create(from, from + right_dir * SIDE_RAY_LENGTH)
 	rq.collision_mask = RAY_MASK
 	rq.exclude = exclude
 	var rr := space.intersect_ray(rq)
@@ -597,9 +592,7 @@ func _cast_rays() -> void:
 
 	if left_dist < SIDE_RAY_LENGTH or right_dist < SIDE_RAY_LENGTH:
 		var diff := left_dist - right_dist
-		_steer_avoidance = clampf(
-			-diff * STEER_AVOID_GAIN / SIDE_RAY_LENGTH, -0.5, 0.5
-		)
+		_steer_avoidance = clampf(-diff * STEER_AVOID_GAIN / SIDE_RAY_LENGTH, -0.5, 0.5)
 	else:
 		_steer_avoidance = 0.0
 
@@ -615,16 +608,12 @@ func _cast_rays() -> void:
 	# NPC(16) | Pedestrians(32) | Police(64) = 112
 	var cross_mask := 112
 
-	var clq := PhysicsRayQueryParameters3D.create(
-		from, from + cross_left * CROSS_RAY_LENGTH
-	)
+	var clq := PhysicsRayQueryParameters3D.create(from, from + cross_left * CROSS_RAY_LENGTH)
 	clq.collision_mask = cross_mask
 	clq.exclude = exclude
 	var clr := space.intersect_ray(clq)
 
-	var crq := PhysicsRayQueryParameters3D.create(
-		from, from + cross_right * CROSS_RAY_LENGTH
-	)
+	var crq := PhysicsRayQueryParameters3D.create(from, from + cross_right * CROSS_RAY_LENGTH)
 	crq.collision_mask = cross_mask
 	crq.exclude = exclude
 	var crr := space.intersect_ray(crq)

@@ -148,9 +148,7 @@ func _physics_process(_delta: float) -> void:
 			light.visible = true
 
 	# Reverse detection: dot product of velocity onto vehicle forward (-Z)
-	var forward_dot: float = _vehicle.linear_velocity.dot(
-		-_vehicle.global_transform.basis.z
-	)
+	var forward_dot: float = _vehicle.linear_velocity.dot(-_vehicle.global_transform.basis.z)
 	var is_reversing: bool = forward_dot < REVERSE_SPEED_THRESHOLD
 	for light in _reverse_lights:
 		light.visible = is_reversing

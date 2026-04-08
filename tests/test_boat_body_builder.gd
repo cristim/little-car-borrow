@@ -5,9 +5,7 @@ extends GutTest
 ## These are cosmetic and do not affect gameplay, so engine errors are
 ## treated as non-failures in this test file.
 
-const BoatBuilderScript = preload(
-	"res://scenes/vehicles/boat_body_builder.gd"
-)
+const BoatBuilderScript = preload("res://scenes/vehicles/boat_body_builder.gd")
 
 var _builder: RefCounted
 
@@ -27,6 +25,7 @@ func before_each() -> void:
 
 
 # --- VARIANTS constant ---
+
 
 func test_variants_has_speedboat() -> void:
 	assert_true(BoatBuilderScript.VARIANTS.has("speedboat"))
@@ -52,7 +51,8 @@ func test_each_variant_has_profiles() -> void:
 			"Variant %s should have profiles" % key,
 		)
 		assert_gt(
-			data["profiles"].size(), 2,
+			data["profiles"].size(),
+			2,
 			"Variant %s should have at least 3 profiles" % key,
 		)
 
@@ -65,7 +65,8 @@ func test_each_variant_has_cabin_z() -> void:
 			"Variant %s should have cabin_z" % key,
 		)
 		assert_eq(
-			data["cabin_z"].size(), 2,
+			data["cabin_z"].size(),
+			2,
 			"cabin_z should have 2 elements (front, rear)",
 		)
 
@@ -78,7 +79,8 @@ func test_each_variant_has_cabin_height() -> void:
 			"Variant %s should have cabin_height" % key,
 		)
 		assert_gt(
-			float(data["cabin_height"]), 0.0,
+			float(data["cabin_height"]),
+			0.0,
 			"cabin_height should be positive",
 		)
 
@@ -111,12 +113,14 @@ func test_profiles_z_is_sorted() -> void:
 		var profiles: Array = BoatBuilderScript.VARIANTS[key]["profiles"]
 		for i in range(profiles.size() - 1):
 			assert_lt(
-				float(profiles[i]["z"]), float(profiles[i + 1]["z"]),
+				float(profiles[i]["z"]),
+				float(profiles[i + 1]["z"]),
 				"Profile z values should be sorted for %s" % key,
 			)
 
 
 # --- build() return structure ---
+
 
 func test_build_returns_dictionary() -> void:
 	var result: Dictionary = _builder.build("speedboat")
@@ -155,6 +159,7 @@ func test_build_has_collision_size_key() -> void:
 
 # --- Hull mesh ---
 
+
 func test_build_speedboat_hull_is_array_mesh() -> void:
 	var result: Dictionary = _builder.build("speedboat")
 	assert_true(result["hull"] is ArrayMesh)
@@ -174,12 +179,14 @@ func test_build_speedboat_hull_vertex_count_multiple_of_three() -> void:
 	var arrays := mesh.surface_get_arrays(0)
 	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	assert_eq(
-		verts.size() % 3, 0,
+		verts.size() % 3,
+		0,
 		"Hull vertex count should be multiple of 3",
 	)
 
 
 # --- Cabin mesh ---
+
 
 func test_build_speedboat_cabin_is_array_mesh() -> void:
 	var result: Dictionary = _builder.build("speedboat")
@@ -195,6 +202,7 @@ func test_build_speedboat_cabin_has_vertices() -> void:
 
 
 # --- Windshield mesh ---
+
 
 func test_build_speedboat_windshield_is_array_mesh() -> void:
 	var result: Dictionary = _builder.build("speedboat")
@@ -215,12 +223,14 @@ func test_build_speedboat_windshield_is_single_quad() -> void:
 	var arrays := mesh.surface_get_arrays(0)
 	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	assert_eq(
-		verts.size(), 6,
+		verts.size(),
+		6,
 		"Windshield should be a single quad (6 verts / 2 triangles)",
 	)
 
 
 # --- Engine mesh ---
+
 
 func test_build_speedboat_engine_is_array_mesh() -> void:
 	var result: Dictionary = _builder.build("speedboat")
@@ -237,16 +247,20 @@ func test_build_speedboat_engine_has_vertices() -> void:
 
 # --- stern_z ---
 
+
 func test_build_speedboat_stern_z_matches_last_profile() -> void:
 	var result: Dictionary = _builder.build("speedboat")
 	var profiles: Array = BoatBuilderScript.VARIANTS["speedboat"]["profiles"]
 	var expected: float = float(profiles[profiles.size() - 1]["z"])
 	assert_almost_eq(
-		float(result["stern_z"]), expected, 0.001,
+		float(result["stern_z"]),
+		expected,
+		0.001,
 	)
 
 
 # --- collision_size ---
+
 
 func test_build_speedboat_collision_size_matches_variant() -> void:
 	var result: Dictionary = _builder.build("speedboat")
@@ -255,6 +269,7 @@ func test_build_speedboat_collision_size_matches_variant() -> void:
 
 
 # --- All variants build without error ---
+
 
 func test_build_fishing_returns_all_meshes() -> void:
 	var result: Dictionary = _builder.build("fishing")
@@ -274,20 +289,25 @@ func test_build_runabout_returns_all_meshes() -> void:
 
 # --- Unknown variant defaults to speedboat ---
 
+
 func test_build_unknown_variant_defaults_to_speedboat() -> void:
 	var unknown: Dictionary = _builder.build("nonexistent")
 	var speedboat: Dictionary = _builder.build("speedboat")
 	assert_eq(
-		unknown["collision_size"], speedboat["collision_size"],
+		unknown["collision_size"],
+		speedboat["collision_size"],
 		"Unknown variant should default to speedboat collision size",
 	)
 	assert_almost_eq(
-		float(unknown["stern_z"]), float(speedboat["stern_z"]), 0.001,
+		float(unknown["stern_z"]),
+		float(speedboat["stern_z"]),
+		0.001,
 		"Unknown variant should default to speedboat stern_z",
 	)
 
 
 # --- Fishing variant is larger than speedboat ---
+
 
 func test_fishing_hull_has_more_or_equal_vertices_than_runabout() -> void:
 	var fishing: Dictionary = _builder.build("fishing")
@@ -297,12 +317,14 @@ func test_fishing_hull_has_more_or_equal_vertices_than_runabout() -> void:
 	var f_count: int = f_mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size()
 	var r_count: int = r_mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size()
 	assert_gte(
-		f_count, r_count,
+		f_count,
+		r_count,
 		"Fishing hull should have >= vertices than runabout",
 	)
 
 
 # --- Hull normals are generated ---
+
 
 func test_hull_has_normals() -> void:
 	var result: Dictionary = _builder.build("speedboat")
@@ -310,7 +332,8 @@ func test_hull_has_normals() -> void:
 	var arrays := mesh.surface_get_arrays(0)
 	var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
 	assert_gt(
-		normals.size(), 0,
+		normals.size(),
+		0,
 		"Hull mesh should have generated normals",
 	)
 
@@ -321,6 +344,7 @@ func test_engine_has_normals() -> void:
 	var arrays := mesh.surface_get_arrays(0)
 	var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
 	assert_gt(
-		normals.size(), 0,
+		normals.size(),
+		0,
 		"Engine mesh should have generated normals",
 	)

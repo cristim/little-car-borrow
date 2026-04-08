@@ -3,10 +3,10 @@ extends GutTest
 
 const WeaponScript = preload("res://scenes/player/player_weapon.gd")
 
-
 # ==========================================================================
 # Spread calculation
 # ==========================================================================
+
 
 func test_apply_spread_with_zero_returns_original() -> void:
 	var pw := Node.new()
@@ -28,7 +28,9 @@ func test_apply_spread_returns_normalized() -> void:
 	for _i in range(10):
 		var result: Vector3 = pw._apply_spread(dir, 0.1)
 		assert_almost_eq(
-			result.length(), 1.0, 0.001,
+			result.length(),
+			1.0,
+			0.001,
 			"Spread result should be unit length",
 		)
 	pw.free()
@@ -50,6 +52,7 @@ func test_apply_spread_stays_within_cone() -> void:
 # ==========================================================================
 # Weapon switching
 # ==========================================================================
+
 
 func test_initial_state_is_pistol() -> void:
 	var pw := Node.new()
@@ -127,6 +130,7 @@ func test_cycle_weapon_no_other_unlocked_stays() -> void:
 # ==========================================================================
 # Unlock
 # ==========================================================================
+
 
 func test_unlock_weapon_idempotent() -> void:
 	var pw := Node.new()

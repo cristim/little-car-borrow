@@ -32,8 +32,12 @@ func get_river_at(tile: Vector2i) -> Dictionary:
 	# Check if this tile should have a river based on noise
 	var center_x: float = float(tile.x) * _grid_span
 	var center_z: float = float(tile.y) * _grid_span
-	var n: float = _river_noise.get_noise_2d(
-		float(tile.x), float(tile.y),
+	var n: float = (
+		_river_noise
+		. get_noise_2d(
+			float(tile.x),
+			float(tile.y),
+		)
 	)
 
 	# Only ~15% of tiles get rivers
@@ -60,9 +64,19 @@ func get_river_at(tile: Vector2i) -> Dictionary:
 	var width: float = lerpf(RIVER_WIDTH_MIN, RIVER_WIDTH_MAX, width_t)
 
 	# Position along edge (0-1, centered)
-	var pos: float = 0.5 + _river_noise.get_noise_2d(
-		float(tile.x) * 3.0, float(tile.y) * 3.0,
-	) * 0.2
+	var pos: float = (
+		0.5
+		+ (
+			(
+				_river_noise
+				. get_noise_2d(
+					float(tile.x) * 3.0,
+					float(tile.y) * 3.0,
+				)
+			)
+			* 0.2
+		)
+	)
 
 	var data: Dictionary = {
 		"entry_dir": entry_dir,
@@ -78,8 +92,10 @@ func _find_downhill_dir(tile: Vector2i, exclude_dir: int) -> int:
 	var best_dir := -1
 	var best_h := INF
 	var offsets: Array[Vector2i] = [
-		Vector2i(0, -1), Vector2i(1, 0),
-		Vector2i(0, 1), Vector2i(-1, 0),
+		Vector2i(0, -1),
+		Vector2i(1, 0),
+		Vector2i(0, 1),
+		Vector2i(-1, 0),
 	]
 	for dir in range(4):
 		if dir == exclude_dir:
@@ -98,8 +114,10 @@ func _find_uphill_dir(tile: Vector2i) -> int:
 	var best_dir := 0
 	var best_h := -INF
 	var offsets: Array[Vector2i] = [
-		Vector2i(0, -1), Vector2i(1, 0),
-		Vector2i(0, 1), Vector2i(-1, 0),
+		Vector2i(0, -1),
+		Vector2i(1, 0),
+		Vector2i(0, 1),
+		Vector2i(-1, 0),
 	]
 	for dir in range(4):
 		var neighbor := tile + offsets[dir]

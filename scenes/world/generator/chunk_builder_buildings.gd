@@ -11,7 +11,7 @@ const WALL_THICKNESS := 0.25
 const PITCHED_ROOF_THRESHOLD := 8.0  # buildings under this height get pitched roofs
 const ROOFTOP_HELIPAD_MIN_H := 12.0  # minimum building height for a rooftop helipad
 const ROOFTOP_HELIPAD_MIN_W := 10.0  # minimum width/depth for rooftop helipad
-const ROOFTOP_HELIPAD_CHANCE := 0.12 # per-building probability
+const ROOFTOP_HELIPAD_CHANCE := 0.12  # per-building probability
 const ROOFTOP_HELIPADS_PER_CHUNK := 2
 const WIN_GROUPS := 8
 
@@ -113,10 +113,12 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 				var margin := 2.0
 				var block_size: float = _grid.BLOCK_SIZE
 				var max_off_x := maxf(
-					(block_size - bw) * 0.5 - margin, 0.0,
+					(block_size - bw) * 0.5 - margin,
+					0.0,
 				)
 				var max_off_z := maxf(
-					(block_size - bd) * 0.5 - margin, 0.0,
+					(block_size - bd) * 0.5 - margin,
+					0.0,
 				)
 				var bx_off := rng.randf_range(-max_off_x, max_off_x)
 				var bz_off := rng.randf_range(-max_off_z, max_off_z)
@@ -129,13 +131,18 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 				# Extend 2 cm underground so building walls never visually gap
 				# from the block-ground surface.
 				var size := Vector3(bw, bh + 0.02, bd)
-				block_buildings.append({
-					"center": center,
-					"size": size,
-					"mat_idx": mat_idx,
-					"bx_off": bx_off,
-					"bz_off": bz_off,
-				})
+				(
+					block_buildings
+					. append(
+						{
+							"center": center,
+							"size": size,
+							"mat_idx": mat_idx,
+							"bx_off": bx_off,
+							"bz_off": bz_off,
+						}
+					)
+				)
 
 			# Pick first eligible building for a door
 			var door_bldg_idx := -1
@@ -164,26 +171,41 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 						door_face = 3 if bx_off >= 0.0 else 2
 					else:
 						door_face = 1 if bz_off >= 0.0 else 0
-					var face_w: float = (
-						s.x if door_face <= 1 else s.z
-					)
+					var face_w: float = s.x if door_face <= 1 else s.z
 					if face_w >= DOOR_WIDTH + 0.5:
 						has_interiors = true
 						_add_building_with_door(
-							sts[mi], int_st, c, s, door_face,
+							sts[mi],
+							int_st,
+							c,
+							s,
+							door_face,
 						)
 						_add_building_collision_with_door(
-							body, c, s, door_face,
+							body,
+							c,
+							s,
+							door_face,
 						)
 						door_infos.append([c, s, door_face])
 					else:
-						_city_script.st_add_box_no_bottom(
-							sts[mi], c, s,
+						(
+							_city_script
+							. st_add_box_no_bottom(
+								sts[mi],
+								c,
+								s,
+							)
 						)
 						_city_script.add_box_collision(body, c, s)
 				else:
-					_city_script.st_add_box_no_bottom(
-						sts[mi], c, s,
+					(
+						_city_script
+						. st_add_box_no_bottom(
+							sts[mi],
+							c,
+							s,
+						)
 					)
 					_city_script.add_box_collision(body, c, s)
 				st_used[mi] = true
@@ -196,32 +218,35 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 					var hx := s.x * 0.5
 					var hz := s.z * 0.5
 					var win_faces: Array[Array] = [
-						[c + Vector3(0, 0, -hz), s.x,
-							Vector3(0, 0, -1), Vector3(1, 0, 0)],
-						[c + Vector3(0, 0, hz), s.x,
-							Vector3(0, 0, 1), Vector3(-1, 0, 0)],
-						[c + Vector3(-hx, 0, 0), s.z,
-							Vector3(-1, 0, 0), Vector3(0, 0, -1)],
-						[c + Vector3(hx, 0, 0), s.z,
-							Vector3(1, 0, 0), Vector3(0, 0, 1)],
+						[c + Vector3(0, 0, -hz), s.x, Vector3(0, 0, -1), Vector3(1, 0, 0)],
+						[c + Vector3(0, 0, hz), s.x, Vector3(0, 0, 1), Vector3(-1, 0, 0)],
+						[c + Vector3(-hx, 0, 0), s.z, Vector3(-1, 0, 0), Vector3(0, 0, -1)],
+						[c + Vector3(hx, 0, 0), s.z, Vector3(1, 0, 0), Vector3(0, 0, 1)],
 					]
 					for wf: Array in win_faces:
-						_city_script.st_add_windows_on_face_indep(
-							win_sts, win_count, win_st_has_data,
-							wf[0] as Vector3, wf[1] as float,
-							s.y,
-							wf[2] as Vector3, wf[3] as Vector3,
-							rng,
+						(
+							_city_script
+							. st_add_windows_on_face_indep(
+								win_sts,
+								win_count,
+								win_st_has_data,
+								wf[0] as Vector3,
+								wf[1] as float,
+								s.y,
+								wf[2] as Vector3,
+								wf[3] as Vector3,
+								rng,
+							)
 						)
 
 				# Add pitched roof to short buildings
-				if (
-					s.y < PITCHED_ROOF_THRESHOLD
-					and roof_count > 0
-				):
+				if s.y < PITCHED_ROOF_THRESHOLD and roof_count > 0:
 					var ri := rng.randi() % roof_count
 					_st_add_pitched_roof(
-						roof_sts[ri], c, s, rng,
+						roof_sts[ri],
+						c,
+						s,
+						rng,
 					)
 					roof_st_used[ri] = true
 
@@ -320,7 +345,9 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 
 
 func _add_rooftop_helipad(
-	chunk: Node3D, bld_center: Vector3, bld_size: Vector3,
+	chunk: Node3D,
+	bld_center: Vector3,
+	bld_size: Vector3,
 ) -> void:
 	if _rooftop_helipad_mat == null:
 		_rooftop_helipad_mat = StandardMaterial3D.new()
@@ -372,20 +399,35 @@ func _add_rooftop_helipad(
 
 ## Flat Y-axis quad (top-face) from four corners.
 func _st_add_flat_quad(
-	st: SurfaceTool, v0: Vector3, v1: Vector3, v2: Vector3, v3: Vector3,
+	st: SurfaceTool,
+	v0: Vector3,
+	v1: Vector3,
+	v2: Vector3,
+	v3: Vector3,
 ) -> void:
 	var n := Vector3.UP
-	st.set_normal(n); st.add_vertex(v0)
-	st.set_normal(n); st.add_vertex(v1)
-	st.set_normal(n); st.add_vertex(v2)
-	st.set_normal(n); st.add_vertex(v0)
-	st.set_normal(n); st.add_vertex(v2)
-	st.set_normal(n); st.add_vertex(v3)
+	st.set_normal(n)
+	st.add_vertex(v0)
+	st.set_normal(n)
+	st.add_vertex(v1)
+	st.set_normal(n)
+	st.add_vertex(v2)
+	st.set_normal(n)
+	st.add_vertex(v0)
+	st.set_normal(n)
+	st.add_vertex(v2)
+	st.set_normal(n)
+	st.add_vertex(v3)
 
 
 ## Flat axis-aligned rectangle on Y plane, centered at (cx, y, cz), width w, depth d.
 func _st_add_flat_rect(
-	st: SurfaceTool, cx: float, y: float, cz: float, w: float, d: float,
+	st: SurfaceTool,
+	cx: float,
+	y: float,
+	cz: float,
+	w: float,
+	d: float,
 ) -> void:
 	var hw := w * 0.5
 	var hd := d * 0.5
@@ -411,17 +453,13 @@ func _add_building_with_door(
 	# Face definitions: [face_center_offset, face_width, normal, right]
 	var faces: Array[Array] = [
 		# 0: Front (-Z)
-		[Vector3(0, 0, -hz), size.x,
-			Vector3(0, 0, -1), Vector3(1, 0, 0)],
+		[Vector3(0, 0, -hz), size.x, Vector3(0, 0, -1), Vector3(1, 0, 0)],
 		# 1: Back (+Z)
-		[Vector3(0, 0, hz), size.x,
-			Vector3(0, 0, 1), Vector3(-1, 0, 0)],
+		[Vector3(0, 0, hz), size.x, Vector3(0, 0, 1), Vector3(-1, 0, 0)],
 		# 2: Left (-X)
-		[Vector3(-hx, 0, 0), size.z,
-			Vector3(-1, 0, 0), Vector3(0, 0, -1)],
+		[Vector3(-hx, 0, 0), size.z, Vector3(-1, 0, 0), Vector3(0, 0, -1)],
 		# 3: Right (+X)
-		[Vector3(hx, 0, 0), size.z,
-			Vector3(1, 0, 0), Vector3(0, 0, 1)],
+		[Vector3(hx, 0, 0), size.z, Vector3(1, 0, 0), Vector3(0, 0, 1)],
 	]
 
 	# Emit 4 exterior faces (3 solid + 1 with door hole)
@@ -433,15 +471,25 @@ func _add_building_with_door(
 		var face_center := center + face_offset
 
 		if i == door_face:
-			_city_script.st_add_face_with_door(
-				ext_st, face_center,
-				face_width, size.y,
-				face_normal, face_right,
-				DOOR_WIDTH, DOOR_HEIGHT,
+			(
+				_city_script
+				. st_add_face_with_door(
+					ext_st,
+					face_center,
+					face_width,
+					size.y,
+					face_normal,
+					face_right,
+					DOOR_WIDTH,
+					DOOR_HEIGHT,
+				)
 			)
 		else:
 			_st_add_solid_face(
-				ext_st, face_center, face_width, size.y,
+				ext_st,
+				face_center,
+				face_width,
+				size.y,
 				face_right,
 			)
 
@@ -455,7 +503,8 @@ func _add_building_with_door(
 func _st_add_solid_face(
 	st: SurfaceTool,
 	face_center: Vector3,
-	face_width: float, face_height: float,
+	face_width: float,
+	face_height: float,
 	right: Vector3,
 ) -> void:
 	var up := Vector3.UP
@@ -469,7 +518,9 @@ func _st_add_solid_face(
 
 
 func _st_add_top_face(
-	st: SurfaceTool, center: Vector3, size: Vector3,
+	st: SurfaceTool,
+	center: Vector3,
+	size: Vector3,
 ) -> void:
 	var hx := size.x * 0.5
 	var hz := size.z * 0.5
@@ -481,8 +532,12 @@ func _st_add_top_face(
 	var v1 := Vector3(cx + hx, ty, cz - hz)
 	var v2 := Vector3(cx + hx, ty, cz + hz)
 	var v3 := Vector3(cx - hx, ty, cz + hz)
-	st.add_vertex(v0); st.add_vertex(v3); st.add_vertex(v1)
-	st.add_vertex(v1); st.add_vertex(v3); st.add_vertex(v2)
+	st.add_vertex(v0)
+	st.add_vertex(v3)
+	st.add_vertex(v1)
+	st.add_vertex(v1)
+	st.add_vertex(v3)
+	st.add_vertex(v2)
 
 
 func _add_interior_room(
@@ -499,7 +554,9 @@ func _add_interior_room(
 	var ceil_y := by + INTERIOR_FLOOR_Y + INTERIOR_HEIGHT
 
 	var room_center := Vector3(
-		center.x, (floor_y + ceil_y) * 0.5, center.z,
+		center.x,
+		(floor_y + ceil_y) * 0.5,
+		center.z,
 	)
 	var room_hx := room_w * 0.5
 	var room_hz := room_d * 0.5
@@ -509,31 +566,35 @@ func _add_interior_room(
 	var f1 := Vector3(center.x + room_hx, floor_y, center.z - room_hz)
 	var f2 := Vector3(center.x + room_hx, floor_y, center.z + room_hz)
 	var f3 := Vector3(center.x - room_hx, floor_y, center.z + room_hz)
-	int_st.add_vertex(f0); int_st.add_vertex(f3); int_st.add_vertex(f1)
-	int_st.add_vertex(f1); int_st.add_vertex(f3); int_st.add_vertex(f2)
+	int_st.add_vertex(f0)
+	int_st.add_vertex(f3)
+	int_st.add_vertex(f1)
+	int_st.add_vertex(f1)
+	int_st.add_vertex(f3)
+	int_st.add_vertex(f2)
 
 	# Ceiling quad (facing -Y)
 	var c0 := Vector3(center.x - room_hx, ceil_y, center.z - room_hz)
 	var c1 := Vector3(center.x + room_hx, ceil_y, center.z - room_hz)
 	var c2 := Vector3(center.x + room_hx, ceil_y, center.z + room_hz)
 	var c3 := Vector3(center.x - room_hx, ceil_y, center.z + room_hz)
-	int_st.add_vertex(c0); int_st.add_vertex(c1); int_st.add_vertex(c3)
-	int_st.add_vertex(c1); int_st.add_vertex(c2); int_st.add_vertex(c3)
+	int_st.add_vertex(c0)
+	int_st.add_vertex(c1)
+	int_st.add_vertex(c3)
+	int_st.add_vertex(c1)
+	int_st.add_vertex(c2)
+	int_st.add_vertex(c3)
 
 	# Interior walls -- normals point INWARD
 	var int_faces: Array[Array] = [
 		# 0: Front wall (at -Z side), inward normal = +Z
-		[Vector3(0, 0, -room_hz), room_w,
-			Vector3(0, 0, 1), Vector3(-1, 0, 0)],
+		[Vector3(0, 0, -room_hz), room_w, Vector3(0, 0, 1), Vector3(-1, 0, 0)],
 		# 1: Back wall (at +Z side), inward normal = -Z
-		[Vector3(0, 0, room_hz), room_w,
-			Vector3(0, 0, -1), Vector3(1, 0, 0)],
+		[Vector3(0, 0, room_hz), room_w, Vector3(0, 0, -1), Vector3(1, 0, 0)],
 		# 2: Left wall (at -X side), inward normal = +X
-		[Vector3(-room_hx, 0, 0), room_d,
-			Vector3(1, 0, 0), Vector3(0, 0, 1)],
+		[Vector3(-room_hx, 0, 0), room_d, Vector3(1, 0, 0), Vector3(0, 0, 1)],
 		# 3: Right wall (at +X side), inward normal = -X
-		[Vector3(room_hx, 0, 0), room_d,
-			Vector3(-1, 0, 0), Vector3(0, 0, -1)],
+		[Vector3(room_hx, 0, 0), room_d, Vector3(-1, 0, 0), Vector3(0, 0, -1)],
 	]
 
 	var wall_height := ceil_y - floor_y
@@ -545,21 +606,31 @@ func _add_interior_room(
 		var wall_center := room_center + wall_offset
 
 		if i == door_face:
-			_city_script.st_add_face_with_door(
-				int_st, wall_center,
-				wall_width, wall_height,
-				wall_normal, wall_right,
-				DOOR_WIDTH, DOOR_HEIGHT,
+			(
+				_city_script
+				. st_add_face_with_door(
+					int_st,
+					wall_center,
+					wall_width,
+					wall_height,
+					wall_normal,
+					wall_right,
+					DOOR_WIDTH,
+					DOOR_HEIGHT,
+				)
 			)
 		else:
 			var hw := wall_width * 0.5
 			var hh := wall_height * 0.5
-			_city_script.st_add_quad(
-				int_st,
-				wall_center - wall_right * hw - Vector3.UP * hh,
-				wall_center + wall_right * hw - Vector3.UP * hh,
-				wall_center + wall_right * hw + Vector3.UP * hh,
-				wall_center - wall_right * hw + Vector3.UP * hh,
+			(
+				_city_script
+				. st_add_quad(
+					int_st,
+					wall_center - wall_right * hw - Vector3.UP * hh,
+					wall_center + wall_right * hw - Vector3.UP * hh,
+					wall_center + wall_right * hw + Vector3.UP * hh,
+					wall_center - wall_right * hw + Vector3.UP * hh,
+				)
 			)
 
 
@@ -579,24 +650,25 @@ func _add_building_collision_with_door(
 		center.y + size.y * 0.5 - wt * 0.5,
 		center.z,
 	)
-	_city_script.add_box_collision(
-		body, ceil_center, Vector3(size.x, wt, size.z),
+	(
+		_city_script
+		. add_box_collision(
+			body,
+			ceil_center,
+			Vector3(size.x, wt, size.z),
+		)
 	)
 
 	# Wall collision shapes -- 3 solid walls + 1 split wall
 	var walls: Array[Array] = [
 		# 0: Front (-Z)
-		[Vector3(0, 0, -hz + wt * 0.5),
-			Vector3(size.x, size.y, wt)],
+		[Vector3(0, 0, -hz + wt * 0.5), Vector3(size.x, size.y, wt)],
 		# 1: Back (+Z)
-		[Vector3(0, 0, hz - wt * 0.5),
-			Vector3(size.x, size.y, wt)],
+		[Vector3(0, 0, hz - wt * 0.5), Vector3(size.x, size.y, wt)],
 		# 2: Left (-X)
-		[Vector3(-hx + wt * 0.5, 0, 0),
-			Vector3(wt, size.y, size.z)],
+		[Vector3(-hx + wt * 0.5, 0, 0), Vector3(wt, size.y, size.z)],
 		# 3: Right (+X)
-		[Vector3(hx - wt * 0.5, 0, 0),
-			Vector3(wt, size.y, size.z)],
+		[Vector3(hx - wt * 0.5, 0, 0), Vector3(wt, size.y, size.z)],
 	]
 
 	for i in range(4):
@@ -605,21 +677,31 @@ func _add_building_collision_with_door(
 		var wall_center := center + wall_offset
 		if i == door_face:
 			_add_door_wall_collision(
-				body, wall_center, wall_size, i,
+				body,
+				wall_center,
+				wall_size,
+				i,
 			)
 		else:
-			_city_script.add_box_collision(
-				body, wall_center, wall_size,
+			(
+				_city_script
+				. add_box_collision(
+					body,
+					wall_center,
+					wall_size,
+				)
 			)
 
 	# Interior floor collision
-	var floor_y := (
-		center.y - size.y * 0.5 + INTERIOR_FLOOR_Y - 0.05
-	)
+	var floor_y := center.y - size.y * 0.5 + INTERIOR_FLOOR_Y - 0.05
 	var floor_center := Vector3(center.x, floor_y, center.z)
-	_city_script.add_box_collision(
-		body, floor_center,
-		Vector3(size.x - wt * 2.0, 0.1, size.z - wt * 2.0),
+	(
+		_city_script
+		. add_box_collision(
+			body,
+			floor_center,
+			Vector3(size.x - wt * 2.0, 0.1, size.z - wt * 2.0),
+		)
 	)
 
 
@@ -661,8 +743,13 @@ func _add_door_wall_collision(
 		else:
 			right_size.z = right_width
 			right_center.z += right_offset
-		_city_script.add_box_collision(
-			body, right_center, right_size,
+		(
+			_city_script
+			. add_box_collision(
+				body,
+				right_center,
+				right_size,
+			)
 		)
 
 	# Above-door segment
@@ -676,15 +763,22 @@ func _add_door_wall_collision(
 		else:
 			above_size.z = DOOR_WIDTH
 		above_size.y = above_height
-		_city_script.add_box_collision(
-			body, above_center, above_size,
+		(
+			_city_script
+			. add_box_collision(
+				body,
+				above_center,
+				above_size,
+			)
 		)
 
 
 ## Add a pitched roof (gable or hip) on top of a building.
 ## center/size = building box center and size (roof sits on top face).
 func _st_add_pitched_roof(
-	st: SurfaceTool, center: Vector3, size: Vector3,
+	st: SurfaceTool,
+	center: Vector3,
+	size: Vector3,
 	rng: RandomNumberGenerator,
 ) -> void:
 	var hx := size.x * 0.5
@@ -705,8 +799,12 @@ func _st_add_pitched_roof(
 ## Gable roof: ridge along longer axis, two sloped faces + two triangular gable ends.
 func _st_add_gable_roof(
 	st: SurfaceTool,
-	cx: float, cz: float, top_y: float,
-	hx: float, hz: float, roof_h: float,
+	cx: float,
+	cz: float,
+	top_y: float,
+	hx: float,
+	hz: float,
+	roof_h: float,
 ) -> void:
 	var ridge_y := top_y + roof_h
 	# Ridge runs along X if building is wider, else along Z
@@ -723,8 +821,12 @@ func _st_add_gable_roof(
 		# Back slope (+Z side)
 		_city_script.st_add_quad(st, e2, e3, r0, r1)
 		# Gable ends (triangles) — winding: outward normal = -X (left) and +X (right)
-		st.add_vertex(e0); st.add_vertex(e3); st.add_vertex(r0)
-		st.add_vertex(e1); st.add_vertex(r1); st.add_vertex(e2)
+		st.add_vertex(e0)
+		st.add_vertex(e3)
+		st.add_vertex(r0)
+		st.add_vertex(e1)
+		st.add_vertex(r1)
+		st.add_vertex(e2)
 	else:
 		# Ridge along Z axis
 		var r0 := Vector3(cx, ridge_y, cz - hz)
@@ -738,15 +840,23 @@ func _st_add_gable_roof(
 		# Right slope (+X side)
 		_city_script.st_add_quad(st, e1, e2, r1, r0)
 		# Gable ends (triangles) — winding: outward normal = -Z (front) and +Z (back)
-		st.add_vertex(e0); st.add_vertex(r0); st.add_vertex(e1)
-		st.add_vertex(e2); st.add_vertex(r1); st.add_vertex(e3)
+		st.add_vertex(e0)
+		st.add_vertex(r0)
+		st.add_vertex(e1)
+		st.add_vertex(e2)
+		st.add_vertex(r1)
+		st.add_vertex(e3)
 
 
 ## Hip roof: ridge shorter than building, all 4 sides slope.
 func _st_add_hip_roof(
 	st: SurfaceTool,
-	cx: float, cz: float, top_y: float,
-	hx: float, hz: float, roof_h: float,
+	cx: float,
+	cz: float,
+	top_y: float,
+	hx: float,
+	hz: float,
+	roof_h: float,
 ) -> void:
 	var ridge_y := top_y + roof_h
 	# Ridge inset from edges
@@ -765,9 +875,13 @@ func _st_add_hip_roof(
 		# Back slope (+Z)
 		_city_script.st_add_quad(st, e2, e3, r0, r1)
 		# Left hip triangle — outward normal = -X
-		st.add_vertex(e0); st.add_vertex(e3); st.add_vertex(r0)
+		st.add_vertex(e0)
+		st.add_vertex(e3)
+		st.add_vertex(r0)
 		# Right hip triangle — outward normal = +X
-		st.add_vertex(e1); st.add_vertex(r1); st.add_vertex(e2)
+		st.add_vertex(e1)
+		st.add_vertex(r1)
+		st.add_vertex(e2)
 	else:
 		# Ridge along Z, inset from Z ends
 		var r0 := Vector3(cx, ridge_y, cz - hz + inset)
@@ -777,9 +891,13 @@ func _st_add_hip_roof(
 		# Right slope (+X)
 		_city_script.st_add_quad(st, e1, e2, r1, r0)
 		# Front hip triangle — outward normal = -Z
-		st.add_vertex(e0); st.add_vertex(r0); st.add_vertex(e1)
+		st.add_vertex(e0)
+		st.add_vertex(r0)
+		st.add_vertex(e1)
 		# Back hip triangle — outward normal = +Z
-		st.add_vertex(e2); st.add_vertex(r1); st.add_vertex(e3)
+		st.add_vertex(e2)
+		st.add_vertex(r1)
+		st.add_vertex(e3)
 
 
 ## Spawn an interactive door node at the correct hinge position for a building.
@@ -798,9 +916,9 @@ func _create_door_node(
 	# door_rot_y sets basis so local +X = face_right and local -Z = face_normal.
 	var face_data: Array[Array] = [
 		[Vector3(0, 0, -hz), Vector3(0, 0, -1), Vector3(1, 0, 0), 0.0],
-		[Vector3(0, 0, hz),  Vector3(0, 0, 1),  Vector3(-1, 0, 0), PI],
+		[Vector3(0, 0, hz), Vector3(0, 0, 1), Vector3(-1, 0, 0), PI],
 		[Vector3(-hx, 0, 0), Vector3(-1, 0, 0), Vector3(0, 0, -1), PI / 2.0],
-		[Vector3(hx, 0, 0),  Vector3(1, 0, 0),  Vector3(0, 0, 1), -PI / 2.0],
+		[Vector3(hx, 0, 0), Vector3(1, 0, 0), Vector3(0, 0, 1), -PI / 2.0],
 	]
 
 	var fd: Array = face_data[door_face]
@@ -865,11 +983,21 @@ func _create_door_node(
 
 func _get_block_center_local(bx: int, bz: int) -> Vector2:
 	var cx: float = (
-		_grid.get_road_center_local(bx) + _grid.get_road_width(bx) * 0.5
-		+ _grid.get_road_center_local(bx + 1) - _grid.get_road_width(bx + 1) * 0.5
-	) * 0.5
+		(
+			_grid.get_road_center_local(bx)
+			+ _grid.get_road_width(bx) * 0.5
+			+ _grid.get_road_center_local(bx + 1)
+			- _grid.get_road_width(bx + 1) * 0.5
+		)
+		* 0.5
+	)
 	var cz: float = (
-		_grid.get_road_center_local(bz) + _grid.get_road_width(bz) * 0.5
-		+ _grid.get_road_center_local(bz + 1) - _grid.get_road_width(bz + 1) * 0.5
-	) * 0.5
+		(
+			_grid.get_road_center_local(bz)
+			+ _grid.get_road_width(bz) * 0.5
+			+ _grid.get_road_center_local(bz + 1)
+			- _grid.get_road_width(bz + 1) * 0.5
+		)
+		* 0.5
+	)
 	return Vector2(cx, cz)

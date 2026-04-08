@@ -14,6 +14,7 @@ func before_all() -> void:
 # Constants
 # ==========================================================================
 
+
 func test_speed_threshold_is_2() -> void:
 	assert_true(_src.contains("SPEED_THRESHOLD := 2.0"))
 
@@ -25,6 +26,7 @@ func test_max_spray_speed_is_15() -> void:
 # ==========================================================================
 # Initial state without RigidBody3D parent
 # ==========================================================================
+
 
 func test_vehicle_null_without_rigidbody_parent() -> void:
 	var wake: Node3D = Node3D.new()
@@ -45,6 +47,7 @@ func test_no_particles_created_without_vehicle() -> void:
 # ==========================================================================
 # Initialization with RigidBody3D parent
 # ==========================================================================
+
 
 func test_vehicle_set_with_rigidbody_parent() -> void:
 	var body := RigidBody3D.new()
@@ -113,6 +116,7 @@ func test_sprays_start_not_emitting() -> void:
 # Spray particle properties
 # ==========================================================================
 
+
 func test_spray_amount_is_20() -> void:
 	var body := RigidBody3D.new()
 	var wake: Node3D = Node3D.new()
@@ -180,6 +184,7 @@ func test_spray_has_sphere_mesh_draw_pass() -> void:
 # Foam trail properties
 # ==========================================================================
 
+
 func test_foam_amount_is_30() -> void:
 	var body := RigidBody3D.new()
 	var wake: Node3D = Node3D.new()
@@ -220,6 +225,7 @@ func test_foam_disc_is_flat() -> void:
 # ==========================================================================
 # _process() intensity logic — source verification
 # ==========================================================================
+
 
 func test_intensity_uses_speed_threshold() -> void:
 	assert_true(

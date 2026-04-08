@@ -25,6 +25,7 @@ func before_each() -> void:
 
 # --- Constants ---
 
+
 func test_river_seed_constant() -> void:
 	assert_eq(RiverMapScript.RIVER_SEED, 0x21FE)
 
@@ -42,6 +43,7 @@ func test_min_source_height() -> void:
 
 
 # --- init ---
+
 
 func test_init_sets_grid_span() -> void:
 	assert_eq(_river._grid_span, _grid_span)
@@ -76,6 +78,7 @@ func test_init_river_tiles_empty() -> void:
 
 
 # --- get_river_at ---
+
 
 func test_get_river_at_returns_dictionary() -> void:
 	var result: Dictionary = _river.get_river_at(Vector2i(0, 0))
@@ -139,7 +142,8 @@ func test_get_river_at_entry_and_exit_differ() -> void:
 			var data: Dictionary = _river.get_river_at(Vector2i(x, y))
 			if not data.is_empty():
 				assert_ne(
-					data["entry_dir"], data["exit_dir"],
+					data["entry_dir"],
+					data["exit_dir"],
 					"Entry and exit directions must differ",
 				)
 				return
@@ -168,11 +172,13 @@ func test_get_river_at_width_in_valid_range() -> void:
 			if not data.is_empty():
 				var w: float = data["width"]
 				assert_gte(
-					w, RiverMapScript.RIVER_WIDTH_MIN,
+					w,
+					RiverMapScript.RIVER_WIDTH_MIN,
 					"Width should be >= RIVER_WIDTH_MIN",
 				)
 				assert_lte(
-					w, RiverMapScript.RIVER_WIDTH_MAX,
+					w,
+					RiverMapScript.RIVER_WIDTH_MAX,
 					"Width should be <= RIVER_WIDTH_MAX",
 				)
 				return
@@ -193,12 +199,14 @@ func test_get_river_at_position_in_zero_one_range() -> void:
 
 # --- Caching behavior ---
 
+
 func test_cache_grows_with_queries() -> void:
 	var before: int = _river._river_tiles.size()
 	_river.get_river_at(Vector2i(100, 100))
 	_river.get_river_at(Vector2i(101, 101))
 	assert_eq(
-		_river._river_tiles.size(), before + 2,
+		_river._river_tiles.size(),
+		before + 2,
 		"Cache should grow by 2 after 2 new tile queries",
 	)
 
@@ -208,12 +216,14 @@ func test_repeated_query_does_not_grow_cache() -> void:
 	var after_first: int = _river._river_tiles.size()
 	_river.get_river_at(Vector2i(50, 50))
 	assert_eq(
-		_river._river_tiles.size(), after_first,
+		_river._river_tiles.size(),
+		after_first,
 		"Repeated query should not grow the cache",
 	)
 
 
 # --- Deterministic results ---
+
 
 func test_get_river_at_deterministic() -> void:
 	var noise := FastNoiseLite.new()
@@ -234,6 +244,7 @@ func test_get_river_at_deterministic() -> void:
 
 
 # --- Origin tile (city center) likely has no river ---
+
 
 func test_origin_tile_no_river() -> void:
 	# Tile (0,0) is city center; ground_height is 0 there (flat city),

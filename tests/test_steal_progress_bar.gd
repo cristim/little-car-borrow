@@ -14,6 +14,7 @@ func _build_bar() -> ProgressBar:
 # Initialization
 # ================================================================
 
+
 func test_ready_hides_bar() -> void:
 	var bar := _build_bar()
 	await get_tree().process_frame
@@ -33,6 +34,7 @@ func test_ready_sets_min_max_value() -> void:
 # ================================================================
 # show_progress
 # ================================================================
+
 
 func test_show_progress_makes_visible() -> void:
 	var bar := _build_bar()
@@ -68,6 +70,7 @@ func test_show_progress_when_already_visible() -> void:
 # ================================================================
 # update_progress
 # ================================================================
+
 
 func test_update_progress_sets_value() -> void:
 	var bar := _build_bar()
@@ -119,6 +122,7 @@ func test_update_progress_incremental() -> void:
 # hide_progress
 # ================================================================
 
+
 func test_hide_progress_hides_bar() -> void:
 	var bar := _build_bar()
 	await get_tree().process_frame
@@ -154,6 +158,7 @@ func test_hide_progress_when_already_hidden() -> void:
 # ================================================================
 # Full lifecycle
 # ================================================================
+
 
 func test_full_show_update_hide_cycle() -> void:
 	var bar := _build_bar()

@@ -16,6 +16,7 @@ func before_each() -> void:
 # Signal existence
 # ================================================================
 
+
 func test_player_signals_exist() -> void:
 	assert_true(
 		_bus.has_signal("player_health_changed"),
@@ -175,6 +176,7 @@ func test_weapon_signals_exist() -> void:
 # Signal emission
 # ================================================================
 
+
 func test_player_health_changed_emits_with_args() -> void:
 	var received := []
 	_bus.player_health_changed.connect(
@@ -186,18 +188,14 @@ func test_player_health_changed_emits_with_args() -> void:
 
 func test_crime_committed_emits_with_args() -> void:
 	var received := []
-	_bus.crime_committed.connect(
-		func(ct: String, hp: int) -> void: received.append([ct, hp])
-	)
+	_bus.crime_committed.connect(func(ct: String, hp: int) -> void: received.append([ct, hp]))
 	_bus.crime_committed.emit("theft", 25)
 	assert_eq(received, [["theft", 25]], "Should receive crime args")
 
 
 func test_mission_started_emits_with_id() -> void:
 	var received := []
-	_bus.mission_started.connect(
-		func(mid: String) -> void: received.append(mid)
-	)
+	_bus.mission_started.connect(func(mid: String) -> void: received.append(mid))
 	_bus.mission_started.emit("delivery_123")
 	assert_eq(received, ["delivery_123"], "Should receive mission id")
 
@@ -207,9 +205,7 @@ func test_vehicle_entered_emits_with_node() -> void:
 	v.name = "TestVehicle"
 	add_child_autofree(v)
 	var received := []
-	_bus.vehicle_entered.connect(
-		func(vehicle: Node) -> void: received.append(vehicle)
-	)
+	_bus.vehicle_entered.connect(func(vehicle: Node) -> void: received.append(vehicle))
 	_bus.vehicle_entered.emit(v)
 	assert_eq(received.size(), 1, "Should receive one emission")
 	assert_eq(received[0], v, "Should receive the vehicle node")

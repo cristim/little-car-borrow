@@ -105,17 +105,19 @@ func _update_layout() -> void:
 	_button_positions.clear()
 	for bdef in BUTTONS:
 		var offset: Vector2 = bdef["offset"]
-		var center := Vector2(
-			_viewport_size.x + offset.x,
-			_viewport_size.y + offset.y
+		var center := Vector2(_viewport_size.x + offset.x, _viewport_size.y + offset.y)
+		(
+			_button_positions
+			. append(
+				{
+					"name": bdef["name"],
+					"center": center,
+					"radius": bdef["radius"],
+					"color": bdef["color"],
+					"context": bdef["context"],
+				}
+			)
 		)
-		_button_positions.append({
-			"name": bdef["name"],
-			"center": center,
-			"radius": bdef["radius"],
-			"color": bdef["color"],
-			"context": bdef["context"],
-		})
 	queue_redraw()
 
 
@@ -297,10 +299,7 @@ func _draw_joystick() -> void:
 	var alpha := 0.7 if is_active else 0.4
 
 	# Outer circle
-	draw_arc(
-		center, JOY_RADIUS, 0.0, TAU, 48,
-		Color(1.0, 1.0, 1.0, alpha * 0.5), 2.0
-	)
+	draw_arc(center, JOY_RADIUS, 0.0, TAU, 48, Color(1.0, 1.0, 1.0, alpha * 0.5), 2.0)
 	# Fill
 	draw_circle(center, JOY_RADIUS, Color(0.1, 0.1, 0.1, alpha * 0.3))
 	# Thumb
@@ -347,7 +346,8 @@ func _draw_buttons() -> void:
 			center + Vector2(-6, 6),
 			label,
 			HORIZONTAL_ALIGNMENT_CENTER,
-			-1, 16,
+			-1,
+			16,
 			Color(1.0, 1.0, 1.0, alpha),
 		)
 
@@ -364,7 +364,8 @@ func _draw_restart_button() -> void:
 		center + Vector2(-30, 6),
 		"RESTART",
 		HORIZONTAL_ALIGNMENT_CENTER,
-		-1, 14,
+		-1,
+		14,
 		Color(1.0, 1.0, 1.0, 0.9),
 	)
 

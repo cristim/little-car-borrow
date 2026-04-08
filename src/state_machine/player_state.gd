@@ -30,8 +30,6 @@ func _is_over_water(pos: Vector3) -> bool:
 
 func _update_prompt() -> void:
 	if owner.nearest_vehicle:
-		var is_boat: bool = owner.nearest_vehicle.get_node_or_null(
-			"BoatController"
-		) != null
+		var is_boat: bool = owner.nearest_vehicle.get_node_or_null("BoatController") != null
 		var prompt := "Hold F to board" if is_boat else "Hold F to steal"
 		EventBus.show_interaction_prompt.emit(prompt)

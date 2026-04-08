@@ -2,12 +2,9 @@ extends GutTest
 ## Unit tests for chunk_builder_terrain.gd height sampling, vertex coloring,
 ## and sea plane generation.
 
-const TerrainScript = preload(
-	"res://scenes/world/generator/chunk_builder_terrain.gd"
-)
+const TerrainScript = preload("res://scenes/world/generator/chunk_builder_terrain.gd")
 const RoadGridScript = preload("res://src/road_grid.gd")
 const BoundaryScript = preload("res://src/city_boundary.gd")
-
 
 var _grid: RefCounted
 var _noise: FastNoiseLite
@@ -40,6 +37,7 @@ func before_each() -> void:
 # Height sampling
 # ================================================================
 
+
 func test_height_zero_inside_city_radius() -> void:
 	# Origin is well within city radius
 	var h: float = _builder._sample_height(0.0, 0.0)
@@ -51,7 +49,9 @@ func test_height_near_zero_at_city_blend_zone() -> void:
 	# Tile (1,1) center may be just outside city boundary in blend zone
 	var h: float = _builder._sample_height(span, span)
 	assert_almost_eq(
-		h, 0.0, 0.1,
+		h,
+		0.0,
+		0.1,
 		"Height at tile (1,1) should be near 0 (blend zone)",
 	)
 
@@ -121,14 +121,12 @@ func test_height_continuous_across_boundary() -> void:
 	# Two points very close together straddling a chunk boundary
 	# at tile boundary between (4,0) and (5,0)
 	var boundary_x: float = span * 4.5
-	var h_left: float = _builder._sample_height(
-		boundary_x - 0.1, 0.0
-	)
-	var h_right: float = _builder._sample_height(
-		boundary_x + 0.1, 0.0
-	)
+	var h_left: float = _builder._sample_height(boundary_x - 0.1, 0.0)
+	var h_right: float = _builder._sample_height(boundary_x + 0.1, 0.0)
 	assert_almost_eq(
-		h_left, h_right, 1.0,
+		h_left,
+		h_right,
+		1.0,
 		"Height should be continuous across chunk boundaries",
 	)
 
@@ -136,6 +134,7 @@ func test_height_continuous_across_boundary() -> void:
 # ================================================================
 # Vertex coloring
 # ================================================================
+
 
 func test_color_water_below_sea_level() -> void:
 	# Just below SEA_LEVEL (-2.0), shallow water — should be blue-ish
@@ -149,7 +148,8 @@ func test_color_water_below_sea_level() -> void:
 func test_color_snow_at_high_altitude() -> void:
 	var c: Color = _builder._height_to_color(70.0)
 	assert_eq(
-		c, Color(0.90, 0.90, 0.92),
+		c,
+		Color(0.90, 0.90, 0.92),
 		"High altitude should be snow color",
 	)
 
@@ -158,7 +158,8 @@ func test_color_grass_at_mid_height() -> void:
 	# At 15m (between 0 and 20), should be pure grass
 	var c: Color = _builder._height_to_color(15.0)
 	assert_eq(
-		c, Color(0.22, 0.45, 0.18),
+		c,
+		Color(0.22, 0.45, 0.18),
 		"Mid-height should be grass color",
 	)
 
@@ -166,6 +167,7 @@ func test_color_grass_at_mid_height() -> void:
 # ================================================================
 # Build produces expected children
 # ================================================================
+
 
 func test_build_creates_terrain_mesh() -> void:
 	var chunk := Node3D.new()
@@ -231,6 +233,7 @@ func test_terrain_body_in_road_group() -> void:
 # ================================================================
 # West ocean depression
 # ================================================================
+
 
 func test_west_ocean_depression() -> void:
 	var span: float = _grid.get_grid_span()
@@ -313,6 +316,7 @@ func test_build_deterministic() -> void:
 # _extract_edge_heights
 # ================================================================
 
+
 func test_extract_edge_heights_returns_four_directions() -> void:
 	var s: int = TerrainScript.SUBDIVISIONS + 1
 	var heights: Array[float] = []
@@ -353,7 +357,8 @@ func test_extract_edge_heights_north_row() -> void:
 	var north: PackedFloat32Array = result[0]
 	for ix in range(s):
 		assert_eq(
-			north[ix], float(ix) + 1.0,
+			north[ix],
+			float(ix) + 1.0,
 			"North edge ix=%d should match first row" % ix,
 		)
 
@@ -387,7 +392,8 @@ func test_extract_edge_heights_west_column() -> void:
 	var west: PackedFloat32Array = result[3]
 	for iz in range(s):
 		assert_eq(
-			west[iz], float(iz) * 2.0,
+			west[iz],
+			float(iz) * 2.0,
 			"West edge iz=%d should match first column" % iz,
 		)
 
@@ -410,6 +416,7 @@ func test_extract_edge_heights_east_column() -> void:
 # _parse_edge_heights
 # ================================================================
 
+
 func test_parse_edge_heights_empty_returns_empty() -> void:
 	var result: Dictionary = _builder._parse_edge_heights({})
 	assert_eq(result.size(), 0, "Empty tile_data should produce empty edges")
@@ -418,7 +425,8 @@ func test_parse_edge_heights_empty_returns_empty() -> void:
 func test_parse_edge_heights_extracts_heights() -> void:
 	var heights := PackedFloat32Array([1.0, 2.0, 3.0])
 	var tile_data := {
-		"edges": {
+		"edges":
+		{
 			0: {"heights": heights},
 		},
 	}
@@ -431,7 +439,8 @@ func test_parse_edge_heights_extracts_heights() -> void:
 
 func test_parse_edge_heights_skips_empty_arrays() -> void:
 	var tile_data := {
-		"edges": {
+		"edges":
+		{
 			0: {"heights": PackedFloat32Array()},
 		},
 	}
@@ -446,6 +455,7 @@ func test_parse_edge_heights_skips_empty_arrays() -> void:
 # _sample_edge_array
 # ================================================================
 
+
 func test_sample_edge_array_first_index() -> void:
 	var arr := PackedFloat32Array([10.0, 20.0, 30.0])
 	var result: float = _builder._sample_edge_array(arr, 0)
@@ -454,8 +464,12 @@ func test_sample_edge_array_first_index() -> void:
 
 func test_sample_edge_array_last_index() -> void:
 	var arr := PackedFloat32Array([10.0, 20.0, 30.0])
-	var result: float = _builder._sample_edge_array(
-		arr, TerrainScript.SUBDIVISIONS,
+	var result: float = (
+		_builder
+		. _sample_edge_array(
+			arr,
+			TerrainScript.SUBDIVISIONS,
+		)
 	)
 	assert_eq(result, 30.0, "Last index should return last element")
 
@@ -467,7 +481,9 @@ func test_sample_edge_array_mid_interpolates() -> void:
 	# t = mid_idx / SUBDIVISIONS, interpolated between 0 and 100
 	var expected: float = (float(mid_idx) / float(TerrainScript.SUBDIVISIONS)) * 100.0
 	assert_almost_eq(
-		result, expected, 0.1,
+		result,
+		expected,
+		0.1,
 		"Mid-index should interpolate between edges",
 	)
 
@@ -476,12 +492,20 @@ func test_sample_edge_array_mid_interpolates() -> void:
 # _apply_edge_constraints
 # ================================================================
 
+
 func test_apply_edge_constraints_empty_returns_original() -> void:
-	var result: float = _builder._apply_edge_constraints(
-		5.0, 8, 8, {},
+	var result: float = (
+		_builder
+		. _apply_edge_constraints(
+			5.0,
+			8,
+			8,
+			{},
+		)
 	)
 	assert_eq(
-		result, 5.0,
+		result,
+		5.0,
 		"Empty constraints should return original height",
 	)
 
@@ -491,11 +515,18 @@ func test_apply_edge_constraints_north_at_edge() -> void:
 		0: PackedFloat32Array([10.0, 10.0, 10.0]),
 	}
 	# iz=0, at the north edge — should snap to edge height
-	var result: float = _builder._apply_edge_constraints(
-		0.0, 0, 0, edge_heights,
+	var result: float = (
+		_builder
+		. _apply_edge_constraints(
+			0.0,
+			0,
+			0,
+			edge_heights,
+		)
 	)
 	assert_eq(
-		result, 10.0,
+		result,
+		10.0,
 		"At north edge (iz=0), should snap to edge height",
 	)
 
@@ -506,11 +537,18 @@ func test_apply_edge_constraints_beyond_blend_unaffected() -> void:
 	}
 	# iz > BLEND_CELLS, should be unaffected by north constraint
 	var iz: int = TerrainScript.BLEND_CELLS + 1
-	var result: float = _builder._apply_edge_constraints(
-		5.0, 0, iz, edge_heights,
+	var result: float = (
+		_builder
+		. _apply_edge_constraints(
+			5.0,
+			0,
+			iz,
+			edge_heights,
+		)
 	)
 	assert_eq(
-		result, 5.0,
+		result,
+		5.0,
 		"Beyond blend range, height should be unchanged",
 	)
 
@@ -519,15 +557,25 @@ func test_apply_edge_constraints_beyond_blend_unaffected() -> void:
 # _apply_river_carving
 # ================================================================
 
+
 func test_river_carving_far_from_river_unchanged() -> void:
 	var entry := Vector3(0.0, 0.0, 0.0)
 	var exit_pt := Vector3(100.0, 0.0, 0.0)
-	var result: float = _builder._apply_river_carving(
-		10.0, 0.0, 50.0, entry, exit_pt, 6.0,
+	var result: float = (
+		_builder
+		. _apply_river_carving(
+			10.0,
+			0.0,
+			50.0,
+			entry,
+			exit_pt,
+			6.0,
+		)
 	)
 	# Point at (0, 50) is 50m from river axis — well outside width+3
 	assert_eq(
-		result, 10.0,
+		result,
+		10.0,
 		"Point far from river should not be carved",
 	)
 
@@ -536,11 +584,20 @@ func test_river_carving_inside_channel_depressed() -> void:
 	var entry := Vector3(0.0, 0.0, 50.0)
 	var exit_pt := Vector3(100.0, 0.0, 50.0)
 	# Point directly on river axis
-	var result: float = _builder._apply_river_carving(
-		10.0, 50.0, 50.0, entry, exit_pt, 6.0,
+	var result: float = (
+		_builder
+		. _apply_river_carving(
+			10.0,
+			50.0,
+			50.0,
+			entry,
+			exit_pt,
+			6.0,
+		)
 	)
 	assert_eq(
-		result, 8.0,
+		result,
+		8.0,
 		"Point inside river channel should be depressed by 2.0",
 	)
 
@@ -551,14 +608,23 @@ func test_river_carving_bank_slope_blends() -> void:
 	# Point at half_width + 1.5 from axis (bank zone)
 	var half_w := 3.0
 	var dist_from_axis := half_w + 1.5  # middle of bank
-	var result: float = _builder._apply_river_carving(
-		10.0, 50.0, 50.0 + dist_from_axis,
-		entry, exit_pt, 6.0,
+	var result: float = (
+		_builder
+		. _apply_river_carving(
+			10.0,
+			50.0,
+			50.0 + dist_from_axis,
+			entry,
+			exit_pt,
+			6.0,
+		)
 	)
 	# bank_t = 1.5 / 3.0 = 0.5
 	# lerp(8.0, 10.0, 0.5) = 9.0
 	assert_almost_eq(
-		result, 9.0, 0.01,
+		result,
+		9.0,
+		0.01,
 		"Bank should blend between carved and original height",
 	)
 
@@ -566,11 +632,20 @@ func test_river_carving_bank_slope_blends() -> void:
 func test_river_carving_zero_length_river_unchanged() -> void:
 	var entry := Vector3(50.0, 0.0, 50.0)
 	var exit_pt := Vector3(50.0, 0.0, 50.0)  # same point
-	var result: float = _builder._apply_river_carving(
-		10.0, 50.0, 50.0, entry, exit_pt, 6.0,
+	var result: float = (
+		_builder
+		. _apply_river_carving(
+			10.0,
+			50.0,
+			50.0,
+			entry,
+			exit_pt,
+			6.0,
+		)
 	)
 	assert_eq(
-		result, 10.0,
+		result,
+		10.0,
 		"Zero-length river should not carve",
 	)
 
@@ -578,6 +653,7 @@ func test_river_carving_zero_length_river_unchanged() -> void:
 # ================================================================
 # _river_edge_point
 # ================================================================
+
 
 func test_river_edge_point_north() -> void:
 	var p: Vector3 = _builder._river_edge_point(0.0, 0.0, 50.0, 0, 0.5)
@@ -615,6 +691,7 @@ func test_river_edge_point_invalid_dir_returns_center() -> void:
 # _height_to_color edge cases
 # ================================================================
 
+
 func test_color_deep_water() -> void:
 	# Far below sea level should be darker blue
 	var c: Color = _builder._height_to_color(-10.0)
@@ -642,12 +719,19 @@ func test_color_rock_at_35() -> void:
 # Build with edge constraints
 # ================================================================
 
+
 func test_build_with_edge_heights_returns_edges() -> void:
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
 	var span: float = _grid.get_grid_span()
-	var result: Dictionary = _builder.build(
-		chunk, Vector2i(5, 0), 5.0 * span, 0.0,
+	var result: Dictionary = (
+		_builder
+		. build(
+			chunk,
+			Vector2i(5, 0),
+			5.0 * span,
+			0.0,
+		)
 	)
 	assert_true(result.has(0), "Build should return north edge heights")
 	assert_true(result.has(1), "Build should return east edge heights")
@@ -666,8 +750,16 @@ func test_build_with_river_data() -> void:
 		"width": 6.0,
 	}
 	# Should not crash
-	_builder.build(
-		chunk, Vector2i(5, 0), 5.0 * span, 0.0, {}, river_data,
+	(
+		_builder
+		. build(
+			chunk,
+			Vector2i(5, 0),
+			5.0 * span,
+			0.0,
+			{},
+			river_data,
+		)
 	)
 	assert_true(
 		chunk.has_meta("terrain_min_height"),
@@ -678,6 +770,7 @@ func test_build_with_river_data() -> void:
 # ================================================================
 # Sea plane material — night rendering fix
 # ================================================================
+
 
 func test_sea_plane_uses_unshaded_mode() -> void:
 	# Sea plane must be unshaded so ambient light cannot bleed through

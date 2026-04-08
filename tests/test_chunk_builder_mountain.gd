@@ -1,12 +1,9 @@
 extends GutTest
 ## Unit tests for chunk_builder_mountain.gd rock placement on elevated terrain.
 
-const MountainScript = preload(
-	"res://scenes/world/generator/chunk_builder_mountain.gd"
-)
+const MountainScript = preload("res://scenes/world/generator/chunk_builder_mountain.gd")
 const RoadGridScript = preload("res://src/road_grid.gd")
 const BoundaryScript = preload("res://src/city_boundary.gd")
-
 
 var _grid: RefCounted
 var _noise: FastNoiseLite
@@ -36,6 +33,7 @@ func before_each() -> void:
 # Initialization
 # ================================================================
 
+
 func test_init_sets_grid() -> void:
 	assert_not_null(_builder._grid, "init should set _grid")
 
@@ -57,7 +55,9 @@ func test_rock_material_color() -> void:
 
 func test_rock_material_roughness() -> void:
 	assert_almost_eq(
-		_builder._rock_mat.roughness, 0.95, 0.01,
+		_builder._rock_mat.roughness,
+		0.95,
+		0.01,
 		"Rock roughness should be 0.95",
 	)
 
@@ -65,6 +65,7 @@ func test_rock_material_roughness() -> void:
 # ================================================================
 # Build on city tile (flat, height 0 - no rocks expected)
 # ================================================================
+
 
 func test_build_no_rocks_on_flat_tile() -> void:
 	var chunk := Node3D.new()
@@ -74,7 +75,8 @@ func test_build_no_rocks_on_flat_tile() -> void:
 
 	var child_count := chunk.get_child_count()
 	assert_eq(
-		child_count, 0,
+		child_count,
+		0,
 		"Flat tile (h=0) should produce no rock children",
 	)
 
@@ -99,6 +101,7 @@ func test_build_no_rocks_on_low_terrain() -> void:
 # Build on elevated tile (rocks expected if height >= 15)
 # ================================================================
 
+
 func test_build_creates_rocks_on_elevated_tile() -> void:
 	var span: float = _grid.get_grid_span()
 	var found_rocks := false
@@ -107,8 +110,14 @@ func test_build_creates_rocks_on_elevated_tile() -> void:
 			var chunk := Node3D.new()
 			add_child_autofree(chunk)
 			var tile := Vector2i(tx, tz)
-			_builder.build(
-				chunk, tile, span * float(tx), span * float(tz),
+			(
+				_builder
+				. build(
+					chunk,
+					tile,
+					span * float(tx),
+					span * float(tz),
+				)
 			)
 			for child in chunk.get_children():
 				if child is MeshInstance3D and child.name == "Rocks":
@@ -133,8 +142,14 @@ func test_build_creates_collision_body_with_rocks() -> void:
 			var chunk := Node3D.new()
 			add_child_autofree(chunk)
 			var tile := Vector2i(tx, tz)
-			_builder.build(
-				chunk, tile, span * float(tx), span * float(tz),
+			(
+				_builder
+				. build(
+					chunk,
+					tile,
+					span * float(tx),
+					span * float(tz),
+				)
 			)
 			for child in chunk.get_children():
 				if child is StaticBody3D and child.name == "RockBodies":
@@ -158,17 +173,25 @@ func test_rock_body_collision_layer() -> void:
 			var chunk := Node3D.new()
 			add_child_autofree(chunk)
 			var tile := Vector2i(tx, tz)
-			_builder.build(
-				chunk, tile, span * float(tx), span * float(tz),
+			(
+				_builder
+				. build(
+					chunk,
+					tile,
+					span * float(tx),
+					span * float(tz),
+				)
 			)
 			for child in chunk.get_children():
 				if child is StaticBody3D and child.name == "RockBodies":
 					assert_eq(
-						child.collision_layer, 2,
+						child.collision_layer,
+						2,
 						"RockBodies collision_layer should be 2 (Static)",
 					)
 					assert_eq(
-						child.collision_mask, 0,
+						child.collision_mask,
+						0,
 						"RockBodies collision_mask should be 0",
 					)
 					return
@@ -183,8 +206,14 @@ func test_rock_body_in_static_group() -> void:
 			var chunk := Node3D.new()
 			add_child_autofree(chunk)
 			var tile := Vector2i(tx, tz)
-			_builder.build(
-				chunk, tile, span * float(tx), span * float(tz),
+			(
+				_builder
+				. build(
+					chunk,
+					tile,
+					span * float(tx),
+					span * float(tz),
+				)
 			)
 			for child in chunk.get_children():
 				if child is StaticBody3D and child.name == "RockBodies":
@@ -204,13 +233,20 @@ func test_rocks_mesh_has_material_override() -> void:
 			var chunk := Node3D.new()
 			add_child_autofree(chunk)
 			var tile := Vector2i(tx, tz)
-			_builder.build(
-				chunk, tile, span * float(tx), span * float(tz),
+			(
+				_builder
+				. build(
+					chunk,
+					tile,
+					span * float(tx),
+					span * float(tz),
+				)
 			)
 			for child in chunk.get_children():
 				if child is MeshInstance3D and child.name == "Rocks":
 					assert_eq(
-						child.material_override, _builder._rock_mat,
+						child.material_override,
+						_builder._rock_mat,
 						"Rocks mesh should use the rock material",
 					)
 					return
@@ -221,6 +257,7 @@ func test_rocks_mesh_has_material_override() -> void:
 # ================================================================
 # Determinism
 # ================================================================
+
 
 func test_build_deterministic_same_tile() -> void:
 	var span: float = _grid.get_grid_span()
@@ -237,7 +274,8 @@ func test_build_deterministic_same_tile() -> void:
 	_builder.build(chunk2, tile, ox, oz)
 
 	assert_eq(
-		chunk1.get_child_count(), chunk2.get_child_count(),
+		chunk1.get_child_count(),
+		chunk2.get_child_count(),
 		"Same tile should produce same number of children",
 	)
 

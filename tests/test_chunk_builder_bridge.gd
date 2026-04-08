@@ -1,12 +1,9 @@
 extends GutTest
 ## Unit tests for chunk_builder_bridge.gd bridge deck and railing generation.
 
-const BridgeScript = preload(
-	"res://scenes/world/generator/chunk_builder_bridge.gd"
-)
+const BridgeScript = preload("res://scenes/world/generator/chunk_builder_bridge.gd")
 const RoadGridScript = preload("res://src/road_grid.gd")
 const BoundaryScript = preload("res://src/city_boundary.gd")
-
 
 var _grid: RefCounted
 var _noise: FastNoiseLite
@@ -40,6 +37,7 @@ func before_each() -> void:
 # Initialization
 # ================================================================
 
+
 func test_init_sets_grid() -> void:
 	assert_not_null(_builder._grid, "init should set _grid")
 
@@ -50,7 +48,8 @@ func test_init_sets_boundary() -> void:
 
 func test_init_sets_road_mat() -> void:
 	assert_eq(
-		_builder._road_mat, _road_mat,
+		_builder._road_mat,
+		_road_mat,
 		"init should store the provided road material",
 	)
 
@@ -59,30 +58,35 @@ func test_init_sets_road_mat() -> void:
 # Constants
 # ================================================================
 
+
 func test_deck_width_constant() -> void:
 	assert_eq(
-		BridgeScript.DECK_WIDTH, 10.0,
+		BridgeScript.DECK_WIDTH,
+		10.0,
 		"DECK_WIDTH should be 10.0",
 	)
 
 
 func test_deck_thickness_constant() -> void:
 	assert_eq(
-		BridgeScript.DECK_THICKNESS, 0.4,
+		BridgeScript.DECK_THICKNESS,
+		0.4,
 		"DECK_THICKNESS should be 0.4",
 	)
 
 
 func test_railing_height_constant() -> void:
 	assert_eq(
-		BridgeScript.RAILING_HEIGHT, 1.0,
+		BridgeScript.RAILING_HEIGHT,
+		1.0,
 		"RAILING_HEIGHT should be 1.0",
 	)
 
 
 func test_highway_indices_constant() -> void:
 	assert_eq(
-		BridgeScript.HIGHWAY_INDICES, [0, 5],
+		BridgeScript.HIGHWAY_INDICES,
+		[0, 5],
 		"HIGHWAY_INDICES should be [0, 5]",
 	)
 
@@ -91,13 +95,15 @@ func test_highway_indices_constant() -> void:
 # Build with empty river_data (early return)
 # ================================================================
 
+
 func test_build_empty_river_data_produces_no_children() -> void:
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
 	_builder.build(chunk, Vector2i(0, 0), 0.0, 0.0, {})
 
 	assert_eq(
-		chunk.get_child_count(), 0,
+		chunk.get_child_count(),
+		0,
 		"Empty river_data should produce no children",
 	)
 
@@ -105,6 +111,7 @@ func test_build_empty_river_data_produces_no_children() -> void:
 # ================================================================
 # Build on city tile (flat, ground height 0 - below 0.5 threshold)
 # ================================================================
+
 
 func test_build_no_bridge_on_flat_tile() -> void:
 	var chunk := Node3D.new()
@@ -114,7 +121,8 @@ func test_build_no_bridge_on_flat_tile() -> void:
 	_builder.build(chunk, Vector2i(0, 0), 0.0, 0.0, river)
 
 	assert_eq(
-		chunk.get_child_count(), 0,
+		chunk.get_child_count(),
+		0,
 		"Flat tile (h=0 < 0.5) should not produce bridge",
 	)
 
@@ -122,6 +130,7 @@ func test_build_no_bridge_on_flat_tile() -> void:
 # ================================================================
 # Build on elevated tile (bridge expected)
 # ================================================================
+
 
 func test_build_creates_bridge_on_elevated_tile() -> void:
 	var span: float = _grid.get_grid_span()
@@ -133,8 +142,15 @@ func test_build_creates_bridge_on_elevated_tile() -> void:
 			var chunk := Node3D.new()
 			add_child_autofree(chunk)
 			var tile := Vector2i(tx, tz)
-			_builder.build(
-				chunk, tile, span * float(tx), span * float(tz), river,
+			(
+				_builder
+				. build(
+					chunk,
+					tile,
+					span * float(tx),
+					span * float(tz),
+					river,
+				)
 			)
 			for child in chunk.get_children():
 				if child is StaticBody3D and child.name == "Bridges":
@@ -160,8 +176,15 @@ func test_bridge_body_in_road_group() -> void:
 			var chunk := Node3D.new()
 			add_child_autofree(chunk)
 			var tile := Vector2i(tx, tz)
-			_builder.build(
-				chunk, tile, span * float(tx), span * float(tz), river,
+			(
+				_builder
+				. build(
+					chunk,
+					tile,
+					span * float(tx),
+					span * float(tz),
+					river,
+				)
 			)
 			for child in chunk.get_children():
 				if child is StaticBody3D and child.name == "Bridges":
@@ -183,17 +206,26 @@ func test_bridge_body_collision_layer() -> void:
 			var chunk := Node3D.new()
 			add_child_autofree(chunk)
 			var tile := Vector2i(tx, tz)
-			_builder.build(
-				chunk, tile, span * float(tx), span * float(tz), river,
+			(
+				_builder
+				. build(
+					chunk,
+					tile,
+					span * float(tx),
+					span * float(tz),
+					river,
+				)
 			)
 			for child in chunk.get_children():
 				if child is StaticBody3D and child.name == "Bridges":
 					assert_eq(
-						child.collision_layer, 1,
+						child.collision_layer,
+						1,
 						"Bridges collision_layer should be 1 (Ground)",
 					)
 					assert_eq(
-						child.collision_mask, 0,
+						child.collision_mask,
+						0,
 						"Bridges collision_mask should be 0",
 					)
 					return
@@ -210,8 +242,15 @@ func test_bridge_has_mesh_child() -> void:
 			var chunk := Node3D.new()
 			add_child_autofree(chunk)
 			var tile := Vector2i(tx, tz)
-			_builder.build(
-				chunk, tile, span * float(tx), span * float(tz), river,
+			(
+				_builder
+				. build(
+					chunk,
+					tile,
+					span * float(tx),
+					span * float(tz),
+					river,
+				)
 			)
 			for child in chunk.get_children():
 				if child is StaticBody3D and child.name == "Bridges":
@@ -238,15 +277,23 @@ func test_bridge_deck_uses_road_material() -> void:
 			var chunk := Node3D.new()
 			add_child_autofree(chunk)
 			var tile := Vector2i(tx, tz)
-			_builder.build(
-				chunk, tile, span * float(tx), span * float(tz), river,
+			(
+				_builder
+				. build(
+					chunk,
+					tile,
+					span * float(tx),
+					span * float(tz),
+					river,
+				)
 			)
 			for child in chunk.get_children():
 				if child is StaticBody3D and child.name == "Bridges":
 					for sub in child.get_children():
 						if sub is MeshInstance3D and sub.name == "BridgeDeck":
 							assert_eq(
-								sub.material_override, _road_mat,
+								sub.material_override,
+								_road_mat,
 								"BridgeDeck should use road material",
 							)
 							return
@@ -257,6 +304,7 @@ func test_bridge_deck_uses_road_material() -> void:
 # ================================================================
 # Determinism
 # ================================================================
+
 
 func test_build_deterministic_same_tile() -> void:
 	var span: float = _grid.get_grid_span()
@@ -274,6 +322,7 @@ func test_build_deterministic_same_tile() -> void:
 	_builder.build(chunk2, tile, ox, oz, river)
 
 	assert_eq(
-		chunk1.get_child_count(), chunk2.get_child_count(),
+		chunk1.get_child_count(),
+		chunk2.get_child_count(),
 		"Same tile should produce same child count",
 	)

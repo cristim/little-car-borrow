@@ -1,12 +1,9 @@
 extends GutTest
 ## Unit tests for chunk_builder_river.gd water plane generation along river paths.
 
-const RiverScript = preload(
-	"res://scenes/world/generator/chunk_builder_river.gd"
-)
+const RiverScript = preload("res://scenes/world/generator/chunk_builder_river.gd")
 const RoadGridScript = preload("res://src/road_grid.gd")
 const BoundaryScript = preload("res://src/city_boundary.gd")
-
 
 var _grid: RefCounted
 var _noise: FastNoiseLite
@@ -35,6 +32,7 @@ func before_each() -> void:
 # ================================================================
 # Initialization
 # ================================================================
+
 
 func test_init_sets_grid() -> void:
 	assert_not_null(_builder._grid, "init should set _grid")
@@ -76,23 +74,27 @@ func test_water_material_color() -> void:
 # Constants
 # ================================================================
 
+
 func test_sea_level_constant() -> void:
 	assert_eq(
-		RiverScript.SEA_LEVEL, -2.0,
+		RiverScript.SEA_LEVEL,
+		-2.0,
 		"SEA_LEVEL should be -2.0",
 	)
 
 
 func test_subdivisions_constant() -> void:
 	assert_eq(
-		RiverScript.SUBDIVISIONS, 8,
+		RiverScript.SUBDIVISIONS,
+		8,
 		"SUBDIVISIONS should be 8",
 	)
 
 
 func test_river_depth_constant() -> void:
 	assert_eq(
-		RiverScript.RIVER_DEPTH, 2.0,
+		RiverScript.RIVER_DEPTH,
+		2.0,
 		"RIVER_DEPTH should be 2.0",
 	)
 
@@ -101,13 +103,15 @@ func test_river_depth_constant() -> void:
 # Build with empty river_data (early return)
 # ================================================================
 
+
 func test_build_empty_river_data_produces_no_children() -> void:
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
 	_builder.build(chunk, Vector2i(0, 0), 0.0, 0.0, {})
 
 	assert_eq(
-		chunk.get_child_count(), 0,
+		chunk.get_child_count(),
+		0,
 		"Empty river_data should produce no children",
 	)
 
@@ -116,8 +120,12 @@ func test_build_empty_river_data_produces_no_children() -> void:
 # Build with valid river_data
 # ================================================================
 
+
 func _make_river_data(
-	entry: int, exit_dir: int, width: float, pos: float,
+	entry: int,
+	exit_dir: int,
+	width: float,
+	pos: float,
 ) -> Dictionary:
 	return {
 		"entry_dir": entry,
@@ -152,7 +160,8 @@ func test_river_mesh_has_water_material() -> void:
 	for child in chunk.get_children():
 		if child is MeshInstance3D and child.name == "River":
 			assert_eq(
-				child.material_override, _builder._water_mat,
+				child.material_override,
+				_builder._water_mat,
 				"River mesh should use water material",
 			)
 			return
@@ -177,6 +186,7 @@ func test_river_mesh_has_valid_mesh() -> void:
 # Direction combinations
 # ================================================================
 
+
 func test_build_north_to_south() -> void:
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
@@ -185,7 +195,8 @@ func test_build_north_to_south() -> void:
 	_builder.build(chunk, Vector2i(5, 0), span * 5.0, 0.0, river)
 
 	assert_eq(
-		chunk.get_child_count(), 1,
+		chunk.get_child_count(),
+		1,
 		"N-S river should produce exactly one child",
 	)
 
@@ -198,7 +209,8 @@ func test_build_east_to_west() -> void:
 	_builder.build(chunk, Vector2i(5, 0), span * 5.0, 0.0, river)
 
 	assert_eq(
-		chunk.get_child_count(), 1,
+		chunk.get_child_count(),
+		1,
 		"E-W river should produce exactly one child",
 	)
 
@@ -211,7 +223,8 @@ func test_build_north_to_east() -> void:
 	_builder.build(chunk, Vector2i(5, 0), span * 5.0, 0.0, river)
 
 	assert_eq(
-		chunk.get_child_count(), 1,
+		chunk.get_child_count(),
+		1,
 		"N-E river should produce exactly one child",
 	)
 
@@ -224,7 +237,8 @@ func test_build_south_to_west() -> void:
 	_builder.build(chunk, Vector2i(5, 0), span * 5.0, 0.0, river)
 
 	assert_eq(
-		chunk.get_child_count(), 1,
+		chunk.get_child_count(),
+		1,
 		"S-W river should produce exactly one child",
 	)
 
@@ -232,6 +246,7 @@ func test_build_south_to_west() -> void:
 # ================================================================
 # _edge_point calculations
 # ================================================================
+
 
 func test_edge_point_north() -> void:
 	var pt: Vector3 = _builder._edge_point(100.0, 200.0, 50.0, 0, 0.5)
@@ -262,11 +277,15 @@ func test_edge_point_offset_position() -> void:
 	var pt_low: Vector3 = _builder._edge_point(100.0, 200.0, 50.0, 0, 0.0)
 	var pt_high: Vector3 = _builder._edge_point(100.0, 200.0, 50.0, 0, 1.0)
 	assert_almost_eq(
-		pt_low.x, 50.0, 0.01,
+		pt_low.x,
+		50.0,
+		0.01,
 		"pos=0 on north edge should offset X to ox - hs",
 	)
 	assert_almost_eq(
-		pt_high.x, 150.0, 0.01,
+		pt_high.x,
+		150.0,
+		0.01,
 		"pos=1 on north edge should offset X to ox + hs",
 	)
 
@@ -275,7 +294,9 @@ func test_edge_point_y_always_zero() -> void:
 	for dir in range(4):
 		var pt: Vector3 = _builder._edge_point(0.0, 0.0, 50.0, dir, 0.5)
 		assert_almost_eq(
-			pt.y, 0.0, 0.01,
+			pt.y,
+			0.0,
+			0.01,
 			"Edge point Y should always be 0 for dir %d" % dir,
 		)
 
@@ -290,6 +311,7 @@ func test_edge_point_invalid_dir_returns_center() -> void:
 # River data defaults
 # ================================================================
 
+
 func test_build_uses_default_river_values() -> void:
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
@@ -300,7 +322,8 @@ func test_build_uses_default_river_values() -> void:
 
 	# Should use defaults: entry_dir=0, exit_dir=2, width=6.0, position=0.5
 	assert_eq(
-		chunk.get_child_count(), 1,
+		chunk.get_child_count(),
+		1,
 		"Default river_data should still produce a River mesh",
 	)
 
@@ -308,6 +331,7 @@ func test_build_uses_default_river_values() -> void:
 # ================================================================
 # Different widths
 # ================================================================
+
 
 func test_build_narrow_river() -> void:
 	var chunk := Node3D.new()
@@ -333,6 +357,7 @@ func test_build_wide_river() -> void:
 # Determinism
 # ================================================================
 
+
 func test_build_deterministic_same_tile_and_data() -> void:
 	var span: float = _grid.get_grid_span()
 	var tile := Vector2i(5, 2)
@@ -349,6 +374,7 @@ func test_build_deterministic_same_tile_and_data() -> void:
 	_builder.build(chunk2, tile, ox, oz, river)
 
 	assert_eq(
-		chunk1.get_child_count(), chunk2.get_child_count(),
+		chunk1.get_child_count(),
+		chunk2.get_child_count(),
 		"Same tile+data should produce same child count",
 	)

@@ -2,12 +2,9 @@ extends GutTest
 ## Unit tests for chunk_builder_villages.gd flatness checks,
 ## village placement, and deterministic output.
 
-const VillageScript = preload(
-	"res://scenes/world/generator/chunk_builder_villages.gd"
-)
+const VillageScript = preload("res://scenes/world/generator/chunk_builder_villages.gd")
 const RoadGridScript = preload("res://src/road_grid.gd")
 const BoundaryScript = preload("res://src/city_boundary.gd")
-
 
 var _grid: RefCounted
 var _noise: FastNoiseLite
@@ -45,6 +42,7 @@ func before_each() -> void:
 # ================================================================
 # Height sampling matches terrain builder
 # ================================================================
+
 
 func test_height_zero_inside_city() -> void:
 	var h: float = _builder._sample_height(0.0, 0.0)
@@ -86,6 +84,7 @@ func test_seabed_exists_far_from_city() -> void:
 # Flatness check
 # ================================================================
 
+
 func test_flat_area_passes_flatness_check() -> void:
 	# Inside city, all heights are 0 — perfectly flat
 	# But center height must be > 1.0 for village placement,
@@ -98,6 +97,7 @@ func test_flat_area_passes_flatness_check() -> void:
 # ================================================================
 # Build behavior
 # ================================================================
+
 
 func test_build_sets_has_village_meta() -> void:
 	var chunk := Node3D.new()
@@ -129,7 +129,8 @@ func test_build_deterministic_for_same_tile() -> void:
 	var v1: bool = chunk1.get_meta("has_village")
 	var v2: bool = chunk2.get_meta("has_village")
 	assert_eq(
-		v1, v2,
+		v1,
+		v2,
 		"Same tile should produce same village decision",
 	)
 
@@ -201,6 +202,7 @@ func test_village_buildings_have_collision() -> void:
 # Flatness check edge cases
 # ================================================================
 
+
 func test_hilly_area_fails_flatness_check() -> void:
 	var span: float = _grid.get_grid_span()
 	# Far from city, steep terrain should fail flatness
@@ -216,28 +218,32 @@ func test_hilly_area_fails_flatness_check() -> void:
 
 func test_flatness_threshold_constant() -> void:
 	assert_eq(
-		VillageScript.FLATNESS_THRESHOLD, 2.0,
+		VillageScript.FLATNESS_THRESHOLD,
+		2.0,
 		"Flatness threshold should be 2.0",
 	)
 
 
 func test_village_radius_constant() -> void:
 	assert_eq(
-		VillageScript.VILLAGE_RADIUS, 30.0,
+		VillageScript.VILLAGE_RADIUS,
+		30.0,
 		"Village radius should be 30.0",
 	)
 
 
 func test_min_village_buildings_constant() -> void:
 	assert_eq(
-		VillageScript.MIN_VILLAGE_BUILDINGS, 3,
+		VillageScript.MIN_VILLAGE_BUILDINGS,
+		3,
 		"Min village buildings should be 3",
 	)
 
 
 func test_max_village_buildings_constant() -> void:
 	assert_eq(
-		VillageScript.MAX_VILLAGE_BUILDINGS, 8,
+		VillageScript.MAX_VILLAGE_BUILDINGS,
+		8,
 		"Max village buildings should be 8",
 	)
 
@@ -245,6 +251,7 @@ func test_max_village_buildings_constant() -> void:
 # ================================================================
 # Village placement with different seeds
 # ================================================================
+
 
 func test_different_tiles_may_differ() -> void:
 	var span: float = _grid.get_grid_span()
@@ -275,6 +282,7 @@ func test_different_tiles_may_differ() -> void:
 # Village body collision properties
 # ================================================================
 
+
 func test_village_body_collision_layer() -> void:
 	var span: float = _grid.get_grid_span()
 	for tx in range(5, 20):
@@ -286,11 +294,13 @@ func test_village_body_collision_layer() -> void:
 			for child in chunk.get_children():
 				if child is StaticBody3D:
 					assert_eq(
-						child.collision_layer, 2,
+						child.collision_layer,
+						2,
 						"Village body should be on layer 2 (Static)",
 					)
 					assert_eq(
-						child.collision_mask, 0,
+						child.collision_mask,
+						0,
 						"Village body collision mask should be 0",
 					)
 					assert_true(
@@ -325,6 +335,7 @@ func test_village_sets_center_meta() -> void:
 # ================================================================
 # Height sampling: west ocean consistency
 # ================================================================
+
 
 func test_sample_height_west_ocean() -> void:
 	var span: float = _grid.get_grid_span()

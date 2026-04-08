@@ -1,9 +1,7 @@
 extends GutTest
 ## Unit tests for chunk_builder_farmland.gd field and fence generation.
 
-const FarmlandScript = preload(
-	"res://scenes/world/generator/chunk_builder_farmland.gd"
-)
+const FarmlandScript = preload("res://scenes/world/generator/chunk_builder_farmland.gd")
 const RoadGridScript = preload("res://src/road_grid.gd")
 const BoundaryScript = preload("res://src/city_boundary.gd")
 
@@ -35,13 +33,15 @@ func before_each() -> void:
 # Initialization
 # ================================================================
 
+
 func test_init_stores_grid() -> void:
 	assert_eq(_builder._grid, _grid, "init should store grid reference")
 
 
 func test_init_stores_boundary() -> void:
 	assert_eq(
-		_builder._boundary, _boundary,
+		_builder._boundary,
+		_boundary,
 		"init should store boundary reference",
 	)
 
@@ -60,7 +60,8 @@ func test_init_creates_fence_mat() -> void:
 func test_fence_mat_color() -> void:
 	var mat: StandardMaterial3D = _builder._fence_mat
 	assert_eq(
-		mat.albedo_color, Color(0.40, 0.28, 0.15),
+		mat.albedo_color,
+		Color(0.40, 0.28, 0.15),
 		"Fence material should be brown",
 	)
 
@@ -68,6 +69,7 @@ func test_fence_mat_color() -> void:
 # ================================================================
 # Constants
 # ================================================================
+
 
 func test_field_colors_has_entries() -> void:
 	assert_true(
@@ -93,6 +95,7 @@ func test_fence_thickness_positive() -> void:
 # ================================================================
 # Build on terrain with height > 0.5
 # ================================================================
+
 
 func test_build_creates_fields_mesh() -> void:
 	var span: float = _grid.get_grid_span()
@@ -129,7 +132,8 @@ func test_fields_material_uses_vertex_colors() -> void:
 				"Fields material should use vertex colors as albedo",
 			)
 			assert_eq(
-				mat.cull_mode, BaseMaterial3D.CULL_DISABLED,
+				mat.cull_mode,
+				BaseMaterial3D.CULL_DISABLED,
 				"Fields material should be double-sided",
 			)
 			break
@@ -149,7 +153,8 @@ func test_build_may_create_fences() -> void:
 			if child is MeshInstance3D and child.name == "Fences":
 				found_fences = true
 				assert_eq(
-					child.material_override, _builder._fence_mat,
+					child.material_override,
+					_builder._fence_mat,
 					"Fences should use fence material",
 				)
 				break
@@ -165,13 +170,15 @@ func test_build_may_create_fences() -> void:
 # Build at city center (height = 0, below 0.5 threshold)
 # ================================================================
 
+
 func test_build_at_city_center_produces_no_fields() -> void:
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
 	_builder.build(chunk, Vector2i(0, 0), 0.0, 0.0)
 
 	assert_eq(
-		chunk.get_child_count(), 0,
+		chunk.get_child_count(),
+		0,
 		"City center (height=0) should produce no fields or fences",
 	)
 
@@ -179,6 +186,7 @@ func test_build_at_city_center_produces_no_fields() -> void:
 # ================================================================
 # Determinism
 # ================================================================
+
 
 func test_build_deterministic() -> void:
 	var span: float = _grid.get_grid_span()
@@ -195,7 +203,8 @@ func test_build_deterministic() -> void:
 	_builder.build(chunk2, tile, ox, oz)
 
 	assert_eq(
-		chunk1.get_child_count(), chunk2.get_child_count(),
+		chunk1.get_child_count(),
+		chunk2.get_child_count(),
 		"Same tile should produce same child count",
 	)
 
@@ -231,6 +240,7 @@ func test_different_tiles_produce_different_geometry() -> void:
 # ================================================================
 # Underwater tiles produce no output
 # ================================================================
+
 
 func test_build_far_west_underwater_no_fields() -> void:
 	var span: float = _grid.get_grid_span()

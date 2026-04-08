@@ -52,6 +52,4 @@ func _on_body_entered(body: Node3D) -> void:
 	var is_player := body.is_in_group("player")
 	var is_player_vehicle: bool = (body.collision_layer & 8) != 0
 	if is_player or is_player_vehicle:
-		EventBus.mission_marker_reached.emit(
-			mission_id, marker_type
-		)
+		EventBus.mission_marker_reached.emit(mission_id, marker_type)

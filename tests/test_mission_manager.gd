@@ -59,23 +59,28 @@ func after_each() -> void:
 # Constants
 # ================================================================
 
+
 func test_refresh_interval() -> void:
 	assert_eq(
-		MissionScript.REFRESH_INTERVAL, 20.0,
+		MissionScript.REFRESH_INTERVAL,
+		20.0,
 		"REFRESH_INTERVAL should be 20 seconds",
 	)
 
 
 func test_max_available() -> void:
 	assert_eq(
-		MissionScript.MAX_AVAILABLE, 8,
+		MissionScript.MAX_AVAILABLE,
+		8,
 		"MAX_AVAILABLE should be 8",
 	)
 
 
 func test_sidewalk_offset() -> void:
 	assert_almost_eq(
-		MissionScript.SIDEWALK_OFFSET, 1.5, 0.01,
+		MissionScript.SIDEWALK_OFFSET,
+		1.5,
+		0.01,
 		"SIDEWALK_OFFSET should be 1.5",
 	)
 
@@ -83,6 +88,7 @@ func test_sidewalk_offset() -> void:
 # ================================================================
 # Helpers
 # ================================================================
+
 
 func _make_delivery_mission(mid: String = "delivery_1") -> Dictionary:
 	return {
@@ -136,6 +142,7 @@ func _make_theft_mission(mid: String = "theft_1") -> Dictionary:
 # Initial state
 # ================================================================
 
+
 func test_initial_active_mission_empty() -> void:
 	assert_true(
 		MissionManager.get_active_mission().is_empty(),
@@ -154,6 +161,7 @@ func test_initial_available_missions_empty() -> void:
 # accept_mission
 # ================================================================
 
+
 func test_accept_delivery_sets_active() -> void:
 	MissionManager._available_missions.append(_make_delivery_mission())
 	MissionManager.accept_mission("delivery_1")
@@ -167,7 +175,8 @@ func test_accept_delivery_sets_pickup_state() -> void:
 	MissionManager._available_missions.append(_make_delivery_mission())
 	MissionManager.accept_mission("delivery_1")
 	assert_eq(
-		MissionManager.get_active_mission().get("state"), "pickup",
+		MissionManager.get_active_mission().get("state"),
+		"pickup",
 		"Delivery should start in pickup state",
 	)
 
@@ -200,7 +209,8 @@ func test_accept_delivery_emits_objective() -> void:
 	MissionManager.accept_mission("delivery_1")
 	EventBus.mission_objective_updated.disconnect(cb)
 	assert_eq(
-		received, ["Go to the pickup location"],
+		received,
+		["Go to the pickup location"],
 		"Delivery accept should emit pickup objective",
 	)
 
@@ -238,7 +248,8 @@ func test_accept_taxi_sets_active_state() -> void:
 	InputManager.current_context = InputManager.Context.VEHICLE
 	MissionManager.accept_mission("taxi_1")
 	assert_eq(
-		MissionManager.get_active_mission().get("state"), "active",
+		MissionManager.get_active_mission().get("state"),
+		"active",
 		"Taxi should skip to active state",
 	)
 
@@ -248,7 +259,9 @@ func test_accept_taxi_sets_timer() -> void:
 	InputManager.current_context = InputManager.Context.VEHICLE
 	MissionManager.accept_mission("taxi_1")
 	assert_almost_eq(
-		MissionManager._mission_timer, 60.0, 0.01,
+		MissionManager._mission_timer,
+		60.0,
+		0.01,
 		"Taxi timer should be set from time_limit",
 	)
 
@@ -257,7 +270,8 @@ func test_accept_theft_sets_pickup_state() -> void:
 	MissionManager._available_missions.append(_make_theft_mission())
 	MissionManager.accept_mission("theft_1")
 	assert_eq(
-		MissionManager.get_active_mission().get("state"), "pickup",
+		MissionManager.get_active_mission().get("state"),
+		"pickup",
 		"Theft should start in pickup state",
 	)
 
@@ -265,6 +279,7 @@ func test_accept_theft_sets_pickup_state() -> void:
 # ================================================================
 # complete_mission
 # ================================================================
+
 
 func test_complete_mission_adds_reward() -> void:
 	MissionManager._available_missions.append(_make_delivery_mission())
@@ -302,7 +317,8 @@ func test_complete_mission_resets_refresh_timer() -> void:
 	MissionManager.accept_mission("delivery_1")
 	MissionManager.complete_mission()
 	assert_eq(
-		MissionManager._refresh_timer, 0.0,
+		MissionManager._refresh_timer,
+		0.0,
 		"Refresh timer should reset after completion",
 	)
 
@@ -310,7 +326,8 @@ func test_complete_mission_resets_refresh_timer() -> void:
 func test_complete_when_no_active_does_nothing() -> void:
 	MissionManager.complete_mission()
 	assert_eq(
-		GameManager.money, 0,
+		GameManager.money,
+		0,
 		"Completing with no active mission should not change money",
 	)
 
@@ -332,6 +349,7 @@ func test_complete_clears_objective() -> void:
 # ================================================================
 # fail_mission
 # ================================================================
+
 
 func test_fail_mission_emits_failed() -> void:
 	MissionManager._available_missions.append(_make_delivery_mission())
@@ -360,7 +378,8 @@ func test_fail_mission_resets_refresh_timer() -> void:
 	MissionManager.accept_mission("delivery_1")
 	MissionManager.fail_mission("restart")
 	assert_eq(
-		MissionManager._refresh_timer, 0.0,
+		MissionManager._refresh_timer,
+		0.0,
 		"Refresh timer should reset after failure",
 	)
 
@@ -372,7 +391,8 @@ func test_fail_when_no_active_does_nothing() -> void:
 	MissionManager.fail_mission("test")
 	EventBus.mission_failed.disconnect(cb)
 	assert_eq(
-		received.size(), 0,
+		received.size(),
+		0,
 		"Failing with no active mission should not emit signal",
 	)
 
@@ -395,6 +415,7 @@ func test_fail_clears_objective() -> void:
 # Mission timer (via _process)
 # ================================================================
 
+
 func test_timer_decrements_during_active() -> void:
 	MissionManager._available_missions.append(_make_delivery_mission())
 	MissionManager.accept_mission("delivery_1")
@@ -408,7 +429,9 @@ func test_timer_decrements_during_active() -> void:
 
 	MissionManager._process(1.0)
 	assert_almost_eq(
-		MissionManager._mission_timer, 89.0, 0.01,
+		MissionManager._mission_timer,
+		89.0,
+		0.01,
 		"Timer should decrement by delta",
 	)
 
@@ -431,7 +454,8 @@ func test_timer_timeout_fails_mission() -> void:
 	MissionManager._process(1.0)
 	EventBus.mission_failed.disconnect(cb)
 	assert_eq(
-		received.size(), 1,
+		received.size(),
+		1,
 		"Timer reaching 0 should fail the mission",
 	)
 
@@ -453,7 +477,8 @@ func test_no_timer_when_time_limit_zero() -> void:
 	MissionManager._process(999.0)
 	EventBus.mission_failed.disconnect(cb)
 	assert_eq(
-		received.size(), 0,
+		received.size(),
+		0,
 		"Mission with time_limit=0 should not time out",
 	)
 
@@ -461,6 +486,7 @@ func test_no_timer_when_time_limit_zero() -> void:
 # ================================================================
 # _on_marker_reached
 # ================================================================
+
 
 func test_start_marker_accepts_mission() -> void:
 	MissionManager._available_missions.append(_make_delivery_mission())
@@ -477,7 +503,8 @@ func test_pickup_marker_transitions_to_active() -> void:
 	assert_eq(MissionManager.get_active_mission().get("state"), "pickup")
 	MissionManager._on_marker_reached("delivery_1", "pickup")
 	assert_eq(
-		MissionManager.get_active_mission().get("state"), "active",
+		MissionManager.get_active_mission().get("state"),
+		"active",
 		"Pickup marker should transition to active",
 	)
 
@@ -519,6 +546,7 @@ func test_marker_for_wrong_mission_ignored() -> void:
 # _on_vehicle_entered (theft mission)
 # ================================================================
 
+
 func test_vehicle_entered_matches_theft_variant() -> void:
 	MissionManager._available_missions.append(_make_theft_mission())
 	MissionManager.accept_mission("theft_1")
@@ -532,7 +560,8 @@ func test_vehicle_entered_matches_theft_variant() -> void:
 
 	MissionManager._on_vehicle_entered(vehicle)
 	assert_eq(
-		MissionManager.get_active_mission().get("state"), "active",
+		MissionManager.get_active_mission().get("state"),
+		"active",
 		"Entering matching vehicle should transition to active",
 	)
 
@@ -550,7 +579,8 @@ func test_vehicle_entered_wrong_variant_stays_pickup() -> void:
 
 	MissionManager._on_vehicle_entered(vehicle)
 	assert_eq(
-		MissionManager.get_active_mission().get("state"), "pickup",
+		MissionManager.get_active_mission().get("state"),
+		"pickup",
 		"Wrong variant should stay in pickup state",
 	)
 
@@ -564,7 +594,8 @@ func test_vehicle_entered_no_body_does_nothing() -> void:
 
 	MissionManager._on_vehicle_entered(vehicle)
 	assert_eq(
-		MissionManager.get_active_mission().get("state"), "pickup",
+		MissionManager.get_active_mission().get("state"),
+		"pickup",
 		"Vehicle without Body node should stay in pickup",
 	)
 
@@ -578,7 +609,8 @@ func test_vehicle_entered_ignored_for_non_theft() -> void:
 
 	MissionManager._on_vehicle_entered(vehicle)
 	assert_eq(
-		MissionManager.get_active_mission().get("state"), "pickup",
+		MissionManager.get_active_mission().get("state"),
+		"pickup",
 		"Vehicle entered should be ignored for delivery missions",
 	)
 
@@ -597,6 +629,7 @@ func test_vehicle_entered_ignored_when_no_active_mission() -> void:
 # ================================================================
 # _identify_variant
 # ================================================================
+
 
 func test_identify_sedan() -> void:
 	assert_eq(
@@ -647,9 +680,7 @@ func test_identify_pickup() -> void:
 
 
 func test_identify_closest_match() -> void:
-	var result: String = MissionManager._identify_variant(
-		Vector3(1.01, 0.99, 1.02)
-	)
+	var result: String = MissionManager._identify_variant(Vector3(1.01, 0.99, 1.02))
 	assert_eq(result, "sedan", "Near-sedan scale should match sedan")
 
 
@@ -657,21 +688,16 @@ func test_identify_closest_match() -> void:
 # _find_available
 # ================================================================
 
+
 func test_find_available_returns_match() -> void:
-	MissionManager._available_missions.append(
-		_make_delivery_mission("d1")
-	)
-	MissionManager._available_missions.append(
-		_make_taxi_mission("t1")
-	)
+	MissionManager._available_missions.append(_make_delivery_mission("d1"))
+	MissionManager._available_missions.append(_make_taxi_mission("t1"))
 	var found: Dictionary = MissionManager._find_available("t1")
 	assert_eq(found.get("id"), "t1", "Should find the matching mission")
 
 
 func test_find_available_returns_empty_on_miss() -> void:
-	MissionManager._available_missions.append(
-		_make_delivery_mission("d1")
-	)
+	MissionManager._available_missions.append(_make_delivery_mission("d1"))
 	var found: Dictionary = MissionManager._find_available("nonexistent")
 	assert_true(found.is_empty(), "Should return empty dict on miss")
 
@@ -679,6 +705,7 @@ func test_find_available_returns_empty_on_miss() -> void:
 # ================================================================
 # _gen_sidewalk_pos fallback — street-level Y
 # ================================================================
+
 
 func test_sidewalk_fallback_uses_fixed_street_y() -> void:
 	# The fallback position when no valid sidewalk is found must use a

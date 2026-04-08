@@ -63,9 +63,7 @@ func _physics_process(delta: float) -> void:
 	# Distance-based LOD — skip AI entirely for very far vehicles
 	var cam := get_viewport().get_camera_3d()
 	if cam:
-		var cam_dist := _vehicle.global_position.distance_to(
-			cam.global_position
-		)
+		var cam_dist := _vehicle.global_position.distance_to(cam.global_position)
 		if cam_dist > LOD_FREEZE_DIST:
 			return
 
@@ -157,9 +155,7 @@ func _drive_normal(_delta: float) -> void:
 
 	# Lane correction — stronger when far off-road
 	if off_road:
-		steer += clampf(
-			-lane_error * OFF_ROAD_LANE_GAIN, -OFF_ROAD_LANE_MAX, OFF_ROAD_LANE_MAX
-		)
+		steer += clampf(-lane_error * OFF_ROAD_LANE_GAIN, -OFF_ROAD_LANE_MAX, OFF_ROAD_LANE_MAX)
 	else:
 		steer += clampf(-lane_error * LANE_STEER_GAIN, -LANE_STEER_MAX, LANE_STEER_MAX)
 
@@ -188,10 +184,7 @@ func _drive_normal(_delta: float) -> void:
 				brake = 0.8
 				throttle = 0.0
 			elif _dist_to_ahead < SOFT_BRAKE_DIST:
-				var t := (
-					(_dist_to_ahead - HARD_BRAKE_DIST)
-					/ (SOFT_BRAKE_DIST - HARD_BRAKE_DIST)
-				)
+				var t := (_dist_to_ahead - HARD_BRAKE_DIST) / (SOFT_BRAKE_DIST - HARD_BRAKE_DIST)
 				brake = maxf(brake, 0.6 * (1.0 - t))
 				throttle = lerpf(0.0, throttle, t)
 		else:
@@ -200,10 +193,7 @@ func _drive_normal(_delta: float) -> void:
 				brake = 0.4
 				throttle = MIN_CREEP_THROTTLE
 			elif _dist_to_ahead < SOFT_BRAKE_DIST:
-				var t := (
-					(_dist_to_ahead - HARD_BRAKE_DIST)
-					/ (SOFT_BRAKE_DIST - HARD_BRAKE_DIST)
-				)
+				var t := (_dist_to_ahead - HARD_BRAKE_DIST) / (SOFT_BRAKE_DIST - HARD_BRAKE_DIST)
 				brake = maxf(brake, 0.4 * (1.0 - t))
 				throttle = lerpf(MIN_CREEP_THROTTLE, throttle, t)
 
@@ -307,9 +297,7 @@ func _process_escape(delta: float) -> void:
 			var forward := _get_vehicle_forward()
 
 			var heading_err := forward.cross(desired_heading).y
-			var steer := clampf(
-				-heading_err * ESCAPE_RETURN_HEADING_GAIN, -1.0, 1.0
-			)
+			var steer := clampf(-heading_err * ESCAPE_RETURN_HEADING_GAIN, -1.0, 1.0)
 
 			var lane_err := _get_recovery_lane_error()
 			steer += clampf(-lane_err * ESCAPE_RETURN_LANE_GAIN, -0.6, 0.6)
@@ -317,9 +305,7 @@ func _process_escape(delta: float) -> void:
 			steer = clampf(steer, -1.0, 1.0)
 
 			var speed_kmh := _vehicle.linear_velocity.length() * 3.6
-			var throttle := clampf(
-				(CRUISE_SPEED - speed_kmh) * 0.03, 0.15, 0.5
-			)
+			var throttle := clampf((CRUISE_SPEED - speed_kmh) * 0.03, 0.15, 0.5)
 
 			if _dist_to_ahead >= 0.0 and _dist_to_ahead < HARD_BRAKE_DIST:
 				throttle = MIN_CREEP_THROTTLE
@@ -362,18 +348,14 @@ func _cast_rays() -> void:
 	var left_dist := SIDE_RAY_LENGTH + 1.0
 	var right_dist := SIDE_RAY_LENGTH + 1.0
 
-	var lq := PhysicsRayQueryParameters3D.create(
-		from, from + left_dir * SIDE_RAY_LENGTH
-	)
+	var lq := PhysicsRayQueryParameters3D.create(from, from + left_dir * SIDE_RAY_LENGTH)
 	lq.collision_mask = RAY_MASK
 	lq.exclude = exclude
 	var lr := space.intersect_ray(lq)
 	if lr:
 		left_dist = from.distance_to(lr.position)
 
-	var rq := PhysicsRayQueryParameters3D.create(
-		from, from + right_dir * SIDE_RAY_LENGTH
-	)
+	var rq := PhysicsRayQueryParameters3D.create(from, from + right_dir * SIDE_RAY_LENGTH)
 	rq.collision_mask = RAY_MASK
 	rq.exclude = exclude
 	var rr := space.intersect_ray(rq)
@@ -386,16 +368,12 @@ func _cast_rays() -> void:
 	var cross_right := heading.rotated(Vector3.UP, -PI * 0.5)
 	var cross_mask := 88  # PlayerVehicle | NPC | Police
 
-	var clq := PhysicsRayQueryParameters3D.create(
-		from, from + cross_left * CROSS_RAY_LENGTH
-	)
+	var clq := PhysicsRayQueryParameters3D.create(from, from + cross_left * CROSS_RAY_LENGTH)
 	clq.collision_mask = cross_mask
 	clq.exclude = exclude
 	var clr := space.intersect_ray(clq)
 
-	var crq := PhysicsRayQueryParameters3D.create(
-		from, from + cross_right * CROSS_RAY_LENGTH
-	)
+	var crq := PhysicsRayQueryParameters3D.create(from, from + cross_right * CROSS_RAY_LENGTH)
 	crq.collision_mask = cross_mask
 	crq.exclude = exclude
 	var crr := space.intersect_ray(crq)
@@ -406,9 +384,7 @@ func _cast_rays() -> void:
 	# Steer avoidance from side rays
 	if left_dist < SIDE_RAY_LENGTH or right_dist < SIDE_RAY_LENGTH:
 		var diff := left_dist - right_dist
-		_steer_avoidance = clampf(
-			-diff * STEER_AVOID_GAIN / SIDE_RAY_LENGTH, -0.5, 0.5
-		)
+		_steer_avoidance = clampf(-diff * STEER_AVOID_GAIN / SIDE_RAY_LENGTH, -0.5, 0.5)
 	else:
 		_steer_avoidance = 0.0
 
@@ -498,10 +474,7 @@ func _check_recovery_complete() -> bool:
 
 func _get_recovery_lane_error() -> float:
 	var pos := _vehicle.global_position
-	var is_ns := (
-		_recovery_direction == Direction.NORTH
-		or _recovery_direction == Direction.SOUTH
-	)
+	var is_ns := _recovery_direction == Direction.NORTH or _recovery_direction == Direction.SOUTH
 	var road_axis := pos.x if is_ns else pos.z
 	var road_center := _grid.get_road_center_near(_recovery_road_index, road_axis)
 	var rw := _grid.get_road_width(_recovery_road_index)
@@ -523,12 +496,14 @@ func _is_in_city() -> bool:
 	var city_nodes := get_tree().get_nodes_in_group("city_manager")
 	if city_nodes.is_empty():
 		return true
+	if not city_nodes[0].has_meta("city_boundary"):
+		return true
 	var boundary: RefCounted = city_nodes[0].get_meta("city_boundary")
 	if not boundary:
 		return true
-	return boundary.get_signed_distance(
-		_vehicle.global_position.x, _vehicle.global_position.z
-	) < 0.0
+	return (
+		boundary.get_signed_distance(_vehicle.global_position.x, _vehicle.global_position.z) < 0.0
+	)
 
 
 func _find_nearest_highway_index() -> int:

@@ -1,7 +1,6 @@
 extends GutTest
 ## Unit tests for player_flashlight.gd — verify automatic on/off behavior.
 
-
 var _flashlight: SpotLight3D
 var _saved_hour: float
 
@@ -9,9 +8,7 @@ var _saved_hour: float
 func before_each() -> void:
 	_saved_hour = DayNightManager.current_hour
 	_flashlight = SpotLight3D.new()
-	_flashlight.set_script(
-		preload("res://scenes/player/player_flashlight.gd")
-	)
+	_flashlight.set_script(preload("res://scenes/player/player_flashlight.gd"))
 	# Set daytime before adding to tree so _ready() sees daytime
 	DayNightManager.current_hour = 8.0
 	add_child_autofree(_flashlight)
@@ -24,6 +21,7 @@ func after_each() -> void:
 # ==========================================================================
 # Initial state
 # ==========================================================================
+
 
 func test_hidden_at_daytime_8am() -> void:
 	assert_false(
@@ -44,6 +42,7 @@ func test_hidden_at_noon() -> void:
 # ==========================================================================
 # Night visibility
 # ==========================================================================
+
 
 func test_visible_at_night_22h() -> void:
 	DayNightManager.current_hour = 22.0
@@ -66,6 +65,7 @@ func test_visible_at_night_2am() -> void:
 # ==========================================================================
 # Dusk / dawn visibility
 # ==========================================================================
+
 
 func test_visible_at_dawn_6am() -> void:
 	DayNightManager.current_hour = 6.0
@@ -99,6 +99,7 @@ func test_hidden_after_dawn_8am() -> void:
 # Signal response
 # ==========================================================================
 
+
 func test_responds_to_time_of_day_signal() -> void:
 	DayNightManager.current_hour = 22.0
 	EventBus.time_of_day_changed.emit(22.0)
@@ -125,6 +126,7 @@ func test_turns_off_when_signal_fires_at_day() -> void:
 # ==========================================================================
 # Boundary cases
 # ==========================================================================
+
 
 func test_boundary_night_start_just_after_20() -> void:
 	DayNightManager.current_hour = 20.5

@@ -43,7 +43,10 @@ func init(
 
 
 func build(
-	chunk: Node3D, tile: Vector2i, ox: float, oz: float,
+	chunk: Node3D,
+	tile: Vector2i,
+	ox: float,
+	oz: float,
 	biome: String = "",
 ) -> void:
 	var rng := RandomNumberGenerator.new()
@@ -92,9 +95,13 @@ func build(
 				if h < MIN_TREE_HEIGHT:
 					continue
 				_collect_tree(
-					rng, Vector3(tx, h, z),
-					trunk_transforms, trunk_colors,
-					canopy_transforms, canopy_colors, body,
+					rng,
+					Vector3(tx, h, z),
+					trunk_transforms,
+					trunk_colors,
+					canopy_transforms,
+					canopy_colors,
+					body,
 				)
 
 		# E-W highways — trees along both sides
@@ -112,15 +119,23 @@ func build(
 				if h < MIN_TREE_HEIGHT:
 					continue
 				_collect_tree(
-					rng, Vector3(x, h, tz),
-					trunk_transforms, trunk_colors,
-					canopy_transforms, canopy_colors, body,
+					rng,
+					Vector3(x, h, tz),
+					trunk_transforms,
+					trunk_colors,
+					canopy_transforms,
+					canopy_colors,
+					body,
 				)
 
 	# B) Forest clusters — density varies by biome
 	var density := _get_biome_density(biome)
-	var cluster_count := rng.randi_range(
-		density["min_clusters"], density["max_clusters"],
+	var cluster_count := (
+		rng
+		. randi_range(
+			density["min_clusters"],
+			density["max_clusters"],
+		)
 	)
 	for _ci in range(cluster_count):
 		var cx: float = ox + rng.randf_range(-span * 0.4, span * 0.4)
@@ -138,8 +153,12 @@ func build(
 			continue
 
 		var cluster_r: float = rng.randf_range(CLUSTER_RADIUS_MIN, CLUSTER_RADIUS_MAX)
-		var tree_count := rng.randi_range(
-			density["min_trees"], density["max_trees"],
+		var tree_count := (
+			rng
+			. randi_range(
+				density["min_trees"],
+				density["max_trees"],
+			)
 		)
 		for _ti in range(tree_count):
 			var angle: float = rng.randf() * TAU
@@ -150,9 +169,13 @@ func build(
 			if h < MIN_TREE_HEIGHT:
 				continue
 			_collect_tree(
-				rng, Vector3(tx, h, tz),
-				trunk_transforms, trunk_colors,
-				canopy_transforms, canopy_colors, body,
+				rng,
+				Vector3(tx, h, tz),
+				trunk_transforms,
+				trunk_colors,
+				canopy_transforms,
+				canopy_colors,
+				body,
 			)
 
 	if trunk_transforms.is_empty():
@@ -160,9 +183,7 @@ func build(
 		return
 
 	# Build trunk MultiMesh
-	var mm := _build_multimesh(
-		_trunk_mesh, trunk_transforms, trunk_colors, _trunk_mats[0]
-	)
+	var mm := _build_multimesh(_trunk_mesh, trunk_transforms, trunk_colors, _trunk_mats[0])
 	mm.name = "RuralTrunksMM"
 	body.add_child(mm)
 
@@ -172,9 +193,7 @@ func build(
 		if transforms.size() == 0:
 			continue
 		var colors: Array = canopy_colors[v]
-		var cmm := _build_multimesh(
-			_canopy_meshes[v], transforms, colors, _canopy_mats[0]
-		)
+		var cmm := _build_multimesh(_canopy_meshes[v], transforms, colors, _canopy_mats[0])
 		cmm.name = "RuralCanopyMM_%d" % v
 		body.add_child(cmm)
 
@@ -182,8 +201,10 @@ func build(
 
 
 func _near_village(
-	wx: float, wz: float,
-	has_village: bool, village_center: Vector2,
+	wx: float,
+	wz: float,
+	has_village: bool,
+	village_center: Vector2,
 ) -> bool:
 	if not has_village:
 		return false
@@ -208,28 +229,38 @@ static func _get_biome_density(biome: String) -> Dictionary:
 	match biome:
 		"forest":
 			return {
-				"min_clusters": 4, "max_clusters": 7,
-				"min_trees": 15, "max_trees": 30,
+				"min_clusters": 4,
+				"max_clusters": 7,
+				"min_trees": 15,
+				"max_trees": 30,
 			}
 		"mountain":
 			return {
-				"min_clusters": 2, "max_clusters": 4,
-				"min_trees": 6, "max_trees": 15,
+				"min_clusters": 2,
+				"max_clusters": 4,
+				"min_trees": 6,
+				"max_trees": 15,
 			}
 		"farmland":
 			return {
-				"min_clusters": 1, "max_clusters": 2,
-				"min_trees": 3, "max_trees": 8,
+				"min_clusters": 1,
+				"max_clusters": 2,
+				"min_trees": 3,
+				"max_trees": 8,
 			}
 		"suburb":
 			return {
-				"min_clusters": 1, "max_clusters": 3,
-				"min_trees": 4, "max_trees": 10,
+				"min_clusters": 1,
+				"max_clusters": 3,
+				"min_trees": 4,
+				"max_trees": 10,
 			}
 		_:
 			return {
-				"min_clusters": 2, "max_clusters": 4,
-				"min_trees": 8, "max_trees": 20,
+				"min_clusters": 2,
+				"max_clusters": 4,
+				"min_trees": 8,
+				"max_trees": 20,
 			}
 
 
@@ -268,8 +299,14 @@ func _collect_tree(
 				var cy := trunk_top + base_r * 0.3 + ci * base_r * 0.35
 				var cx := pos.x + rng.randf_range(-base_r * 0.4, base_r * 0.4)
 				var cz := pos.z + rng.randf_range(-base_r * 0.4, base_r * 0.4)
-				_add_canopy(canopy_transforms, canopy_colors, 0,
-					Vector3(cx, cy, cz), Vector3(r, h * 0.5, r), canopy_color)
+				_add_canopy(
+					canopy_transforms,
+					canopy_colors,
+					0,
+					Vector3(cx, cy, cz),
+					Vector3(r, h * 0.5, r),
+					canopy_color
+				)
 		1:
 			var tiers := rng.randi_range(2, 3)
 			var base_r := rng.randf_range(1.2, 2.2)
@@ -279,21 +316,37 @@ func _collect_tree(
 				var frac := 1.0 - float(ci) / float(tiers)
 				var r := base_r * frac
 				var cy := y + tier_h * 0.5
-				_add_canopy(canopy_transforms, canopy_colors, 1,
-					Vector3(pos.x, cy, pos.z), Vector3(r, tier_h, r), canopy_color)
+				_add_canopy(
+					canopy_transforms,
+					canopy_colors,
+					1,
+					Vector3(pos.x, cy, pos.z),
+					Vector3(r, tier_h, r),
+					canopy_color
+				)
 				y += tier_h * 0.55
 		2:
 			var r := rng.randf_range(0.6, 1.2)
 			var h := rng.randf_range(4.0, 7.0)
-			_add_canopy(canopy_transforms, canopy_colors, 2,
+			_add_canopy(
+				canopy_transforms,
+				canopy_colors,
+				2,
 				Vector3(pos.x, trunk_top + h * 0.35, pos.z),
-				Vector3(r, h / 3.75, r), canopy_color)
+				Vector3(r, h / 3.75, r),
+				canopy_color
+			)
 		3:
 			var main_r := rng.randf_range(1.5, 2.8)
 			var main_h := main_r * rng.randf_range(0.6, 0.9)
-			_add_canopy(canopy_transforms, canopy_colors, 3,
+			_add_canopy(
+				canopy_transforms,
+				canopy_colors,
+				3,
 				Vector3(pos.x, trunk_top + main_h * 0.3, pos.z),
-				Vector3(main_r, main_h * 1.5, main_r), canopy_color)
+				Vector3(main_r, main_h * 1.5, main_r),
+				canopy_color
+			)
 			var lobes := rng.randi_range(2, 3)
 			for ci in range(lobes):
 				var angle := float(ci) * TAU / float(lobes) + rng.randf_range(-0.3, 0.3)
@@ -301,9 +354,14 @@ func _collect_tree(
 				var lh := lr * rng.randf_range(1.5, 2.5)
 				var lx := pos.x + cos(angle) * main_r * 0.6
 				var lz := pos.z + sin(angle) * main_r * 0.6
-				_add_canopy(canopy_transforms, canopy_colors, 0,
+				_add_canopy(
+					canopy_transforms,
+					canopy_colors,
+					0,
 					Vector3(lx, trunk_top - lh * 0.1, lz),
-					Vector3(lr, lh * 0.5, lr), canopy_color)
+					Vector3(lr, lh * 0.5, lr),
+					canopy_color
+				)
 		4:
 			var tiers := rng.randi_range(2, 3)
 			var base_r := rng.randf_range(1.2, 2.0)
@@ -314,9 +372,14 @@ func _collect_tree(
 				var h := r * rng.randf_range(0.7, 1.2)
 				var cx := pos.x + rng.randf_range(-0.3, 0.3)
 				var cz := pos.z + rng.randf_range(-0.3, 0.3)
-				_add_canopy(canopy_transforms, canopy_colors, 4,
+				_add_canopy(
+					canopy_transforms,
+					canopy_colors,
+					4,
 					Vector3(cx, y + h * 0.4, cz),
-					Vector3(r, h / 2.0, r), canopy_color)
+					Vector3(r, h / 2.0, r),
+					canopy_color
+				)
 				y += gap
 		5:
 			# Pine: 2-3 stacked cones, narrowing upward
@@ -333,15 +396,24 @@ func _collect_tree(
 			for ci in range(tiers):
 				var frac := 1.0 - float(ci) / float(tiers) * 0.6
 				var r := base_r * frac
-				_add_canopy(canopy_transforms, canopy_colors, 5,
+				_add_canopy(
+					canopy_transforms,
+					canopy_colors,
+					5,
 					Vector3(pos.x, y + tier_h * 0.5, pos.z),
-					Vector3(r, tier_h / 2.0, r), pine_color)
+					Vector3(r, tier_h / 2.0, r),
+					pine_color
+				)
 				y += tier_h * 0.5
 
 
 func _add_canopy(
-	canopy_transforms: Array, canopy_colors: Array,
-	variant: int, center: Vector3, scale: Vector3, color: Color,
+	canopy_transforms: Array,
+	canopy_colors: Array,
+	variant: int,
+	center: Vector3,
+	scale: Vector3,
+	color: Color,
 ) -> void:
 	var xform := Transform3D(Basis.from_scale(scale), center)
 	canopy_transforms[variant].append(xform)

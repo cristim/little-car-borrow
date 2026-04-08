@@ -30,27 +30,32 @@ func after_each() -> void:
 # Constants
 # ================================================================
 
+
 func test_heat_thresholds() -> void:
 	assert_eq(
-		WantedScript.HEAT_THRESHOLDS.size(), 6,
+		WantedScript.HEAT_THRESHOLDS.size(),
+		6,
 		"Should have 6 heat thresholds (0-5 stars)",
 	)
 	assert_eq(
-		WantedScript.HEAT_THRESHOLDS[0], 0.0,
+		WantedScript.HEAT_THRESHOLDS[0],
+		0.0,
 		"First threshold should be 0",
 	)
 
 
 func test_heat_decay_rate() -> void:
 	assert_eq(
-		WantedScript.HEAT_DECAY_RATE, 3.0,
+		WantedScript.HEAT_DECAY_RATE,
+		3.0,
 		"HEAT_DECAY_RATE should be 3.0",
 	)
 
 
 func test_heat_decay_delay() -> void:
 	assert_eq(
-		WantedScript.HEAT_DECAY_DELAY, 5.0,
+		WantedScript.HEAT_DECAY_DELAY,
+		5.0,
 		"HEAT_DECAY_DELAY should be 5.0",
 	)
 
@@ -59,9 +64,11 @@ func test_heat_decay_delay() -> void:
 # Initial state
 # ================================================================
 
+
 func test_initial_wanted_level() -> void:
 	assert_eq(
-		WantedLevelManager.wanted_level, 0,
+		WantedLevelManager.wanted_level,
+		0,
 		"Should start at wanted level 0",
 	)
 
@@ -74,10 +81,13 @@ func test_initial_heat() -> void:
 # Crime committed — heat accumulation
 # ================================================================
 
+
 func test_crime_adds_heat() -> void:
 	WantedLevelManager._on_crime_committed("theft", 30)
 	assert_almost_eq(
-		WantedLevelManager.heat, 30.0, 0.01,
+		WantedLevelManager.heat,
+		30.0,
+		0.01,
 		"Crime should add heat points",
 	)
 
@@ -87,7 +97,9 @@ func test_multiple_crimes_accumulate() -> void:
 	WantedLevelManager._on_crime_committed("hit", 10)
 	WantedLevelManager._on_crime_committed("hit", 10)
 	assert_almost_eq(
-		WantedLevelManager.heat, 30.0, 0.01,
+		WantedLevelManager.heat,
+		30.0,
+		0.01,
 		"Multiple crimes should accumulate heat",
 	)
 
@@ -97,7 +109,9 @@ func test_heat_caps_at_max_plus_40() -> void:
 	var cap: float = max_threshold + 40.0
 	WantedLevelManager._on_crime_committed("rampage", 999)
 	assert_almost_eq(
-		WantedLevelManager.heat, cap, 0.01,
+		WantedLevelManager.heat,
+		cap,
+		0.01,
 		"Heat should cap at last threshold + 40",
 	)
 
@@ -115,6 +129,7 @@ func test_crime_resets_decay_cooldown() -> void:
 # ================================================================
 # Wanted level transitions
 # ================================================================
+
 
 func test_level_1_threshold() -> void:
 	WantedLevelManager._on_crime_committed("hit", 20)
@@ -144,7 +159,8 @@ func test_level_5_threshold() -> void:
 func test_below_level_1_stays_zero() -> void:
 	WantedLevelManager._on_crime_committed("hit", 19)
 	assert_eq(
-		WantedLevelManager.wanted_level, 0,
+		WantedLevelManager.wanted_level,
+		0,
 		"19 heat should stay at level 0",
 	)
 
@@ -169,7 +185,8 @@ func test_no_signal_when_level_unchanged() -> void:
 	WantedLevelManager._on_crime_committed("hit", 5)
 	EventBus.wanted_level_changed.disconnect(cb)
 	assert_eq(
-		received.size(), 0,
+		received.size(),
+		0,
 		"Should not emit signal when level stays the same",
 	)
 
@@ -178,12 +195,15 @@ func test_no_signal_when_level_unchanged() -> void:
 # Heat decay
 # ================================================================
 
+
 func test_no_decay_during_cooldown() -> void:
 	WantedLevelManager._on_crime_committed("hit", 30)
 	var heat_before: float = WantedLevelManager.heat
 	WantedLevelManager._process(1.0)  # still within 5s cooldown
 	assert_almost_eq(
-		WantedLevelManager.heat, heat_before, 0.01,
+		WantedLevelManager.heat,
+		heat_before,
+		0.01,
 		"Heat should not decay during cooldown",
 	)
 
@@ -193,14 +213,18 @@ func test_decay_after_cooldown_expires() -> void:
 	# Consume the cooldown
 	WantedLevelManager._process(5.0)
 	assert_almost_eq(
-		WantedLevelManager.heat, 30.0, 0.01,
+		WantedLevelManager.heat,
+		30.0,
+		0.01,
 		"Heat should not decay while cooldown is draining",
 	)
 	# Now decay should happen
 	WantedLevelManager._process(1.0)
 	var expected: float = 30.0 - WantedScript.HEAT_DECAY_RATE * 1.0
 	assert_almost_eq(
-		WantedLevelManager.heat, expected, 0.01,
+		WantedLevelManager.heat,
+		expected,
+		0.01,
 		"Heat should decay at HEAT_DECAY_RATE after cooldown",
 	)
 
@@ -210,7 +234,9 @@ func test_heat_does_not_go_negative() -> void:
 	WantedLevelManager._decay_cooldown = 0.0
 	WantedLevelManager._process(100.0)
 	assert_almost_eq(
-		WantedLevelManager.heat, 0.0, 0.01,
+		WantedLevelManager.heat,
+		0.0,
+		0.01,
 		"Heat should not go below 0",
 	)
 
@@ -220,7 +246,8 @@ func test_no_processing_when_heat_zero() -> void:
 	WantedLevelManager.wanted_level = 0
 	WantedLevelManager._process(1.0)
 	assert_eq(
-		WantedLevelManager.heat, 0.0,
+		WantedLevelManager.heat,
+		0.0,
 		"Zero heat should remain zero",
 	)
 
@@ -233,7 +260,8 @@ func test_decay_reduces_wanted_level() -> void:
 	var delta_needed: float = 6.0 / WantedScript.HEAT_DECAY_RATE
 	WantedLevelManager._process(delta_needed + 0.1)
 	assert_eq(
-		WantedLevelManager.wanted_level, 0,
+		WantedLevelManager.wanted_level,
+		0,
 		"Decayed heat should reduce wanted level",
 	)
 
@@ -241,6 +269,7 @@ func test_decay_reduces_wanted_level() -> void:
 # ================================================================
 # clear
 # ================================================================
+
 
 func test_clear_resets_heat() -> void:
 	WantedLevelManager._on_crime_committed("hit", 100)
@@ -252,7 +281,8 @@ func test_clear_resets_wanted_level() -> void:
 	WantedLevelManager._on_crime_committed("hit", 100)
 	WantedLevelManager.clear()
 	assert_eq(
-		WantedLevelManager.wanted_level, 0,
+		WantedLevelManager.wanted_level,
+		0,
 		"clear should reset wanted_level",
 	)
 
@@ -261,7 +291,8 @@ func test_clear_resets_decay_cooldown() -> void:
 	WantedLevelManager._on_crime_committed("hit", 100)
 	WantedLevelManager.clear()
 	assert_eq(
-		WantedLevelManager._decay_cooldown, 0.0,
+		WantedLevelManager._decay_cooldown,
+		0.0,
 		"clear should reset decay cooldown",
 	)
 

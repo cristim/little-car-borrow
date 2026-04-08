@@ -34,9 +34,7 @@ func _on_time_changed(_hour: float) -> void:
 
 
 func _update_visibility() -> void:
-	var should_be_on: bool = (
-		DayNightManager.is_night() or DayNightManager.is_dusk_or_dawn()
-	)
+	var should_be_on: bool = DayNightManager.is_night() or DayNightManager.is_dusk_or_dawn()
 	if _manual_off:
 		visible = false
 	else:

@@ -24,6 +24,7 @@ func _make_camera() -> Node3D:
 # Exported default values (pre-_ready, no tree needed)
 # ==========================================================================
 
+
 func test_default_min_distance() -> void:
 	var cam: Node3D = _make_camera()
 	add_child_autofree(cam)
@@ -76,6 +77,7 @@ func test_default_speed_for_max_distance() -> void:
 # Internal state defaults
 # ==========================================================================
 
+
 func test_default_current_velocity_zero() -> void:
 	var cam: Node3D = _make_camera()
 	add_child_autofree(cam)
@@ -92,6 +94,7 @@ func test_default_target_null() -> void:
 # Relationship constraints
 # ==========================================================================
 
+
 func test_max_distance_greater_than_min() -> void:
 	var cam: Node3D = _make_camera()
 	add_child_autofree(cam)
@@ -107,6 +110,7 @@ func test_max_height_greater_than_min() -> void:
 # ==========================================================================
 # @onready resolves correctly
 # ==========================================================================
+
 
 func test_spring_arm_resolved() -> void:
 	var cam: Node3D = _make_camera()
@@ -136,6 +140,7 @@ func test_camera_is_camera3d() -> void:
 # _ready — top level (verified via state after add_child)
 # ==========================================================================
 
+
 func test_ready_sets_top_level() -> void:
 	var cam: Node3D = _make_camera()
 	add_child_autofree(cam)
@@ -148,6 +153,7 @@ func test_ready_sets_top_level() -> void:
 # ==========================================================================
 # _ready — source verification
 # ==========================================================================
+
 
 func test_ready_resolves_target_path() -> void:
 	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
@@ -168,6 +174,7 @@ func test_ready_snaps_to_target_position() -> void:
 # ==========================================================================
 # _physics_process — follow logic (source verification)
 # ==========================================================================
+
 
 func test_velocity_smoothing() -> void:
 	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
@@ -269,6 +276,7 @@ func test_stopped_follows_vehicle_rotation() -> void:
 # _physics_process — target fallback (source verification)
 # ==========================================================================
 
+
 func test_retries_target_resolution() -> void:
 	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
 	assert_true(
@@ -288,6 +296,7 @@ func test_rigidbody_velocity_check() -> void:
 # ==========================================================================
 # make_active() — source verification
 # ==========================================================================
+
 
 func test_make_active_source_snaps_position() -> void:
 	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
@@ -316,6 +325,7 @@ func test_make_active_source_makes_camera_current() -> void:
 # ==========================================================================
 # Inspect mode (hold V)
 # ==========================================================================
+
 
 func _make_mouse_motion(rel: Vector2) -> InputEventMouseMotion:
 	var event := InputEventMouseMotion.new()
@@ -356,7 +366,8 @@ func test_mouse_in_inspect_mode_updates_inspect_yaw() -> void:
 	cam._inspect_yaw = 0.0
 	cam._unhandled_input(_make_mouse_motion(Vector2(100.0, 0.0)))
 	assert_lt(
-		cam._inspect_yaw, 0.0,
+		cam._inspect_yaw,
+		0.0,
 		"_inspect_yaw should decrease with rightward mouse while V held",
 	)
 	InputManager.current_context = saved
@@ -371,7 +382,9 @@ func test_mouse_in_inspect_mode_does_not_change_auto_yaw() -> void:
 	cam._auto_yaw = 0.0
 	cam._unhandled_input(_make_mouse_motion(Vector2(100.0, 0.0)))
 	assert_almost_eq(
-		cam._auto_yaw, 0.0, 0.001,
+		cam._auto_yaw,
+		0.0,
+		0.001,
 		"_auto_yaw should not change in inspect mode",
 	)
 	InputManager.current_context = saved
@@ -385,7 +398,9 @@ func test_mouse_ignored_outside_vehicle_context() -> void:
 	cam._v_held = true
 	cam._unhandled_input(_make_mouse_motion(Vector2(100.0, 50.0)))
 	assert_almost_eq(
-		cam._inspect_yaw, 0.0, 0.001,
+		cam._inspect_yaw,
+		0.0,
+		0.001,
 		"Input ignored outside VEHICLE context",
 	)
 	InputManager.current_context = saved
@@ -400,7 +415,9 @@ func test_non_mouse_input_ignored() -> void:
 	var event := InputEventKey.new()
 	cam._unhandled_input(event)
 	assert_almost_eq(
-		cam._inspect_yaw, 0.0, 0.001,
+		cam._inspect_yaw,
+		0.0,
+		0.001,
 		"Key events should not affect _inspect_yaw",
 	)
 	InputManager.current_context = saved
@@ -418,11 +435,13 @@ func test_inspect_offsets_decay_when_v_released() -> void:
 	# camera_view not pressed in tests → _v_held becomes false → decay runs
 	cam._physics_process(0.5)
 	assert_lt(
-		absf(cam._inspect_yaw), 1.5,
+		absf(cam._inspect_yaw),
+		1.5,
 		"_inspect_yaw should decay toward zero on release",
 	)
 	assert_lt(
-		absf(cam._inspect_pitch), 0.5,
+		absf(cam._inspect_pitch),
+		0.5,
 		"_inspect_pitch should decay toward zero on release",
 	)
 
@@ -439,6 +458,8 @@ func test_inspect_yaw_applied_to_rotation() -> void:
 	# delta=0 → no lerp movement, rotation = (_inspect_pitch, _auto_yaw + _inspect_yaw, 0)
 	cam._physics_process(0.0)
 	assert_almost_eq(
-		cam.rotation.y, 1.5, 0.01,
+		cam.rotation.y,
+		1.5,
+		0.01,
 		"rotation.y should be _auto_yaw + _inspect_yaw",
 	)

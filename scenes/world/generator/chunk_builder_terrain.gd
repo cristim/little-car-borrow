@@ -32,7 +32,10 @@ func init(
 
 
 func build(
-	chunk: Node3D, _tile: Vector2i, ox: float, oz: float,
+	chunk: Node3D,
+	_tile: Vector2i,
+	ox: float,
+	oz: float,
 	tile_data: Dictionary = {},
 	river_data: Dictionary = {},
 ) -> Dictionary:
@@ -49,12 +52,16 @@ func build(
 	var has_river := not river_data.is_empty()
 	if has_river:
 		river_entry = _river_edge_point(
-			ox, oz, span * 0.5,
+			ox,
+			oz,
+			span * 0.5,
 			river_data.get("entry_dir", 0),
 			river_data.get("position", 0.5),
 		)
 		river_exit = _river_edge_point(
-			ox, oz, span * 0.5,
+			ox,
+			oz,
+			span * 0.5,
 			river_data.get("exit_dir", 2),
 			river_data.get("position", 0.5),
 		)
@@ -72,11 +79,18 @@ func build(
 			var wz: float = oz - span * 0.5 + float(iz) * step
 			var h: float = _sample_height(wx, wz)
 			h = _apply_edge_constraints(
-				h, ix, iz, edge_heights,
+				h,
+				ix,
+				iz,
+				edge_heights,
 			)
 			if has_river:
 				h = _apply_river_carving(
-					h, wx, wz, river_entry, river_exit,
+					h,
+					wx,
+					wz,
+					river_entry,
+					river_exit,
 					river_width,
 				)
 			var idx: int = iz * (SUBDIVISIONS + 1) + ix
@@ -214,9 +228,7 @@ func _sample_height(wx: float, wz: float) -> float:
 	if edge_dist < 0.0:
 		return 0.0  # inside city
 
-	var fade: float = clampf(
-		edge_dist / (grid_span * 3.0), 0.0, 1.0
-	)
+	var fade: float = clampf(edge_dist / (grid_span * 3.0), 0.0, 1.0)
 	var max_h: float = lerpf(20.0, 80.0, fade)
 	var h: float = n * max_h - 6.0
 
@@ -228,7 +240,9 @@ func _sample_height(wx: float, wz: float) -> float:
 	var in_ocean := -wx > shore_start
 	if in_ocean:
 		var west_t: float = clampf(
-			(-wx - shore_start) / (shore_end - shore_start), 0.0, 1.0,
+			(-wx - shore_start) / (shore_end - shore_start),
+			0.0,
+			1.0,
 		)
 		h -= west_t * west_t * 100.0
 
@@ -269,7 +283,10 @@ func _height_to_color(h: float) -> Color:
 
 
 func _build_sea_plane(
-	chunk: Node3D, ox: float, oz: float, span: float,
+	chunk: Node3D,
+	ox: float,
+	oz: float,
+	span: float,
 ) -> void:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -314,8 +331,12 @@ func _parse_edge_heights(tile_data: Dictionary) -> Dictionary:
 	var edges: Dictionary = tile_data.get("edges", {})
 	for dir: int in edges:
 		var edge: Dictionary = edges[dir]
-		var h: PackedFloat32Array = edge.get(
-			"heights", PackedFloat32Array(),
+		var h: PackedFloat32Array = (
+			edge
+			. get(
+				"heights",
+				PackedFloat32Array(),
+			)
 		)
 		if h.size() > 0:
 			result[dir] = h
@@ -326,7 +347,9 @@ func _parse_edge_heights(tile_data: Dictionary) -> Dictionary:
 ## NORTH=0 is iz=0, SOUTH=2 is iz=SUBDIVISIONS,
 ## WEST=3 is ix=0, EAST=1 is ix=SUBDIVISIONS.
 func _apply_edge_constraints(
-	h: float, ix: int, iz: int,
+	h: float,
+	ix: int,
+	iz: int,
 	edge_heights: Dictionary,
 ) -> float:
 	if edge_heights.is_empty():
@@ -339,7 +362,8 @@ func _apply_edge_constraints(
 	# NORTH (iz=0)
 	if edge_heights.has(0) and iz <= BLEND_CELLS:
 		var edge_h: float = _sample_edge_array(
-			edge_heights[0], ix,
+			edge_heights[0],
+			ix,
 		)
 		var t: float = 1.0 - float(iz) / float(BLEND_CELLS)
 		result = lerpf(result, edge_h, t)
@@ -348,7 +372,8 @@ func _apply_edge_constraints(
 	# SOUTH (iz=SUBDIVISIONS)
 	if edge_heights.has(2) and iz >= SUBDIVISIONS - BLEND_CELLS:
 		var edge_h: float = _sample_edge_array(
-			edge_heights[2], ix,
+			edge_heights[2],
+			ix,
 		)
 		var dist: int = SUBDIVISIONS - iz
 		var t: float = 1.0 - float(dist) / float(BLEND_CELLS)
@@ -360,7 +385,8 @@ func _apply_edge_constraints(
 	# WEST (ix=0)
 	if edge_heights.has(3) and ix <= BLEND_CELLS:
 		var edge_h: float = _sample_edge_array(
-			edge_heights[3], iz,
+			edge_heights[3],
+			iz,
 		)
 		var t: float = 1.0 - float(ix) / float(BLEND_CELLS)
 		result = lerpf(result, edge_h, t)
@@ -368,7 +394,8 @@ func _apply_edge_constraints(
 	# EAST (ix=SUBDIVISIONS)
 	if edge_heights.has(1) and ix >= SUBDIVISIONS - BLEND_CELLS:
 		var edge_h: float = _sample_edge_array(
-			edge_heights[1], iz,
+			edge_heights[1],
+			iz,
 		)
 		var dist: int = SUBDIVISIONS - ix
 		var t: float = 1.0 - float(dist) / float(BLEND_CELLS)
@@ -379,7 +406,8 @@ func _apply_edge_constraints(
 
 ## Sample a height from an edge array, mapping grid index to edge sample.
 func _sample_edge_array(
-	edge_arr: PackedFloat32Array, grid_idx: int,
+	edge_arr: PackedFloat32Array,
+	grid_idx: int,
 ) -> float:
 	var t: float = float(grid_idx) / float(SUBDIVISIONS)
 	var fi: float = t * float(edge_arr.size() - 1)
@@ -391,8 +419,12 @@ func _sample_edge_array(
 
 ## Depress terrain height along the river path.
 func _apply_river_carving(
-	h: float, wx: float, wz: float,
-	entry: Vector3, exit_pt: Vector3, width: float,
+	h: float,
+	wx: float,
+	wz: float,
+	entry: Vector3,
+	exit_pt: Vector3,
+	width: float,
 ) -> float:
 	var river_dir := exit_pt - entry
 	var len_sq: float = river_dir.length_squared()
@@ -401,9 +433,13 @@ func _apply_river_carving(
 	var to_point := Vector3(wx, 0.0, wz) - entry
 	var t: float = clampf(to_point.dot(river_dir) / len_sq, 0.0, 1.0)
 	var closest := entry + river_dir * t
-	var dist: float = Vector2(
-		wx - closest.x, wz - closest.z,
-	).length()
+	var dist: float = (
+		Vector2(
+			wx - closest.x,
+			wz - closest.z,
+		)
+		. length()
+	)
 	var half_w: float = width * 0.5
 	if dist > half_w + 3.0:
 		return h
@@ -417,8 +453,11 @@ func _apply_river_carving(
 
 ## Compute a world point on the chunk edge for a river direction.
 func _river_edge_point(
-	ox: float, oz: float, hs: float,
-	dir: int, pos: float,
+	ox: float,
+	oz: float,
+	hs: float,
+	dir: int,
+	pos: float,
 ) -> Vector3:
 	var offset: float = (pos - 0.5) * hs * 2.0
 	match dir:

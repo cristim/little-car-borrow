@@ -4,10 +4,10 @@ extends GutTest
 const FleeScript = preload("res://scenes/pedestrians/states/pedestrian_flee.gd")
 const StateScript = preload("res://src/state_machine/state.gd")
 
-
 # ---------------------------------------------------------------------------
 # Mock state machine that records transitions
 # ---------------------------------------------------------------------------
+
 
 class MockStateMachine:
 	extends Node
@@ -22,6 +22,7 @@ class MockStateMachine:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 func _make_flee_state() -> Node:
 	var ped := CharacterBody3D.new()
@@ -46,6 +47,7 @@ func _make_flee_state() -> Node:
 # Constants
 # ---------------------------------------------------------------------------
 
+
 func test_flee_speed_constant() -> void:
 	assert_eq(FleeScript.FLEE_SPEED, 4.0)
 
@@ -61,6 +63,7 @@ func test_safe_distance_constant() -> void:
 # ---------------------------------------------------------------------------
 # enter
 # ---------------------------------------------------------------------------
+
 
 func test_enter_resets_timer() -> void:
 	var state := _make_flee_state()
@@ -94,7 +97,9 @@ func test_enter_calculates_flee_direction_away_from_threat() -> void:
 	assert_gt(state._flee_direction.z, 0.0, "Should flee in +z")
 	assert_almost_eq(state._flee_direction.y, 0.0, 0.001, "Y should be zeroed")
 	assert_almost_eq(
-		state._flee_direction.length(), 1.0, 0.01,
+		state._flee_direction.length(),
+		1.0,
+		0.01,
 		"Direction should be normalized",
 	)
 
@@ -133,6 +138,7 @@ func test_enter_zeroes_y_in_direction() -> void:
 # physics_update — movement
 # ---------------------------------------------------------------------------
 
+
 func test_physics_update_sets_horizontal_velocity() -> void:
 	var state := _make_flee_state()
 	await get_tree().process_frame
@@ -169,6 +175,7 @@ func test_physics_update_increments_timer() -> void:
 # ---------------------------------------------------------------------------
 # physics_update — transition to walk
 # ---------------------------------------------------------------------------
+
 
 func test_transitions_to_walk_after_duration() -> void:
 	var state := _make_flee_state()
@@ -207,7 +214,8 @@ func test_does_not_transition_before_duration_and_within_distance() -> void:
 	state.physics_update(0.1)
 
 	assert_eq(
-		state.state_machine.last_target, "",
+		state.state_machine.last_target,
+		"",
 		"Should not transition yet",
 	)
 

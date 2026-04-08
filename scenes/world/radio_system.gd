@@ -52,55 +52,100 @@ const PROGRESSIONS := [
 
 # 16-step drum patterns per genre: each step is [kick_vel, snare_vel, hihat_vel, open_hat_vel]
 const DRUM_PATTERNS := {
-	"pop": [
-		[1.0, 0.0, 0.8, 0.0], [0.0, 0.0, 0.5, 0.0],
-		[0.0, 0.0, 0.8, 0.0], [0.0, 0.0, 0.5, 0.0],
-		[0.0, 1.0, 0.8, 0.0], [0.0, 0.0, 0.5, 0.0],
-		[0.3, 0.0, 0.8, 0.0], [0.0, 0.0, 0.5, 0.0],
-		[1.0, 0.0, 0.8, 0.0], [0.0, 0.0, 0.5, 0.0],
-		[0.0, 0.0, 0.8, 0.0], [0.0, 0.3, 0.5, 0.0],
-		[0.0, 1.0, 0.8, 0.0], [0.0, 0.0, 0.5, 0.0],
-		[0.3, 0.0, 0.8, 0.0], [0.0, 0.0, 0.5, 0.0],
+	"pop":
+	[
+		[1.0, 0.0, 0.8, 0.0],
+		[0.0, 0.0, 0.5, 0.0],
+		[0.0, 0.0, 0.8, 0.0],
+		[0.0, 0.0, 0.5, 0.0],
+		[0.0, 1.0, 0.8, 0.0],
+		[0.0, 0.0, 0.5, 0.0],
+		[0.3, 0.0, 0.8, 0.0],
+		[0.0, 0.0, 0.5, 0.0],
+		[1.0, 0.0, 0.8, 0.0],
+		[0.0, 0.0, 0.5, 0.0],
+		[0.0, 0.0, 0.8, 0.0],
+		[0.0, 0.3, 0.5, 0.0],
+		[0.0, 1.0, 0.8, 0.0],
+		[0.0, 0.0, 0.5, 0.0],
+		[0.3, 0.0, 0.8, 0.0],
+		[0.0, 0.0, 0.5, 0.0],
 	],
-	"rock": [
-		[1.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0],
-		[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0],
-		[0.0, 1.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0],
-		[0.0, 0.0, 1.0, 0.0], [0.5, 0.0, 1.0, 0.0],
-		[1.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0],
-		[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 1.0, 0.0],
-		[0.0, 1.0, 0.0, 1.0], [0.0, 0.0, 1.0, 0.0],
-		[0.5, 0.0, 1.0, 0.0], [0.0, 0.3, 1.0, 0.0],
+	"rock":
+	[
+		[1.0, 0.0, 1.0, 0.0],
+		[0.0, 0.0, 1.0, 0.0],
+		[0.0, 0.0, 1.0, 0.0],
+		[0.0, 0.0, 1.0, 0.0],
+		[0.0, 1.0, 1.0, 0.0],
+		[0.0, 0.0, 1.0, 0.0],
+		[0.0, 0.0, 1.0, 0.0],
+		[0.5, 0.0, 1.0, 0.0],
+		[1.0, 0.0, 1.0, 0.0],
+		[0.0, 0.0, 1.0, 0.0],
+		[0.0, 0.0, 1.0, 0.0],
+		[0.0, 0.0, 1.0, 0.0],
+		[0.0, 1.0, 0.0, 1.0],
+		[0.0, 0.0, 1.0, 0.0],
+		[0.5, 0.0, 1.0, 0.0],
+		[0.0, 0.3, 1.0, 0.0],
 	],
-	"jazz": [
-		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.8, 0.0],
-		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.8, 0.0],
-		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.8, 0.0],
-		[0.0, 0.3, 0.0, 0.0], [0.0, 0.0, 0.8, 0.0],
-		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.8, 0.0],
-		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.8, 0.0],
-		[0.0, 0.0, 0.0, 0.0], [0.0, 0.3, 0.8, 0.0],
-		[0.5, 0.0, 0.0, 0.0], [0.0, 0.0, 0.8, 0.0],
+	"jazz":
+	[
+		[0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.8, 0.0],
+		[0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.8, 0.0],
+		[0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.8, 0.0],
+		[0.0, 0.3, 0.0, 0.0],
+		[0.0, 0.0, 0.8, 0.0],
+		[0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.8, 0.0],
+		[0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.8, 0.0],
+		[0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.3, 0.8, 0.0],
+		[0.5, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.8, 0.0],
 	],
-	"electronic": [
-		[1.0, 0.0, 0.8, 0.0], [0.0, 0.0, 0.8, 0.0],
-		[0.0, 0.0, 0.0, 0.8], [0.0, 0.0, 0.8, 0.0],
-		[1.0, 1.0, 0.8, 0.0], [0.0, 0.0, 0.8, 0.0],
-		[0.0, 0.0, 0.0, 0.8], [0.0, 0.0, 0.8, 0.0],
-		[1.0, 0.0, 0.8, 0.0], [0.0, 0.0, 0.8, 0.0],
-		[0.0, 0.0, 0.0, 0.8], [0.0, 0.0, 0.8, 0.0],
-		[1.0, 1.0, 0.8, 0.0], [0.0, 0.0, 0.8, 0.0],
-		[0.5, 0.0, 0.0, 0.8], [0.0, 0.0, 0.8, 0.0],
+	"electronic":
+	[
+		[1.0, 0.0, 0.8, 0.0],
+		[0.0, 0.0, 0.8, 0.0],
+		[0.0, 0.0, 0.0, 0.8],
+		[0.0, 0.0, 0.8, 0.0],
+		[1.0, 1.0, 0.8, 0.0],
+		[0.0, 0.0, 0.8, 0.0],
+		[0.0, 0.0, 0.0, 0.8],
+		[0.0, 0.0, 0.8, 0.0],
+		[1.0, 0.0, 0.8, 0.0],
+		[0.0, 0.0, 0.8, 0.0],
+		[0.0, 0.0, 0.0, 0.8],
+		[0.0, 0.0, 0.8, 0.0],
+		[1.0, 1.0, 0.8, 0.0],
+		[0.0, 0.0, 0.8, 0.0],
+		[0.5, 0.0, 0.0, 0.8],
+		[0.0, 0.0, 0.8, 0.0],
 	],
-	"classical": [
-		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0],
-		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0],
-		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0],
-		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0],
-		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0],
-		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0],
-		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0],
-		[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0],
+	"classical":
+	[
+		[0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.0, 0.0],
+		[0.0, 0.0, 0.0, 0.0],
 	],
 }
 
@@ -113,7 +158,8 @@ const GENRE_POP := {
 	"bas_root_hz": 65.406,
 	"drum_pattern": "pop",
 	"drum_kit": ["kick", "snare", "hihat_closed", "hihat_open"],
-	"scales": [
+	"scales":
+	[
 		[261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9, 523.3],
 		[329.6, 370.0, 392.0, 440.0, 493.9, 523.3, 587.3, 659.3],
 	],
@@ -130,7 +176,8 @@ const GENRE_POP := {
 	"delay_ms": 250.0,
 	"delay_feedback_db": -14.0,
 	"dist_drive": 0.0,
-	"dj_lines": [
+	"dj_lines":
+	[
 		"You're listening to Little Car Pop, number one hits!",
 		"That was a banger! More pop coming right up.",
 		"Pop FM, feel good music all day!",
@@ -146,7 +193,8 @@ const GENRE_ROCK := {
 	"bas_root_hz": 65.406,
 	"drum_pattern": "rock",
 	"drum_kit": ["kick", "snare", "hihat_closed", "hihat_open"],
-	"scales": [
+	"scales":
+	[
 		[110.0, 130.8, 146.8, 164.8, 196.0, 220.0, 261.6, 293.7],
 		[164.8, 196.0, 220.0, 246.9, 293.7, 329.6, 392.0, 440.0],
 	],
@@ -163,7 +211,8 @@ const GENRE_ROCK := {
 	"delay_ms": 80.0,
 	"delay_feedback_db": -20.0,
 	"dist_drive": 0.5,
-	"dj_lines": [
+	"dj_lines":
+	[
 		"Car Rock Radio! Crank it up!",
 		"That riff was insane! More rock ahead.",
 		"Rock and roll on four wheels!",
@@ -179,7 +228,8 @@ const GENRE_JAZZ := {
 	"bas_root_hz": 65.406,
 	"drum_pattern": "jazz",
 	"drum_kit": ["kick", "snare_brush", "ride", "hihat_open"],
-	"scales": [
+	"scales":
+	[
 		[220.0, 261.6, 277.2, 293.7, 329.6, 370.0, 392.0, 440.0],
 		[196.0, 233.1, 246.9, 261.6, 293.7, 311.1, 349.2, 392.0],
 	],
@@ -196,7 +246,8 @@ const GENRE_JAZZ := {
 	"delay_ms": 350.0,
 	"delay_feedback_db": -12.0,
 	"dist_drive": 0.0,
-	"dj_lines": [
+	"dj_lines":
+	[
 		"Smooth Jazz Drive. Relax and cruise.",
 		"That was silky smooth. More jazz coming up.",
 		"Easy listening for easy driving.",
@@ -212,7 +263,8 @@ const GENRE_ELECTRONIC := {
 	"bas_root_hz": 65.406,
 	"drum_pattern": "electronic",
 	"drum_kit": ["kick", "snare", "hihat_closed", "hihat_open"],
-	"scales": [
+	"scales":
+	[
 		[130.8, 164.8, 196.0, 220.0, 261.6, 293.7, 329.6, 392.0],
 		[98.0, 130.8, 164.8, 196.0, 220.0, 261.6, 329.6, 392.0],
 	],
@@ -229,7 +281,8 @@ const GENRE_ELECTRONIC := {
 	"delay_ms": 300.0,
 	"delay_feedback_db": -10.0,
 	"dist_drive": 0.0,
-	"dj_lines": [
+	"dj_lines":
+	[
 		"Neon Beat FM! Drop the bass!",
 		"Electronic vibes for night riders.",
 		"Beats per minute: way too many. You're welcome.",
@@ -245,7 +298,8 @@ const GENRE_CLASSICAL := {
 	"bas_root_hz": 65.406,
 	"drum_pattern": "classical",
 	"drum_kit": ["kick", "snare", "hihat_closed", "hihat_open"],
-	"scales": [
+	"scales":
+	[
 		[261.6, 293.7, 329.6, 349.2, 392.0, 440.0, 493.9, 523.3],
 		[196.0, 220.0, 246.9, 261.6, 293.7, 329.6, 349.2, 392.0],
 		[349.2, 392.0, 440.0, 493.9, 523.3, 587.3, 659.3, 698.5],
@@ -263,7 +317,8 @@ const GENRE_CLASSICAL := {
 	"delay_ms": 250.0,
 	"delay_feedback_db": -14.0,
 	"dist_drive": 0.0,
-	"dj_lines": [
+	"dj_lines":
+	[
 		"Classical Cruise. Elegant driving.",
 		"A timeless masterpiece. More after this.",
 		"Orchestral beauty for your commute.",
@@ -363,8 +418,11 @@ var _tts_queue: Array[String] = []
 func _ready() -> void:
 	_rng.randomize()
 	_genres = [
-		GENRE_POP, GENRE_ROCK, GENRE_JAZZ,
-		GENRE_ELECTRONIC, GENRE_CLASSICAL,
+		GENRE_POP,
+		GENRE_ROCK,
+		GENRE_JAZZ,
+		GENRE_ELECTRONIC,
+		GENRE_CLASSICAL,
 	]
 	_genre_index = 0
 
@@ -612,9 +670,7 @@ func _trigger_melody_note() -> void:
 			_arp_pattern.clear()
 			for i in range(4):
 				var deg: int = _chord_tones[i % _chord_tones.size()]
-				_arp_pattern.append(
-					_current_scale[deg % _current_scale.size()]
-				)
+				_arp_pattern.append(_current_scale[deg % _current_scale.size()])
 			_arp_index = 0
 
 	var desired_hz := 440.0
@@ -639,9 +695,7 @@ func _trigger_melody_note() -> void:
 
 	# Play new melody note
 	if _melody_poly:
-		_mel_stream_id = _melody_poly.play_stream(
-			_mel_sample, 0.0, _mel_vol_db, pitch_scale
-		)
+		_mel_stream_id = _melody_poly.play_stream(_mel_sample, 0.0, _mel_vol_db, pitch_scale)
 		# Rock: power chord fifth
 		if _melody_mode == "power_chord":
 			_mel_stream_id2 = _melody_poly.play_stream(
@@ -677,9 +731,7 @@ func _trigger_bass_note() -> void:
 
 	# Play new bass note
 	if _bass_poly:
-		_bass_stream_id = _bass_poly.play_stream(
-			_bas_sample, 0.0, _bas_vol_db, pitch_scale
-		)
+		_bass_stream_id = _bass_poly.play_stream(_bas_sample, 0.0, _bas_vol_db, pitch_scale)
 
 	_bass_timer = _beat_time * _rng.randi_range(2, 4)
 
@@ -710,9 +762,7 @@ func _advance_music(delta: float) -> void:
 		if _notes_remaining <= 0:
 			_stop_all_music()
 			_is_playing_music = false
-			_music_timer = _rng.randf_range(
-				MUSIC_INTERVAL_MIN, MUSIC_INTERVAL_MAX
-			)
+			_music_timer = _rng.randf_range(MUSIC_INTERVAL_MIN, MUSIC_INTERVAL_MAX)
 			return
 		_trigger_melody_note()
 
@@ -818,8 +868,4 @@ func _on_wanted_changed(level: int) -> void:
 		_police_timer = minf(_police_timer, 8.0)
 	if level >= 1:
 		_play_static_burst()
-		_speak_tts(
-			POLICE_LINES_WANTED[
-				_rng.randi() % POLICE_LINES_WANTED.size()
-			]
-		)
+		_speak_tts(POLICE_LINES_WANTED[_rng.randi() % POLICE_LINES_WANTED.size()])

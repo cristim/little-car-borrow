@@ -135,18 +135,30 @@ func _build_marking(chunk: Node3D, center: Vector3) -> void:
 	var cz := center.z
 	# Left vertical bar of H
 	_st_quad_flat(
-		st, cx - H_CROSS_W * 0.5 - H_BAR_W * 0.5, y, cz,
-		H_BAR_W, H_BAR_L,
+		st,
+		cx - H_CROSS_W * 0.5 - H_BAR_W * 0.5,
+		y,
+		cz,
+		H_BAR_W,
+		H_BAR_L,
 	)
 	# Right vertical bar of H
 	_st_quad_flat(
-		st, cx + H_CROSS_W * 0.5 + H_BAR_W * 0.5, y, cz,
-		H_BAR_W, H_BAR_L,
+		st,
+		cx + H_CROSS_W * 0.5 + H_BAR_W * 0.5,
+		y,
+		cz,
+		H_BAR_W,
+		H_BAR_L,
 	)
 	# Horizontal crossbar of H
 	_st_quad_flat(
-		st, cx, y, cz,
-		H_CROSS_W + H_BAR_W, H_CROSS_H,
+		st,
+		cx,
+		y,
+		cz,
+		H_CROSS_W + H_BAR_W,
+		H_CROSS_H,
 	)
 	st.generate_normals()
 	var mesh_inst := MeshInstance3D.new()
@@ -164,9 +176,7 @@ func _spawn_helicopter(chunk: Node3D, pos: Vector3) -> void:
 
 
 ## Flat Y-axis quad (top-face only) at world position (cx, y, cz), sized w×d.
-func _st_quad_flat(
-	st: SurfaceTool, cx: float, y: float, cz: float, w: float, d: float
-) -> void:
+func _st_quad_flat(st: SurfaceTool, cx: float, y: float, cz: float, w: float, d: float) -> void:
 	var hw := w * 0.5
 	var hd := d * 0.5
 	var n := Vector3.UP
@@ -184,9 +194,7 @@ func _st_quad_flat(
 	st.add_vertex(Vector3(cx - hw, y, cz + hd))
 
 
-func _st_quad(
-	st: SurfaceTool, v0: Vector3, v1: Vector3, v2: Vector3, v3: Vector3
-) -> void:
+func _st_quad(st: SurfaceTool, v0: Vector3, v1: Vector3, v2: Vector3, v3: Vector3) -> void:
 	var n: Vector3 = (v1 - v0).cross(v2 - v0).normalized()
 	st.set_normal(n)
 	st.add_vertex(v0)

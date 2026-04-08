@@ -2,10 +2,10 @@ extends RefCounted
 ## Builds farmland overlay: field patches, fences, and occasional farmhouses.
 
 const FIELD_COLORS: Array[Color] = [
-	Color(0.35, 0.50, 0.15),   # green crop
-	Color(0.70, 0.60, 0.25),   # golden wheat
-	Color(0.45, 0.35, 0.20),   # brown plowed
-	Color(0.30, 0.55, 0.20),   # dark green
+	Color(0.35, 0.50, 0.15),  # green crop
+	Color(0.70, 0.60, 0.25),  # golden wheat
+	Color(0.45, 0.35, 0.20),  # brown plowed
+	Color(0.30, 0.55, 0.20),  # dark green
 ]
 const FENCE_HEIGHT := 1.2
 const FENCE_THICKNESS := 0.08
@@ -27,7 +27,10 @@ func init(
 
 
 func build(
-	chunk: Node3D, tile: Vector2i, ox: float, oz: float,
+	chunk: Node3D,
+	tile: Vector2i,
+	ox: float,
+	oz: float,
 ) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(tile) ^ 0xFA12
@@ -75,28 +78,40 @@ func build(
 		if rng.randf() < 0.6:
 			var fy: float = y + FENCE_HEIGHT * 0.5
 			# North fence
-			_city_script.st_add_box(
-				fence_st,
-				Vector3(fx, fy, fz - fd * 0.5),
-				Vector3(fw, FENCE_HEIGHT, FENCE_THICKNESS),
+			(
+				_city_script
+				. st_add_box(
+					fence_st,
+					Vector3(fx, fy, fz - fd * 0.5),
+					Vector3(fw, FENCE_HEIGHT, FENCE_THICKNESS),
+				)
 			)
 			# South fence
-			_city_script.st_add_box(
-				fence_st,
-				Vector3(fx, fy, fz + fd * 0.5),
-				Vector3(fw, FENCE_HEIGHT, FENCE_THICKNESS),
+			(
+				_city_script
+				. st_add_box(
+					fence_st,
+					Vector3(fx, fy, fz + fd * 0.5),
+					Vector3(fw, FENCE_HEIGHT, FENCE_THICKNESS),
+				)
 			)
 			# West fence
-			_city_script.st_add_box(
-				fence_st,
-				Vector3(fx - fw * 0.5, fy, fz),
-				Vector3(FENCE_THICKNESS, FENCE_HEIGHT, fd),
+			(
+				_city_script
+				. st_add_box(
+					fence_st,
+					Vector3(fx - fw * 0.5, fy, fz),
+					Vector3(FENCE_THICKNESS, FENCE_HEIGHT, fd),
+				)
 			)
 			# East fence
-			_city_script.st_add_box(
-				fence_st,
-				Vector3(fx + fw * 0.5, fy, fz),
-				Vector3(FENCE_THICKNESS, FENCE_HEIGHT, fd),
+			(
+				_city_script
+				. st_add_box(
+					fence_st,
+					Vector3(fx + fw * 0.5, fy, fz),
+					Vector3(FENCE_THICKNESS, FENCE_HEIGHT, fd),
+				)
 			)
 			has_fences = true
 

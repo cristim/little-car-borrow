@@ -77,6 +77,7 @@ func _sim(delta: float, frames: int = 1) -> void:
 # Static: _stroke_shape
 # ==========================================================================
 
+
 func test_stroke_shape_at_zero() -> void:
 	var result: float = PlayerModelScript._stroke_shape(0.0)
 	assert_almost_eq(result, 0.0, 0.01, "stroke_shape(0) should be ~0")
@@ -122,14 +123,14 @@ func test_stroke_shape_asymmetric() -> void:
 			neg_count += 1
 	assert_true(
 		pos_count != neg_count,
-		"Stroke shape should be asymmetric — pos=%d neg=%d" \
-			% [pos_count, neg_count],
+		"Stroke shape should be asymmetric — pos=%d neg=%d" % [pos_count, neg_count],
 	)
 
 
 # ==========================================================================
 # _apply_arm_stroke
 # ==========================================================================
+
 
 func test_apply_arm_stroke_left_sets_all_axes() -> void:
 	var shoulder := Node3D.new()
@@ -168,10 +169,16 @@ func test_apply_arm_stroke_right_mirrors_y_and_z() -> void:
 	assert_almost_eq(sh_l.rotation.x, sh_r.rotation.x, 0.001, "X same")
 	# Y and Z should be negated
 	assert_almost_eq(
-		sh_l.rotation.y, -sh_r.rotation.y, 0.001, "Y mirrored",
+		sh_l.rotation.y,
+		-sh_r.rotation.y,
+		0.001,
+		"Y mirrored",
 	)
 	assert_almost_eq(
-		sh_l.rotation.z, -sh_r.rotation.z, 0.001, "Z mirrored",
+		sh_l.rotation.z,
+		-sh_r.rotation.z,
+		0.001,
+		"Z mirrored",
 	)
 
 
@@ -185,11 +192,13 @@ func test_apply_arm_stroke_elbow_x_within_bounds() -> void:
 		var stroke := -1.0 + float(i) * 0.1
 		_model._apply_arm_stroke(shoulder, elbow, stroke, 1.0)
 		assert_gte(
-			elbow.rotation.x, PlayerModelScript.SWIM_ELBOW_MIN,
+			elbow.rotation.x,
+			PlayerModelScript.SWIM_ELBOW_MIN,
 			"Elbow X should not go below min at stroke=%f" % stroke,
 		)
 		assert_lte(
-			elbow.rotation.x, PlayerModelScript.SWIM_ELBOW_MAX,
+			elbow.rotation.x,
+			PlayerModelScript.SWIM_ELBOW_MAX,
 			"Elbow X should not exceed max at stroke=%f" % stroke,
 		)
 
@@ -216,6 +225,7 @@ func test_apply_arm_stroke_recovery_elbow_different_from_pull() -> void:
 # ==========================================================================
 # _is_armed / _is_flashlight_on
 # ==========================================================================
+
 
 func test_is_armed_false_when_no_weapon_node() -> void:
 	# No PlayerWeapon child on parent
@@ -290,10 +300,13 @@ func test_is_flashlight_on_true_when_visible() -> void:
 # _get_gun_elbow_angle
 # ==========================================================================
 
+
 func test_get_gun_elbow_default_without_weapon() -> void:
 	var angle: float = _model._get_gun_elbow_angle()
 	assert_almost_eq(
-		angle, PlayerModelScript.DEFAULT_GUN_ELBOW, 0.001,
+		angle,
+		PlayerModelScript.DEFAULT_GUN_ELBOW,
+		0.001,
 		"Should return DEFAULT_GUN_ELBOW without PlayerWeapon",
 	)
 
@@ -303,9 +316,7 @@ func test_get_gun_elbow_reads_weapon_data() -> void:
 	pw.name = "PlayerWeapon"
 	var script := GDScript.new()
 	script.source_code = (
-		"extends Node\n"
-		+ "const WEAPONS := [{\"elbow\": -0.4}]\n"
-		+ "var _current_idx := 0\n"
+		"extends Node\n" + 'const WEAPONS := [{"elbow": -0.4}]\n' + "var _current_idx := 0\n"
 	)
 	script.reload()
 	pw.set_script(script)
@@ -317,6 +328,7 @@ func test_get_gun_elbow_reads_weapon_data() -> void:
 # ==========================================================================
 # _aim_gun_arm
 # ==========================================================================
+
 
 func test_aim_gun_arm_sets_shoulder_and_elbow() -> void:
 	_rs.rotation = Vector3.ZERO
@@ -344,6 +356,7 @@ func test_aim_gun_arm_pitch_affects_shoulder() -> void:
 # ==========================================================================
 # _aim_flashlight_arm
 # ==========================================================================
+
 
 func test_aim_flashlight_arm_sets_left_shoulder_and_elbow() -> void:
 	_ls.rotation = Vector3.ZERO
@@ -377,11 +390,15 @@ func test_aim_flashlight_elbow_clamped_range() -> void:
 	var elbow_down := _le.rotation.x
 	# Up should give FLASH_ELBOW_UP, down should give FLASH_ELBOW_DOWN
 	assert_almost_eq(
-		elbow_up, PlayerModelScript.FLASH_ELBOW_UP, 0.01,
+		elbow_up,
+		PlayerModelScript.FLASH_ELBOW_UP,
+		0.01,
 		"Pitch up should give FLASH_ELBOW_UP",
 	)
 	assert_almost_eq(
-		elbow_down, PlayerModelScript.FLASH_ELBOW_DOWN, 0.01,
+		elbow_down,
+		PlayerModelScript.FLASH_ELBOW_DOWN,
+		0.01,
 		"Pitch down should give FLASH_ELBOW_DOWN",
 	)
 
@@ -390,30 +407,35 @@ func test_aim_flashlight_elbow_clamped_range() -> void:
 # Constants sanity
 # ==========================================================================
 
+
 func test_run_threshold_positive() -> void:
 	assert_gt(
-		PlayerModelScript.RUN_THRESHOLD, 0.0,
+		PlayerModelScript.RUN_THRESHOLD,
+		0.0,
 		"RUN_THRESHOLD should be positive",
 	)
 
 
 func test_swim_frequency_positive() -> void:
 	assert_gt(
-		PlayerModelScript.SWIM_FREQUENCY, 0.0,
+		PlayerModelScript.SWIM_FREQUENCY,
+		0.0,
 		"SWIM_FREQUENCY should be positive",
 	)
 
 
 func test_decay_speed_positive() -> void:
 	assert_gt(
-		PlayerModelScript.DECAY_SPEED, 0.0,
+		PlayerModelScript.DECAY_SPEED,
+		0.0,
 		"DECAY_SPEED should be positive",
 	)
 
 
 func test_swim_decay_faster_than_normal() -> void:
 	assert_gt(
-		PlayerModelScript.SWIM_DECAY_SPEED, PlayerModelScript.DECAY_SPEED,
+		PlayerModelScript.SWIM_DECAY_SPEED,
+		PlayerModelScript.DECAY_SPEED,
 		"SWIM_DECAY_SPEED should be faster than DECAY_SPEED",
 	)
 
@@ -421,6 +443,7 @@ func test_swim_decay_faster_than_normal() -> void:
 # ==========================================================================
 # _was_swimming transition flag
 # ==========================================================================
+
 
 func test_was_swimming_set_after_swim() -> void:
 	_parent.is_swimming = true
@@ -448,13 +471,16 @@ func test_was_swimming_clears_after_decay() -> void:
 # Hip sway position resets when idle
 # ==========================================================================
 
+
 func test_hip_sway_resets_on_stop() -> void:
 	_parent.velocity = Vector3(0, 0, 5.0)
 	_sim(0.016, 30)
 	_parent.velocity = Vector3.ZERO
 	_sim(0.1, 30)
 	assert_almost_eq(
-		_model.position.x, 0.0, 0.01,
+		_model.position.x,
+		0.0,
+		0.01,
 		"Hip sway (position.x) should decay to 0 when idle",
 	)
 
@@ -462,6 +488,7 @@ func test_hip_sway_resets_on_stop() -> void:
 # ==========================================================================
 # Face details — _ready builds head parts
 # ==========================================================================
+
 
 func test_face_details_eyes_created() -> void:
 	assert_not_null(
@@ -507,8 +534,17 @@ func test_face_details_mouth_created() -> void:
 
 
 func test_face_details_are_mesh_instances() -> void:
-	for part_name in ["EyeLeft", "EyeRight", "EarLeft", "EarRight",
-					"HairTop", "Nose", "Mouth", "BrowLeft", "BrowRight"]:
+	for part_name in [
+		"EyeLeft",
+		"EyeRight",
+		"EarLeft",
+		"EarRight",
+		"HairTop",
+		"Nose",
+		"Mouth",
+		"BrowLeft",
+		"BrowRight"
+	]:
 		var node: Node = _head.get_node_or_null(part_name)
 		assert_not_null(node, "%s should exist" % part_name)
 		assert_true(
@@ -556,6 +592,7 @@ func test_eyes_are_on_front_face() -> void:
 # Hand details — _ready builds hand parts on elbow pivots
 # ==========================================================================
 
+
 func test_hand_left_palm_created() -> void:
 	assert_not_null(
 		_le.get_node_or_null("HandLeft_Palm"),
@@ -578,8 +615,7 @@ func test_hand_left_flashlight_body_created() -> void:
 
 
 func test_hand_parts_are_mesh_instances() -> void:
-	var left_parts := ["HandLeft_Palm", "HandLeft_Fingers", "HandLeft_Thumb",
-		"FlashlightBody"]
+	var left_parts := ["HandLeft_Palm", "HandLeft_Fingers", "HandLeft_Thumb", "FlashlightBody"]
 	var right_parts := ["HandRight_Palm", "HandRight_Fingers", "HandRight_Thumb"]
 	for part_name in left_parts:
 		var node: Node = _le.get_node_or_null(part_name)
@@ -594,7 +630,8 @@ func test_hand_parts_are_mesh_instances() -> void:
 func test_hands_at_wrist_depth() -> void:
 	var palm_l := _le.get_node("HandLeft_Palm") as MeshInstance3D
 	assert_lt(
-		palm_l.position.y, -0.24,
+		palm_l.position.y,
+		-0.24,
 		"Left palm should be at wrist depth (Y < -0.24 from elbow)",
 	)
 
@@ -604,7 +641,9 @@ func test_left_palm_centred_on_flashlight_tube() -> void:
 	var palm_l := _le.get_node("HandLeft_Palm") as MeshInstance3D
 	var fl_body := _le.get_node("FlashlightBody") as MeshInstance3D
 	assert_almost_eq(
-		palm_l.position.z, fl_body.position.z, 0.02,
+		palm_l.position.z,
+		fl_body.position.z,
+		0.02,
 		"Left palm Z should be within 2 cm of FlashlightBody Z",
 	)
 
@@ -616,7 +655,8 @@ func test_left_palm_front_face_clears_forearm() -> void:
 	var bm: BoxMesh = palm_l.mesh as BoxMesh
 	var front_z := palm_l.position.z + bm.size.z * 0.5
 	assert_gt(
-		front_z, 0.045,
+		front_z,
+		0.045,
 		"Left palm front face must extend past the forearm surface (Z > 0.045)",
 	)
 
@@ -625,12 +665,14 @@ func test_right_hand_at_gun_grip_height() -> void:
 	# Palm should sit at wrist depth (Y ≈ -0.252), not mid-forearm.
 	var palm_r := _re.get_node("HandRight_Palm") as MeshInstance3D
 	assert_lt(
-		palm_r.position.y, -0.22,
+		palm_r.position.y,
+		-0.22,
 		"Right palm should be at wrist depth (Y < -0.22 from elbow)",
 	)
 	# Palm Z offset must be small — not sticking out perpendicular to the forearm.
 	assert_lt(
-		absf(palm_r.position.z), 0.05,
+		absf(palm_r.position.z),
+		0.05,
 		"Right palm Z offset should be < 5 cm (not perpendicular to arm)",
 	)
 
@@ -639,7 +681,9 @@ func test_flashlight_body_no_local_rotation() -> void:
 	var fl_body := _le.get_node("FlashlightBody") as MeshInstance3D
 	# Tube is along Y (arm direction) — no extra tilt needed; SpotLight aims via look_at.
 	assert_almost_eq(
-		fl_body.rotation.x, 0.0, 0.01,
+		fl_body.rotation.x,
+		0.0,
+		0.01,
 		"FlashlightBody should have no local rotation (tube already along arm axis)",
 	)
 
@@ -650,11 +694,13 @@ func test_flashlight_body_oriented_along_arm() -> void:
 	var fl_body := _le.get_node("FlashlightBody") as MeshInstance3D
 	var bm: BoxMesh = fl_body.mesh as BoxMesh
 	assert_gt(
-		bm.size.y, bm.size.z,
+		bm.size.y,
+		bm.size.z,
 		"FlashlightBody Y (along-arm) should be longer than Z",
 	)
 	assert_gt(
-		bm.size.y, bm.size.x,
+		bm.size.y,
+		bm.size.x,
 		"FlashlightBody Y (along-arm) should be longer than X",
 	)
 
@@ -670,12 +716,11 @@ func test_thumb_sides_are_mirrored() -> void:
 # Flashlight scene position — source inspection on player.tscn
 # ==========================================================================
 
+
 func test_flashlight_positioned_at_housing_tip() -> void:
 	# Read the raw .tscn text so we can inspect the Flashlight transform.
 	# Tube runs along Y; tip is at Forearm-local (0, -0.201, 0.012) after 20° tilt.
-	var f: FileAccess = FileAccess.open(
-		"res://scenes/player/player.tscn", FileAccess.READ
-	)
+	var f: FileAccess = FileAccess.open("res://scenes/player/player.tscn", FileAccess.READ)
 	assert_not_null(f, "player.tscn should be readable")
 	var src: String = f.get_as_text()
 	f.close()

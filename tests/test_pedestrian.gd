@@ -20,6 +20,7 @@ class MockState:
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 func _make_pedestrian_with_sm() -> CharacterBody3D:
 	var ped := CharacterBody3D.new()
 	ped.set_script(PedestrianScript)
@@ -51,6 +52,7 @@ func _make_pedestrian_bare() -> CharacterBody3D:
 # Constants
 # ---------------------------------------------------------------------------
 
+
 func test_flee_vehicle_speed_constant() -> void:
 	assert_eq(PedestrianScript.FLEE_VEHICLE_SPEED, 5.0)
 
@@ -66,6 +68,7 @@ func test_lod_far_dist_constant() -> void:
 # ---------------------------------------------------------------------------
 # _ready
 # ---------------------------------------------------------------------------
+
 
 func test_ready_adds_to_pedestrian_group() -> void:
 	var ped := _make_pedestrian_bare()
@@ -98,6 +101,7 @@ func test_ready_connects_proximity_area_signal() -> void:
 # ---------------------------------------------------------------------------
 # _on_proximity_body_entered
 # ---------------------------------------------------------------------------
+
 
 func test_proximity_ignores_non_rigidbody() -> void:
 	var ped := _make_pedestrian_with_sm()
@@ -215,6 +219,7 @@ func test_proximity_just_above_threshold_triggers() -> void:
 # _physics_process — frame counter
 # ---------------------------------------------------------------------------
 
+
 func test_frame_counter_increments() -> void:
 	var ped := _make_pedestrian_bare()
 	add_child_autofree(ped)
@@ -230,6 +235,7 @@ func test_frame_counter_increments() -> void:
 # ---------------------------------------------------------------------------
 # _on_gunshot_fired
 # ---------------------------------------------------------------------------
+
 
 func test_gunshot_hear_radius_constant() -> void:
 	assert_eq(PedestrianScript.GUNSHOT_HEAR_RADIUS, 100.0)
@@ -337,6 +343,7 @@ func test_exit_tree_disconnects_gunshot_signal() -> void:
 # ---------------------------------------------------------------------------
 # _physics_process — no state machine does not crash
 # ---------------------------------------------------------------------------
+
 
 func test_physics_process_without_sm_does_not_crash() -> void:
 	var ped := _make_pedestrian_bare()

@@ -16,7 +16,10 @@ func init(grid: RefCounted, boundary: RefCounted) -> void:
 
 
 func build(
-	chunk: Node3D, tile: Vector2i, ox: float, oz: float,
+	chunk: Node3D,
+	tile: Vector2i,
+	ox: float,
+	oz: float,
 ) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(tile) ^ 0x12CC
@@ -42,8 +45,13 @@ func build(
 
 		var center := Vector3(rx, h + rh * 0.5, rz)
 		# Slight random rotation by skewing the box
-		_city_script.st_add_box(
-			st, center, Vector3(rw, rh, rd),
+		(
+			_city_script
+			. st_add_box(
+				st,
+				center,
+				Vector3(rw, rh, rd),
+			)
 		)
 		has_rocks = true
 
@@ -80,8 +88,13 @@ func build(
 		var rh: float = rng.randf_range(1.5, 6.0)
 		var rd: float = rng.randf_range(2.0, 8.0)
 		var center := Vector3(rx, h + rh * 0.5, rz)
-		_city_script.add_box_collision(
-			body, center, Vector3(rw, rh, rd),
+		(
+			_city_script
+			. add_box_collision(
+				body,
+				center,
+				Vector3(rw, rh, rd),
+			)
 		)
 
 	chunk.add_child(body)

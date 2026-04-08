@@ -18,9 +18,11 @@ func before_each() -> void:
 # Initial state
 # ================================================================
 
+
 func test_initial_context_is_foot() -> void:
 	assert_eq(
-		_im.current_context, _im.Context.FOOT,
+		_im.current_context,
+		_im.Context.FOOT,
 		"Initial context should be FOOT",
 	)
 
@@ -28,6 +30,7 @@ func test_initial_context_is_foot() -> void:
 # ================================================================
 # Context enum values
 # ================================================================
+
 
 func test_context_enum_foot() -> void:
 	assert_eq(_im.Context.FOOT, 0, "FOOT should be 0")
@@ -45,10 +48,12 @@ func test_context_enum_menu() -> void:
 # set_context
 # ================================================================
 
+
 func test_set_context_to_vehicle() -> void:
 	_im.set_context(_im.Context.VEHICLE)
 	assert_eq(
-		_im.current_context, _im.Context.VEHICLE,
+		_im.current_context,
+		_im.Context.VEHICLE,
 		"set_context should update to VEHICLE",
 	)
 
@@ -56,7 +61,8 @@ func test_set_context_to_vehicle() -> void:
 func test_set_context_to_menu() -> void:
 	_im.set_context(_im.Context.MENU)
 	assert_eq(
-		_im.current_context, _im.Context.MENU,
+		_im.current_context,
+		_im.Context.MENU,
 		"set_context should update to MENU",
 	)
 
@@ -65,7 +71,8 @@ func test_set_context_to_foot() -> void:
 	_im.set_context(_im.Context.VEHICLE)
 	_im.set_context(_im.Context.FOOT)
 	assert_eq(
-		_im.current_context, _im.Context.FOOT,
+		_im.current_context,
+		_im.Context.FOOT,
 		"set_context should update back to FOOT",
 	)
 
@@ -74,6 +81,7 @@ func test_set_context_to_foot() -> void:
 # is_foot / is_vehicle
 # ================================================================
 
+
 func test_is_foot_when_foot() -> void:
 	_im.current_context = _im.Context.FOOT
 	assert_true(_im.is_foot(), "is_foot should return true in FOOT context")
@@ -81,42 +89,33 @@ func test_is_foot_when_foot() -> void:
 
 func test_is_foot_when_vehicle() -> void:
 	_im.current_context = _im.Context.VEHICLE
-	assert_false(
-		_im.is_foot(), "is_foot should return false in VEHICLE context"
-	)
+	assert_false(_im.is_foot(), "is_foot should return false in VEHICLE context")
 
 
 func test_is_foot_when_menu() -> void:
 	_im.current_context = _im.Context.MENU
-	assert_false(
-		_im.is_foot(), "is_foot should return false in MENU context"
-	)
+	assert_false(_im.is_foot(), "is_foot should return false in MENU context")
 
 
 func test_is_vehicle_when_vehicle() -> void:
 	_im.current_context = _im.Context.VEHICLE
-	assert_true(
-		_im.is_vehicle(), "is_vehicle should return true in VEHICLE context"
-	)
+	assert_true(_im.is_vehicle(), "is_vehicle should return true in VEHICLE context")
 
 
 func test_is_vehicle_when_foot() -> void:
 	_im.current_context = _im.Context.FOOT
-	assert_false(
-		_im.is_vehicle(), "is_vehicle should return false in FOOT context"
-	)
+	assert_false(_im.is_vehicle(), "is_vehicle should return false in FOOT context")
 
 
 func test_is_vehicle_when_menu() -> void:
 	_im.current_context = _im.Context.MENU
-	assert_false(
-		_im.is_vehicle(), "is_vehicle should return false in MENU context"
-	)
+	assert_false(_im.is_vehicle(), "is_vehicle should return false in MENU context")
 
 
 # ================================================================
 # is_touch
 # ================================================================
+
 
 func test_is_touch_returns_bool() -> void:
 	var result: bool = _im.is_touch()
@@ -127,11 +126,13 @@ func test_is_touch_returns_bool() -> void:
 # Touch mode overrides
 # ================================================================
 
+
 func test_touch_mode_context_foot() -> void:
 	_im._is_touch = true
 	_im.set_context(_im.Context.FOOT)
 	assert_eq(
-		_im.current_context, _im.Context.FOOT,
+		_im.current_context,
+		_im.Context.FOOT,
 		"Touch mode should still set context to FOOT",
 	)
 
@@ -140,7 +141,8 @@ func test_touch_mode_context_vehicle() -> void:
 	_im._is_touch = true
 	_im.set_context(_im.Context.VEHICLE)
 	assert_eq(
-		_im.current_context, _im.Context.VEHICLE,
+		_im.current_context,
+		_im.Context.VEHICLE,
 		"Touch mode should still set context to VEHICLE",
 	)
 
@@ -148,6 +150,7 @@ func test_touch_mode_context_vehicle() -> void:
 # ================================================================
 # Context round-trips
 # ================================================================
+
 
 func test_context_cycles_correctly() -> void:
 	_im.set_context(_im.Context.FOOT)

@@ -1,9 +1,7 @@
 extends GutTest
 ## Unit tests for chunk_builder_rural_roads.gd highway strip generation.
 
-const RuralRoadsScript = preload(
-	"res://scenes/world/generator/chunk_builder_rural_roads.gd"
-)
+const RuralRoadsScript = preload("res://scenes/world/generator/chunk_builder_rural_roads.gd")
 const RoadGridScript = preload("res://src/road_grid.gd")
 const BoundaryScript = preload("res://src/city_boundary.gd")
 
@@ -39,6 +37,7 @@ func before_each() -> void:
 # Initialization
 # ================================================================
 
+
 func test_init_stores_grid() -> void:
 	assert_eq(_builder._grid, _grid, "init should store grid reference")
 
@@ -49,13 +48,16 @@ func test_init_stores_road_mat() -> void:
 
 func test_init_stores_boundary() -> void:
 	assert_eq(
-		_builder._boundary, _boundary, "init should store boundary reference",
+		_builder._boundary,
+		_boundary,
+		"init should store boundary reference",
 	)
 
 
 # ================================================================
 # Constants
 # ================================================================
+
 
 func test_subdivisions_positive() -> void:
 	assert_true(
@@ -73,7 +75,8 @@ func test_sea_level_negative() -> void:
 
 func test_highway_indices_has_two_entries() -> void:
 	assert_eq(
-		RuralRoadsScript.HIGHWAY_INDICES.size(), 2,
+		RuralRoadsScript.HIGHWAY_INDICES.size(),
+		2,
 		"HIGHWAY_INDICES should have exactly 2 entries",
 	)
 
@@ -82,6 +85,7 @@ func test_highway_indices_has_two_entries() -> void:
 # _collect_roads
 # ================================================================
 
+
 func test_collect_roads_empty_tile_data() -> void:
 	var result: Array = _builder._collect_roads({}, 0, 2)
 	assert_eq(result.size(), 0, "Empty tile data should produce no roads")
@@ -89,7 +93,8 @@ func test_collect_roads_empty_tile_data() -> void:
 
 func test_collect_roads_with_edge_data() -> void:
 	var tile_data := {
-		"edges": {
+		"edges":
+		{
 			0: {"roads": [{"position": 0.25, "width": 8.0}]},
 			2: {"roads": [{"position": 0.75, "width": 8.0}]},
 		},
@@ -100,35 +105,40 @@ func test_collect_roads_with_edge_data() -> void:
 
 func test_collect_roads_deduplicates_same_position() -> void:
 	var tile_data := {
-		"edges": {
+		"edges":
+		{
 			0: {"roads": [{"position": 0.5, "width": 8.0}]},
 			2: {"roads": [{"position": 0.5, "width": 8.0}]},
 		},
 	}
 	var result: Array = _builder._collect_roads(tile_data, 0, 2)
 	assert_eq(
-		result.size(), 1,
+		result.size(),
+		1,
 		"Same position from both edges should be deduplicated",
 	)
 
 
 func test_collect_roads_different_positions_kept() -> void:
 	var tile_data := {
-		"edges": {
+		"edges":
+		{
 			0: {"roads": [{"position": 0.25, "width": 8.0}]},
 			2: {"roads": [{"position": 0.75, "width": 10.0}]},
 		},
 	}
 	var result: Array = _builder._collect_roads(tile_data, 0, 2)
 	assert_eq(
-		result.size(), 2,
+		result.size(),
+		2,
 		"Different positions should be kept separately",
 	)
 
 
 func test_collect_roads_missing_dir_graceful() -> void:
 	var tile_data := {
-		"edges": {
+		"edges":
+		{
 			0: {"roads": [{"position": 0.3, "width": 8.0}]},
 		},
 	}
@@ -140,6 +150,7 @@ func test_collect_roads_missing_dir_graceful() -> void:
 # ================================================================
 # Build with fallback (no tile_data)
 # ================================================================
+
 
 func test_build_fallback_creates_road_mesh() -> void:
 	# Use a tile far enough from city to have non-zero terrain
@@ -155,7 +166,8 @@ func test_build_fallback_creates_road_mesh() -> void:
 			found_mesh = true
 			assert_not_null(child.mesh, "Road mesh should not be null")
 			assert_eq(
-				child.material_override, _road_mat,
+				child.material_override,
+				_road_mat,
 				"Road mesh should use provided material",
 			)
 	assert_true(found_mesh, "Fallback build should create RuralRoads mesh")
@@ -173,11 +185,13 @@ func test_build_fallback_creates_collision_body() -> void:
 		if child is StaticBody3D and child.name == "RuralRoadBody":
 			found_body = true
 			assert_eq(
-				child.collision_layer, 1,
+				child.collision_layer,
+				1,
 				"Road body collision layer should be ground (1)",
 			)
 			assert_eq(
-				child.collision_mask, 0,
+				child.collision_mask,
+				0,
 				"Road body collision mask should be 0",
 			)
 			assert_true(
@@ -189,7 +203,8 @@ func test_build_fallback_creates_collision_body() -> void:
 				"Road body should have collision shape children",
 			)
 	assert_true(
-		found_body, "Fallback build should create RuralRoadBody",
+		found_body,
+		"Fallback build should create RuralRoadBody",
 	)
 
 
@@ -214,11 +229,13 @@ func test_road_collision_shapes_are_boxes() -> void:
 # Build with edge tile_data
 # ================================================================
 
+
 func test_build_with_edge_data() -> void:
 	var span: float = _grid.get_grid_span()
 	var tile := Vector2i(5, 0)
 	var tile_data := {
-		"edges": {
+		"edges":
+		{
 			0: {"roads": [{"position": 0.3, "width": 10.0}]},
 			2: {"roads": [{"position": 0.3, "width": 10.0}]},
 			3: {"roads": [{"position": 0.7, "width": 8.0}]},
@@ -239,6 +256,7 @@ func test_build_with_edge_data() -> void:
 # ================================================================
 # Underwater segments skipped
 # ================================================================
+
 
 func test_build_underwater_tile_produces_no_children() -> void:
 	# Very far west tiles should be underwater
@@ -261,6 +279,7 @@ func test_build_underwater_tile_produces_no_children() -> void:
 # Determinism
 # ================================================================
 
+
 func test_build_deterministic() -> void:
 	var span: float = _grid.get_grid_span()
 	var tile := Vector2i(6, 2)
@@ -276,7 +295,8 @@ func test_build_deterministic() -> void:
 	_builder.build(chunk2, tile, ox, oz)
 
 	assert_eq(
-		chunk1.get_child_count(), chunk2.get_child_count(),
+		chunk1.get_child_count(),
+		chunk2.get_child_count(),
 		"Same tile should produce same child count",
 	)
 
@@ -284,6 +304,7 @@ func test_build_deterministic() -> void:
 # ================================================================
 # Road Y offset applied
 # ================================================================
+
 
 func test_road_y_offset_positive() -> void:
 	assert_true(

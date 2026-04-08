@@ -47,27 +47,19 @@ var _boundary = BoundaryScript.new()
 var _biome_map: RefCounted  # fetched from city_manager meta
 var _builder = preload("res://scenes/vehicles/car_body_builder.gd").new()
 var _total_weight := 0
-var _body_mesh_cache := {}      # variant_name -> ArrayMesh
-var _window_mesh_cache := {}    # variant_name -> Dictionary of ArrayMesh
+var _body_mesh_cache := {}  # variant_name -> ArrayMesh
+var _window_mesh_cache := {}  # variant_name -> Dictionary of ArrayMesh
 var _interior_mesh_cache := {}  # variant_name -> ArrayMesh
-var _floor_mesh_cache := {}     # variant_name -> ArrayMesh
-var _detail_mesh_cache := {}    # variant_name -> ArrayMesh
-var _door_mesh_cache := {}      # variant_name -> Dictionary (meshes + pivots)
+var _floor_mesh_cache := {}  # variant_name -> ArrayMesh
+var _detail_mesh_cache := {}  # variant_name -> ArrayMesh
+var _door_mesh_cache := {}  # variant_name -> Dictionary (meshes + pivots)
 
 var _vehicles: Array[Node] = []
 var _vehicle_scene: PackedScene = preload("res://scenes/vehicles/base_vehicle.tscn")
-var _npc_controller_script: GDScript = preload(
-	"res://scenes/vehicles/npc_vehicle_controller.gd"
-)
-var _vehicle_health_script: GDScript = preload(
-	"res://scenes/vehicles/vehicle_health.gd"
-)
-var _vehicle_lights_script: GDScript = preload(
-	"res://scenes/vehicles/vehicle_lights.gd"
-)
-var _water_detector_script: GDScript = preload(
-	"res://scenes/vehicles/vehicle_water_detector.gd"
-)
+var _npc_controller_script: GDScript = preload("res://scenes/vehicles/npc_vehicle_controller.gd")
+var _vehicle_health_script: GDScript = preload("res://scenes/vehicles/vehicle_health.gd")
+var _vehicle_lights_script: GDScript = preload("res://scenes/vehicles/vehicle_lights.gd")
+var _water_detector_script: GDScript = preload("res://scenes/vehicles/vehicle_water_detector.gd")
 var _spawn_helper: GDScript = preload("res://src/vehicle_spawn_helper.gd")
 var _spawn_timer := 0.0
 var _launch_check_timer := 0.0
@@ -173,32 +165,42 @@ func _process(delta: float) -> void:
 				var vy: float = (v as RigidBody3D).linear_velocity.y
 				var npc_v: Node = v.get_node_or_null("NPCVehicleController")
 				var in_grace: bool = npc_v != null and npc_v._spawn_grace > 0.0
-				var threshold: float = LAUNCH_VEL_THRESHOLD if in_grace \
-					else LAUNCH_VEL_POST_GRACE
+				var threshold: float = LAUNCH_VEL_THRESHOLD if in_grace else LAUNCH_VEL_POST_GRACE
 				if vy > threshold:
 					launched.append(v)
 					var vpos: Vector3 = (v as Node3D).global_position
 					push_warning(
-						"[Traffic] CULL launch vy=%.1f pos=(%.1f,%.1f,%.1f)" % [
-							vy, vpos.x, vpos.y, vpos.z,
-						]
+						(
+							"[Traffic] CULL launch vy=%.1f pos=(%.1f,%.1f,%.1f)"
+							% [
+								vy,
+								vpos.x,
+								vpos.y,
+								vpos.z,
+							]
+						)
 					)
 					# Probe the real terrain height at this cell so the next spawn
 					# attempt uses a corrected Y instead of the flat-base-plane hit.
-					var probe := PhysicsRayQueryParameters3D.create(
-						Vector3(vpos.x, 80.0, vpos.z),
-						Vector3(vpos.x, -5.0, vpos.z),
+					var probe := (
+						PhysicsRayQueryParameters3D
+						. create(
+							Vector3(vpos.x, 80.0, vpos.z),
+							Vector3(vpos.x, -5.0, vpos.z),
+						)
 					)
 					probe.collision_mask = 1
-					var phit: Dictionary = _player.get_world_3d().direct_space_state \
-						.intersect_ray(probe)
+					var phit: Dictionary = _player.get_world_3d().direct_space_state.intersect_ray(
+						probe
+					)
 					var corrected_y: float
 					if not phit.is_empty():
 						corrected_y = (phit["position"] as Vector3).y
 					else:
 						corrected_y = _boundary.get_ground_height(vpos.x, vpos.z)
 					var cell := Vector2i(
-						int(vpos.x) / SPAWN_CELL, int(vpos.z) / SPAWN_CELL,
+						int(vpos.x) / SPAWN_CELL,
+						int(vpos.z) / SPAWN_CELL,
 					)
 					_cell_y[cell] = corrected_y
 					_cell_retry_ms[cell] = Time.get_ticks_msec() + 1000
@@ -220,8 +222,11 @@ func _try_spawn() -> void:
 		return
 
 	var player_pos := _player.global_position
-	var player_tile := _grid.get_chunk_coord(
-		Vector2(player_pos.x, player_pos.z),
+	var player_tile := (
+		_grid
+		. get_chunk_coord(
+			Vector2(player_pos.x, player_pos.z),
+		)
 	)
 	var player_biome := _get_biome(player_tile)
 	var player_in_city := _is_road_grid_biome(player_biome)
@@ -251,30 +256,22 @@ func _try_spawn() -> void:
 			var heading_north := _rng.randi() % 2 == 0
 			if heading_north:
 				direction = 0
-				spawn_pos = Vector3(
-					road_center + lane_offset, 0.5, player_pos.z + along
-				)
+				spawn_pos = Vector3(road_center + lane_offset, 0.5, player_pos.z + along)
 				yaw = 0.0
 			else:
 				direction = 1
-				spawn_pos = Vector3(
-					road_center - lane_offset, 0.5, player_pos.z + along
-				)
+				spawn_pos = Vector3(road_center - lane_offset, 0.5, player_pos.z + along)
 				yaw = PI
 		else:
 			var lane_offset := rw / 4.0
 			var heading_east := _rng.randi() % 2 == 0
 			if heading_east:
 				direction = 2
-				spawn_pos = Vector3(
-					player_pos.x + along, 0.5, road_center + lane_offset
-				)
+				spawn_pos = Vector3(player_pos.x + along, 0.5, road_center + lane_offset)
 				yaw = -PI / 2.0
 			else:
 				direction = 3
-				spawn_pos = Vector3(
-					player_pos.x + along, 0.5, road_center - lane_offset
-				)
+				spawn_pos = Vector3(player_pos.x + along, 0.5, road_center - lane_offset)
 				yaw = PI / 2.0
 
 		var dist := spawn_pos.distance_to(player_pos)
@@ -295,9 +292,7 @@ func _try_spawn() -> void:
 			_cell_retry_ms.erase(cell)
 
 		var space: PhysicsDirectSpaceState3D = _player.get_world_3d().direct_space_state
-		var probe: Dictionary = _spawn_helper.probe_spawn_surface(
-			space, _boundary, spawn_pos
-		)
+		var probe: Dictionary = _spawn_helper.probe_spawn_surface(space, _boundary, spawn_pos)
 		if not probe.ok:
 			continue
 		var surface_y: float = probe.surface_y
@@ -312,16 +307,15 @@ func _try_spawn() -> void:
 
 		var too_close := false
 		for v in _vehicles:
-			if is_instance_valid(v) and spawn_pos.distance_to(
-				(v as Node3D).global_position
-			) < MIN_VEHICLE_DIST:
+			if (
+				is_instance_valid(v)
+				and spawn_pos.distance_to((v as Node3D).global_position) < MIN_VEHICLE_DIST
+			):
 				too_close = true
 				break
 		if not too_close:
 			for v in get_tree().get_nodes_in_group("police_vehicle"):
-				if spawn_pos.distance_to(
-					(v as Node3D).global_position
-				) < MIN_VEHICLE_DIST:
+				if spawn_pos.distance_to((v as Node3D).global_position) < MIN_VEHICLE_DIST:
 					too_close = true
 					break
 		if too_close:
@@ -336,9 +330,17 @@ func _try_spawn() -> void:
 			if h_vel.normalized().dot(offset.normalized()) > 0.0:
 				continue
 
-		print("[Traffic] SPAWN surface_y=%.2f pos=(%.1f,%.1f,%.1f)" % [
-			surface_y, spawn_pos.x, spawn_pos.y, spawn_pos.z,
-		])
+		print(
+			(
+				"[Traffic] SPAWN surface_y=%.2f pos=(%.1f,%.1f,%.1f)"
+				% [
+					surface_y,
+					spawn_pos.x,
+					spawn_pos.y,
+					spawn_pos.z,
+				]
+			)
+		)
 		var vehicle := _vehicle_scene.instantiate()
 		_apply_variant(vehicle)
 		_randomize_color(vehicle)
@@ -392,11 +394,17 @@ func _despawn_far() -> void:
 		var v_pos := (v as Node3D).global_position
 		# Cull vehicles stuck airborne after spawn grace (bad surface detection).
 		var npc_ai_node: Node = v.get_node_or_null("NPCVehicleController")
-		if npc_ai_node and npc_ai_node._spawn_grace <= 0.0 \
-				and v_pos.y > AIRBORNE_CULL_HEIGHT:
-			print("[Traffic] CULL airborne pos=(%.1f,%.1f,%.1f)" % [
-				v_pos.x, v_pos.y, v_pos.z,
-			])
+		if npc_ai_node and npc_ai_node._spawn_grace <= 0.0 and v_pos.y > AIRBORNE_CULL_HEIGHT:
+			print(
+				(
+					"[Traffic] CULL airborne pos=(%.1f,%.1f,%.1f)"
+					% [
+						v_pos.x,
+						v_pos.y,
+						v_pos.z,
+					]
+				)
+			)
 			to_remove.append(v)
 			continue
 		var d := v_pos.distance_to(player_pos)
@@ -415,9 +423,7 @@ func _despawn_far() -> void:
 			else:
 				var want_frozen: bool = d >= LOD_FREEZE_DIST
 				if not want_frozen and (v as RigidBody3D).freeze:
-					if _spawn_helper.is_embedded(
-						v, get_tree().current_scene.get_world_3d()
-					):
+					if _spawn_helper.is_embedded(v, get_tree().current_scene.get_world_3d()):
 						to_remove.append(v)
 						continue
 				v.freeze = want_frozen
@@ -498,14 +504,26 @@ func _apply_variant(vehicle: Node) -> void:
 	var door_data: Dictionary = _door_mesh_cache[vname]
 	if door_data.size() > 0:
 		_apply_door(
-			body, "LeftDoorPivot", door_data,
-			"LeftDoor", "LeftDoorInner", "LeftDoorWindow",
-			"left_pivot", _door_inner_mat, _glass_mat,
+			body,
+			"LeftDoorPivot",
+			door_data,
+			"LeftDoor",
+			"LeftDoorInner",
+			"LeftDoorWindow",
+			"left_pivot",
+			_door_inner_mat,
+			_glass_mat,
 		)
 		_apply_door(
-			body, "RightDoorPivot", door_data,
-			"RightDoor", "RightDoorInner", "RightDoorWindow",
-			"right_pivot", _door_inner_mat, _glass_mat,
+			body,
+			"RightDoorPivot",
+			door_data,
+			"RightDoor",
+			"RightDoorInner",
+			"RightDoorWindow",
+			"right_pivot",
+			_door_inner_mat,
+			_glass_mat,
 		)
 
 	# Adjust vehicle mass
@@ -520,9 +538,7 @@ func _randomize_color(vehicle: Node) -> void:
 	var car_body := body.get_node_or_null("CarBody") as MeshInstance3D
 	if not car_body:
 		return
-	var mat: StandardMaterial3D = _color_mats[
-		_rng.randi() % _color_mats.size()
-	]
+	var mat: StandardMaterial3D = _color_mats[_rng.randi() % _color_mats.size()]
 	car_body.material_override = mat
 	# Apply same color to door meshes
 	for pivot_name in ["LeftDoorPivot", "RightDoorPivot"]:

@@ -72,7 +72,9 @@ func test_neighbor_edges_match_heights() -> void:
 	if ha.size() == hb.size() and ha.size() > 0:
 		for i in range(ha.size()):
 			assert_almost_eq(
-				ha[i], hb[i], 0.01,
+				ha[i],
+				hb[i],
+				0.01,
 				"Height mismatch at sample %d" % i,
 			)
 
@@ -84,7 +86,8 @@ func test_city_tile_has_flat_edges() -> void:
 		var heights: PackedFloat32Array = edge["heights"]
 		for i in range(heights.size()):
 			assert_eq(
-				heights[i], 0.0,
+				heights[i],
+				0.0,
 				"City tile edge should be flat",
 			)
 

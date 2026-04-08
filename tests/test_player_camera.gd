@@ -40,9 +40,12 @@ func after_each() -> void:
 # Exported defaults
 # ==========================================================================
 
+
 func test_default_mouse_sensitivity() -> void:
 	assert_almost_eq(
-		_cam_root.mouse_sensitivity, 0.002, 0.0001,
+		_cam_root.mouse_sensitivity,
+		0.002,
+		0.0001,
 		"Default mouse sensitivity",
 	)
 
@@ -57,13 +60,19 @@ func test_default_max_pitch() -> void:
 
 func test_default_height_offset() -> void:
 	assert_almost_eq(
-		_cam_root.height_offset, 1.5, 0.01, "Default height offset",
+		_cam_root.height_offset,
+		1.5,
+		0.01,
+		"Default height offset",
 	)
 
 
 func test_default_spring_length() -> void:
 	assert_almost_eq(
-		_cam_root.spring_length, 3.5, 0.01, "Default spring length",
+		_cam_root.spring_length,
+		3.5,
+		0.01,
+		"Default spring length",
 	)
 
 
@@ -79,6 +88,7 @@ func test_inspect_spring_shorter_than_normal() -> void:
 # Ready
 # ==========================================================================
 
+
 func test_is_top_level_after_ready() -> void:
 	assert_true(
 		_cam_root.is_set_as_top_level(),
@@ -90,9 +100,12 @@ func test_is_top_level_after_ready() -> void:
 # get_yaw
 # ==========================================================================
 
+
 func test_get_yaw_returns_initial_zero() -> void:
 	assert_almost_eq(
-		_cam_root.get_yaw(), 0.0, 0.001,
+		_cam_root.get_yaw(),
+		0.0,
+		0.001,
 		"Initial yaw should be 0",
 	)
 
@@ -100,7 +113,9 @@ func test_get_yaw_returns_initial_zero() -> void:
 func test_get_yaw_returns_updated_value() -> void:
 	_cam_root._yaw = 2.5
 	assert_almost_eq(
-		_cam_root.get_yaw(), 2.5, 0.001,
+		_cam_root.get_yaw(),
+		2.5,
+		0.001,
 		"get_yaw should return current _yaw",
 	)
 
@@ -108,6 +123,7 @@ func test_get_yaw_returns_updated_value() -> void:
 # ==========================================================================
 # get_aim_direction
 # ==========================================================================
+
 
 func test_get_aim_direction_ignores_inspect_yaw() -> void:
 	_cam_root._yaw = 0.0
@@ -140,6 +156,7 @@ func test_get_aim_direction_uses_persistent_yaw() -> void:
 # make_active
 # ==========================================================================
 
+
 func test_make_active_sets_camera_current() -> void:
 	_cam_root.make_active()
 	assert_true(
@@ -152,6 +169,7 @@ func test_make_active_sets_camera_current() -> void:
 # Normal mouse orbit (V not held)
 # ==========================================================================
 
+
 func _make_mouse_motion(rel: Vector2) -> InputEventMouseMotion:
 	var event := InputEventMouseMotion.new()
 	event.relative = rel
@@ -163,7 +181,9 @@ func test_mouse_motion_updates_yaw() -> void:
 	_cam_root._unhandled_input(_make_mouse_motion(Vector2(100.0, 0.0)))
 	var expected: float = initial_yaw - 100.0 * _cam_root.mouse_sensitivity
 	assert_almost_eq(
-		_cam_root._yaw, expected, 0.001,
+		_cam_root._yaw,
+		expected,
+		0.001,
 		"Yaw should decrease with rightward mouse motion",
 	)
 
@@ -173,7 +193,9 @@ func test_mouse_motion_updates_pitch() -> void:
 	_cam_root._unhandled_input(_make_mouse_motion(Vector2(0.0, 50.0)))
 	var expected: float = initial_pitch - 50.0 * _cam_root.mouse_sensitivity
 	assert_almost_eq(
-		_cam_root._pitch, expected, 0.001,
+		_cam_root._pitch,
+		expected,
+		0.001,
 		"Pitch should decrease with downward mouse motion",
 	)
 
@@ -182,7 +204,8 @@ func test_pitch_clamped_to_min() -> void:
 	_cam_root._pitch = _cam_root.min_pitch
 	_cam_root._unhandled_input(_make_mouse_motion(Vector2(0.0, 1000.0)))
 	assert_gte(
-		_cam_root._pitch, _cam_root.min_pitch,
+		_cam_root._pitch,
+		_cam_root.min_pitch,
 		"Pitch should not go below min_pitch",
 	)
 
@@ -191,7 +214,8 @@ func test_pitch_clamped_to_max() -> void:
 	_cam_root._pitch = _cam_root.max_pitch
 	_cam_root._unhandled_input(_make_mouse_motion(Vector2(0.0, -1000.0)))
 	assert_lte(
-		_cam_root._pitch, _cam_root.max_pitch,
+		_cam_root._pitch,
+		_cam_root.max_pitch,
 		"Pitch should not go above max_pitch",
 	)
 
@@ -201,7 +225,9 @@ func test_mouse_input_ignored_in_vehicle_mode() -> void:
 	var initial_yaw: float = _cam_root._yaw
 	_cam_root._unhandled_input(_make_mouse_motion(Vector2(100.0, 50.0)))
 	assert_almost_eq(
-		_cam_root._yaw, initial_yaw, 0.001,
+		_cam_root._yaw,
+		initial_yaw,
+		0.001,
 		"Yaw should not change in VEHICLE context",
 	)
 
@@ -211,7 +237,9 @@ func test_non_mouse_input_ignored() -> void:
 	var event := InputEventKey.new()
 	_cam_root._unhandled_input(event)
 	assert_almost_eq(
-		_cam_root._yaw, initial_yaw, 0.001,
+		_cam_root._yaw,
+		initial_yaw,
+		0.001,
 		"Yaw should not change for non-mouse events",
 	)
 
@@ -222,7 +250,9 @@ func test_multiple_mouse_motions_accumulate_yaw() -> void:
 	_cam_root._unhandled_input(_make_mouse_motion(Vector2(50.0, 0.0)))
 	var expected: float = -100.0 * _cam_root.mouse_sensitivity
 	assert_almost_eq(
-		_cam_root._yaw, expected, 0.001,
+		_cam_root._yaw,
+		expected,
+		0.001,
 		"Two mouse motions should accumulate",
 	)
 
@@ -231,18 +261,27 @@ func test_multiple_mouse_motions_accumulate_yaw() -> void:
 # Physics process: position and rotation
 # ==========================================================================
 
+
 func test_follows_parent_position_with_offset() -> void:
 	_parent.global_position = Vector3(10.0, 5.0, 20.0)
 	_cam_root._physics_process(0.016)
 	assert_almost_eq(
-		_cam_root.global_position.x, 10.0, 0.01, "X follows parent",
+		_cam_root.global_position.x,
+		10.0,
+		0.01,
+		"X follows parent",
 	)
 	assert_almost_eq(
-		_cam_root.global_position.y, 5.0 + _cam_root.height_offset, 0.01,
+		_cam_root.global_position.y,
+		5.0 + _cam_root.height_offset,
+		0.01,
 		"Y follows parent + offset",
 	)
 	assert_almost_eq(
-		_cam_root.global_position.z, 20.0, 0.01, "Z follows parent",
+		_cam_root.global_position.z,
+		20.0,
+		0.01,
+		"Z follows parent",
 	)
 
 
@@ -251,13 +290,22 @@ func test_rotation_set_from_pitch_and_yaw() -> void:
 	_cam_root._pitch = -0.5
 	_cam_root._physics_process(0.016)
 	assert_almost_eq(
-		_cam_root.rotation.x, -0.5, 0.001, "Rotation X = pitch",
+		_cam_root.rotation.x,
+		-0.5,
+		0.001,
+		"Rotation X = pitch",
 	)
 	assert_almost_eq(
-		_cam_root.rotation.y, 1.0, 0.001, "Rotation Y = yaw",
+		_cam_root.rotation.y,
+		1.0,
+		0.001,
+		"Rotation Y = yaw",
 	)
 	assert_almost_eq(
-		_cam_root.rotation.z, 0.0, 0.001, "Rotation Z = 0",
+		_cam_root.rotation.z,
+		0.0,
+		0.001,
+		"Rotation Z = 0",
 	)
 
 
@@ -267,7 +315,9 @@ func test_physics_process_ignored_in_vehicle_mode() -> void:
 	_parent.global_position = Vector3(99.0, 99.0, 99.0)
 	_cam_root._physics_process(0.016)
 	assert_almost_eq(
-		_cam_root.global_position.x, 0.0, 0.01,
+		_cam_root.global_position.x,
+		0.0,
+		0.01,
 		"Position should not change in VEHICLE context",
 	)
 
@@ -291,16 +341,21 @@ func test_physics_process_no_parent_no_crash() -> void:
 # Inspect mode (hold V)
 # ==========================================================================
 
+
 func test_inspect_yaw_starts_zero() -> void:
 	assert_almost_eq(
-		_cam_root._inspect_yaw, 0.0, 0.001,
+		_cam_root._inspect_yaw,
+		0.0,
+		0.001,
 		"Inspect yaw should start at zero",
 	)
 
 
 func test_inspect_pitch_starts_zero() -> void:
 	assert_almost_eq(
-		_cam_root._inspect_pitch, 0.0, 0.001,
+		_cam_root._inspect_pitch,
+		0.0,
+		0.001,
 		"Inspect pitch should start at zero",
 	)
 
@@ -311,12 +366,15 @@ func test_mouse_in_inspect_mode_updates_inspect_yaw_not_yaw() -> void:
 	_cam_root._unhandled_input(_make_mouse_motion(Vector2(100.0, 0.0)))
 	# Normal _yaw must NOT change
 	assert_almost_eq(
-		_cam_root._yaw, 0.0, 0.001,
+		_cam_root._yaw,
+		0.0,
+		0.001,
 		"_yaw should not change while V is held",
 	)
 	# Inspect yaw SHOULD change
 	assert_lt(
-		_cam_root._inspect_yaw, 0.0,
+		_cam_root._inspect_yaw,
+		0.0,
 		"_inspect_yaw should decrease with rightward mouse while V held",
 	)
 
@@ -327,11 +385,13 @@ func test_inspect_offset_decays_when_v_released() -> void:
 	_cam_root._v_held = false
 	_cam_root._physics_process(0.5)
 	assert_lt(
-		absf(_cam_root._inspect_yaw), 1.5,
+		absf(_cam_root._inspect_yaw),
+		1.5,
 		"_inspect_yaw should decay toward zero on release",
 	)
 	assert_lt(
-		absf(_cam_root._inspect_pitch), 0.5,
+		absf(_cam_root._inspect_pitch),
+		0.5,
 		"_inspect_pitch should decay toward zero on release",
 	)
 
@@ -341,7 +401,9 @@ func test_inspect_yaw_applied_to_rotation() -> void:
 	_cam_root._inspect_yaw = 0.5
 	_cam_root._physics_process(0.0)
 	assert_almost_eq(
-		_cam_root.rotation.y, 1.5, 0.01,
+		_cam_root.rotation.y,
+		1.5,
+		0.01,
 		"rotation.y should be _yaw + _inspect_yaw",
 	)
 

@@ -59,9 +59,12 @@ func _on_proximity_body_entered(body: Node) -> void:
 	if sm and sm.current_state:
 		var current_name: String = sm.current_state.name.to_lower()
 		if current_name != "pedestrianflee":
-			sm.transition_to(
-				"PedestrianFlee",
-				{"threat_pos": (body as Node3D).global_position},
+			(
+				sm
+				. transition_to(
+					"PedestrianFlee",
+					{"threat_pos": (body as Node3D).global_position},
+				)
 			)
 
 

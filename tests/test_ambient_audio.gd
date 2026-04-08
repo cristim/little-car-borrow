@@ -4,14 +4,15 @@ extends GutTest
 
 const AmbientScript = preload("res://scenes/world/ambient_audio.gd")
 
-
 # ==========================================================================
 # Constants
 # ==========================================================================
 
+
 func test_sample_rate() -> void:
 	assert_eq(
-		AmbientScript.SAMPLE_RATE, 22050.0,
+		AmbientScript.SAMPLE_RATE,
+		22050.0,
 		"SAMPLE_RATE should be 22050",
 	)
 
@@ -81,12 +82,14 @@ func test_cricket_parameters() -> void:
 # Default state
 # ==========================================================================
 
+
 func test_initial_state_is_day() -> void:
 	var audio: AudioStreamPlayer = AmbientScript.new()
 	add_child_autofree(audio)
 	assert_false(audio._is_night, "Should start as daytime")
 	assert_eq(
-		audio._drone_amp, AmbientScript.DRONE_AMP_DAY,
+		audio._drone_amp,
+		AmbientScript.DRONE_AMP_DAY,
 		"Drone amplitude should be day value",
 	)
 
@@ -126,13 +129,15 @@ func test_initial_brake_not_active() -> void:
 # Time-of-day callback
 # ==========================================================================
 
+
 func test_on_time_changed_to_night() -> void:
 	var audio: AudioStreamPlayer = AmbientScript.new()
 	add_child_autofree(audio)
 	audio._on_time_changed(22.0)
 	assert_true(audio._is_night, "Hour 22 should be night")
 	assert_eq(
-		audio._drone_amp, AmbientScript.DRONE_AMP_NIGHT,
+		audio._drone_amp,
+		AmbientScript.DRONE_AMP_NIGHT,
 		"Drone amplitude should switch to night",
 	)
 	assert_eq(audio._horn_min, AmbientScript.HORN_INTERVAL_MIN_NIGHT)
@@ -183,6 +188,7 @@ func test_on_time_changed_just_past_20() -> void:
 # Horn update logic
 # ==========================================================================
 
+
 func test_update_horn_activates_when_timer_expires() -> void:
 	var audio: AudioStreamPlayer = AmbientScript.new()
 	add_child_autofree(audio)
@@ -191,7 +197,8 @@ func test_update_horn_activates_when_timer_expires() -> void:
 	audio._update_horn(0.2)
 	assert_true(audio._horn_active, "Horn should activate when timer expires")
 	assert_gt(
-		audio._horn_remaining, 0.0,
+		audio._horn_remaining,
+		0.0,
 		"Horn remaining time should be positive",
 	)
 
@@ -204,7 +211,8 @@ func test_update_horn_deactivates_when_remaining_expires() -> void:
 	audio._update_horn(0.2)
 	assert_false(audio._horn_active, "Horn should deactivate when done")
 	assert_gt(
-		audio._horn_timer, 0.0,
+		audio._horn_timer,
+		0.0,
 		"Horn timer should be reset after deactivation",
 	)
 
@@ -212,6 +220,7 @@ func test_update_horn_deactivates_when_remaining_expires() -> void:
 # ==========================================================================
 # Gust update logic
 # ==========================================================================
+
 
 func test_update_gust_activates_when_timer_expires() -> void:
 	var audio: AudioStreamPlayer = AmbientScript.new()
@@ -234,6 +243,7 @@ func test_update_gust_deactivates_when_remaining_expires() -> void:
 # ==========================================================================
 # Chirp update logic — skips at night
 # ==========================================================================
+
 
 func test_update_chirp_skips_at_night() -> void:
 	var audio: AudioStreamPlayer = AmbientScript.new()
@@ -262,12 +272,14 @@ func test_update_chirp_activates_during_day() -> void:
 # Generator functions — return correct values when inactive
 # ==========================================================================
 
+
 func test_gen_horn_returns_zero_when_inactive() -> void:
 	var audio: AudioStreamPlayer = AmbientScript.new()
 	add_child_autofree(audio)
 	audio._horn_active = false
 	assert_eq(
-		audio._gen_horn(), 0.0,
+		audio._gen_horn(),
+		0.0,
 		"Horn generator should return 0 when inactive",
 	)
 
@@ -285,7 +297,8 @@ func test_gen_chirp_returns_zero_at_night() -> void:
 	audio._chirp_active = true
 	audio._is_night = true
 	assert_eq(
-		audio._gen_chirp(), 0.0,
+		audio._gen_chirp(),
+		0.0,
 		"Chirp should return 0 at night even if active",
 	)
 
@@ -302,7 +315,8 @@ func test_gen_cricket_returns_zero_during_day() -> void:
 	add_child_autofree(audio)
 	audio._is_night = false
 	assert_eq(
-		audio._gen_cricket(), 0.0,
+		audio._gen_cricket(),
+		0.0,
 		"Crickets should be silent during day",
 	)
 
@@ -327,6 +341,7 @@ func test_gen_cricket_returns_nonzero_at_night() -> void:
 # Drone phase wrapping
 # ==========================================================================
 
+
 func test_advance_drone_wraps_phase() -> void:
 	var audio: AudioStreamPlayer = AmbientScript.new()
 	add_child_autofree(audio)
@@ -335,7 +350,8 @@ func test_advance_drone_wraps_phase() -> void:
 	audio._phase3 = 0.999
 	audio._advance_drone()
 	assert_lt(
-		audio._phase, 1.0,
+		audio._phase,
+		1.0,
 		"Phase should wrap below 1.0",
 	)
 	assert_lt(audio._phase2, 1.0)

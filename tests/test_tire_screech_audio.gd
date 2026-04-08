@@ -6,10 +6,10 @@ extends GutTest
 const _SCRIPT_PATH := "res://scenes/vehicles/tire_screech_audio.gd"
 const ScreechScript = preload(_SCRIPT_PATH)
 
-
 # ==========================================================================
 # Constants
 # ==========================================================================
+
 
 func test_sample_rate() -> void:
 	assert_eq(ScreechScript.SAMPLE_RATE, 22050.0)
@@ -58,6 +58,7 @@ func test_res_freq_high_above_low() -> void:
 # Default state
 # ==========================================================================
 
+
 func test_default_phase_zero() -> void:
 	var screech: AudioStreamPlayer3D = ScreechScript.new()
 	add_child_autofree(screech)
@@ -91,6 +92,7 @@ func test_default_filter_state2_zero() -> void:
 # ==========================================================================
 # _ready — audio generator setup
 # ==========================================================================
+
 
 func test_ready_creates_generator_stream() -> void:
 	var screech: AudioStreamPlayer3D = ScreechScript.new()
@@ -163,10 +165,11 @@ func test_ready_rng_randomized() -> void:
 # _get_slip_intensity — source verification and logic
 # ==========================================================================
 
+
 func test_slip_returns_zero_without_linear_velocity() -> void:
 	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
 	assert_true(
-		src.contains("not \"linear_velocity\" in _vehicle"),
+		src.contains('not "linear_velocity" in _vehicle'),
 		"Should check for linear_velocity property on vehicle",
 	)
 
@@ -223,6 +226,7 @@ func test_slip_handbrake_minimum_intensity() -> void:
 # Audio generation — source verification
 # ==========================================================================
 
+
 func test_uses_dual_filter_bands() -> void:
 	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
 	assert_true(
@@ -274,6 +278,7 @@ func test_silence_below_envelope_threshold() -> void:
 # ==========================================================================
 # Distance culling — source verification
 # ==========================================================================
+
 
 func test_cull_distance_stops_playback() -> void:
 	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code

@@ -14,6 +14,7 @@ func before_all() -> void:
 # Constants
 # ==========================================================================
 
+
 func test_sample_rate_is_22050() -> void:
 	assert_true(_src.contains("SAMPLE_RATE := 22050.0"))
 
@@ -57,6 +58,7 @@ func test_sub_amp_is_025() -> void:
 # ==========================================================================
 # _ready() setup
 # ==========================================================================
+
 
 func test_ready_looks_for_boat_controller() -> void:
 	assert_true(
@@ -124,6 +126,7 @@ func test_ready_gets_stream_playback() -> void:
 # ==========================================================================
 # _process() logic
 # ==========================================================================
+
 
 func test_process_returns_early_without_playback() -> void:
 	assert_true(

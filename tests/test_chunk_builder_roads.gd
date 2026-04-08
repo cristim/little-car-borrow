@@ -2,9 +2,7 @@ extends GutTest
 ## Unit tests for chunk_builder_roads.gd — road, block ground, and sidewalk
 ## mesh generation with merged MeshInstance3D + compound StaticBody3D.
 
-const RoadsScript = preload(
-	"res://scenes/world/generator/chunk_builder_roads.gd"
-)
+const RoadsScript = preload("res://scenes/world/generator/chunk_builder_roads.gd")
 const RoadGridScript = preload("res://src/road_grid.gd")
 
 var _grid: RefCounted
@@ -31,27 +29,31 @@ func before_each() -> void:
 # Initialization
 # ================================================================
 
+
 func test_init_stores_grid() -> void:
 	assert_eq(_builder._grid, _grid, "Grid should be stored after init")
 
 
 func test_init_stores_road_material() -> void:
 	assert_eq(
-		_builder._road_mat, _road_mat,
+		_builder._road_mat,
+		_road_mat,
 		"Road material should be stored after init",
 	)
 
 
 func test_init_stores_sidewalk_material() -> void:
 	assert_eq(
-		_builder._sidewalk_mat, _sidewalk_mat,
+		_builder._sidewalk_mat,
+		_sidewalk_mat,
 		"Sidewalk material should be stored after init",
 	)
 
 
 func test_init_stores_ground_material() -> void:
 	assert_eq(
-		_builder._ground_mat, _ground_mat,
+		_builder._ground_mat,
+		_ground_mat,
 		"Ground material should be stored after init",
 	)
 
@@ -60,13 +62,15 @@ func test_init_stores_ground_material() -> void:
 # Build output structure
 # ================================================================
 
+
 func test_build_adds_three_children_to_chunk() -> void:
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
 	var span: float = _grid.get_grid_span()
 	_builder.build(chunk, 0.0, 0.0, span)
 	assert_eq(
-		chunk.get_child_count(), 3,
+		chunk.get_child_count(),
+		3,
 		"Build should add Roads, BlockGround, and Sidewalks",
 	)
 
@@ -86,7 +90,8 @@ func test_roads_body_collision_layer() -> void:
 	_builder.build(chunk, 0.0, 0.0, _grid.get_grid_span())
 	var roads := chunk.get_child(0) as StaticBody3D
 	assert_eq(
-		roads.collision_layer, 1,
+		roads.collision_layer,
+		1,
 		"Roads collision layer should be 1 (Ground)",
 	)
 
@@ -97,7 +102,8 @@ func test_roads_body_collision_mask() -> void:
 	_builder.build(chunk, 0.0, 0.0, _grid.get_grid_span())
 	var roads := chunk.get_child(0) as StaticBody3D
 	assert_eq(
-		roads.collision_mask, 0,
+		roads.collision_mask,
+		0,
 		"Roads collision mask should be 0",
 	)
 
@@ -138,7 +144,8 @@ func test_roads_mesh_has_road_material() -> void:
 			mesh_inst = child as MeshInstance3D
 			break
 	assert_eq(
-		mesh_inst.material_override, _road_mat,
+		mesh_inst.material_override,
+		_road_mat,
 		"Road mesh should use road material",
 	)
 
@@ -200,7 +207,8 @@ func test_block_ground_mesh_has_ground_material() -> void:
 			mesh_inst = child as MeshInstance3D
 			break
 	assert_eq(
-		mesh_inst.material_override, _ground_mat,
+		mesh_inst.material_override,
+		_ground_mat,
 		"Block ground mesh should use ground material",
 	)
 
@@ -215,7 +223,8 @@ func test_block_ground_has_correct_collision_count() -> void:
 		if child is CollisionShape3D:
 			col_count += 1
 	assert_eq(
-		col_count, _grid.GRID_SIZE * _grid.GRID_SIZE,
+		col_count,
+		_grid.GRID_SIZE * _grid.GRID_SIZE,
 		"BlockGround should have GRID_SIZE^2 collision shapes",
 	)
 
@@ -265,7 +274,8 @@ func test_sidewalks_mesh_has_sidewalk_material() -> void:
 			mesh_inst = child as MeshInstance3D
 			break
 	assert_eq(
-		mesh_inst.material_override, _sidewalk_mat,
+		mesh_inst.material_override,
+		_sidewalk_mat,
 		"Sidewalk mesh should use sidewalk material",
 	)
 
@@ -274,13 +284,15 @@ func test_sidewalks_mesh_has_sidewalk_material() -> void:
 # Offset positioning
 # ================================================================
 
+
 func test_build_with_offset_still_produces_children() -> void:
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
 	var span: float = _grid.get_grid_span()
 	_builder.build(chunk, span, span, span)
 	assert_eq(
-		chunk.get_child_count(), 3,
+		chunk.get_child_count(),
+		3,
 		"Build with offset should still produce 3 children",
 	)
 
@@ -291,7 +303,8 @@ func test_build_with_negative_offset() -> void:
 	var span: float = _grid.get_grid_span()
 	_builder.build(chunk, -span, -span, span)
 	assert_eq(
-		chunk.get_child_count(), 3,
+		chunk.get_child_count(),
+		3,
 		"Build with negative offset should still produce 3 children",
 	)
 
@@ -299,6 +312,7 @@ func test_build_with_negative_offset() -> void:
 # ================================================================
 # Determinism
 # ================================================================
+
 
 func test_build_is_deterministic() -> void:
 	var span: float = _grid.get_grid_span()
@@ -320,7 +334,8 @@ func test_build_is_deterministic() -> void:
 		if child is CollisionShape3D:
 			count_b += 1
 	assert_eq(
-		count_a, count_b,
+		count_a,
+		count_b,
 		"Two builds with same params should produce same collision count",
 	)
 
@@ -328,6 +343,7 @@ func test_build_is_deterministic() -> void:
 # ================================================================
 # Road collision count sanity
 # ================================================================
+
 
 func test_roads_collision_count_exceeds_grid_size() -> void:
 	var chunk := Node3D.new()
@@ -339,7 +355,8 @@ func test_roads_collision_count_exceeds_grid_size() -> void:
 		if child is CollisionShape3D:
 			col_count += 1
 	assert_gt(
-		col_count, _grid.GRID_SIZE,
+		col_count,
+		_grid.GRID_SIZE,
 		"Roads should have more collision shapes than GRID_SIZE",
 	)
 
@@ -347,6 +364,7 @@ func test_roads_collision_count_exceeds_grid_size() -> void:
 # ================================================================
 # Mesh validity
 # ================================================================
+
 
 func test_roads_mesh_not_null() -> void:
 	var chunk := Node3D.new()

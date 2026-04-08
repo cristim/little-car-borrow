@@ -4,8 +4,10 @@ extends RefCounted
 
 # Variant profiles: z, half_width, draft (below waterline), freeboard (above)
 const VARIANTS := {
-	"speedboat": {
-		"profiles": [
+	"speedboat":
+	{
+		"profiles":
+		[
 			{"z": -3.0, "hw": 0.2, "draft": 0.15, "fb": 0.10},
 			{"z": -2.5, "hw": 0.5, "draft": 0.25, "fb": 0.30},
 			{"z": -1.5, "hw": 0.8, "draft": 0.30, "fb": 0.45},
@@ -19,8 +21,10 @@ const VARIANTS := {
 		"cabin_height": 0.6,
 		"collision_size": Vector3(2.0, 0.8, 6.0),
 	},
-	"fishing": {
-		"profiles": [
+	"fishing":
+	{
+		"profiles":
+		[
 			{"z": -3.5, "hw": 0.3, "draft": 0.20, "fb": 0.15},
 			{"z": -2.8, "hw": 0.7, "draft": 0.30, "fb": 0.45},
 			{"z": -1.5, "hw": 1.0, "draft": 0.35, "fb": 0.60},
@@ -34,8 +38,10 @@ const VARIANTS := {
 		"cabin_height": 0.9,
 		"collision_size": Vector3(2.5, 1.0, 7.0),
 	},
-	"runabout": {
-		"profiles": [
+	"runabout":
+	{
+		"profiles":
+		[
 			{"z": -2.5, "hw": 0.2, "draft": 0.15, "fb": 0.10},
 			{"z": -2.0, "hw": 0.5, "draft": 0.22, "fb": 0.30},
 			{"z": -1.0, "hw": 0.75, "draft": 0.28, "fb": 0.45},
@@ -337,8 +343,10 @@ func _build_waterline_cap(profiles: Array) -> ArrayMesh:
 		var hw_b: float = float(pb["hw"]) * 0.95
 		_add_quad(
 			st,
-			Vector3(-hw_a, cap_y, za), Vector3(hw_a, cap_y, za),
-			Vector3(hw_b, cap_y, zb), Vector3(-hw_b, cap_y, zb),
+			Vector3(-hw_a, cap_y, za),
+			Vector3(hw_a, cap_y, za),
+			Vector3(hw_b, cap_y, zb),
+			Vector3(-hw_b, cap_y, zb),
 		)
 	st.generate_normals()
 	return st.commit()
@@ -346,7 +354,10 @@ func _build_waterline_cap(profiles: Array) -> ArrayMesh:
 
 func _add_loft_quad(
 	st: SurfaceTool,
-	a0: Vector3, a1: Vector3, b0: Vector3, b1: Vector3,
+	a0: Vector3,
+	a1: Vector3,
+	b0: Vector3,
+	b1: Vector3,
 ) -> void:
 	st.add_vertex(a0)
 	st.add_vertex(a1)
@@ -357,7 +368,11 @@ func _add_loft_quad(
 
 
 func _add_quad(
-	st: SurfaceTool, v0: Vector3, v1: Vector3, v2: Vector3, v3: Vector3,
+	st: SurfaceTool,
+	v0: Vector3,
+	v1: Vector3,
+	v2: Vector3,
+	v3: Vector3,
 ) -> void:
 	var n: Vector3 = (v1 - v0).cross(v2 - v0).normalized()
 	st.set_normal(n)
@@ -409,7 +424,7 @@ func _build_engine(_profiles: Array) -> ArrayMesh:
 	var cw := 0.15  # half width
 	var cd := 0.12  # half depth
 	var ch := 0.35  # height
-	var cy := 0.0   # bottom at mount point
+	var cy := 0.0  # bottom at mount point
 	_add_box(st, Vector3(0.0, cy + ch * 0.5, 0.15), Vector3(cw * 2, ch, cd * 2))
 
 	# Shaft going down into water
@@ -424,7 +439,7 @@ func _build_engine(_profiles: Array) -> ArrayMesh:
 
 	# Tiller handle extending forward (the part the player grabs)
 	var th := 0.03  # half height
-	var tl := 0.6   # length
+	var tl := 0.6  # length
 	_add_box(
 		st,
 		Vector3(0.0, cy + ch * 0.7, 0.15 - cd - tl * 0.5),

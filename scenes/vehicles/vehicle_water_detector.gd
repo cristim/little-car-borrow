@@ -56,7 +56,7 @@ func _start_sinking() -> void:
 	if npc and npc.has_method("deactivate"):
 		npc.deactivate()
 
-	var police := _vehicle.get_node_or_null("PoliceVehicleController")
+	var police := _vehicle.get_node_or_null("PoliceAIController")
 	if police and police.has_method("deactivate"):
 		police.deactivate()
 
@@ -107,6 +107,8 @@ func _spawn_bubbles() -> void:
 func _is_over_water(pos: Vector3) -> bool:
 	var city_nodes := get_tree().get_nodes_in_group("city_manager")
 	if city_nodes.is_empty():
+		return false
+	if not city_nodes[0].has_meta("city_boundary"):
 		return false
 	var boundary: RefCounted = city_nodes[0].get_meta("city_boundary")
 	if not boundary:

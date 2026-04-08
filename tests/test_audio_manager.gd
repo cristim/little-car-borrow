@@ -16,6 +16,7 @@ func before_each() -> void:
 # Constants
 # ================================================================
 
+
 func test_bus_name_constants() -> void:
 	assert_eq(_am.BUS_MASTER, "Master", "BUS_MASTER should be Master")
 	assert_eq(_am.BUS_SFX, "SFX", "BUS_SFX should be SFX")
@@ -26,6 +27,7 @@ func test_bus_name_constants() -> void:
 # ================================================================
 # Bus creation (_ensure_buses)
 # ================================================================
+
 
 func test_ensure_buses_creates_sfx_bus() -> void:
 	_am._ensure_buses()
@@ -52,7 +54,8 @@ func test_ensure_buses_idempotent() -> void:
 	_am._ensure_buses()
 	# Buses already exist so no new ones should be added
 	assert_eq(
-		AudioServer.bus_count, count_before,
+		AudioServer.bus_count,
+		count_before,
 		"Calling _ensure_buses twice should not duplicate buses",
 	)
 
@@ -66,6 +69,7 @@ func test_ensure_buses_sets_flag() -> void:
 # ================================================================
 # Volume control
 # ================================================================
+
 
 func test_set_bus_volume_and_get_bus_volume_roundtrip() -> void:
 	_am._ensure_buses()
@@ -117,6 +121,7 @@ func test_set_bus_volume_nonexistent_does_not_crash() -> void:
 # Music bus effects
 # ================================================================
 
+
 func test_music_bus_has_delay_effect() -> void:
 	_am._ensure_buses()
 	var idx := AudioServer.get_bus_index("Music")
@@ -149,13 +154,15 @@ func test_music_bus_has_distortion_effect() -> void:
 # play_sfx / play_ui
 # ================================================================
 
+
 func test_play_sfx_adds_child_player() -> void:
 	_am._ensure_buses()
 	var stream := AudioStreamGenerator.new()
 	var child_count_before := _am.get_child_count()
 	_am.play_sfx(stream, Vector3(1, 2, 3))
 	assert_gt(
-		_am.get_child_count(), child_count_before,
+		_am.get_child_count(),
+		child_count_before,
 		"play_sfx should add an AudioStreamPlayer3D child",
 	)
 
@@ -194,7 +201,8 @@ func test_play_ui_adds_child_player() -> void:
 	var child_count_before := _am.get_child_count()
 	_am.play_ui(stream)
 	assert_gt(
-		_am.get_child_count(), child_count_before,
+		_am.get_child_count(),
+		child_count_before,
 		"play_ui should add an AudioStreamPlayer child",
 	)
 

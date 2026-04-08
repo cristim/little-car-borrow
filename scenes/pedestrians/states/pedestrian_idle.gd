@@ -23,7 +23,10 @@ func physics_update(delta: float) -> void:
 	if _timer >= _duration:
 		# Pick a random walk direction along sidewalk
 		var directions: Array[Vector3] = [
-			Vector3.FORWARD, Vector3.BACK, Vector3.LEFT, Vector3.RIGHT,
+			Vector3.FORWARD,
+			Vector3.BACK,
+			Vector3.LEFT,
+			Vector3.RIGHT,
 		]
 		var dir := directions[_rng.randi() % directions.size()]
 		state_machine.transition_to("PedestrianWalk", {"direction": dir})

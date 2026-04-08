@@ -9,8 +9,8 @@ const _SCRIPT_PATH := "res://scenes/vehicles/police_ai_controller.gd"
 const _BASE_PATH := "res://src/vehicle_ai_base.gd"
 const PoliceAIScript = preload(_SCRIPT_PATH)
 
-
 # --- TestablePoliceAI: overrides scene-dependent methods ---
+
 
 class TestablePoliceAI:
 	extends "res://scenes/vehicles/police_ai_controller.gd"
@@ -47,6 +47,7 @@ func after_each() -> void:
 # ==========================================================================
 # Constants — pursuit vs patrol braking
 # ==========================================================================
+
 
 func test_pursuit_hard_brake_dist_less_than_patrol() -> void:
 	assert_true(
@@ -85,6 +86,7 @@ func test_lod_far_dist_greater_than_mid() -> void:
 # ==========================================================================
 # Default state
 # ==========================================================================
+
 
 func test_default_active_true() -> void:
 	assert_true(_ai.active)
@@ -134,6 +136,7 @@ func test_default_steer_avoidance_zero() -> void:
 # initialize()
 # ==========================================================================
 
+
 func test_initialize_sets_vehicle() -> void:
 	var vehicle := RigidBody3D.new()
 	add_child_autofree(vehicle)
@@ -168,8 +171,10 @@ func test_initialize_sets_path_refresh_timer() -> void:
 	_ai.initialize(vehicle, 0, PoliceAIScript.Direction.NORTH)
 	# Timer is set to random value within PATH_REFRESH_INTERVAL
 	assert_true(
-		_ai._path_refresh_timer >= 0.0
-		and _ai._path_refresh_timer < PoliceAIScript.PATH_REFRESH_INTERVAL,
+		(
+			_ai._path_refresh_timer >= 0.0
+			and _ai._path_refresh_timer < PoliceAIScript.PATH_REFRESH_INTERVAL
+		),
 		"Path refresh timer should be randomized within interval",
 	)
 
@@ -177,6 +182,7 @@ func test_initialize_sets_path_refresh_timer() -> void:
 # ==========================================================================
 # deactivate() — source verification (needs GEVP vehicle for runtime)
 # ==========================================================================
+
 
 func test_deactivate_sets_active_false() -> void:
 	_ai._vehicle = null
@@ -212,6 +218,7 @@ func test_deactivate_source_zeroes_controls() -> void:
 # _dir_to_heading
 # ==========================================================================
 
+
 func test_dir_to_heading_north() -> void:
 	assert_eq(_ai._dir_to_heading(PoliceAIScript.Direction.NORTH), Vector3(0, 0, -1))
 
@@ -236,6 +243,7 @@ func test_dir_to_heading_invalid_defaults_north() -> void:
 # _get_reverse
 # ==========================================================================
 
+
 func test_reverse_north_south() -> void:
 	assert_eq(_ai._get_reverse(PoliceAIScript.Direction.NORTH), PoliceAIScript.Direction.SOUTH)
 
@@ -259,6 +267,7 @@ func test_reverse_invalid_defaults_north() -> void:
 # ==========================================================================
 # _begin_escape
 # ==========================================================================
+
 
 func test_begin_escape_increments_attempts() -> void:
 	_ai._vehicle = RigidBody3D.new()
@@ -315,6 +324,7 @@ func test_begin_escape_at_max_minus_one_does_not_reset() -> void:
 # _pick_next_direction — never picks reverse
 # ==========================================================================
 
+
 func test_pick_direction_never_reverses_north() -> void:
 	for i in range(20):
 		_ai._direction = PoliceAIScript.Direction.NORTH
@@ -346,6 +356,7 @@ func test_pick_direction_never_reverses_west() -> void:
 # ==========================================================================
 # State transition — path waypoints cleared
 # ==========================================================================
+
 
 func test_pursue_to_patrol_clears_path() -> void:
 	_ai._ai_state = PoliceAIScript.AIState.PURSUE
@@ -394,6 +405,7 @@ func test_patrol_to_pursue_sets_path_refresh_to_interval() -> void:
 # _physics_process guard — source verification
 # ==========================================================================
 
+
 func test_physics_process_returns_when_inactive() -> void:
 	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
 	assert_true(
@@ -414,9 +426,11 @@ func test_physics_process_lod_freeze() -> void:
 # LOS_LOCK_RANGE — timer frozen within close range
 # ==========================================================================
 
+
 func test_los_lock_range_less_than_los_range() -> void:
 	assert_lt(
-		PoliceAIScript.LOS_LOCK_RANGE, PoliceAIScript.LOS_RANGE,
+		PoliceAIScript.LOS_LOCK_RANGE,
+		PoliceAIScript.LOS_RANGE,
 		"LOS_LOCK_RANGE must be within detection range",
 	)
 
@@ -447,7 +461,8 @@ func test_los_lost_timer_does_not_advance_when_no_vehicle() -> void:
 
 	# Timer should have advanced (no vehicle → INF distance → timer ticks)
 	assert_gt(
-		_ai._los_lost_timer, 0.0,
+		_ai._los_lost_timer,
+		0.0,
 		"Lost timer should tick when no vehicle is set (INF distance)",
 	)
 
@@ -456,8 +471,10 @@ func test_los_lost_timer_does_not_advance_when_no_vehicle() -> void:
 # LOS_LOST_TIMEOUT — chase abandon interval
 # ==========================================================================
 
+
 func test_los_lost_timeout_is_at_least_40_seconds() -> void:
 	assert_gte(
-		PoliceAIScript.LOS_LOST_TIMEOUT, 40.0,
+		PoliceAIScript.LOS_LOST_TIMEOUT,
+		40.0,
 		"Chase should not abandon before 40 s without line-of-sight",
 	)

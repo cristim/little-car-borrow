@@ -3,14 +3,12 @@ extends GutTest
 ## Unit tests for police_light_bar.gd — flash timing, light creation,
 ## and active/inactive toggling.
 
-const LightBarScript = preload(
-	"res://scenes/vehicles/police_light_bar.gd"
-)
-
+const LightBarScript = preload("res://scenes/vehicles/police_light_bar.gd")
 
 # ==========================================================================
 # Constants
 # ==========================================================================
+
 
 func test_flash_interval_constant() -> void:
 	assert_eq(LightBarScript.FLASH_INTERVAL, 0.15)
@@ -19,6 +17,7 @@ func test_flash_interval_constant() -> void:
 # ==========================================================================
 # Initialization (_ready)
 # ==========================================================================
+
 
 func test_ready_creates_red_light() -> void:
 	var bar: Node3D = LightBarScript.new()
@@ -109,6 +108,7 @@ func test_lights_added_as_children() -> void:
 # Default state
 # ==========================================================================
 
+
 func test_default_lights_active_false() -> void:
 	var bar: Node3D = LightBarScript.new()
 	add_child_autofree(bar)
@@ -130,6 +130,7 @@ func test_default_red_on_true() -> void:
 # ==========================================================================
 # _set_lights direct calls
 # ==========================================================================
+
 
 func test_set_lights_red_on_blue_off() -> void:
 	var bar: Node3D = LightBarScript.new()
@@ -167,6 +168,7 @@ func test_set_lights_both_off() -> void:
 # _process behavior — inactive
 # ==========================================================================
 
+
 func test_process_inactive_turns_lights_off() -> void:
 	var bar: Node3D = LightBarScript.new()
 	add_child_autofree(bar)
@@ -182,6 +184,7 @@ func test_process_inactive_turns_lights_off() -> void:
 # ==========================================================================
 # _process behavior — active flash toggling
 # ==========================================================================
+
 
 func test_process_active_initial_state_red_on_blue_off() -> void:
 	var bar: Node3D = LightBarScript.new()

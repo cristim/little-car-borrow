@@ -4,9 +4,9 @@ extends RefCounted
 ## height samples, and river data for seamless neighbor matching.
 
 const NORTH := 0  # -Z direction
-const EAST := 1   # +X direction
+const EAST := 1  # +X direction
 const SOUTH := 2  # +Z direction
-const WEST := 3   # -X direction
+const WEST := 3  # -X direction
 
 const HEIGHT_SAMPLES := 17  # must match chunk_builder_terrain.gd SUBDIVISIONS + 1
 
@@ -15,9 +15,14 @@ const CITY_BIOMES: Array[String] = ["city_center", "residential", "suburb"]
 const BIOME_ADJACENCY: Dictionary = {
 	"city_center": ["city_center", "residential"],
 	"residential": ["city_center", "residential", "suburb"],
-	"suburb": [
-		"residential", "suburb", "village",
-		"farmland", "forest", "ocean",
+	"suburb":
+	[
+		"residential",
+		"suburb",
+		"village",
+		"farmland",
+		"forest",
+		"ocean",
 	],
 	"village": ["suburb", "farmland", "forest", "village"],
 	"forest": ["suburb", "village", "forest", "mountain", "farmland", "ocean"],

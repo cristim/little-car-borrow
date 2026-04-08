@@ -116,9 +116,7 @@ func get_ground_height(wx: float, wz: float) -> float:
 
 	var raw: float = _terrain_noise.get_noise_2d(wx, wz)
 	var n: float = (raw + 1.0) * 0.5
-	var fade: float = clampf(
-		edge_dist / (_grid_span * 3.0), 0.0, 1.0
-	)
+	var fade: float = clampf(edge_dist / (_grid_span * 3.0), 0.0, 1.0)
 	var max_h: float = lerpf(20.0, 80.0, fade)
 	var h: float = n * max_h - 6.0
 
@@ -130,7 +128,9 @@ func get_ground_height(wx: float, wz: float) -> float:
 	var in_ocean := -wx > shore_start
 	if in_ocean:
 		var shore_t: float = clampf(
-			(-wx - shore_start) / (shore_end - shore_start), 0.0, 1.0,
+			(-wx - shore_start) / (shore_end - shore_start),
+			0.0,
+			1.0,
 		)
 		h -= shore_t * shore_t * 100.0
 

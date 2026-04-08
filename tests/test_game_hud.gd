@@ -102,6 +102,7 @@ func _build_hud() -> CanvasLayer:
 # Initialization
 # ================================================================
 
+
 func test_ready_hides_optional_labels() -> void:
 	var hud := _build_hud()
 	# Wait one frame for _ready and call_deferred
@@ -139,6 +140,7 @@ func test_ready_initializes_star_colors() -> void:
 # Speed updates
 # ================================================================
 
+
 func test_on_speed_updates_internal_speed() -> void:
 	var hud := _build_hud()
 	await get_tree().process_frame
@@ -162,6 +164,7 @@ func test_process_renders_speed_label() -> void:
 # Money updates
 # ================================================================
 
+
 func test_on_money_updates_label() -> void:
 	var hud := _build_hud()
 	await get_tree().process_frame
@@ -181,6 +184,7 @@ func test_on_money_handles_zero() -> void:
 # ================================================================
 # Wanted stars
 # ================================================================
+
 
 func test_on_wanted_sets_level_and_resets_flash() -> void:
 	var hud := _build_hud()
@@ -203,7 +207,9 @@ func test_update_stars_colors_active_and_inactive() -> void:
 	for i in range(2):
 		var star := hud.stars_hbox.get_child(i) as ColorRect
 		assert_almost_eq(
-			star.color.r, 1.0, 0.01,
+			star.color.r,
+			1.0,
+			0.01,
 			"Active star %d should be gold (red channel)" % i,
 		)
 		assert_almost_eq(star.modulate.a, 1.0, 0.01, "Active star alpha should be 1.0")
@@ -212,7 +218,9 @@ func test_update_stars_colors_active_and_inactive() -> void:
 	for i in range(2, 5):
 		var star := hud.stars_hbox.get_child(i) as ColorRect
 		assert_almost_eq(
-			star.color.r, 0.3, 0.01,
+			star.color.r,
+			0.3,
+			0.01,
 			"Inactive star %d should be gray" % i,
 		)
 		assert_almost_eq(star.modulate.a, 0.4, 0.01, "Inactive star alpha should be 0.4")
@@ -233,6 +241,7 @@ func test_wanted_stars_flash_during_process() -> void:
 # ================================================================
 # Objective and timer
 # ================================================================
+
 
 func test_on_objective_shows_text() -> void:
 	var hud := _build_hud()
@@ -311,6 +320,7 @@ func test_on_timer_negative_hides_label() -> void:
 # Mission completion / failure
 # ================================================================
 
+
 func test_on_mission_failed_shows_failure_text() -> void:
 	var hud := _build_hud()
 	await get_tree().process_frame
@@ -331,6 +341,7 @@ func test_on_mission_failed_shows_failure_text() -> void:
 # ================================================================
 # Health bar
 # ================================================================
+
 
 func test_on_health_full_sets_green_and_full_width() -> void:
 	var hud := _build_hud()
@@ -376,6 +387,7 @@ func test_on_health_zero_max_hp_does_not_crash() -> void:
 # Vehicle enter/exit
 # ================================================================
 
+
 func test_vehicle_entered_hides_crosshair() -> void:
 	var hud := _build_hud()
 	await get_tree().process_frame
@@ -403,6 +415,7 @@ func test_vehicle_exited_shows_crosshair_and_resets_speed() -> void:
 # ================================================================
 # Death
 # ================================================================
+
 
 func test_on_died_shows_death_label() -> void:
 	var hud := _build_hud()
@@ -434,6 +447,7 @@ func test_show_restart_prompt_respects_is_dead() -> void:
 # Reward timer fade
 # ================================================================
 
+
 func test_reward_timer_hides_label_after_expiry() -> void:
 	var hud := _build_hud()
 	await get_tree().process_frame
@@ -452,6 +466,7 @@ func test_reward_timer_hides_label_after_expiry() -> void:
 # ================================================================
 # Weapon slots (no PlayerWeapon node = no crash)
 # ================================================================
+
 
 func test_update_weapon_slots_no_player_does_not_crash() -> void:
 	var hud := _build_hud()
@@ -482,6 +497,7 @@ func test_weapon_unlocked_triggers_update() -> void:
 # ================================================================
 # FPS label
 # ================================================================
+
 
 func test_process_updates_fps_label() -> void:
 	var hud := _build_hud()

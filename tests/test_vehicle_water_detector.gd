@@ -6,10 +6,10 @@ extends GutTest
 const _SCRIPT_PATH := "res://scenes/vehicles/vehicle_water_detector.gd"
 const WaterScript = preload(_SCRIPT_PATH)
 
-
 # ==========================================================================
 # Constants
 # ==========================================================================
+
 
 func test_sea_level_constant() -> void:
 	assert_eq(WaterScript.SEA_LEVEL, -2.0)
@@ -38,6 +38,7 @@ func test_angular_damp_greater_than_linear() -> void:
 # Default state
 # ==========================================================================
 
+
 func test_default_timer_zero() -> void:
 	var detector: Node = WaterScript.new()
 	add_child_autofree(detector)
@@ -53,6 +54,7 @@ func test_default_sinking_false() -> void:
 # ==========================================================================
 # _ready — vehicle reference and boat check
 # ==========================================================================
+
 
 func test_ready_gets_parent_as_vehicle() -> void:
 	var parent := Node3D.new()
@@ -91,6 +93,7 @@ func test_ready_enabled_for_non_boats() -> void:
 # ==========================================================================
 # _physics_process guards
 # ==========================================================================
+
 
 func test_physics_process_skips_when_sinking() -> void:
 	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
@@ -135,6 +138,7 @@ func test_physics_process_checks_water_underneath() -> void:
 # ==========================================================================
 # _start_sinking — behavior
 # ==========================================================================
+
 
 func test_start_sinking_sets_flag() -> void:
 	var parent := RigidBody3D.new()
@@ -182,23 +186,28 @@ func test_start_sinking_emits_vehicle_entered_water() -> void:
 func test_start_sinking_deactivates_npc_controller() -> void:
 	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
 	assert_true(
-		src.contains("\"NPCVehicleController\""),
+		src.contains('"NPCVehicleController"'),
 		"Should look for NPCVehicleController to deactivate",
 	)
 
 
 func test_start_sinking_deactivates_police_controller() -> void:
+	# C1: correct node name is PoliceAIController (was PoliceVehicleController)
 	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
 	assert_true(
-		src.contains("\"PoliceVehicleController\""),
-		"Should look for PoliceVehicleController to deactivate",
+		src.contains('"PoliceAIController"'),
+		"Should look for PoliceAIController to deactivate (not PoliceVehicleController)",
+	)
+	assert_false(
+		src.contains('"PoliceVehicleController"'),
+		"PoliceVehicleController is the wrong node name — should not appear in source",
 	)
 
 
 func test_start_sinking_stops_engine_audio() -> void:
 	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
 	assert_true(
-		src.contains("\"EngineAudio\""),
+		src.contains('"EngineAudio"'),
 		"Should look for EngineAudio to stop",
 	)
 
@@ -216,6 +225,7 @@ func test_start_sinking_spawns_bubbles() -> void:
 # ==========================================================================
 # _spawn_bubbles — particle setup
 # ==========================================================================
+
 
 func test_bubbles_are_gpu_particles() -> void:
 	var parent := RigidBody3D.new()
@@ -339,10 +349,11 @@ func test_bubbles_position_offset() -> void:
 # _is_over_water — source verification
 # ==========================================================================
 
+
 func test_is_over_water_checks_city_manager_group() -> void:
 	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
 	assert_true(
-		src.contains("get_nodes_in_group(\"city_manager\")"),
+		src.contains('get_nodes_in_group("city_manager")'),
 		"Should query city_manager group for boundary",
 	)
 
@@ -350,7 +361,7 @@ func test_is_over_water_checks_city_manager_group() -> void:
 func test_is_over_water_checks_city_boundary_meta() -> void:
 	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
 	assert_true(
-		src.contains("get_meta(\"city_boundary\")"),
+		src.contains('get_meta("city_boundary")'),
 		"Should get city_boundary from meta",
 	)
 
@@ -367,10 +378,11 @@ func test_is_over_water_compares_ground_height() -> void:
 # Vehicle lights are disabled on water entry
 # ==========================================================================
 
+
 func test_start_sinking_looks_for_vehicle_lights() -> void:
 	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
 	assert_true(
-		src.contains("\"Body/VehicleLights\""),
+		src.contains('"Body/VehicleLights"'),
 		"_start_sinking should look for Body/VehicleLights node",
 	)
 
@@ -384,9 +396,7 @@ func test_start_sinking_calls_disable_on_lights() -> void:
 
 
 func test_start_sinking_disables_vehicle_lights() -> void:
-	var LightsScript: GDScript = preload(
-		"res://scenes/vehicles/vehicle_lights.gd"
-	)
+	var LightsScript: GDScript = preload("res://scenes/vehicles/vehicle_lights.gd")
 	var parent := RigidBody3D.new()
 	add_child_autofree(parent)
 

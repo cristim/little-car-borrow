@@ -48,9 +48,7 @@ func _build_road_markings(st: SurfaceTool, ox: float, oz: float) -> void:
 		var rw: float = _grid.get_road_width(i)
 		var cx: float = _grid.get_road_center_local(i) + ox
 		for j in range(_grid.GRID_SIZE):
-			var z_start: float = (
-				_grid.get_road_center_local(j) + _grid.get_road_width(j) * 0.5
-			)
+			var z_start: float = _grid.get_road_center_local(j) + _grid.get_road_width(j) * 0.5
 			var z_end: float = (
 				_grid.get_road_center_local(j + 1) - _grid.get_road_width(j + 1) * 0.5
 			)
@@ -61,9 +59,7 @@ func _build_road_markings(st: SurfaceTool, ox: float, oz: float) -> void:
 		var rw: float = _grid.get_road_width(j)
 		var cz: float = _grid.get_road_center_local(j) + oz
 		for i in range(_grid.GRID_SIZE):
-			var x_start: float = (
-				_grid.get_road_center_local(i) + _grid.get_road_width(i) * 0.5
-			)
+			var x_start: float = _grid.get_road_center_local(i) + _grid.get_road_width(i) * 0.5
 			var x_end: float = (
 				_grid.get_road_center_local(i + 1) - _grid.get_road_width(i + 1) * 0.5
 			)
@@ -117,6 +113,7 @@ func _add_ew_road_markings(
 
 # --- Pedestrian crossings ---
 
+
 func _build_crossings(st: SurfaceTool, ox: float, oz: float) -> void:
 	# At every NS/EW road intersection, add 4 zebra crossings
 	for i in range(_grid.GRID_SIZE + 1):
@@ -137,9 +134,8 @@ func _build_crossings(st: SurfaceTool, ox: float, oz: float) -> void:
 
 # --- Line helpers ---
 
-func _add_dashed_line_z(
-	st: SurfaceTool, x: float, z0: float, z1: float, width: float
-) -> void:
+
+func _add_dashed_line_z(st: SurfaceTool, x: float, z0: float, z1: float, width: float) -> void:
 	var hw := width * 0.5
 	var z := z0 + 1.0  # small offset from intersection
 	while z + DASH_LENGTH < z1 - 1.0:
@@ -147,9 +143,7 @@ func _add_dashed_line_z(
 		z += DASH_LENGTH + DASH_GAP
 
 
-func _add_dashed_line_x(
-	st: SurfaceTool, z: float, x0: float, x1: float, width: float
-) -> void:
+func _add_dashed_line_x(st: SurfaceTool, z: float, x0: float, x1: float, width: float) -> void:
 	var hw := width * 0.5
 	var x := x0 + 1.0
 	while x + DASH_LENGTH < x1 - 1.0:
@@ -157,9 +151,7 @@ func _add_dashed_line_x(
 		x += DASH_LENGTH + DASH_GAP
 
 
-func _add_solid_line_z(
-	st: SurfaceTool, x: float, z0: float, z1: float, width: float
-) -> void:
+func _add_solid_line_z(st: SurfaceTool, x: float, z0: float, z1: float, width: float) -> void:
 	var hw := width * 0.5
 	var len := z1 - z0 - 2.0  # small margin
 	if len <= 0.0:
@@ -168,9 +160,7 @@ func _add_solid_line_z(
 	_city_script.st_add_quad_xz(st, x, cz, hw, len * 0.5, MARKING_Y)
 
 
-func _add_solid_line_x(
-	st: SurfaceTool, z: float, x0: float, x1: float, width: float
-) -> void:
+func _add_solid_line_x(st: SurfaceTool, z: float, x0: float, x1: float, width: float) -> void:
 	var hw := width * 0.5
 	var len := x1 - x0 - 2.0
 	if len <= 0.0:
@@ -180,6 +170,7 @@ func _add_solid_line_x(
 
 
 # --- Zebra crossing helpers ---
+
 
 func _add_zebra_x(st: SurfaceTool, cx: float, cz: float, road_width: float) -> void:
 	# Bars perpendicular to NS traffic (running along X), spanning road width

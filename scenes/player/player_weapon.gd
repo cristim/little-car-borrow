@@ -5,32 +5,76 @@ extends Node
 
 const WEAPONS := [
 	{
-		"name": "Pistol", "range": 80.0, "damage": 25.0, "cooldown": 0.3,
-		"auto": false, "spread": 0.0, "pellets": 1, "crime_mult": 1.0,
-		"body": Vector3(0.06, 0.06, 0.2), "muzzle_z": -0.2,
-		"snap_dur": 0.005, "body_dur": 0.06, "tail_decay": 6.0,
-		"base_freq": 200.0, "end_freq": 60.0, "elbow": -0.05,
+		"name": "Pistol",
+		"range": 80.0,
+		"damage": 25.0,
+		"cooldown": 0.3,
+		"auto": false,
+		"spread": 0.0,
+		"pellets": 1,
+		"crime_mult": 1.0,
+		"body": Vector3(0.06, 0.06, 0.2),
+		"muzzle_z": -0.2,
+		"snap_dur": 0.005,
+		"body_dur": 0.06,
+		"tail_decay": 6.0,
+		"base_freq": 200.0,
+		"end_freq": 60.0,
+		"elbow": -0.05,
 	},
 	{
-		"name": "SMG", "range": 70.0, "damage": 12.0, "cooldown": 0.08,
-		"auto": true, "spread": 0.03, "pellets": 1, "crime_mult": 1.0,
-		"body": Vector3(0.06, 0.08, 0.25), "muzzle_z": -0.25,
-		"snap_dur": 0.003, "body_dur": 0.03, "tail_decay": 10.0,
-		"base_freq": 280.0, "end_freq": 100.0, "elbow": -0.05,
+		"name": "SMG",
+		"range": 70.0,
+		"damage": 12.0,
+		"cooldown": 0.08,
+		"auto": true,
+		"spread": 0.03,
+		"pellets": 1,
+		"crime_mult": 1.0,
+		"body": Vector3(0.06, 0.08, 0.25),
+		"muzzle_z": -0.25,
+		"snap_dur": 0.003,
+		"body_dur": 0.03,
+		"tail_decay": 10.0,
+		"base_freq": 280.0,
+		"end_freq": 100.0,
+		"elbow": -0.05,
 	},
 	{
-		"name": "Shotgun", "range": 40.0, "damage": 60.0, "cooldown": 0.8,
-		"auto": false, "spread": 0.08, "pellets": 6, "crime_mult": 1.5,
-		"body": Vector3(0.08, 0.06, 0.3), "muzzle_z": -0.3,
-		"snap_dur": 0.008, "body_dur": 0.08, "tail_decay": 4.0,
-		"base_freq": 160.0, "end_freq": 40.0, "elbow": -0.4,
+		"name": "Shotgun",
+		"range": 40.0,
+		"damage": 60.0,
+		"cooldown": 0.8,
+		"auto": false,
+		"spread": 0.08,
+		"pellets": 6,
+		"crime_mult": 1.5,
+		"body": Vector3(0.08, 0.06, 0.3),
+		"muzzle_z": -0.3,
+		"snap_dur": 0.008,
+		"body_dur": 0.08,
+		"tail_decay": 4.0,
+		"base_freq": 160.0,
+		"end_freq": 40.0,
+		"elbow": -0.4,
 	},
 	{
-		"name": "Rifle", "range": 200.0, "damage": 40.0, "cooldown": 0.5,
-		"auto": false, "spread": 0.005, "pellets": 1, "crime_mult": 1.2,
-		"body": Vector3(0.04, 0.04, 0.4), "muzzle_z": -0.4,
-		"snap_dur": 0.004, "body_dur": 0.05, "tail_decay": 5.0,
-		"base_freq": 240.0, "end_freq": 50.0, "elbow": -0.3,
+		"name": "Rifle",
+		"range": 200.0,
+		"damage": 40.0,
+		"cooldown": 0.5,
+		"auto": false,
+		"spread": 0.005,
+		"pellets": 1,
+		"crime_mult": 1.2,
+		"body": Vector3(0.04, 0.04, 0.4),
+		"muzzle_z": -0.4,
+		"snap_dur": 0.004,
+		"body_dur": 0.05,
+		"tail_decay": 5.0,
+		"base_freq": 240.0,
+		"end_freq": 50.0,
+		"elbow": -0.3,
 	},
 ]
 const VEHICLE_IMPULSE := 80.0
@@ -40,12 +84,8 @@ const MAX_BLOOD_DECALS := 20
 const BLOOD_DECAL_LIFETIME := 20.0
 const MUZZLE_FLASH_TIME := 0.06
 
-var _ragdoll_script: GDScript = preload(
-	"res://scenes/pedestrians/pedestrian_ragdoll.gd"
-)
-var _builder_script: GDScript = preload(
-	"res://src/weapon_mesh_builder.gd"
-)
+var _ragdoll_script: GDScript = preload("res://scenes/pedestrians/pedestrian_ragdoll.gd")
+var _builder_script: GDScript = preload("res://src/weapon_mesh_builder.gd")
 var _current_idx := 0
 var _armed := false
 var _unlocked: Array[bool] = [true, true, true, true]
@@ -64,9 +104,7 @@ func _ready() -> void:
 	_rng.randomize()
 	_player_model = owner.get_node_or_null("PlayerModel")
 	if _player_model:
-		_elbow = _player_model.get_node_or_null(
-			"RightShoulderPivot/RightElbowPivot"
-		)
+		_elbow = _player_model.get_node_or_null("RightShoulderPivot/RightElbowPivot")
 
 
 func _process(delta: float) -> void:
@@ -165,9 +203,7 @@ func unlock_weapon(idx: int) -> void:
 	_unlocked[idx] = true
 	EventBus.weapon_unlocked.emit(idx)
 	var wname: String = WEAPONS[idx]["name"]
-	EventBus.show_notification.emit(
-		"%s unlocked! Press %d to equip" % [wname, idx + 1], 3.0
-	)
+	EventBus.show_notification.emit("%s unlocked! Press %d to equip" % [wname, idx + 1], 3.0)
 
 
 func _shoot() -> void:
@@ -198,9 +234,7 @@ func _shoot() -> void:
 	# is at 35 % screen height, not at the camera centre / 50 %).
 	var base_dir: Vector3 = camera.project_ray_normal(crosshair_screen)
 
-	var space: PhysicsDirectSpaceState3D = (
-		owner.get_world_3d().direct_space_state
-	)
+	var space: PhysicsDirectSpaceState3D = owner.get_world_3d().direct_space_state
 
 	if _muzzle_flash:
 		_muzzle_flash.visible = true
@@ -219,13 +253,8 @@ func _shoot() -> void:
 		var query := PhysicsRayQueryParameters3D.create(from, to)
 		query.collision_mask = 0b01111111
 		query.exclude = [owner.get_rid()]
-		if (
-			owner.current_vehicle
-			and is_instance_valid(owner.current_vehicle)
-		):
-			query.exclude.append(
-				(owner.current_vehicle as CollisionObject3D).get_rid()
-			)
+		if owner.current_vehicle and is_instance_valid(owner.current_vehicle):
+			query.exclude.append((owner.current_vehicle as CollisionObject3D).get_rid())
 
 		var result: Dictionary = space.intersect_ray(query)
 		if result.is_empty():
@@ -251,9 +280,7 @@ func _shoot() -> void:
 			body.queue_free()
 		elif body is RigidBody3D:
 			var impulse := dir * VEHICLE_IMPULSE
-			(body as RigidBody3D).apply_impulse(
-				impulse, hit_pos - body.global_position
-			)
+			(body as RigidBody3D).apply_impulse(impulse, hit_pos - body.global_position)
 			var vh := body.get_node_or_null("VehicleHealth")
 			if vh:
 				vh.take_damage(pellet_dmg, hit_pos, hit_normal)
@@ -328,9 +355,7 @@ func _spawn_blood(hit_pos: Vector3, target: Node3D = null) -> void:
 	# not always at world y=0 (wrong when shooting from or onto elevated areas).
 	var floor_y: float = target.global_position.y if target != null else hit_pos.y
 	var blood_pos := Vector3(hit_pos.x, floor_y + 0.02, hit_pos.z)
-	var decal := _spawn_decal(
-		blood_pos, Vector3.UP, 0.2, Color(0.4, 0.02, 0.02)
-	)
+	var decal := _spawn_decal(blood_pos, Vector3.UP, 0.2, Color(0.4, 0.02, 0.02))
 	_blood_decals.append(decal)
 	if _blood_decals.size() > MAX_BLOOD_DECALS:
 		var old: MeshInstance3D = _blood_decals.pop_front()
@@ -368,9 +393,9 @@ func _setup_gun_mesh() -> void:
 	# Root placed so the grip centre (gun-local (0,-0.06,0.04)) lands at elbow
 	# (0,-0.25,-0.02) — right at the wrist end of the forearm.
 	var gun_basis := Basis(
-		Vector3(-1.0,  0.0, 0.0),
-		Vector3( 0.0,  0.0, 1.0),
-		Vector3( 0.0,  1.0, 0.0),
+		Vector3(-1.0, 0.0, 0.0),
+		Vector3(0.0, 0.0, 1.0),
+		Vector3(0.0, 1.0, 0.0),
 	)
 	_gun_mesh.transform = Transform3D(gun_basis, Vector3(0.0, -0.29, 0.04))
 	_elbow.add_child(_gun_mesh)
@@ -442,9 +467,7 @@ func _play_gunshot() -> void:
 			sample += sin(phase * TAU) * 0.5 * body_env
 
 		if i >= snap_end:
-			var tail_t := float(i - snap_end) / float(
-				total_frames - snap_end
-			)
+			var tail_t := float(i - snap_end) / float(total_frames - snap_end)
 			var tail_env := exp(-tail_t * tail_decay)
 			var noise := (_rng.randf() - 0.5) * 0.25 * tail_env
 			filter_state += 0.08 * (noise - filter_state)

@@ -16,6 +16,7 @@ func _build_minimap() -> Control:
 # Constants
 # ================================================================
 
+
 func test_constants_are_consistent() -> void:
 	var mm := _build_minimap()
 	assert_eq(mm.MINI_SIZE, 300.0, "Mini size should be 300")
@@ -28,6 +29,7 @@ func test_constants_are_consistent() -> void:
 # ================================================================
 # Initialization
 # ================================================================
+
 
 func test_ready_sets_minimum_size() -> void:
 	var mm := _build_minimap()
@@ -57,6 +59,7 @@ func test_ready_builds_clip_circle() -> void:
 # ================================================================
 # World-to-minimap coordinate transform
 # ================================================================
+
 
 func test_world_to_minimap_center_returns_map_center() -> void:
 	var mm := _build_minimap()
@@ -104,6 +107,7 @@ func test_world_to_minimap_with_yaw_rotation() -> void:
 # In-circle check
 # ================================================================
 
+
 func test_in_circle_center_is_true() -> void:
 	var mm := _build_minimap()
 	await get_tree().process_frame
@@ -144,6 +148,7 @@ func test_in_circle_fullscreen_uses_rect() -> void:
 # Zoom control
 # ================================================================
 
+
 func test_change_zoom_increases_scale() -> void:
 	var mm := _build_minimap()
 	await get_tree().process_frame
@@ -183,6 +188,7 @@ func test_change_zoom_clamps_at_min() -> void:
 # ================================================================
 # Fullscreen toggle
 # ================================================================
+
 
 func test_toggle_fullscreen_on() -> void:
 	var mm := _build_minimap()
@@ -232,6 +238,7 @@ func test_mini_rebuilds_circular_clip() -> void:
 # Height-to-color mapping
 # ================================================================
 
+
 func test_height_below_sea_returns_deep_water() -> void:
 	var mm := _build_minimap()
 	var col: Color = mm._height_to_minimap_color(-10.0)
@@ -261,6 +268,7 @@ func test_height_very_high_returns_snow() -> void:
 # ================================================================
 # Biome-to-color mapping
 # ================================================================
+
 
 func test_biome_forest_returns_forest_color() -> void:
 	var mm := _build_minimap()
@@ -315,6 +323,7 @@ func test_biome_village_returns_village_color() -> void:
 # River edge point calculation
 # ================================================================
 
+
 func test_river_edge_pt_north() -> void:
 	var mm := _build_minimap()
 	var pt: Vector3 = mm._river_edge_pt(100.0, 200.0, 50.0, 0, 0.5)
@@ -361,6 +370,7 @@ func test_river_edge_pt_offset_position() -> void:
 # Process without player does not crash
 # ================================================================
 
+
 func test_process_without_player_does_not_crash() -> void:
 	var mm := _build_minimap()
 	await get_tree().process_frame
@@ -373,6 +383,7 @@ func test_process_without_player_does_not_crash() -> void:
 # ================================================================
 # Frame counter triggers redraw
 # ================================================================
+
 
 func test_frame_count_increments() -> void:
 	var mm := _build_minimap()
@@ -396,6 +407,7 @@ func test_frame_count_increments() -> void:
 # Helipad icons
 # ================================================================
 
+
 func test_helipad_color_constant_exists() -> void:
 	var mm := _build_minimap()
 	assert_true(
@@ -407,6 +419,7 @@ func test_helipad_color_constant_exists() -> void:
 func test_helipad_color_is_distinct_from_heli_color() -> void:
 	var mm := _build_minimap()
 	assert_ne(
-		mm.HELIPAD_COLOR, mm.HELI_COLOR,
+		mm.HELIPAD_COLOR,
+		mm.HELI_COLOR,
 		"HELIPAD_COLOR should differ from police HELI_COLOR",
 	)

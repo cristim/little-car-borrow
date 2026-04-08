@@ -73,11 +73,13 @@ func _sim(delta: float, frames: int = 1) -> void:
 
 # -- Body position --
 
+
 func test_body_pitches_forward() -> void:
 	_parent.is_swimming = true
 	_sim(0.016, 60)
 	assert_gt(
-		_model.rotation.x, 0.5,
+		_model.rotation.x,
+		0.5,
 		"Body should pitch forward — got %f" % _model.rotation.x,
 	)
 
@@ -97,6 +99,7 @@ func test_body_rolls_with_meaningful_amplitude() -> void:
 
 # -- Head stability --
 
+
 func test_head_counter_rotates_against_body_roll() -> void:
 	_parent.is_swimming = true
 	_sim(0.016, 100)
@@ -104,8 +107,7 @@ func test_head_counter_rotates_against_body_roll() -> void:
 	if absf(_model.rotation.z) > 0.01:
 		assert_true(
 			sign(_head.rotation.z) != sign(_model.rotation.z),
-			"Head Z should oppose body Z — head=%f body=%f" \
-				% [_head.rotation.z, _model.rotation.z],
+			"Head Z should oppose body Z — head=%f body=%f" % [_head.rotation.z, _model.rotation.z],
 		)
 
 
@@ -123,6 +125,7 @@ func test_head_rotation_smaller_than_body_roll() -> void:
 
 
 # -- Arm stroke --
+
 
 func test_arms_use_all_3_axes() -> void:
 	_parent.is_swimming = true
@@ -152,13 +155,14 @@ func test_arm_z_higher_during_recovery_than_pull() -> void:
 		else:
 			max_z_pull = maxf(max_z_pull, absf(_ls.rotation.z))
 	assert_gt(
-		max_z_recovery, max_z_pull,
-		"Recovery Z should be higher — recovery=%f pull=%f" \
-			% [max_z_recovery, max_z_pull],
+		max_z_recovery,
+		max_z_pull,
+		"Recovery Z should be higher — recovery=%f pull=%f" % [max_z_recovery, max_z_pull],
 	)
 
 
 # -- Catch-up timing --
+
 
 func test_arms_not_exactly_opposite() -> void:
 	_parent.is_swimming = true
@@ -174,12 +178,14 @@ func test_arms_not_exactly_opposite() -> void:
 		min_sum = minf(min_sum, s)
 		max_sum = maxf(max_sum, s)
 	assert_gt(
-		max_sum - min_sum, 0.1,
+		max_sum - min_sum,
+		0.1,
 		"Arm X sum should vary (catch-up) — range=%f" % (max_sum - min_sum),
 	)
 
 
 # -- Elbow articulation --
+
 
 func test_elbows_articulate_x() -> void:
 	_parent.is_swimming = true
@@ -212,6 +218,7 @@ func test_elbow_y_s_curve_during_pull() -> void:
 
 # -- 6-beat flutter kick --
 
+
 func test_kick_faster_than_arms() -> void:
 	_parent.is_swimming = true
 	# Count zero-crossings of hip rotation (each crossing = half cycle)
@@ -232,9 +239,9 @@ func test_kick_faster_than_arms() -> void:
 		prev_shoulder = sh_x
 	# 6-beat kick should have ~3x as many zero crossings as arms
 	assert_gt(
-		hip_crossings, shoulder_crossings * 2,
-		"Kick crossings should be >2x arm — kick=%d arm=%d" \
-			% [hip_crossings, shoulder_crossings],
+		hip_crossings,
+		shoulder_crossings * 2,
+		"Kick crossings should be >2x arm — kick=%d arm=%d" % [hip_crossings, shoulder_crossings],
 	)
 
 
@@ -283,8 +290,10 @@ func test_neck_z_counters_body_roll_during_swim() -> void:
 	if absf(_model.rotation.z) > 0.01:
 		assert_true(
 			sign(_neck.rotation.z) != sign(_model.rotation.z),
-			"Neck Z should oppose body roll — neck=%f body=%f" \
-				% [_neck.rotation.z, _model.rotation.z],
+			(
+				"Neck Z should oppose body roll — neck=%f body=%f"
+				% [_neck.rotation.z, _model.rotation.z]
+			),
 		)
 
 
@@ -300,6 +309,7 @@ func test_breathing_head_turn() -> void:
 
 
 # -- Transitions --
+
 
 func test_swim_to_idle_body_resets() -> void:
 	_parent.is_swimming = true
@@ -344,9 +354,9 @@ func test_swim_to_walk_fast_transition() -> void:
 	# Only 15 frames at 60fps = 0.25 seconds
 	_sim(0.016, 15)
 	assert_lt(
-		absf(_model.rotation.x), absf(pitch_after_swim) * 0.3,
-		"Body should decay >70%% in 0.25s — was %f now %f" \
-			% [pitch_after_swim, _model.rotation.x],
+		absf(_model.rotation.x),
+		absf(pitch_after_swim) * 0.3,
+		"Body should decay >70%% in 0.25s — was %f now %f" % [pitch_after_swim, _model.rotation.x],
 	)
 
 

@@ -20,31 +20,36 @@ const BASE_PROFILES := [
 # Variant overrides applied to base profiles
 const VARIANT_OVERRIDES := {
 	"sedan": {},
-	"sports": {
+	"sports":
+	{
 		"height_mult": 0.80,
 		"width_mult": 1.05,
 		"cabin_height_mult": 0.75,
 		"cabin_inset_add": 0.05,
 		"ground_offset": 0.0,
 	},
-	"suv": {
+	"suv":
+	{
 		"height_mult": 1.15,
 		"width_mult": 1.10,
 		"cabin_height_mult": 1.30,
 		"cabin_inset_add": -0.03,
 		"ground_offset": 0.05,
 	},
-	"hatchback": {
+	"hatchback":
+	{
 		"length_mult": 0.88,
 		"rear_slope": true,
 	},
-	"van": {
+	"van":
+	{
 		"height_mult": 1.30,
 		"cabin_height_mult": 1.50,
 		"cabin_start_z": -1.0,
 		"cabin_inset_add": -0.05,
 	},
-	"pickup": {
+	"pickup":
+	{
 		"length_mult": 1.20,
 		"cabin_end_z": 0.0,
 		"bed_start_z": 0.2,
@@ -143,9 +148,7 @@ func build_windows(variant_name: String) -> Dictionary:
 
 	if cabin_indices.size() >= 2:
 		result["LeftWindow"] = _build_side_window(profiles, cabin_indices, true)
-		result["RightWindow"] = _build_side_window(
-			profiles, cabin_indices, false
-		)
+		result["RightWindow"] = _build_side_window(profiles, cabin_indices, false)
 
 	return result
 
@@ -528,12 +531,8 @@ func build_doors(variant_name: String) -> Dictionary:
 	var left_pivot := Vector3(-hw, pivot_y, z_front)
 	var right_pivot := Vector3(hw, pivot_y, z_front)
 
-	var left_result := _build_single_door(
-		ring_f, ring_r, p_front, p_rear, left_pivot, true
-	)
-	var right_result := _build_single_door(
-		ring_f, ring_r, p_front, p_rear, right_pivot, false
-	)
+	var left_result := _build_single_door(ring_f, ring_r, p_front, p_rear, left_pivot, true)
+	var right_result := _build_single_door(ring_f, ring_r, p_front, p_rear, right_pivot, false)
 
 	return {
 		"LeftDoor": left_result.body,
@@ -753,18 +752,18 @@ func _profile_to_ring(profile: Dictionary) -> PackedVector3Array:
 	var lower_y: float = yb + height * 0.15
 
 	# 12 vertices clockwise when viewed from front
-	ring.append(Vector3(-top_hw, yt, z))         # V0:  top-left
-	ring.append(Vector3(0.0, yt, z))             # V1:  top-center
-	ring.append(Vector3(top_hw, yt, z))          # V2:  top-right
+	ring.append(Vector3(-top_hw, yt, z))  # V0:  top-left
+	ring.append(Vector3(0.0, yt, z))  # V1:  top-center
+	ring.append(Vector3(top_hw, yt, z))  # V2:  top-right
 	ring.append(Vector3(top_hw, shoulder_y, z))  # V3:  right shoulder
-	ring.append(Vector3(hw, sill_y, z))          # V4:  right sill
-	ring.append(Vector3(hw, lower_y, z))         # V5:  right lower
-	ring.append(Vector3(hw, yb, z))              # V6:  bottom-right
-	ring.append(Vector3(0.0, yb, z))             # V7:  bottom-center
-	ring.append(Vector3(-hw, yb, z))             # V8:  bottom-left
-	ring.append(Vector3(-hw, lower_y, z))        # V9:  left lower
-	ring.append(Vector3(-hw, sill_y, z))         # V10: left sill
-	ring.append(Vector3(-top_hw, shoulder_y, z)) # V11: left shoulder
+	ring.append(Vector3(hw, sill_y, z))  # V4:  right sill
+	ring.append(Vector3(hw, lower_y, z))  # V5:  right lower
+	ring.append(Vector3(hw, yb, z))  # V6:  bottom-right
+	ring.append(Vector3(0.0, yb, z))  # V7:  bottom-center
+	ring.append(Vector3(-hw, yb, z))  # V8:  bottom-left
+	ring.append(Vector3(-hw, lower_y, z))  # V9:  left lower
+	ring.append(Vector3(-hw, sill_y, z))  # V10: left sill
+	ring.append(Vector3(-top_hw, shoulder_y, z))  # V11: left shoulder
 
 	return ring
 
@@ -789,9 +788,7 @@ func _loft_smooth(
 		st.add_vertex(ring_b[i])
 
 
-func _cap_double_sided(
-	st: SurfaceTool, ring: PackedVector3Array, front: bool
-) -> void:
+func _cap_double_sided(st: SurfaceTool, ring: PackedVector3Array, front: bool) -> void:
 	var center := Vector3.ZERO
 	for v in ring:
 		center += v
@@ -994,20 +991,18 @@ func _add_window_frame(
 	var ibr := br + inset
 
 	if is_right:
-		_add_quad(st, tf, tr, itr, itf)   # top sill (faces down)
-		_add_quad(st, br, bf, ibf, ibr)    # bottom sill (faces up)
-		_add_quad(st, tf, itf, ibf, bf)    # front pillar (faces +Z)
-		_add_quad(st, itr, tr, br, ibr)    # rear pillar (faces -Z)
+		_add_quad(st, tf, tr, itr, itf)  # top sill (faces down)
+		_add_quad(st, br, bf, ibf, ibr)  # bottom sill (faces up)
+		_add_quad(st, tf, itf, ibf, bf)  # front pillar (faces +Z)
+		_add_quad(st, itr, tr, br, ibr)  # rear pillar (faces -Z)
 	else:
-		_add_quad(st, tr, tf, itf, itr)    # top sill (faces down)
-		_add_quad(st, bf, br, ibr, ibf)    # bottom sill (faces up)
-		_add_quad(st, itf, tf, bf, ibf)    # front pillar (faces +Z)
-		_add_quad(st, tr, itr, ibr, br)    # rear pillar (faces -Z)
+		_add_quad(st, tr, tf, itf, itr)  # top sill (faces down)
+		_add_quad(st, bf, br, ibr, ibf)  # bottom sill (faces up)
+		_add_quad(st, itf, tf, bf, ibf)  # front pillar (faces +Z)
+		_add_quad(st, tr, itr, ibr, br)  # rear pillar (faces -Z)
 
 
-func _add_quad(
-	st: SurfaceTool, v0: Vector3, v1: Vector3, v2: Vector3, v3: Vector3
-) -> void:
+func _add_quad(st: SurfaceTool, v0: Vector3, v1: Vector3, v2: Vector3, v3: Vector3) -> void:
 	var n: Vector3 = (v1 - v0).cross(v2 - v0).normalized()
 	st.set_normal(n)
 	st.add_vertex(v0)
@@ -1024,9 +1019,7 @@ func _add_quad(
 	st.add_vertex(v3)
 
 
-func _build_window_quad(
-	profile_a: Dictionary, profile_b: Dictionary, _is_front: bool
-) -> ArrayMesh:
+func _build_window_quad(profile_a: Dictionary, profile_b: Dictionary, _is_front: bool) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 

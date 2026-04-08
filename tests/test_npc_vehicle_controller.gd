@@ -5,10 +5,10 @@ extends GutTest
 const _BASE_PATH := "res://src/vehicle_ai_base.gd"
 var _npc_script: GDScript
 
-
 # ==========================================================================
 # Spawn grace
 # ==========================================================================
+
 
 func before_all() -> void:
 	_npc_script = load("res://scenes/vehicles/npc_vehicle_controller.gd")
@@ -40,6 +40,7 @@ func test_spawn_grace_source_decremented_in_physics() -> void:
 # Escape force magnitude — source code verification
 # ==========================================================================
 
+
 func test_escape_force_is_2000_not_6000() -> void:
 	var src: String = _npc_script.source_code
 	assert_true(
@@ -55,6 +56,7 @@ func test_escape_force_is_2000_not_6000() -> void:
 # ==========================================================================
 # Airborne guard — source code verification
 # ==========================================================================
+
 
 func test_airborne_guard_in_escape_force() -> void:
 	var src: String = _npc_script.source_code
@@ -84,6 +86,7 @@ func test_spawn_grace_guards_stuck_detection() -> void:
 # Horizontal force flattening — source code verification
 # ==========================================================================
 
+
 func test_escape_force_zeroes_y_component() -> void:
 	var src: String = _npc_script.source_code
 	assert_true(
@@ -111,6 +114,7 @@ func test_escape_force_renormalizes_after_flattening() -> void:
 # ==========================================================================
 # deactivate() — functional test
 # ==========================================================================
+
 
 func test_deactivate_sets_active_false() -> void:
 	var ai := _npc_script.new()

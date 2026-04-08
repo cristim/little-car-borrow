@@ -14,6 +14,7 @@ func before_all() -> void:
 # Initial state
 # ==========================================================================
 
+
 func test_active_defaults_false() -> void:
 	var ctrl: Node = Node.new()
 	ctrl.set_script(_script)
@@ -32,6 +33,7 @@ func test_vehicle_defaults_null() -> void:
 # Inactive state zeros all inputs
 # ==========================================================================
 
+
 func test_inactive_returns_without_touching_inputs() -> void:
 	# When inactive, the controller must return early so it does NOT
 	# override brake/handbrake values that were set by driving.gd on exit.
@@ -44,6 +46,7 @@ func test_inactive_returns_without_touching_inputs() -> void:
 # ==========================================================================
 # Active state input mapping
 # ==========================================================================
+
 
 func test_steering_uses_left_and_right() -> void:
 	assert_true(_src.contains('"move_left"'), "Should use move_left action")
@@ -82,6 +85,7 @@ func test_throttle_squared_for_response_curve() -> void:
 # Reverse gear logic
 # ==========================================================================
 
+
 func test_reverse_gear_check() -> void:
 	assert_true(
 		_src.contains("current_gear == -1"),
@@ -107,6 +111,7 @@ func test_reverse_swaps_brake_to_throttle() -> void:
 # Speed emission
 # ==========================================================================
 
+
 func test_emits_vehicle_speed_changed() -> void:
 	assert_true(
 		_src.contains("EventBus.vehicle_speed_changed.emit"),
@@ -125,6 +130,7 @@ func test_speed_calculated_from_linear_velocity() -> void:
 # Early return when no vehicle
 # ==========================================================================
 
+
 func test_returns_early_without_vehicle() -> void:
 	assert_true(
 		_src.contains("if not vehicle:\n\t\treturn"),
@@ -135,6 +141,7 @@ func test_returns_early_without_vehicle() -> void:
 # ==========================================================================
 # Uses physics process
 # ==========================================================================
+
 
 func test_uses_physics_process() -> void:
 	assert_true(
@@ -154,6 +161,7 @@ func test_does_not_use_regular_process() -> void:
 # Handbrake is binary
 # ==========================================================================
 
+
 func test_handbrake_is_binary() -> void:
 	assert_true(
 		_src.contains('1.0 if Input.is_action_pressed("handbrake") else 0.0'),
@@ -165,6 +173,7 @@ func test_handbrake_is_binary() -> void:
 # Steering is direct (not squared)
 # ==========================================================================
 
+
 func test_steering_assigned_directly() -> void:
 	assert_true(
 		_src.contains("vehicle.steering_input = steer"),
@@ -175,6 +184,7 @@ func test_steering_assigned_directly() -> void:
 # ==========================================================================
 # Vehicle export var
 # ==========================================================================
+
 
 func test_vehicle_is_exported() -> void:
 	assert_true(

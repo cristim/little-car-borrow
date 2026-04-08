@@ -55,9 +55,7 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 		var cx: float = _grid.get_road_center_local(i) + ox
 		var tree_x: float = cx + rw * 0.5 + _grid.SIDEWALK_WIDTH * 0.5
 		for j in range(_grid.GRID_SIZE):
-			var z_start: float = (
-				_grid.get_road_center_local(j) + _grid.get_road_width(j) * 0.5
-			)
+			var z_start: float = _grid.get_road_center_local(j) + _grid.get_road_width(j) * 0.5
 			var z_end: float = (
 				_grid.get_road_center_local(j + 1) - _grid.get_road_width(j + 1) * 0.5
 			)
@@ -65,8 +63,9 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 			while z < z_end - 1.0:
 				var sh: float = _grid.SIDEWALK_HEIGHT
 				var pos := Vector3(tree_x, sh, z + oz)
-				_collect_tree(rng, pos, trunk_transforms, trunk_colors,
-					canopy_transforms, canopy_colors, body)
+				_collect_tree(
+					rng, pos, trunk_transforms, trunk_colors, canopy_transforms, canopy_colors, body
+				)
 				z += TREE_SPACING + rng.randf_range(-3.0, 3.0)
 
 	# E-W road sidewalks (bottom side)
@@ -75,9 +74,7 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 		var cz: float = _grid.get_road_center_local(j) + oz
 		var tree_z: float = cz + rw * 0.5 + _grid.SIDEWALK_WIDTH * 0.5
 		for i in range(_grid.GRID_SIZE):
-			var x_start: float = (
-				_grid.get_road_center_local(i) + _grid.get_road_width(i) * 0.5
-			)
+			var x_start: float = _grid.get_road_center_local(i) + _grid.get_road_width(i) * 0.5
 			var x_end: float = (
 				_grid.get_road_center_local(i + 1) - _grid.get_road_width(i + 1) * 0.5
 			)
@@ -85,15 +82,14 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 			while x < x_end - 1.0:
 				var sh: float = _grid.SIDEWALK_HEIGHT
 				var pos := Vector3(x + ox, sh, tree_z)
-				_collect_tree(rng, pos, trunk_transforms, trunk_colors,
-					canopy_transforms, canopy_colors, body)
+				_collect_tree(
+					rng, pos, trunk_transforms, trunk_colors, canopy_transforms, canopy_colors, body
+				)
 				x += TREE_SPACING + rng.randf_range(-3.0, 3.0)
 
 	# Build trunk MultiMesh
 	if trunk_transforms.size() > 0:
-		var mm := _build_multimesh(
-			_trunk_mesh, trunk_transforms, trunk_colors, _trunk_mats[0]
-		)
+		var mm := _build_multimesh(_trunk_mesh, trunk_transforms, trunk_colors, _trunk_mats[0])
 		mm.name = "TrunksMM"
 		body.add_child(mm)
 
@@ -103,9 +99,7 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 		if transforms.size() == 0:
 			continue
 		var colors: Array = canopy_colors[v]
-		var mm := _build_multimesh(
-			_canopy_meshes[v], transforms, colors, _canopy_mats[0]
-		)
+		var mm := _build_multimesh(_canopy_meshes[v], transforms, colors, _canopy_mats[0])
 		mm.name = "CanopyMM_%d" % v
 		body.add_child(mm)
 
@@ -127,9 +121,7 @@ func _collect_tree(
 	# Trunk transform: scale cylinder to actual size, position at base
 	var t_scale := Vector3(trunk_r * 2.0, trunk_h, trunk_r * 2.0)
 	var t_pos := Vector3(pos.x, pos.y + trunk_h * 0.5, pos.z)
-	var xform := Transform3D(
-		Basis.from_scale(t_scale), t_pos
-	)
+	var xform := Transform3D(Basis.from_scale(t_scale), t_pos)
 	trunk_transforms.append(xform)
 	var trunk_color := _trunk_mats[rng.randi() % _trunk_mats.size()].albedo_color
 	trunk_colors.append(trunk_color)
@@ -153,8 +145,14 @@ func _collect_tree(
 				var cy := trunk_top + base_r * 0.3 + ci * base_r * 0.35
 				var cx := pos.x + rng.randf_range(-base_r * 0.4, base_r * 0.4)
 				var cz := pos.z + rng.randf_range(-base_r * 0.4, base_r * 0.4)
-				_add_canopy(canopy_transforms, canopy_colors, 0,
-					Vector3(cx, cy, cz), Vector3(r, h * 0.5, r), canopy_color)
+				_add_canopy(
+					canopy_transforms,
+					canopy_colors,
+					0,
+					Vector3(cx, cy, cz),
+					Vector3(r, h * 0.5, r),
+					canopy_color
+				)
 		1:
 			# Conifer: 2-3 stacked cones (variant 1)
 			var tiers := rng.randi_range(2, 3)
@@ -165,23 +163,39 @@ func _collect_tree(
 				var frac := 1.0 - float(ci) / float(tiers)
 				var r := base_r * frac
 				var cy := y + tier_h * 0.5
-				_add_canopy(canopy_transforms, canopy_colors, 1,
-					Vector3(pos.x, cy, pos.z), Vector3(r, tier_h, r), canopy_color)
+				_add_canopy(
+					canopy_transforms,
+					canopy_colors,
+					1,
+					Vector3(pos.x, cy, pos.z),
+					Vector3(r, tier_h, r),
+					canopy_color
+				)
 				y += tier_h * 0.55
 		2:
 			# Columnar: single tall sphere (variant 2)
 			var r := rng.randf_range(0.6, 1.2)
 			var h := rng.randf_range(4.0, 7.0)
-			_add_canopy(canopy_transforms, canopy_colors, 2,
+			_add_canopy(
+				canopy_transforms,
+				canopy_colors,
+				2,
 				Vector3(pos.x, trunk_top + h * 0.35, pos.z),
-				Vector3(r, h / 3.75, r), canopy_color)
+				Vector3(r, h / 3.75, r),
+				canopy_color
+			)
 		3:
 			# Weeping: flat main + drooping lobes (variant 3)
 			var main_r := rng.randf_range(1.5, 2.8)
 			var main_h := main_r * rng.randf_range(0.6, 0.9)
-			_add_canopy(canopy_transforms, canopy_colors, 3,
+			_add_canopy(
+				canopy_transforms,
+				canopy_colors,
+				3,
 				Vector3(pos.x, trunk_top + main_h * 0.3, pos.z),
-				Vector3(main_r, main_h * 1.5, main_r), canopy_color)
+				Vector3(main_r, main_h * 1.5, main_r),
+				canopy_color
+			)
 			var lobes := rng.randi_range(2, 3)
 			for ci in range(lobes):
 				var angle := float(ci) * TAU / float(lobes) + rng.randf_range(-0.3, 0.3)
@@ -189,9 +203,14 @@ func _collect_tree(
 				var lh := lr * rng.randf_range(1.5, 2.5)
 				var lx := pos.x + cos(angle) * main_r * 0.6
 				var lz := pos.z + sin(angle) * main_r * 0.6
-				_add_canopy(canopy_transforms, canopy_colors, 0,
+				_add_canopy(
+					canopy_transforms,
+					canopy_colors,
+					0,
 					Vector3(lx, trunk_top - lh * 0.1, lz),
-					Vector3(lr, lh * 0.5, lr), canopy_color)
+					Vector3(lr, lh * 0.5, lr),
+					canopy_color
+				)
 		4:
 			# Multi-tier: 2-3 stacked spheres (variant 4)
 			var tiers := rng.randi_range(2, 3)
@@ -203,15 +222,24 @@ func _collect_tree(
 				var h := r * rng.randf_range(0.7, 1.2)
 				var cx := pos.x + rng.randf_range(-0.3, 0.3)
 				var cz := pos.z + rng.randf_range(-0.3, 0.3)
-				_add_canopy(canopy_transforms, canopy_colors, 4,
+				_add_canopy(
+					canopy_transforms,
+					canopy_colors,
+					4,
 					Vector3(cx, y + h * 0.4, cz),
-					Vector3(r, h / 2.0, r), canopy_color)
+					Vector3(r, h / 2.0, r),
+					canopy_color
+				)
 				y += gap
 
 
 func _add_canopy(
-	canopy_transforms: Array, canopy_colors: Array,
-	variant: int, center: Vector3, scale: Vector3, color: Color,
+	canopy_transforms: Array,
+	canopy_colors: Array,
+	variant: int,
+	center: Vector3,
+	scale: Vector3,
+	color: Color,
 ) -> void:
 	var xform := Transform3D(Basis.from_scale(scale), center)
 	canopy_transforms[variant].append(xform)
