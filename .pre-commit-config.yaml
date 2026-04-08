@@ -1,0 +1,23 @@
+repos:
+  - repo: local
+    hooks:
+      - id: gdlint
+        name: GDScript lint
+        language: system
+        entry: bash -c 'find src/ scenes/ tests/ -name "*.gd" 2>/dev/null | xargs -r .venv/bin/gdlint'
+        pass_filenames: false
+        always_run: true
+
+      - id: gdformat-check
+        name: GDScript format check
+        language: system
+        entry: bash -c 'find src/ scenes/ tests/ -name "*.gd" 2>/dev/null | xargs -r .venv/bin/gdformat --check'
+        pass_filenames: false
+        always_run: true
+
+      - id: coverage
+        name: GDScript test coverage (>=80%)
+        language: system
+        entry: make coverage
+        pass_filenames: false
+        always_run: true
