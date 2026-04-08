@@ -283,9 +283,12 @@ func physics_update(delta: float) -> void:
 				0.0,
 			)
 			# Animate right arm with steering (tiller control)
-			var steer: float = (
-				Input.get_action_strength("move_left") - Input.get_action_strength("move_right")
-			)
+			var steer := 0.0
+			if InputManager.is_vehicle():
+				steer = (
+					Input.get_action_strength("move_left")
+					- Input.get_action_strength("move_right")
+				)
 			var pm: Node3D = owner.get_node_or_null("PlayerModel")
 			if pm:
 				var rs: Node3D = pm.get_node_or_null("RightShoulderPivot")

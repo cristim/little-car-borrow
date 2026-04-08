@@ -432,3 +432,17 @@ func test_spring_restores_after_release() -> void:
 		PlayerCameraScript.INSPECT_SPRING,
 		"Spring should grow back toward spring_length after V release",
 	)
+
+
+
+# ==========================================================================
+# Yaw wrap (L2 fix)
+# ==========================================================================
+
+
+func test_yaw_update_uses_wrapf() -> void:
+	var src: String = (PlayerCameraScript as GDScript).source_code
+	assert_true(
+		src.contains("wrapf(_yaw"),
+		"_yaw update must use wrapf to keep value within [-PI, PI]",
+	)

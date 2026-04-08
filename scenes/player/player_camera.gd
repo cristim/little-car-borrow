@@ -54,7 +54,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		_inspect_pitch = clampf(_inspect_pitch, min_pitch - _pitch, max_pitch - _pitch)
 	else:
 		# Normal orbit: mouse moves the persistent camera yaw/pitch.
-		_yaw -= event.relative.x * mouse_sensitivity
+		_yaw = wrapf(_yaw - event.relative.x * mouse_sensitivity, -PI, PI)
 		_pitch -= event.relative.y * mouse_sensitivity
 		_pitch = clampf(_pitch, min_pitch, max_pitch)
 

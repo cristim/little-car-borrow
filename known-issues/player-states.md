@@ -18,8 +18,6 @@ Present in idle.gd, walking.gd, running.gd, swimming.gd.
 ## LOW
 
 ### L1 — `player.gd:42-46`: Stale `nearest_vehicle` reference if vehicle freed without area exit
-### L2 — `player_camera.gd:25`: `_yaw` never wrapped, accumulates to large float values
-### L3 — `driving.gd:211-222`: Boat tiller animation reads input without InputManager check
 ### L4 — Five files: `SEA_LEVEL := -2.0` duplicated (needs single source of truth)
 ### L5 — `player_model.gd:293`: Accesses private `pw._current_idx` from sibling node
 ### L6 — `player_model.gd:262`: Armed-aim guard uses `parent.visible` instead of InputManager

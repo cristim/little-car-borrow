@@ -303,6 +303,7 @@ func _try_dismount(delta: float) -> void:
 	var side := _vehicle.global_transform.basis.x * 2.0
 	officer.global_position = (_vehicle.global_position + side + Vector3(0.0, 0.5, 0.0))
 	get_tree().current_scene.add_child(officer)
+	officer.add_to_group("police_officer")
 
 	_officers_spawned += 1
 	_dismount_timer = DISMOUNT_COOLDOWN

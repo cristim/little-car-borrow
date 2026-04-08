@@ -496,3 +496,16 @@ func test_cross_traffic_mask_excludes_pedestrians() -> void:
 		src.contains("cross_mask := 112"),
 		"cross_mask 112 includes pedestrians and should not be used",
 	)
+
+
+# ==========================================================================
+# Officer group membership (L4 fix)
+# ==========================================================================
+
+
+func test_dismounted_officer_added_to_group() -> void:
+	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
+	assert_true(
+		src.contains("officer.add_to_group(\"police_officer\")"),
+		"Dismounted officer must be added to 'police_officer' group after add_child",
+	)
