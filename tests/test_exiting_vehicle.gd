@@ -3,14 +3,15 @@ extends GutTest
 
 const ExitingScript = preload("res://scenes/player/states/exiting_vehicle.gd")
 
-
 # ---------------------------------------------------------------------------
 # Stubs
 # ---------------------------------------------------------------------------
 
+
 class StubCamera:
 	extends Node3D
 	var active := false
+
 	func make_active() -> void:
 		active = true
 
@@ -24,6 +25,7 @@ class StubStateMachine:
 	extends Node
 	var last_transition := ""
 	var last_msg: Dictionary = {}
+
 	func transition_to(name: String, msg: Dictionary = {}) -> void:
 		last_transition = name
 		last_msg = msg
@@ -94,8 +96,28 @@ func before_each() -> void:
 
 
 # ---------------------------------------------------------------------------
+# enter() — null/invalid vehicle guard (C1)
+# ---------------------------------------------------------------------------
+
+
+func test_enter_with_null_vehicle_transitions_to_idle() -> void:
+	_state.enter({})  # no "vehicle" key — msg.get returns null
+	assert_eq(
+		_sm.last_transition,
+		"Idle",
+		"enter() with null vehicle should transition to Idle",
+	)
+
+
+func test_enter_with_null_vehicle_leaves_done_false() -> void:
+	_state.enter({"vehicle": null})
+	assert_false(_state._done, "_done should remain false when vehicle is null")
+
+
+# ---------------------------------------------------------------------------
 # enter() tests
 # ---------------------------------------------------------------------------
+
 
 func test_enter_zeros_player_velocity() -> void:
 	_player.velocity = Vector3(10.0, 5.0, 3.0)
@@ -126,7 +148,8 @@ func test_enter_clamps_y_to_sea_level_when_underwater() -> void:
 	_vehicle.global_position = Vector3(0.0, -10.0, 0.0)
 	_state.enter({"vehicle": _vehicle})
 	assert_gte(
-		_player.global_position.y, ExitingScript.SEA_LEVEL,
+		_player.global_position.y,
+		ExitingScript.SEA_LEVEL,
 		"Player should not be below sea level after exit",
 	)
 
@@ -169,7 +192,9 @@ func test_enter_opens_door_pivot() -> void:
 	var pivot := v.get_node("Body/LeftDoorPivot")
 	_state.enter({"vehicle": v})
 	assert_almost_eq(
-		pivot.rotation.y, ExitingScript.DOOR_OPEN_ANGLE, 0.01,
+		pivot.rotation.y,
+		ExitingScript.DOOR_OPEN_ANGLE,
+		0.01,
 		"Door should be opened to DOOR_OPEN_ANGLE",
 	)
 
@@ -177,6 +202,7 @@ func test_enter_opens_door_pivot() -> void:
 # ---------------------------------------------------------------------------
 # physics_update() tests
 # ---------------------------------------------------------------------------
+
 
 func test_physics_update_transitions_to_idle_when_done() -> void:
 	_state.enter({"vehicle": _vehicle})

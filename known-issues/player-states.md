@@ -7,25 +7,7 @@ idle.gd, running.gd, swimming.gd, walking.gd
 
 ---
 
-## CRITICAL
-
-### C1 — `exiting_vehicle.gd:18`: No null/validity check on vehicle from msg
-Vehicle from `msg.get("vehicle")` used immediately with no `is_instance_valid` guard.
-If vehicle was freed before state transition completes, guaranteed crash.
-
-### C2 — `entering_vehicle.gd:22`: Same null-safety gap
-`_vehicle` assigned from message dict and immediately used without validity guard.
-
-### C3 — `driving.gd:229`: `handle_input` accesses `_vehicle` without validity check
-On a frame where vehicle is destroyed and player presses a key, both `force_exit_vehicle`
-and `handle_input` can fire, with `handle_input` executing against a freed object.
-
----
-
 ## HIGH
-
-### H1 — `driving.gd:105/138`: `force_exit_vehicle` signal connected without checking if already connected
-Double-connect causes double-transition if `enter()` is ever called twice.
 
 ### H2 — `driving.gd`: VehicleController never deactivated in `exit()` for cars
 Deactivation delegated entirely to ExitingVehicle. Any direct transition out of Driving

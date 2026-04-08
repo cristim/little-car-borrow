@@ -14,6 +14,9 @@ var _door_pivot: Node3D = null
 
 func enter(msg: Dictionary = {}) -> void:
 	_vehicle = msg.get("vehicle")
+	if not is_instance_valid(_vehicle):
+		state_machine.transition_to("Idle")
+		return
 	_timer = 0.0
 	var player := owner as CharacterBody3D
 	player.velocity = Vector3.ZERO
@@ -37,9 +40,7 @@ func enter(msg: Dictionary = {}) -> void:
 		var is_right: bool = _door_pivot.name == "RightDoorPivot"
 		var angle: float = -DOOR_OPEN_ANGLE if is_right else DOOR_OPEN_ANGLE
 		var tween := _door_pivot.create_tween()
-		tween.tween_property(
-			_door_pivot, "rotation:y", angle, DOOR_ANIM_DURATION
-		)
+		tween.tween_property(_door_pivot, "rotation:y", angle, DOOR_ANIM_DURATION)
 
 	EventBus.hide_interaction_prompt.emit()
 
@@ -50,9 +51,7 @@ func exit() -> void:
 	# Close the door
 	if _door_pivot and is_instance_valid(_door_pivot):
 		var tween := _door_pivot.create_tween()
-		tween.tween_property(
-			_door_pivot, "rotation:y", 0.0, DOOR_ANIM_DURATION
-		)
+		tween.tween_property(_door_pivot, "rotation:y", 0.0, DOOR_ANIM_DURATION)
 	_door_pivot = null
 	_vehicle = null
 	_timer = 0.0

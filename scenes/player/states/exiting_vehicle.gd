@@ -12,6 +12,9 @@ var _done := false
 func enter(msg: Dictionary = {}) -> void:
 	_done = false
 	var vehicle: Node = msg.get("vehicle")
+	if not is_instance_valid(vehicle):
+		state_machine.transition_to("Idle")
+		return
 	var player := owner as CharacterBody3D
 
 	# Open the door
@@ -50,9 +53,7 @@ func enter(msg: Dictionary = {}) -> void:
 	# Close the door after a brief delay
 	if door_pivot:
 		var tween := door_pivot.create_tween()
-		tween.tween_property(
-			door_pivot, "rotation:y", 0.0, DOOR_ANIM_DURATION
-		).set_delay(0.2)
+		tween.tween_property(door_pivot, "rotation:y", 0.0, DOOR_ANIM_DURATION).set_delay(0.2)
 
 	EventBus.vehicle_exited.emit(vehicle)
 	_done = true

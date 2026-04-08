@@ -5,14 +5,15 @@ extends GutTest
 const DrivingScript = preload("res://scenes/player/states/driving.gd")
 const StateScript = preload("res://src/state_machine/state.gd")
 
-
 # ---------------------------------------------------------------------------
 # Minimal stubs
 # ---------------------------------------------------------------------------
 
+
 class StubCamera:
 	extends Node3D
 	var active := false
+
 	func make_active() -> void:
 		active = true
 
@@ -25,6 +26,7 @@ class StubVehicleController:
 class StubBoatController:
 	extends Node
 	var active := false
+
 	func set_passenger(_mass: float) -> void:
 		pass
 
@@ -33,16 +35,20 @@ class StubLights:
 	extends Node3D
 	var player_driving := false
 	var toggled := false
+
 	func set_player_driving(v: bool) -> void:
 		player_driving = v
+
 	func toggle_lights() -> void:
 		toggled = true
 
 
 class StubProgressBar:
 	extends Control
+
 	func show_progress() -> void:
 		pass
+
 	func hide_progress() -> void:
 		pass
 
@@ -51,6 +57,7 @@ class StubStateMachine:
 	extends Node
 	var last_transition := ""
 	var last_msg: Dictionary = {}
+
 	func transition_to(name: String, msg: Dictionary = {}) -> void:
 		last_transition = name
 		last_msg = msg
@@ -153,6 +160,7 @@ func before_each() -> void:
 # enter() tests
 # ---------------------------------------------------------------------------
 
+
 func test_enter_sets_current_vehicle() -> void:
 	_state.enter({"vehicle": _vehicle})
 	assert_eq(_player.current_vehicle, _vehicle)
@@ -230,9 +238,24 @@ func test_enter_connects_force_exit() -> void:
 	)
 
 
+func test_enter_no_double_connect_on_repeated_enter() -> void:
+	# Calling enter() twice without exit() in between must not double-connect (H1)
+	_state.enter({"vehicle": _vehicle})
+	_state.enter({"vehicle": _vehicle})
+	# If double-connected, is_connected is still true — use signal emission count proxy:
+	# the simplest check is that no Godot error is raised. We verify by calling exit()
+	# which disconnects once; if there were two connections it would still be connected.
+	_state.exit()
+	assert_false(
+		EventBus.force_exit_vehicle.is_connected(_state._on_force_exit),
+		"After enter x2 + exit, signal should be fully disconnected",
+	)
+
+
 # ---------------------------------------------------------------------------
 # exit() tests
 # ---------------------------------------------------------------------------
+
 
 func test_exit_restores_vehicle_collision_layer() -> void:
 	_vehicle.collision_layer = 16
@@ -319,6 +342,18 @@ func test_exit_disables_lights_player_driving() -> void:
 # handle_input() tests
 # ---------------------------------------------------------------------------
 
+
+func test_handle_input_returns_early_when_vehicle_null() -> void:
+	# C3: handle_input must not crash when _vehicle is null/freed
+	_state.enter({"vehicle": _vehicle})
+	_state._vehicle = null
+	var event := InputEventAction.new()
+	event.action = "interact"
+	event.pressed = true
+	_state.handle_input(event)
+	assert_eq(_sm.last_transition, "", "Should not transition when vehicle is null")
+
+
 func test_interact_transitions_to_exiting_vehicle() -> void:
 	_state.enter({"vehicle": _vehicle})
 	var event := InputEventAction.new()
@@ -343,12 +378,14 @@ func test_toggle_flashlight_toggles_lights() -> void:
 # physics_update() tests
 # ---------------------------------------------------------------------------
 
+
 func test_physics_update_syncs_player_position() -> void:
 	_state.enter({"vehicle": _vehicle})
 	_vehicle.global_position = Vector3(10.0, 5.0, 20.0)
 	_state.physics_update(0.016)
 	assert_eq(
-		_player.global_position, _vehicle.global_position,
+		_player.global_position,
+		_vehicle.global_position,
 		"Player position should match vehicle position",
 	)
 
@@ -356,6 +393,7 @@ func test_physics_update_syncs_player_position() -> void:
 # ---------------------------------------------------------------------------
 # _on_force_exit() tests
 # ---------------------------------------------------------------------------
+
 
 func test_force_exit_triggers_transition_for_matching_vehicle() -> void:
 	_state.enter({"vehicle": _vehicle})

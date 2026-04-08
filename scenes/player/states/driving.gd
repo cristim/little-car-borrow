@@ -30,12 +30,16 @@ func enter(msg: Dictionary = {}) -> void:
 			# Reset any residual walk/run transform (lean, bounce, sway)
 			player_model.rotation = Vector3.ZERO
 			player_model.position = Vector3(
-				player_model.position.x, 0.0, player_model.position.z,
+				player_model.position.x,
+				0.0,
+				player_model.position.z,
 			)
 			# Reset all joints to neutral first, then apply seated pose
 			for path in [
-				"LeftShoulderPivot", "RightShoulderPivot",
-				"LeftHipPivot", "RightHipPivot",
+				"LeftShoulderPivot",
+				"RightShoulderPivot",
+				"LeftHipPivot",
+				"RightHipPivot",
 				"LeftShoulderPivot/LeftElbowPivot",
 				"RightShoulderPivot/RightElbowPivot",
 				"LeftHipPivot/LeftKneePivot",
@@ -47,12 +51,8 @@ func enter(msg: Dictionary = {}) -> void:
 			# Seated pose: bend hips and knees
 			var lh: Node3D = player_model.get_node_or_null("LeftHipPivot")
 			var rh: Node3D = player_model.get_node_or_null("RightHipPivot")
-			var lk: Node3D = player_model.get_node_or_null(
-				"LeftHipPivot/LeftKneePivot"
-			)
-			var rk: Node3D = player_model.get_node_or_null(
-				"RightHipPivot/RightKneePivot"
-			)
+			var lk: Node3D = player_model.get_node_or_null("LeftHipPivot/LeftKneePivot")
+			var rk: Node3D = player_model.get_node_or_null("RightHipPivot/RightKneePivot")
 			if lh:
 				lh.rotation.x = -1.4
 			if rh:
@@ -63,12 +63,8 @@ func enter(msg: Dictionary = {}) -> void:
 				rk.rotation.x = 1.4
 			var ls: Node3D = player_model.get_node_or_null("LeftShoulderPivot")
 			var rs: Node3D = player_model.get_node_or_null("RightShoulderPivot")
-			var le: Node3D = player_model.get_node_or_null(
-				"LeftShoulderPivot/LeftElbowPivot"
-			)
-			var re: Node3D = player_model.get_node_or_null(
-				"RightShoulderPivot/RightElbowPivot"
-			)
+			var le: Node3D = player_model.get_node_or_null("LeftShoulderPivot/LeftElbowPivot")
+			var re: Node3D = player_model.get_node_or_null("RightShoulderPivot/RightElbowPivot")
 			if is_heli:
 				# Both arms forward on flight controls
 				if ls:
@@ -122,9 +118,7 @@ func enter(msg: Dictionary = {}) -> void:
 	var vcam := _vehicle.get_node_or_null("VehicleCamera")
 	if not vcam:
 		# Boats don't have a camera at build time — create one now
-		var CamScene: PackedScene = preload(
-			"res://scenes/vehicles/vehicle_camera.tscn"
-		)
+		var CamScene: PackedScene = preload("res://scenes/vehicles/vehicle_camera.tscn")
 		vcam = CamScene.instantiate()
 		vcam.set("target_path", NodePath(".."))
 		_vehicle.add_child(vcam)
@@ -142,7 +136,8 @@ func enter(msg: Dictionary = {}) -> void:
 	vcam.make_active()
 
 	# Listen for forced ejection (vehicle destroyed, mission completion, etc.)
-	EventBus.force_exit_vehicle.connect(_on_force_exit)
+	if not EventBus.force_exit_vehicle.is_connected(_on_force_exit):
+		EventBus.force_exit_vehicle.connect(_on_force_exit)
 
 	# Stealing an NPC vehicle is a crime
 	if _vehicle.get_node_or_null("NPCVehicleController"):
@@ -210,15 +205,11 @@ func exit() -> void:
 					var knee: Node3D = player_model.get_node_or_null(path_k)
 					if knee:
 						knee.rotation.x = 0.0
-				var rs: Node3D = player_model.get_node_or_null(
-					"RightShoulderPivot"
-				)
+				var rs: Node3D = player_model.get_node_or_null("RightShoulderPivot")
 				if rs:
 					rs.rotation.x = 0.0
 					rs.rotation.y = 0.0
-				var re: Node3D = player_model.get_node_or_null(
-					"RightShoulderPivot/RightElbowPivot"
-				)
+				var re: Node3D = player_model.get_node_or_null("RightShoulderPivot/RightElbowPivot")
 				if re:
 					re.rotation.x = 0.0
 		var lights_node := _vehicle.get_node_or_null("Body/VehicleLights")
@@ -255,9 +246,7 @@ func physics_update(delta: float) -> void:
 			var sz: float = _vehicle.get_meta("stern_z", 2.5)
 			# Player origin is at feet; hip pivot is 0.80 m above origin.
 			# Seat top (local y=0.30) must align with hips: origin_y = 0.30 - 0.80 = -0.50
-			var seat_world: Vector3 = (_vehicle as Node3D).to_global(
-				Vector3(-0.4, -0.50, sz - 0.5)
-			)
+			var seat_world: Vector3 = (_vehicle as Node3D).to_global(Vector3(-0.4, -0.50, sz - 0.5))
 			# Apply gravity until player reaches seat surface
 			if owner.global_position.y > seat_world.y + 0.005:
 				_boat_seat_vel_y -= 9.8 * delta
@@ -277,20 +266,19 @@ func physics_update(delta: float) -> void:
 			)
 			# Animate right arm with steering (tiller control)
 			var steer: float = (
-				Input.get_action_strength("move_left")
-				- Input.get_action_strength("move_right")
+				Input.get_action_strength("move_left") - Input.get_action_strength("move_right")
 			)
 			var pm: Node3D = owner.get_node_or_null("PlayerModel")
 			if pm:
-				var rs: Node3D = pm.get_node_or_null(
-					"RightShoulderPivot"
-				)
+				var rs: Node3D = pm.get_node_or_null("RightShoulderPivot")
 				if rs:
 					# Arm swings left/right with steering (inverted for PI flip)
 					rs.rotation.y = -steer * 0.4
 
 
 func handle_input(event: InputEvent) -> void:
+	if not is_instance_valid(_vehicle):
+		return
 	if event.is_action_pressed("interact"):
 		state_machine.transition_to("ExitingVehicle", {"vehicle": _vehicle})
 	elif event.is_action_pressed("toggle_flashlight"):

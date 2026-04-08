@@ -3,15 +3,16 @@ extends GutTest
 
 const EnteringScript = preload("res://scenes/player/states/entering_vehicle.gd")
 
-
 # ---------------------------------------------------------------------------
 # Stubs
 # ---------------------------------------------------------------------------
+
 
 class StubStateMachine:
 	extends Node
 	var last_transition := ""
 	var last_msg: Dictionary = {}
+
 	func transition_to(name: String, msg: Dictionary = {}) -> void:
 		last_transition = name
 		last_msg = msg
@@ -22,10 +23,13 @@ class StubProgressBar:
 	var shown := false
 	var was_hidden := false
 	var last_value := 0.0
+
 	func show_progress() -> void:
 		shown = true
+
 	func hide_progress() -> void:
 		was_hidden = true
+
 	func update_progress(val: float) -> void:
 		last_value = val
 
@@ -97,6 +101,7 @@ func before_each() -> void:
 # Constants
 # ---------------------------------------------------------------------------
 
+
 func test_steal_duration_is_positive() -> void:
 	assert_gt(EnteringScript.STEAL_DURATION, 0.0)
 
@@ -106,8 +111,34 @@ func test_door_anim_duration_is_positive() -> void:
 
 
 # ---------------------------------------------------------------------------
+# enter() — null/invalid vehicle guard (C2)
+# ---------------------------------------------------------------------------
+
+
+func test_enter_with_null_vehicle_transitions_to_idle() -> void:
+	_state.enter({})  # no "vehicle" key — msg.get returns null
+	assert_eq(
+		_sm.last_transition,
+		"Idle",
+		"enter() with null vehicle should transition to Idle",
+	)
+
+
+func test_enter_with_null_vehicle_does_not_crash() -> void:
+	# Should return early without touching player velocity or progress bar
+	_player.velocity = Vector3(1.0, 2.0, 3.0)
+	_state.enter({"vehicle": null})
+	assert_eq(
+		_player.velocity,
+		Vector3(1.0, 2.0, 3.0),
+		"Velocity should be untouched when vehicle is null",
+	)
+
+
+# ---------------------------------------------------------------------------
 # enter() — car
 # ---------------------------------------------------------------------------
+
 
 func test_enter_resets_timer() -> void:
 	_state.enter({"vehicle": _vehicle})
@@ -135,12 +166,14 @@ func test_enter_hides_interaction_prompt() -> void:
 # enter() — boat (instant board)
 # ---------------------------------------------------------------------------
 
+
 func test_enter_boat_sets_timer_to_steal_duration() -> void:
 	var boat := _build_vehicle(true)
 	add_child_autofree(boat)
 	_state.enter({"vehicle": boat})
 	assert_eq(
-		_state._timer, EnteringScript.STEAL_DURATION,
+		_state._timer,
+		EnteringScript.STEAL_DURATION,
 		"Boat should instantly set timer to STEAL_DURATION",
 	)
 
@@ -158,6 +191,7 @@ func test_enter_boat_does_not_show_progress_bar() -> void:
 # ---------------------------------------------------------------------------
 # update() — timer progression
 # ---------------------------------------------------------------------------
+
 
 func test_update_increments_timer() -> void:
 	_state.enter({"vehicle": _vehicle})
@@ -197,6 +231,7 @@ func test_update_updates_progress_bar() -> void:
 # exit()
 # ---------------------------------------------------------------------------
 
+
 func test_exit_hides_progress_bar() -> void:
 	_state.enter({"vehicle": _vehicle})
 	_state.exit()
@@ -221,6 +256,7 @@ func test_exit_resets_timer() -> void:
 # ---------------------------------------------------------------------------
 # _get_nearest_door_pivot()
 # ---------------------------------------------------------------------------
+
 
 func test_nearest_door_returns_null_when_no_doors() -> void:
 	_state._vehicle = _vehicle
@@ -267,13 +303,15 @@ func test_nearest_door_picks_closer_door() -> void:
 # physics_update() — gravity while entering
 # ---------------------------------------------------------------------------
 
+
 func test_physics_update_applies_gravity() -> void:
 	_state.enter({"vehicle": _vehicle})
 	_player.velocity = Vector3.ZERO
 	_state.physics_update(0.1)
 	# gravity * delta = 20.0 * 0.1 = 2.0 downward
 	assert_lt(
-		_player.velocity.y, 0.0,
+		_player.velocity.y,
+		0.0,
 		"physics_update should apply gravity (velocity.y should be negative)",
 	)
 
@@ -285,6 +323,7 @@ func test_physics_update_accumulates_gravity() -> void:
 	var first_y: float = _player.velocity.y
 	_state.physics_update(0.1)
 	assert_lt(
-		_player.velocity.y, first_y,
+		_player.velocity.y,
+		first_y,
 		"Gravity should accumulate over multiple frames",
 	)
