@@ -5,13 +5,6 @@ Files: all 20 files in scenes/vehicles/
 
 ---
 
-## IMPORTANT
-
-### I8 — `boat_body_init.gd`: Engine mesh from builder silently discarded
-Builder returns `"engine"` and `"stern_z"` keys but boat_body_init only reads hull/cabin/windshield.
-Outboard motor is invisible.
-
----
 
 ## LOW
 
