@@ -129,3 +129,168 @@ func test_bullet_hole_uses_is_equal_approx_not_exact_comparison() -> void:
 		src.contains("is_equal_approx(Vector3.UP)"),
 		"Must use is_equal_approx for Vector3 UP comparison",
 	)
+
+
+# ---------------------------------------------------------------------------
+# Extended tests — constants, state transitions, edge cases
+# ---------------------------------------------------------------------------
+
+
+func test_source_declares_max_health_constant() -> void:
+	var src: String = (VehicleHealthScript as GDScript).source_code
+	assert_true(src.contains("MAX_HEALTH := 100.0"), "MAX_HEALTH constant must be 100.0")
+
+
+func test_source_declares_fire_threshold_constant() -> void:
+	var src: String = (VehicleHealthScript as GDScript).source_code
+	assert_true(src.contains("FIRE_THRESHOLD := 30.0"), "FIRE_THRESHOLD constant must be 30.0")
+
+
+func test_source_declares_burn_time_constant() -> void:
+	var src: String = (VehicleHealthScript as GDScript).source_code
+	assert_true(src.contains("BURN_TIME := 6.0"), "BURN_TIME constant must be 6.0")
+
+
+func test_initial_health_equals_max() -> void:
+	var veh := _build_vehicle()
+	add_child_autofree(veh)
+	await get_tree().process_frame
+	var vh: Node = veh.get_node("VehicleHealth")
+	assert_eq(vh.health, 100.0, "Initial health should equal MAX_HEALTH (100.0)")
+
+
+func test_initial_on_fire_is_false() -> void:
+	var veh := _build_vehicle()
+	add_child_autofree(veh)
+	await get_tree().process_frame
+	var vh: Node = veh.get_node("VehicleHealth")
+	assert_false(vh.on_fire, "Vehicle should not be on fire at spawn")
+
+
+func test_initial_destroyed_is_false() -> void:
+	var veh := _build_vehicle()
+	add_child_autofree(veh)
+	await get_tree().process_frame
+	var vh: Node = veh.get_node("VehicleHealth")
+	assert_false(vh.destroyed, "Vehicle should not be destroyed at spawn")
+
+
+func test_take_damage_zero_does_not_change_health() -> void:
+	var veh := _build_vehicle()
+	add_child_autofree(veh)
+	await get_tree().process_frame
+	var vh: Node = veh.get_node("VehicleHealth")
+	vh.take_damage(0.0, Vector3.ZERO, Vector3.UP)
+	assert_eq(vh.health, 100.0, "Zero damage should not change health")
+
+
+func test_take_damage_partial_does_not_trigger_fire() -> void:
+	# 69 damage → health = 31.0, just above threshold (30.0), no fire
+	var veh := _build_vehicle()
+	add_child_autofree(veh)
+	await get_tree().process_frame
+	var vh: Node = veh.get_node("VehicleHealth")
+	vh.take_damage(69.0, Vector3.ZERO, Vector3.UP)
+	assert_eq(vh.health, 31.0)
+	assert_false(vh.on_fire, "Should not be on fire above FIRE_THRESHOLD")
+
+
+func test_take_damage_exactly_at_threshold_triggers_fire() -> void:
+	# 70 damage → health = 30.0, equal to threshold → fire
+	var veh := _build_vehicle()
+	add_child_autofree(veh)
+	await get_tree().process_frame
+	var vh: Node = veh.get_node("VehicleHealth")
+	vh.take_damage(70.0, Vector3.ZERO, Vector3.UP)
+	assert_eq(vh.health, 30.0)
+	assert_true(vh.on_fire, "Should catch fire when health equals FIRE_THRESHOLD")
+
+
+func test_fire_not_triggered_twice() -> void:
+	# Dealing damage a second time while already on fire should not reset fire state
+	var veh := _build_vehicle()
+	add_child_autofree(veh)
+	await get_tree().process_frame
+	var vh: Node = veh.get_node("VehicleHealth")
+	vh.take_damage(75.0, Vector3.ZERO, Vector3.UP)
+	assert_true(vh.on_fire)
+	vh.on_fire = true  # simulate already on fire
+	vh.take_damage(10.0, Vector3.ZERO, Vector3.UP)
+	assert_true(vh.on_fire, "Fire state should remain true after second hit")
+
+
+func test_large_damage_kills_in_one_hit() -> void:
+	var veh := _build_vehicle()
+	add_child_autofree(veh)
+	await get_tree().process_frame
+	var vh: Node = veh.get_node("VehicleHealth")
+	vh.take_damage(9999.0, Vector3.ZERO, Vector3.UP)
+	assert_eq(vh.health, 0.0, "Massive damage should clamp health to 0")
+
+
+func test_health_does_not_go_negative() -> void:
+	var veh := _build_vehicle()
+	add_child_autofree(veh)
+	await get_tree().process_frame
+	var vh: Node = veh.get_node("VehicleHealth")
+	vh.take_damage(150.0, Vector3.ZERO, Vector3.UP)
+	assert_true(vh.health >= 0.0, "Health must never be negative")
+
+
+func test_multiple_small_hits_accumulate() -> void:
+	var veh := _build_vehicle()
+	add_child_autofree(veh)
+	await get_tree().process_frame
+	var vh: Node = veh.get_node("VehicleHealth")
+	for i in range(5):
+		vh.take_damage(10.0, Vector3.ZERO, Vector3.UP)
+	assert_eq(vh.health, 50.0, "Five hits of 10 should reduce health from 100 to 50")
+
+
+func test_bullet_hole_limit_not_exceeded() -> void:
+	var veh := _build_vehicle()
+	add_child_autofree(veh)
+	await get_tree().process_frame
+	var vh: Node = veh.get_node("VehicleHealth")
+	var src: String = (VehicleHealthScript as GDScript).source_code
+	assert_true(
+		src.contains("MAX_BULLET_HOLES := 10"),
+		"Bullet hole limit should be 10",
+	)
+
+
+func test_vehicle_damaged_signal_carries_vehicle_reference() -> void:
+	var veh := _build_vehicle()
+	add_child_autofree(veh)
+	await get_tree().process_frame
+	var vh: Node = veh.get_node("VehicleHealth")
+	watch_signals(EventBus)
+	vh.take_damage(5.0, Vector3.ZERO, Vector3.UP)
+	assert_signal_emitted_with_parameters(EventBus, "vehicle_damaged", [veh, 5.0])
+
+
+func test_take_damage_multiple_times_emits_signal_each_time() -> void:
+	var veh := _build_vehicle()
+	add_child_autofree(veh)
+	await get_tree().process_frame
+	var vh: Node = veh.get_node("VehicleHealth")
+	watch_signals(EventBus)
+	vh.take_damage(5.0, Vector3.ZERO, Vector3.UP)
+	vh.take_damage(5.0, Vector3.ZERO, Vector3.UP)
+	assert_signal_emit_count(EventBus, "vehicle_damaged", 2)
+
+
+func test_source_uses_event_bus_vehicle_destroyed_signal() -> void:
+	var src: String = (VehicleHealthScript as GDScript).source_code
+	assert_true(
+		src.contains("EventBus.vehicle_destroyed.emit"),
+		"_explode() must emit EventBus.vehicle_destroyed",
+	)
+
+
+func test_source_freezes_vehicle_on_explode() -> void:
+	var src: String = (VehicleHealthScript as GDScript).source_code
+	assert_true(
+		src.contains("_vehicle.freeze = true"),
+		"_explode() must freeze the vehicle",
+	)

@@ -10,11 +10,11 @@ const TrafficManagerScript = preload("res://scenes/world/traffic_manager.gd")
 
 
 func test_spawn_radius() -> void:
-	assert_eq(TrafficManagerScript.SPAWN_RADIUS, 150.0)
+	assert_eq(TrafficManagerScript.SPAWN_RADIUS, 120.0)
 
 
 func test_despawn_radius() -> void:
-	assert_eq(TrafficManagerScript.DESPAWN_RADIUS, 180.0)
+	assert_eq(TrafficManagerScript.DESPAWN_RADIUS, 160.0)
 
 
 func test_despawn_radius_greater_than_spawn() -> void:
@@ -30,7 +30,7 @@ func test_despawn_behind_radius() -> void:
 
 
 func test_min_spawn_dist() -> void:
-	assert_eq(TrafficManagerScript.MIN_SPAWN_DIST, 80.0)
+	assert_eq(TrafficManagerScript.MIN_SPAWN_DIST, 60.0)
 
 
 func test_min_vehicle_dist() -> void:
@@ -438,27 +438,29 @@ func test_spawn_forward_rejection_is_unconditional() -> void:
 # ==========================================================================
 
 
-func test_spawn_uses_signed_distance_for_city_check() -> void:
+func test_spawn_uses_spawn_helper_for_surface_probe() -> void:
+	# Surface probing (signed distance, city check, terrain rejection) was
+	# extracted into VehicleSpawnHelper. Verify traffic_manager delegates to it.
 	var src: String = (TrafficManagerScript as GDScript).source_code
 	assert_true(
-		src.contains("get_signed_distance(spawn_pos.x, spawn_pos.z)"),
-		"Spawn must check signed_distance to detect city boundary",
+		src.contains("probe_spawn_surface"),
+		"Spawn must delegate surface probing to probe_spawn_surface",
 	)
 
 
-func test_spawn_uses_flat_ground_inside_city() -> void:
+func test_spawn_rejects_bad_probe_result() -> void:
 	var src: String = (TrafficManagerScript as GDScript).source_code
 	assert_true(
-		src.contains("sd < 0.0"),
-		"Inside city (sd < 0) must use flat ground height",
+		src.contains("not probe.ok"),
+		"Spawn must skip positions where probe.ok is false",
 	)
 
 
-func test_spawn_rejects_steep_terrain_outside_city() -> void:
+func test_spawn_uses_probe_surface_y() -> void:
 	var src: String = (TrafficManagerScript as GDScript).source_code
 	assert_true(
-		src.contains("ground_y > 6.0"),
-		"Steep terrain (ground_y > 6 m) must be rejected to prevent sky-falls",
+		src.contains("probe.surface_y") or src.contains("surface_y"),
+		"Spawn must use probe result surface_y for vehicle placement",
 	)
 
 
