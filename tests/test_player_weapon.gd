@@ -602,3 +602,20 @@ func test_ragdoll_source_has_lifetime_timer() -> void:
 		src.contains("is_instance_valid(ragdoll)"),
 		"Ragdoll timer lambda should guard with is_instance_valid",
 	)
+
+
+# ==========================================================================
+# apply_impulse local-space offset (H5 fix)
+# ==========================================================================
+
+
+func test_apply_impulse_uses_to_local_for_hit_position() -> void:
+	var src: String = (WeaponScript as GDScript).source_code
+	assert_true(
+		src.contains("to_local(hit_pos)"),
+		"apply_impulse must use body.to_local(hit_pos) for local-space offset",
+	)
+	assert_false(
+		src.contains("hit_pos - body.global_position"),
+		"apply_impulse must not pass world-space offset hit_pos - body.global_position",
+	)

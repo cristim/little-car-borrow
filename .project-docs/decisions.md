@@ -53,3 +53,9 @@
 - **Alternatives**: `RigidBody3D` with `apply_central_force` / torque for lift and thrust
 - **Rationale**: `RigidBody3D` introduces unwanted physics coupling: gravity, angular drag, and integration drift make hover feel floaty and precise altitude control difficult. Flight-sim style controls (collective up/down, yaw, forward/back) map cleanly onto direct velocity assignment — `CharacterBody3D.move_and_slide()` handles collision response without the instability of competing forces. The same pattern is used by the player on foot, keeping the codebase consistent.
 - **Status**: Implemented in `scenes/vehicles/helicopter_controller.gd`
+
+## 2026-04-08: Weapon Impulse — Local-Space vs World-Space Offset
+- **Decision**: `apply_impulse(impulse, body.to_local(hit_pos))` using body-local coordinates
+- **Alternatives**: `hit_pos - body.global_position` (world-space offset, was the bug)
+- **Rationale**: Godot 4 `apply_impulse` expects the position argument in the body's local coordinate frame. Passing `hit_pos - body.global_position` is a world-space vector that ignores the body's rotation, producing incorrect torque on rotated vehicles (e.g., car facing sideways). `body.to_local(hit_pos)` correctly accounts for the body orientation.
+- **Status**: Fixed in `player_weapon.gd`

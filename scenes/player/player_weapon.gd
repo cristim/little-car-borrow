@@ -283,7 +283,7 @@ func _shoot() -> void:
 			body.queue_free()
 		elif body is RigidBody3D:
 			var impulse := dir * VEHICLE_IMPULSE
-			(body as RigidBody3D).apply_impulse(impulse, hit_pos - body.global_position)
+			(body as RigidBody3D).apply_impulse(impulse, body.to_local(hit_pos))
 			var vh := body.get_node_or_null("VehicleHealth")
 			if vh:
 				vh.take_damage(pellet_dmg, hit_pos, hit_normal)

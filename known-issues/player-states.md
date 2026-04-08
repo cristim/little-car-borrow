@@ -5,16 +5,6 @@ Files: player.gd, player_camera.gd, player_flashlight.gd, player_model.gd,
 player_weapon.gd, states/driving.gd, entering_vehicle.gd, exiting_vehicle.gd,
 idle.gd, running.gd, swimming.gd, walking.gd
 
----
-
-## HIGH
-
-### H5 — `player_weapon.gd:242-244`: `apply_impulse` passes world-space offset
-Second argument should be local-space offset from center of mass. Applies incorrect
-torque on rotated vehicles.
-
----
-
 ## MEDIUM
 
 ### M4 — `swimming.gd:99`: `_is_over_water()` defined but never called (dead code)
