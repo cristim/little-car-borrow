@@ -487,3 +487,18 @@ func test_ready_does_not_call_fetch_biome_map() -> void:
 		ready_body.contains("_fetch_biome_map()"),
 		"_ready must not eagerly call _fetch_biome_map",
 	)
+
+
+# ==========================================================================
+# LOD freeze skips despawned vehicles (M1 fix)
+# ==========================================================================
+
+
+func test_lod_freeze_skips_despawned_vehicles() -> void:
+	var src: String = TrafficManagerScript.source_code
+	# Both despawn sites must have 'continue' after to_remove.append
+	# to prevent the LOD freeze block from writing to freed vehicles.
+	assert_true(
+		src.contains("to_remove.append(v)\n\t\t\tcontinue"),
+		"_update_vehicles must use 'continue' after to_remove.append for despawned vehicles",
+	)

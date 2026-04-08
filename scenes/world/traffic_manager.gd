@@ -409,11 +409,13 @@ func _despawn_far() -> void:
 		var d := v_pos.distance_to(player_pos)
 		if d > DESPAWN_RADIUS:
 			to_remove.append(v)
+			continue  # skip LOD freeze for vehicles being despawned
 		elif moving and d > DESPAWN_BEHIND_RADIUS:
 			var offset := v_pos - player_pos
 			offset.y = 0.0
 			if vel_dir.dot(offset.normalized()) < -0.5:
 				to_remove.append(v)
+				continue  # skip LOD freeze for vehicles being despawned
 		# Freeze/unfreeze GEVP physics by distance (skip during spawn grace)
 		if is_instance_valid(v) and "freeze" in v:
 			var npc_ai: Node = v.get_node_or_null("NPCVehicleController")

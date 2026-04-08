@@ -469,3 +469,19 @@ func test_repairing_starts_false() -> void:
 		city._repairing,
 		"_repairing should be false initially",
 	)
+
+
+# ==========================================================================
+# Initial cache flush (M2 fix)
+# ==========================================================================
+
+
+func test_ready_calls_tile_cache_flush() -> void:
+	var src: String = CityScript.source_code
+	var ready_start: int = src.find("func _ready()")
+	var ready_end: int = src.find("\nfunc ", ready_start + 1)
+	var ready_body: String = src.substr(ready_start, ready_end - ready_start)
+	assert_true(
+		ready_body.contains("_tile_cache.flush()"),
+		"_ready must call _tile_cache.flush() to persist initial generation",
+	)

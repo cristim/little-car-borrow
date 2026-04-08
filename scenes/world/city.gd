@@ -120,6 +120,7 @@ func _ready() -> void:
 	_init_builders()
 	_build_safety_ground()
 	_load_chunks_around(Vector3.ZERO, Vector3.ZERO)
+	_tile_cache.flush()  # persist initial generation immediately
 
 
 func _process(delta: float) -> void:
