@@ -460,3 +460,30 @@ func test_spawn_rejects_steep_terrain_outside_city() -> void:
 		src.contains("ground_y > 6.0"),
 		"Steep terrain (ground_y > 6 m) must be rejected to prevent sky-falls",
 	)
+
+
+# ==========================================================================
+# Biome lazy fetch (world/I5)
+# ==========================================================================
+
+
+func test_get_biome_lazy_fetch_in_source() -> void:
+	# I5: biome map must be fetched lazily in _get_biome, not at _ready
+	var src: String = TrafficManagerScript.source_code
+	assert_true(
+		src.contains("if _biome_map == null:"),
+		"_get_biome must lazily check _biome_map == null before use",
+	)
+
+
+func test_ready_does_not_call_fetch_biome_map() -> void:
+	# I5: _ready must not eagerly call _fetch_biome_map (city_manager may not exist yet)
+	var src: String = TrafficManagerScript.source_code
+	# The fetch call should only appear inside _get_biome and _fetch_biome_map, not _ready
+	var ready_start: int = src.find("func _ready()")
+	var ready_end: int = src.find("\nfunc ", ready_start + 1)
+	var ready_body: String = src.substr(ready_start, ready_end - ready_start)
+	assert_false(
+		ready_body.contains("_fetch_biome_map()"),
+		"_ready must not eagerly call _fetch_biome_map",
+	)

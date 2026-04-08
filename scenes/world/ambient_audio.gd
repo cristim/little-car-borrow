@@ -219,7 +219,7 @@ func _gen_gust() -> float:
 		_gust_filter *= 0.999
 		return _gust_filter * 0.03
 	# Wind: heavily filtered noise with swell envelope
-	var progress := 1.0 - (_gust_remaining / GUST_DURATION)
+	var progress := clampf(1.0 - (_gust_remaining / GUST_DURATION), 0.0, 1.0)
 	var env := sin(progress * PI) * 0.5
 	var noise := _rng.randf() - 0.5
 	_gust_filter += 0.02 * (noise * env - _gust_filter)

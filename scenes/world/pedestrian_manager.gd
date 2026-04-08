@@ -28,7 +28,6 @@ var _time_multiplier := 1.0
 func _ready() -> void:
 	_rng.randomize()
 	_boundary.init(_grid.get_grid_span(), _make_terrain_noise())
-	_fetch_biome_map()
 	EventBus.pedestrian_killed.connect(_on_pedestrian_killed)
 	EventBus.time_of_day_changed.connect(_on_time_changed)
 
@@ -182,6 +181,8 @@ func _fetch_biome_map() -> void:
 
 
 func _is_city_biome(tile: Vector2i) -> bool:
+	if _biome_map == null:
+		_fetch_biome_map()
 	if _biome_map:
 		var biome: String = _biome_map.get_biome(tile)
 		return biome in ["city_center", "residential", "suburb"]

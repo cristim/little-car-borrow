@@ -329,3 +329,29 @@ func test_despawn_helicopter_invalid_ref_clears() -> void:
 		mgr._helicopter,
 		"Invalid helicopter ref should be cleared",
 	)
+
+
+# ==========================================================================
+# Biome lazy fetch + alley spawn guard (world/I3, I5)
+# ==========================================================================
+
+
+func test_ready_does_not_call_fetch_biome_map() -> void:
+	# I5: _ready must not eagerly call _fetch_biome_map
+	var src: String = PoliceManagerScript.source_code
+	var ready_start: int = src.find("func _ready()")
+	var ready_end: int = src.find("\nfunc ", ready_start + 1)
+	var ready_body: String = src.substr(ready_start, ready_end - ready_start)
+	assert_false(
+		ready_body.contains("_fetch_biome_map()"),
+		"_ready must not eagerly call _fetch_biome_map",
+	)
+
+
+func test_try_spawn_skips_alley_roads() -> void:
+	# I3: police vehicles (~2m wide) must not spawn on 4m alley roads
+	var src: String = PoliceManagerScript.source_code
+	assert_true(
+		src.contains("rw < 6.0"),
+		"_try_spawn must skip roads narrower than 6m (alleys are 4m)",
+	)

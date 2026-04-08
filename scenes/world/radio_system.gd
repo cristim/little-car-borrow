@@ -828,6 +828,8 @@ func _play_police_announcement() -> void:
 func _speak_tts(text: String) -> void:
 	if _tts_voice_id.is_empty():
 		return
+	if _tts_queue.size() >= 3:
+		_tts_queue.pop_front()  # drop oldest to prevent unbounded backlog
 	_tts_queue.append(text)
 
 

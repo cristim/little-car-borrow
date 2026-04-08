@@ -356,3 +356,18 @@ func test_advance_drone_wraps_phase() -> void:
 	)
 	assert_lt(audio._phase2, 1.0)
 	assert_lt(audio._phase3, 1.0)
+
+
+# ==========================================================================
+# Gust progress clamp (world/I1)
+# ==========================================================================
+
+
+func test_gust_progress_uses_clampf() -> void:
+	# I1: _gust_remaining can exceed GUST_DURATION making progress negative,
+	# causing sin() polarity flip and audible pop. Must be clamped to [0,1].
+	var src: String = AmbientScript.source_code
+	assert_true(
+		src.contains("clampf(1.0 - (_gust_remaining / GUST_DURATION), 0.0, 1.0)"),
+		"Gust progress must use clampf to prevent negative values",
+	)

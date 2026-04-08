@@ -559,3 +559,21 @@ func test_only_rock_has_distortion() -> void:
 	assert_eq(RadioScript.GENRE_JAZZ.dist_drive, 0.0)
 	assert_eq(RadioScript.GENRE_ELECTRONIC.dist_drive, 0.0)
 	assert_eq(RadioScript.GENRE_CLASSICAL.dist_drive, 0.0)
+
+
+# ==========================================================================
+# TTS queue cap (world/I4)
+# ==========================================================================
+
+
+func test_speak_tts_caps_queue_at_three() -> void:
+	# I4: TTS queue must not grow beyond 3 entries to prevent stale playback
+	var src: String = RadioScript.source_code
+	assert_true(
+		src.contains("_tts_queue.size() >= 3"),
+		"_speak_tts must cap queue at 3 entries",
+	)
+	assert_true(
+		src.contains("_tts_queue.pop_front()"),
+		"_speak_tts must drop oldest entry when queue is full",
+	)

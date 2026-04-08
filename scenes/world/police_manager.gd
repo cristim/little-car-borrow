@@ -39,7 +39,6 @@ var _heli_script: GDScript = preload("res://scenes/vehicles/helicopter_ai.gd")
 func _ready() -> void:
 	_rng.randomize()
 	_boundary.init(_grid.get_grid_span(), _make_terrain_noise())
-	_fetch_biome_map()
 	EventBus.wanted_level_changed.connect(_on_wanted_level_changed)
 
 
@@ -148,6 +147,8 @@ func _try_spawn() -> void:
 			road_center = _grid.get_road_center_near(road_idx, player_pos.z)
 
 		var rw := _grid.get_road_width(road_idx)
+		if rw < 6.0:
+			continue  # skip alleys — police car needs road clearance
 		var along := _rng.randf_range(-SPAWN_RADIUS, SPAWN_RADIUS)
 		var spawn_pos: Vector3
 		var direction: int

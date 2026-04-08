@@ -98,7 +98,6 @@ var _car_colors: Array[Color] = [
 func _ready() -> void:
 	_rng.randomize()
 	_boundary.init(_grid.get_grid_span(), _make_terrain_noise())
-	_fetch_biome_map()
 	_init_materials()
 	EventBus.vehicle_entered.connect(_on_vehicle_stolen)
 	EventBus.time_of_day_changed.connect(_on_time_changed)
@@ -598,6 +597,8 @@ func _fetch_biome_map() -> void:
 
 
 func _get_biome(tile: Vector2i) -> String:
+	if _biome_map == null:
+		_fetch_biome_map()
 	if _biome_map:
 		return _biome_map.get_biome(tile)
 	# Fallback: use boundary

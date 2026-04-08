@@ -281,3 +281,28 @@ func test_despawn_far_removes_distant_pedestrians() -> void:
 		0,
 		"Distant pedestrians should be despawned",
 	)
+
+
+# ==========================================================================
+# Biome lazy fetch (world/I5)
+# ==========================================================================
+
+
+func test_is_city_biome_lazy_fetch_in_source() -> void:
+	# I5: biome map must be fetched lazily in _is_city_biome, not at _ready
+	var src: String = PedManagerScript.source_code
+	assert_true(
+		src.contains("if _biome_map == null:"),
+		"_is_city_biome must lazily check _biome_map == null before use",
+	)
+
+
+func test_ready_does_not_call_fetch_biome_map() -> void:
+	var src: String = PedManagerScript.source_code
+	var ready_start: int = src.find("func _ready()")
+	var ready_end: int = src.find("\nfunc ", ready_start + 1)
+	var ready_body: String = src.substr(ready_start, ready_end - ready_start)
+	assert_false(
+		ready_body.contains("_fetch_biome_map()"),
+		"_ready must not eagerly call _fetch_biome_map",
+	)
