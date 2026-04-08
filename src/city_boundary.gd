@@ -3,8 +3,8 @@ extends RefCounted
 ## Produces an organic blob shape instead of a square grid.
 ## Shared by city.gd, terrain builder, village builder, and minimap.
 
-const BASE_RADIUS := 0.76  # tiles from origin  # TODO: restore to 3.8
-const VARIATION := 0.16  # +/- tiles of noise modulation  # TODO: restore to 0.8
+const BASE_RADIUS := 3.8  # tiles from origin (~1.85 km radius)
+const VARIATION := 0.8  # +/- tiles of noise modulation
 const LOOP_RADIUS := 2.5  # radius in noise space for seamless loop
 const NOISE_SEED := 77
 const NOISE_FREQ := 0.3

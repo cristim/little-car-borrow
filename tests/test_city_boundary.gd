@@ -37,9 +37,13 @@ func test_boundary_radius_positive() -> void:
 
 
 func test_boundary_radius_within_expected_range() -> void:
-	# Use actual constants from city_boundary.gd (BASE_RADIUS=0.76, VARIATION=0.16)
-	var min_expected: float = (0.76 - 0.16 + 0.5) * _grid_span  # 1.1 * span
-	var max_expected: float = (0.76 + 0.16 + 0.5) * _grid_span  # 1.42 * span
+	# Radius = (BASE_RADIUS + raw * VARIATION + 0.5) * grid_span, raw in [-1,1]
+	var min_expected: float = (
+		(BoundaryScript.BASE_RADIUS - BoundaryScript.VARIATION + 0.5) * _grid_span
+	)
+	var max_expected: float = (
+		(BoundaryScript.BASE_RADIUS + BoundaryScript.VARIATION + 0.5) * _grid_span
+	)
 	for i in range(72):
 		var angle: float = float(i) * TAU / 72.0
 		var r: float = _boundary.get_boundary_radius_at_angle(angle)
@@ -55,6 +59,26 @@ func test_boundary_radius_within_expected_range() -> void:
 				]
 			),
 		)
+
+
+func test_base_radius_production_value() -> void:
+	# core/I1: BASE_RADIUS was at debug value 0.76 — must be 3.8 for gameplay
+	assert_almost_eq(
+		BoundaryScript.BASE_RADIUS,
+		3.8,
+		0.001,
+		"BASE_RADIUS must be 3.8 (production value)",
+	)
+
+
+func test_variation_production_value() -> void:
+	# core/I1: VARIATION was at debug value 0.16 — must be 0.8 for gameplay
+	assert_almost_eq(
+		BoundaryScript.VARIATION,
+		0.8,
+		0.001,
+		"VARIATION must be 0.8 (production value)",
+	)
 
 
 func test_boundary_seamless_at_zero_twopi() -> void:

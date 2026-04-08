@@ -9,13 +9,6 @@ weapon_mesh_builder.gd, state_machine/state.gd, state_machine/state_machine.gd
 
 ## IMPORTANT
 
-### I1 — `city_boundary.gd:6-7`: BASE_RADIUS and VARIATION at debug values
-```
-const BASE_RADIUS := 0.76  # TODO: restore to 3.8
-const VARIATION := 0.16    # TODO: restore to 0.8
-```
-City occupies less than one tile radius. Must be restored for gameplay testing.
-
 ### I2 — `biome_map.gd:76`: Double-scaling makes biome noise nearly constant
 `_biome_noise` has `frequency = 0.08`. `_get_rural_biome` calls it with `wx * 0.01`,
 giving effective frequency `0.0008`. Rural biomes are near-uniform across the map.
