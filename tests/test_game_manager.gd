@@ -370,3 +370,69 @@ func test_lethal_damage_emits_died_only_once() -> void:
 		1,
 		"player_died should only emit once",
 	)
+
+
+# ================================================================
+# Instance-based tests (fresh .new() instances for coverage)
+# ================================================================
+
+
+func test_instance_add_money() -> void:
+	var gm: Node = GameManagerScript.new()
+	add_child_autofree(gm)
+	gm.money = 0
+	gm.is_dead = false
+	gm.add_money(100)
+	assert_eq(gm.money, 100, "Instance add_money should work")
+
+
+func test_instance_take_damage() -> void:
+	var gm: Node = GameManagerScript.new()
+	add_child_autofree(gm)
+	gm.health = 100.0
+	gm.is_dead = false
+	gm.take_damage(40.0)
+	assert_almost_eq(gm.health, 60.0, 0.01, "Instance take_damage should reduce health")
+
+
+func test_instance_heal() -> void:
+	var gm: Node = GameManagerScript.new()
+	add_child_autofree(gm)
+	gm.health = 50.0
+	gm.is_dead = false
+	gm.heal(30.0)
+	assert_almost_eq(gm.health, 80.0, 0.01, "Instance heal should increase health")
+
+
+func test_instance_deduct_money_success() -> void:
+	var gm: Node = GameManagerScript.new()
+	add_child_autofree(gm)
+	gm.money = 100
+	var ok: bool = gm.deduct_money(50)
+	assert_true(ok, "deduct_money should return true when sufficient")
+	assert_eq(gm.money, 50, "money should be reduced")
+
+
+func test_instance_deduct_money_fail() -> void:
+	var gm: Node = GameManagerScript.new()
+	add_child_autofree(gm)
+	gm.money = 10
+	var ok: bool = gm.deduct_money(50)
+	assert_false(ok, "deduct_money should return false when insufficient")
+
+
+func test_instance_die() -> void:
+	var gm: Node = GameManagerScript.new()
+	add_child_autofree(gm)
+	gm.health = 5.0
+	gm.is_dead = false
+	gm.take_damage(10.0)
+	assert_true(gm.is_dead, "Player should die when health reaches 0")
+
+
+func test_instance_on_mission_completed() -> void:
+	var gm: Node = GameManagerScript.new()
+	add_child_autofree(gm)
+	gm.missions_completed = 0
+	gm._on_mission_completed("test")
+	assert_eq(gm.missions_completed, 1, "_on_mission_completed should increment counter")

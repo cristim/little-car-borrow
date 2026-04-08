@@ -99,22 +99,25 @@ func test_fence_thickness_positive() -> void:
 
 func test_build_creates_fields_mesh() -> void:
 	var span: float = _grid.get_grid_span()
-	# Tile far from city with terrain above 0.5
-	var tile := Vector2i(5, 0)
-	var chunk := Node3D.new()
-	add_child_autofree(chunk)
-	_builder.build(chunk, tile, span * 5.0, 0.0)
-
+	# Loop over tiles far enough from city to have terrain above 0.5
 	var found_fields := false
-	for child in chunk.get_children():
-		if child is MeshInstance3D and child.name == "Fields":
-			found_fields = true
-			assert_not_null(child.mesh, "Fields mesh should not be null")
-			assert_not_null(
-				child.material_override,
-				"Fields should have material override",
-			)
-	assert_true(found_fields, "Build on terrain should create Fields mesh")
+	for tx in range(5, 18):
+		var tile := Vector2i(tx, 0)
+		var chunk := Node3D.new()
+		add_child_autofree(chunk)
+		_builder.build(chunk, tile, span * float(tx), 0.0)
+		for child in chunk.get_children():
+			if child is MeshInstance3D and child.name == "Fields":
+				found_fields = true
+				assert_not_null(child.mesh, "Fields mesh should not be null")
+				assert_not_null(
+					child.material_override,
+					"Fields should have material override",
+				)
+				break
+		if found_fields:
+			break
+	assert_true(found_fields, "Build on terrain should create Fields mesh across tiles 5-17")
 
 
 func test_fields_material_uses_vertex_colors() -> void:

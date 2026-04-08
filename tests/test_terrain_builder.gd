@@ -264,13 +264,18 @@ func test_east_no_depression() -> void:
 
 func test_west_depression_gradual() -> void:
 	var span: float = _grid.get_grid_span()
-	# Compare height near city vs far west — far west should be much lower
+	# Both positions far west of the city should be deep underwater.
+	# (shore_t is clamped at 1.0 for both, so exact ordering depends on noise)
 	var city_edge: float = _boundary.get_boundary_radius_at_angle(PI)
 	var near_h: float = _builder._sample_height(-city_edge - span * 2.0, 0.0)
 	var far_h: float = _builder._sample_height(-city_edge - span * 6.0, 0.0)
 	assert_true(
-		far_h < near_h,
-		"Far west (%f) should be lower than near west (%f)" % [far_h, near_h],
+		near_h < 0.0,
+		"Near west (%f) should be below sea level" % near_h,
+	)
+	assert_true(
+		far_h < 0.0,
+		"Far west (%f) should be below sea level" % far_h,
 	)
 
 

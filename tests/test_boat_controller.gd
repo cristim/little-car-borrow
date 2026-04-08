@@ -45,15 +45,15 @@ func test_hull_has_8_buoyancy_points() -> void:
 		"Should have port bow point",
 	)
 	assert_true(
-		_src.contains("Vector3( 1.2, -0.3, -2.0)"),
+		_src.contains("Vector3(1.2, -0.3, -2.0)"),
 		"Should have starboard bow point",
 	)
 	assert_true(
-		_src.contains("Vector3( 0.0, -0.3, -2.5)"),
+		_src.contains("Vector3(0.0, -0.3, -2.5)"),
 		"Should have keel bow point",
 	)
 	assert_true(
-		_src.contains("Vector3( 0.0, -0.3,  2.5)"),
+		_src.contains("Vector3(0.0, -0.3, 2.5)"),
 		"Should have keel stern point",
 	)
 

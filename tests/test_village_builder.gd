@@ -339,11 +339,11 @@ func test_village_sets_center_meta() -> void:
 
 func test_sample_height_west_ocean() -> void:
 	var span: float = _grid.get_grid_span()
-	# Far west should produce low heights
-	var h: float = _builder._sample_height(-span * 4.0, 0.0)
+	# Must go past the city boundary (~4-5 spans) to get terrain + ocean penalty
+	var h: float = _builder._sample_height(-span * 6.0, 0.0)
 	assert_true(
 		h < 0.0,
-		"Far west height should be below ground level",
+		"Far west height should be below ground level, got %f" % h,
 	)
 
 

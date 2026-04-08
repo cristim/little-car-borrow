@@ -196,7 +196,7 @@ func test_mesh_height_bounded_by_corners() -> void:
 		assert_true(
 			mh >= lo - 0.001 and mh <= hi + 0.001,
 			(
-				"get_mesh_height(%g,%g)=%g must be within corner range [%g,%g]"
+				"get_mesh_height(%.1f,%.1f)=%.4f must be within corner range [%.4f,%.4f]"
 				% [
 					wx,
 					wz,

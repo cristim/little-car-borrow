@@ -176,7 +176,7 @@ func test_sky_horizon_red_peaks_at_sunset() -> void:
 
 
 func test_update_windows_uses_building_chunk_group() -> void:
-	var src: String = DayNightEnvScript.source_code
+	var src: String = (DayNightEnvScript as GDScript).source_code
 	assert_true(
 		src.contains('"building_chunk"'),
 		"_update_windows should query the building_chunk group",
@@ -184,7 +184,7 @@ func test_update_windows_uses_building_chunk_group() -> void:
 
 
 func test_on_window_toggle_picks_one_chunk() -> void:
-	var src: String = DayNightEnvScript.source_code
+	var src: String = (DayNightEnvScript as GDScript).source_code
 	assert_true(
 		src.contains("_rng.randi() % chunks.size()"),
 		"_on_window_toggle should pick one random chunk, not iterate all",
@@ -202,7 +202,7 @@ func test_sun_pitch_at_noon_is_positive() -> void:
 func test_sun_rotation_applied_negative() -> void:
 	# Verify that the source code applies pitch as negative rotation
 	# so the light tilts downward (toward ground), not upward.
-	var src: String = DayNightEnvScript.source_code
+	var src: String = (DayNightEnvScript as GDScript).source_code
 	assert_true(
 		src.contains("deg_to_rad(-_sample(SUN_PITCH"),
 		"Sun pitch must be negated when applied to light rotation",
@@ -211,7 +211,7 @@ func test_sun_rotation_applied_negative() -> void:
 
 func test_window_toggle_timer_interval_range() -> void:
 	# Timer wait_time is set randomly in range [5.0, 12.0] seconds.
-	var src: String = DayNightEnvScript.source_code
+	var src: String = (DayNightEnvScript as GDScript).source_code
 	assert_true(
 		src.contains("randf_range(5.0, 12.0)"),
 		"Window toggle timer should use 5-12s interval",
@@ -430,7 +430,7 @@ func test_cloud_count_is_eight() -> void:
 
 
 func test_fog_suppression_in_source() -> void:
-	var src: String = DayNightEnvScript.source_code
+	var src: String = (DayNightEnvScript as GDScript).source_code
 	assert_true(
 		src.contains("day_suppress"),
 		"Fog update should compute day_suppress to reduce fog in sunlight",
@@ -463,7 +463,7 @@ func test_moon_hidden_initially() -> void:
 
 
 func test_moon_shader_has_phase_uniform() -> void:
-	var src: String = DayNightEnvScript.source_code
+	var src: String = (DayNightEnvScript as GDScript).source_code
 	assert_true(
 		src.contains('"phase"'),
 		"Moon shader should use a 'phase' uniform",
@@ -471,7 +471,7 @@ func test_moon_shader_has_phase_uniform() -> void:
 
 
 func test_moon_shader_has_brightness_uniform() -> void:
-	var src: String = DayNightEnvScript.source_code
+	var src: String = (DayNightEnvScript as GDScript).source_code
 	assert_true(
 		src.contains('"brightness"'),
 		"Moon shader should use a 'brightness' uniform",
@@ -500,7 +500,7 @@ func test_star_sphere_radius_constant() -> void:
 
 
 func test_star_shader_three_grid_layers() -> void:
-	var src: String = DayNightEnvScript.source_code
+	var src: String = (DayNightEnvScript as GDScript).source_code
 	assert_true(
 		src.contains("UV * 96"),
 		"Star shader should have background layer at UV * 96",
@@ -519,7 +519,7 @@ func test_star_shader_far_plane_trick() -> void:
 	# Stars must render at the far plane so geometry occludes them.
 	# In Godot 4 Vulkan reverse-Z, far plane = z=0, achieved via
 	# POSITION = vec4(clip.xy, 0.0, clip.w).
-	var src: String = DayNightEnvScript.source_code
+	var src: String = (DayNightEnvScript as GDScript).source_code
 	assert_true(
 		src.contains("0.0, clip.w"),
 		"Star vertex shader must push stars to z=0 (far plane in reverse-Z)",

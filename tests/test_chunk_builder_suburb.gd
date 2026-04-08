@@ -34,7 +34,15 @@ func before_each() -> void:
 	_bld_builder = BuildingsScript.new()
 
 	_builder = SuburbScript.new()
-	_builder.init(_grid, _building_mats, _roof_mats, _bld_builder)
+	_builder.init(
+		_grid,
+		_building_mats,
+		StandardMaterial3D.new(),
+		StandardMaterial3D.new(),
+		StandardMaterial3D.new(),
+		_roof_mats,
+		_bld_builder,
+	)
 
 
 # ================================================================
@@ -337,15 +345,15 @@ func test_roughly_half_blocks_have_buildings() -> void:
 		)
 		total_cols += _count_collision_shapes(chunk)
 
-	# 5 tiles * ~50 blocks * ~1.5 buildings avg = ~375 expected
-	# Allow wide range [10, 1000]
+	# 5 tiles * ~50 blocks * ~1.5 buildings avg * 8 door-collision shapes each = ~3000 expected
+	# Allow wide range [10, 8000]
 	assert_true(
 		total_cols > 10,
 		"5 tiles should produce more than 10 collision shapes, got %d" % total_cols,
 	)
 	assert_true(
-		total_cols < 1000,
-		"5 tiles should produce fewer than 1000 collision shapes, got %d" % total_cols,
+		total_cols < 8000,
+		"5 tiles should produce fewer than 8000 collision shapes, got %d" % total_cols,
 	)
 
 
@@ -357,7 +365,15 @@ func test_roughly_half_blocks_have_buildings() -> void:
 func test_build_with_no_roof_mats() -> void:
 	var no_roof_builder := SuburbScript.new()
 	var empty_roof_mats: Array[StandardMaterial3D] = []
-	no_roof_builder.init(_grid, _building_mats, empty_roof_mats, _bld_builder)
+	no_roof_builder.init(
+		_grid,
+		_building_mats,
+		StandardMaterial3D.new(),
+		StandardMaterial3D.new(),
+		StandardMaterial3D.new(),
+		empty_roof_mats,
+		_bld_builder,
+	)
 
 	var span: float = _grid.get_grid_span()
 	var tile := Vector2i(55, 10)
@@ -377,7 +393,15 @@ func test_build_with_no_roof_mats() -> void:
 
 func test_build_with_null_bld_builder() -> void:
 	var null_builder := SuburbScript.new()
-	null_builder.init(_grid, _building_mats, _roof_mats, null)
+	null_builder.init(
+		_grid,
+		_building_mats,
+		StandardMaterial3D.new(),
+		StandardMaterial3D.new(),
+		StandardMaterial3D.new(),
+		_roof_mats,
+		null,
+	)
 
 	var span: float = _grid.get_grid_span()
 	var tile := Vector2i(55, 10)

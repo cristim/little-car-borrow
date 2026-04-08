@@ -13,16 +13,16 @@ const RoadGridScript = preload("res://src/road_grid.gd")
 func test_chunk_load_radius() -> void:
 	assert_eq(
 		CityScript.CHUNK_LOAD_RADIUS,
-		2.5,
-		"CHUNK_LOAD_RADIUS should be 2.5",
+		2.0,
+		"CHUNK_LOAD_RADIUS should be 2.0",
 	)
 
 
 func test_chunk_unload_radius() -> void:
 	assert_eq(
 		CityScript.CHUNK_UNLOAD_RADIUS,
-		3.5,
-		"CHUNK_UNLOAD_RADIUS should be 3.5",
+		3.0,
+		"CHUNK_UNLOAD_RADIUS should be 3.0",
 	)
 
 

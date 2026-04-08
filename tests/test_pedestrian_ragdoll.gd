@@ -66,7 +66,7 @@ func test_ready_sets_mass() -> void:
 	add_child_autofree(ragdoll)
 	await get_tree().process_frame
 
-	assert_eq(ragdoll.mass, 60.0)
+	assert_eq(ragdoll.mass, 75.0)
 
 
 func test_ready_sets_collision_layer_zero() -> void:

@@ -314,3 +314,159 @@ func test_clear_when_already_zero() -> void:
 	WantedLevelManager.clear()
 	assert_eq(WantedLevelManager.wanted_level, 0, "Should stay zero")
 	assert_eq(WantedLevelManager.heat, 0.0, "Should stay zero heat")
+
+
+# ================================================================
+# _process — direct state manipulation
+# ================================================================
+
+
+func test_process_decays_heat_when_cooldown_zero() -> void:
+	WantedLevelManager.heat = 50.0
+	WantedLevelManager._decay_cooldown = 0.0
+	WantedLevelManager._process(1.0)
+	var expected: float = 50.0 - WantedScript.HEAT_DECAY_RATE * 1.0
+	assert_almost_eq(
+		WantedLevelManager.heat,
+		expected,
+		0.5,
+		"heat should decrease by HEAT_DECAY_RATE per second when cooldown is zero",
+	)
+
+
+func test_process_decrements_cooldown_when_active() -> void:
+	WantedLevelManager.heat = 50.0
+	WantedLevelManager._decay_cooldown = 2.0
+	WantedLevelManager._process(1.0)
+	assert_almost_eq(
+		WantedLevelManager.heat,
+		50.0,
+		0.01,
+		"heat should be unchanged while cooldown is active",
+	)
+	assert_almost_eq(
+		WantedLevelManager._decay_cooldown,
+		1.0,
+		0.01,
+		"cooldown should decrement by delta",
+	)
+
+
+func test_process_zero_heat_early_return() -> void:
+	WantedLevelManager.heat = 0.0
+	WantedLevelManager._decay_cooldown = 0.0
+	WantedLevelManager.wanted_level = 0
+	WantedLevelManager._process(1.0)
+	assert_eq(WantedLevelManager.heat, 0.0, "heat should remain zero")
+	assert_eq(WantedLevelManager.wanted_level, 0, "wanted_level should remain zero")
+
+
+# ================================================================
+# _update_level — called directly
+# ================================================================
+
+
+func test_update_level_sets_level_1_at_threshold() -> void:
+	WantedLevelManager.heat = 20.0
+	WantedLevelManager._update_level()
+	assert_eq(WantedLevelManager.wanted_level, 1, "heat=20 should yield level 1")
+
+
+func test_update_level_sets_level_5_at_threshold() -> void:
+	WantedLevelManager.heat = 260.0
+	WantedLevelManager._update_level()
+	assert_eq(WantedLevelManager.wanted_level, 5, "heat=260 should yield level 5")
+
+
+func test_update_level_emits_signal_on_change() -> void:
+	WantedLevelManager.wanted_level = 0
+	WantedLevelManager.heat = 20.0
+	var received := []
+	var cb := func(level: int) -> void: received.append(level)
+	EventBus.wanted_level_changed.connect(cb)
+	WantedLevelManager._update_level()
+	EventBus.wanted_level_changed.disconnect(cb)
+	assert_true(received.has(1), "should emit wanted_level_changed(1) on level transition")
+
+
+func test_update_level_no_signal_when_unchanged() -> void:
+	WantedLevelManager.heat = 20.0
+	WantedLevelManager._update_level()
+	assert_eq(WantedLevelManager.wanted_level, 1, "precondition: level is 1")
+	var received := []
+	var cb := func(level: int) -> void: received.append(level)
+	EventBus.wanted_level_changed.connect(cb)
+	WantedLevelManager._update_level()
+	EventBus.wanted_level_changed.disconnect(cb)
+	assert_eq(received.size(), 0, "no signal when level stays the same")
+
+
+# ================================================================
+# clear — combined reset assertion
+# ================================================================
+
+
+func test_clear_resets_all_fields() -> void:
+	WantedLevelManager.heat = 100.0
+	WantedLevelManager.wanted_level = 2
+	WantedLevelManager._decay_cooldown = 3.0
+	WantedLevelManager.clear()
+	assert_eq(WantedLevelManager.heat, 0.0, "clear should zero heat")
+	assert_eq(WantedLevelManager.wanted_level, 0, "clear should zero wanted_level")
+	assert_eq(WantedLevelManager._decay_cooldown, 0.0, "clear should zero decay_cooldown")
+
+
+func test_clear_emits_wanted_level_zero() -> void:
+	WantedLevelManager.heat = 100.0
+	WantedLevelManager.wanted_level = 2
+	var received := []
+	var cb := func(level: int) -> void: received.append(level)
+	EventBus.wanted_level_changed.connect(cb)
+	WantedLevelManager.clear()
+	EventBus.wanted_level_changed.disconnect(cb)
+	assert_true(received.has(0), "clear should emit wanted_level_changed(0)")
+
+
+# ================================================================
+# Instance-based tests (fresh .new() instances for coverage)
+# ================================================================
+
+
+func test_instance_process_heat_decay() -> void:
+	var wlm: Node = WantedScript.new()
+	add_child_autofree(wlm)
+	wlm.heat = 50.0
+	wlm._decay_cooldown = 0.0
+	wlm.wanted_level = 0
+	wlm._process(1.0)
+	assert_lt(wlm.heat, 50.0, "Heat should decay when cooldown is 0")
+
+
+func test_instance_process_cooldown_decrements() -> void:
+	var wlm: Node = WantedScript.new()
+	add_child_autofree(wlm)
+	wlm.heat = 50.0
+	wlm._decay_cooldown = 3.0
+	wlm._process(1.0)
+	assert_almost_eq(wlm._decay_cooldown, 2.0, 0.01, "Cooldown should decrement")
+	assert_almost_eq(wlm.heat, 50.0, 0.01, "Heat should not decay during cooldown")
+
+
+func test_instance_update_level_thresholds() -> void:
+	var wlm: Node = WantedScript.new()
+	add_child_autofree(wlm)
+	wlm.heat = 20.0
+	wlm.wanted_level = 0
+	wlm._update_level()
+	assert_eq(wlm.wanted_level, 1, "20 heat should give level 1")
+
+
+func test_instance_clear() -> void:
+	var wlm: Node = WantedScript.new()
+	add_child_autofree(wlm)
+	wlm.heat = 100.0
+	wlm.wanted_level = 2
+	wlm._decay_cooldown = 3.0
+	wlm.clear()
+	assert_eq(wlm.heat, 0.0, "heat should be 0 after clear")
+	assert_eq(wlm.wanted_level, 0, "level should be 0 after clear")

@@ -351,3 +351,110 @@ func test_is_on_ramp_just_outside_exclusion_zone() -> void:
 		_grid.is_on_ramp(blvd_x + 5.1, ramp_z + 6.1),
 		"Just outside exclusion zone should not be on ramp",
 	)
+
+
+# --- get_road_center_near (additional) ---
+
+
+func test_get_road_center_near_returns_float() -> void:
+	var result: float = _grid.get_road_center_near(0, 0.0)
+	assert_true(result is float, "get_road_center_near should return a float")
+
+
+func test_get_road_center_near_far_ref_coord_within_one_span() -> void:
+	var span: float = _grid.get_grid_span()
+	var ref_coord: float = 500.0
+	var result: float = _grid.get_road_center_near(0, ref_coord)
+	assert_lt(
+		absf(result - ref_coord),
+		span,
+		"Result should be within one grid span of ref_coord",
+	)
+
+
+func test_get_road_center_near_large_negative_ref_coord() -> void:
+	var span: float = _grid.get_grid_span()
+	var ref_coord: float = -500.0
+	var result: float = _grid.get_road_center_near(0, ref_coord)
+	assert_lt(
+		absf(result - ref_coord),
+		span,
+		"Result should be within one grid span of large negative ref_coord",
+	)
+
+
+# --- get_nearest_road_index (additional) ---
+
+
+func test_get_nearest_road_index_at_origin_is_valid() -> void:
+	var idx: int = _grid.get_nearest_road_index(0.0)
+	assert_true(
+		idx >= 0 and idx <= RoadGridScript.GRID_SIZE,
+		"Index at origin should be between 0 and GRID_SIZE",
+	)
+
+
+func test_get_nearest_road_index_large_coord_is_valid() -> void:
+	var idx: int = _grid.get_nearest_road_index(10000.0)
+	assert_true(
+		idx >= 0 and idx <= RoadGridScript.GRID_SIZE,
+		"Index at large coord should be between 0 and GRID_SIZE",
+	)
+
+
+func test_get_nearest_road_index_large_negative_coord_is_valid() -> void:
+	var idx: int = _grid.get_nearest_road_index(-10000.0)
+	assert_true(
+		idx >= 0 and idx <= RoadGridScript.GRID_SIZE,
+		"Index at large negative coord should be between 0 and GRID_SIZE",
+	)
+
+
+# --- get_chunk_coord (additional) ---
+
+
+func test_get_chunk_coord_origin_returns_zero_zero() -> void:
+	var coord: Vector2i = _grid.get_chunk_coord(Vector2(0.0, 0.0))
+	assert_eq(coord, Vector2i(0, 0), "Origin should map to chunk (0,0)")
+
+
+func test_get_chunk_coord_one_span_east_returns_one_zero() -> void:
+	var span: float = _grid.get_grid_span()
+	var coord: Vector2i = _grid.get_chunk_coord(Vector2(span, 0.0))
+	assert_eq(coord, Vector2i(1, 0), "One span east should map to chunk (1,0)")
+
+
+# --- get_chunk_origin (additional) ---
+
+
+func test_get_chunk_origin_zero_zero_is_origin() -> void:
+	var origin: Vector2 = _grid.get_chunk_origin(Vector2i(0, 0))
+	assert_almost_eq(origin.x, 0.0, 0.001, "Chunk (0,0) origin x should be 0")
+	assert_almost_eq(origin.y, 0.0, 0.001, "Chunk (0,0) origin y should be 0")
+
+
+func test_get_chunk_origin_one_zero_x_equals_span() -> void:
+	var span: float = _grid.get_grid_span()
+	var origin: Vector2 = _grid.get_chunk_origin(Vector2i(1, 0))
+	assert_almost_eq(
+		origin.x,
+		span,
+		0.001,
+		"Chunk (1,0) origin x should equal grid span",
+	)
+
+
+# --- is_on_ramp (additional) ---
+
+
+func test_is_on_ramp_does_not_crash_at_arbitrary_position() -> void:
+	var result: bool = _grid.is_on_ramp(999.0, 999.0)
+	assert_true(result == true or result == false, "is_on_ramp should not crash")
+
+
+func test_is_on_ramp_boulevard_at_minus_80_is_true() -> void:
+	var blvd_x: float = _grid.get_road_center_near(RoadGridScript.BOULEVARD_INDEX, 0.0)
+	assert_true(
+		_grid.is_on_ramp(blvd_x, -80.0),
+		"Boulevard x at z=-80 should be on ramp",
+	)

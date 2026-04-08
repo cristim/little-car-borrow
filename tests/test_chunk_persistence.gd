@@ -261,7 +261,7 @@ func test_two_instances_share_filesystem() -> void:
 func test_load_tile_closes_file_before_delete() -> void:
 	# C3: on Windows, deleting an open file fails silently; file must be set
 	# to null (closed) before DirAccess.remove_absolute is called.
-	var src := ChunkPersistenceScript.source_code
+	var src: String = (ChunkPersistenceScript as GDScript).source_code
 	# Find "file = null" before "remove_absolute" in load_tile
 	var null_idx := src.find("file = null")
 	var remove_idx := src.find("DirAccess.remove_absolute")

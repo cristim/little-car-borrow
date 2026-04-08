@@ -279,3 +279,71 @@ func test_zero_time_speed_freezes_time() -> void:
 		0.001,
 		"time_speed=0 should freeze time",
 	)
+
+
+# ================================================================
+# Instance-based tests (fresh Node, no autoload dependency)
+# ================================================================
+
+
+func test_is_night_instance_early_morning() -> void:
+	var dnm: Node = DayNightScript.new()
+	add_child_autofree(dnm)
+	dnm.current_hour = 2.0
+	assert_true(dnm.is_night(), "Hour 2 should be night")
+
+
+func test_is_night_instance_late_night() -> void:
+	var dnm: Node = DayNightScript.new()
+	add_child_autofree(dnm)
+	dnm.current_hour = 22.0
+	assert_true(dnm.is_night(), "Hour 22 should be night")
+
+
+func test_is_night_instance_noon_false() -> void:
+	var dnm: Node = DayNightScript.new()
+	add_child_autofree(dnm)
+	dnm.current_hour = 12.0
+	assert_false(dnm.is_night(), "Noon should not be night")
+
+
+func test_is_dusk_or_dawn_instance_dawn() -> void:
+	var dnm: Node = DayNightScript.new()
+	add_child_autofree(dnm)
+	dnm.current_hour = 6.0
+	assert_true(dnm.is_dusk_or_dawn(), "Hour 6 should be dawn")
+
+
+func test_is_dusk_or_dawn_instance_dusk() -> void:
+	var dnm: Node = DayNightScript.new()
+	add_child_autofree(dnm)
+	dnm.current_hour = 18.0
+	assert_true(dnm.is_dusk_or_dawn(), "Hour 18 should be dusk")
+
+
+func test_is_dusk_or_dawn_instance_noon_false() -> void:
+	var dnm: Node = DayNightScript.new()
+	add_child_autofree(dnm)
+	dnm.current_hour = 12.0
+	assert_false(dnm.is_dusk_or_dawn(), "Noon should not be dusk or dawn")
+
+
+func test_get_sun_progress_instance_at_zero() -> void:
+	var dnm: Node = DayNightScript.new()
+	add_child_autofree(dnm)
+	dnm.current_hour = 0.0
+	assert_almost_eq(dnm.get_sun_progress(), 0.0, 0.001, "Sun progress at hour 0 should be 0.0")
+
+
+func test_get_sun_progress_instance_at_noon() -> void:
+	var dnm: Node = DayNightScript.new()
+	add_child_autofree(dnm)
+	dnm.current_hour = 12.0
+	assert_almost_eq(dnm.get_sun_progress(), 0.5, 0.001, "Sun progress at hour 12 should be 0.5")
+
+
+func test_get_sun_progress_instance_at_24() -> void:
+	var dnm: Node = DayNightScript.new()
+	add_child_autofree(dnm)
+	dnm.current_hour = 24.0
+	assert_almost_eq(dnm.get_sun_progress(), 1.0, 0.001, "Sun progress at hour 24 should be 1.0")

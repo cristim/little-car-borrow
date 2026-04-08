@@ -224,3 +224,45 @@ func test_play_ui_sets_bus_to_sfx() -> void:
 	_am.play_ui(stream)
 	var player := _am.get_child(_am.get_child_count() - 1) as AudioStreamPlayer
 	assert_eq(player.bus, "SFX", "UI player should use SFX bus")
+
+
+# ================================================================
+# get_bus_volume / set_bus_volume
+# ================================================================
+
+
+func test_get_bus_volume_master_returns_valid_range() -> void:
+	_am._ensure_buses()
+	var vol: float = _am.get_bus_volume("Master")
+	assert_true(vol >= 0.0 and vol <= 1.0, "Master volume should be in [0.0, 1.0]")
+
+
+func test_get_bus_volume_nonexistent_fallback() -> void:
+	var vol: float = _am.get_bus_volume("NonExistentBus_ABC")
+	assert_almost_eq(vol, 1.0, 0.01, "Non-existent bus should return fallback 1.0")
+
+
+func test_set_then_get_bus_volume_roundtrip() -> void:
+	_am._ensure_buses()
+	_am.set_bus_volume("SFX", 0.5)
+	var vol: float = _am.get_bus_volume("SFX")
+	assert_almost_eq(vol, 0.5, 0.02, "Volume should round-trip at 0.5")
+
+
+# ================================================================
+# play_sfx / play_ui with AudioStreamWAV
+# ================================================================
+
+
+func test_play_sfx_with_wav_stream_no_crash() -> void:
+	_am._ensure_buses()
+	var stream := AudioStreamWAV.new()
+	_am.play_sfx(stream, Vector3.ZERO)
+	assert_true(true, "play_sfx with AudioStreamWAV should not crash")
+
+
+func test_play_ui_with_wav_stream_no_crash() -> void:
+	_am._ensure_buses()
+	var stream := AudioStreamWAV.new()
+	_am.play_ui(stream)
+	assert_true(true, "play_ui with AudioStreamWAV should not crash")

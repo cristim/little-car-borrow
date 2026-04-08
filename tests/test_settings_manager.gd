@@ -133,3 +133,66 @@ func test_load_restores_multiple_bus_volumes() -> void:
 		0.05,
 		"Ambient volume should be restored",
 	)
+
+
+# ================================================================
+# save() — file existence and no-crash
+# ================================================================
+
+
+func test_save_does_not_crash() -> void:
+	_sm.save()
+	assert_true(true, "save() should not crash")
+
+
+func test_save_file_exists_after_save() -> void:
+	_sm.save()
+	assert_true(
+		FileAccess.file_exists("user://settings.cfg"),
+		"user://settings.cfg should exist after save()",
+	)
+
+
+# ================================================================
+# load_settings() — no-crash cases
+# ================================================================
+
+
+func test_load_settings_no_crash_when_no_file() -> void:
+	# Remove any existing settings file so load returns early
+	var path := "user://settings.cfg"
+	if FileAccess.file_exists(path):
+		DirAccess.remove_absolute(path)
+	_sm.load_settings()
+	assert_true(true, "load_settings() should not crash when file is missing")
+
+
+func test_load_settings_no_crash_after_save() -> void:
+	_sm.save()
+	_sm.load_settings()
+	assert_true(true, "load_settings() should not crash after save()")
+
+
+func test_save_load_roundtrip_no_crash() -> void:
+	_sm.save()
+	_sm.load_settings()
+	assert_true(true, "save() then load_settings() round-trip should not crash")
+
+
+# ================================================================
+# load_settings() — display mode branch (source_code inspection)
+# ================================================================
+
+
+func test_load_settings_source_handles_fullscreen_true_branch() -> void:
+	assert_true(
+		SettingsScript.source_code.contains("WINDOW_MODE_FULLSCREEN"),
+		"load_settings should handle fullscreen=true via WINDOW_MODE_FULLSCREEN",
+	)
+
+
+func test_load_settings_source_handles_fullscreen_false_branch() -> void:
+	assert_true(
+		SettingsScript.source_code.contains("WINDOW_MODE_WINDOWED"),
+		"load_settings should handle fullscreen=false via WINDOW_MODE_WINDOWED",
+	)

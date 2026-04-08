@@ -21,10 +21,8 @@ func _make_builder() -> RefCounted:
 	var mats: Array[StandardMaterial3D] = []
 	for _i in 3:
 		mats.append(StandardMaterial3D.new())
-	var win_mats: Array[StandardMaterial3D] = []
-	for _i in 4:
-		win_mats.append(StandardMaterial3D.new())
-	builder.init(grid, mats, win_mats, StandardMaterial3D.new())
+	var m := StandardMaterial3D.new()
+	builder.init(grid, mats, m, StandardMaterial3D.new(), StandardMaterial3D.new())
 	return builder
 
 

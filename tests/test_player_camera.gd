@@ -144,12 +144,13 @@ func test_get_aim_direction_ignores_inspect_pitch() -> void:
 
 
 func test_get_aim_direction_uses_persistent_yaw() -> void:
-	_cam_root._yaw = PI * 0.5  # 90° right
+	# Camera convention: _yaw -= mouse_x, so yaw=-PI/2 means "looking right" (+X).
+	_cam_root._yaw = -PI * 0.5  # 90° right
 	_cam_root._pitch = 0.0
 	_cam_root._inspect_yaw = 0.0
 	var dir: Vector3 = _cam_root.get_aim_direction()
-	assert_almost_eq(dir.x, 1.0, 0.01, "aim X should be +1 when yaw=PI/2")
-	assert_almost_eq(dir.z, 0.0, 0.01, "aim Z should be 0 when yaw=PI/2")
+	assert_almost_eq(dir.x, 1.0, 0.01, "aim X should be +1 when yaw=-PI/2")
+	assert_almost_eq(dir.z, 0.0, 0.01, "aim Z should be 0 when yaw=-PI/2")
 
 
 # ==========================================================================
@@ -382,8 +383,8 @@ func test_mouse_in_inspect_mode_updates_inspect_yaw_not_yaw() -> void:
 func test_inspect_offset_decays_when_v_released() -> void:
 	_cam_root._inspect_yaw = 1.5
 	_cam_root._inspect_pitch = 0.5
-	_cam_root._v_held = false
-	_cam_root._physics_process(0.5)
+	# Use realistic physics delta; large deltas cause lerpf to overshoot with INSPECT_LERP=8
+	_cam_root._physics_process(0.016)
 	assert_lt(
 		absf(_cam_root._inspect_yaw),
 		1.5,
@@ -409,9 +410,11 @@ func test_inspect_yaw_applied_to_rotation() -> void:
 
 
 func test_spring_shortens_during_inspect() -> void:
-	_cam_root._v_held = true
+	# _physics_process reads _v_held from Input, so simulate the action press.
+	Input.action_press("camera_view")
 	_cam_root._face_cam_t = 0.0
-	_cam_root._physics_process(0.5)
+	_cam_root._physics_process(0.016)
+	Input.action_release("camera_view")
 	assert_lt(
 		_cam_root._blend_spring,
 		_cam_root.spring_length,
