@@ -1,6 +1,6 @@
 .PHONY: run lint format test coverage clean export-web
 
-GODOT := $(or $(wildcard $(HOME)/bin/godot),godot)
+GODOT := godot
 VENV := .venv/bin
 
 run:
