@@ -3,6 +3,8 @@ extends "res://src/state_machine/state.gd"
 
 var _vehicle: Node = null
 var _original_collision_layer := 0
+var _original_player_layer := 0
+var _original_player_mask := 0
 var _boat_seat_vel_y := 0.0  # vertical velocity for gravity-based bench settling
 
 
@@ -81,6 +83,8 @@ func enter(msg: Dictionary = {}) -> void:
 					rs.rotation.x = -0.8
 				if re:
 					re.rotation.x = 0.6
+	_original_player_layer = owner.collision_layer
+	_original_player_mask = owner.collision_mask
 	owner.set_physics_process(false)
 	owner.collision_layer = 0
 	owner.collision_mask = 0
@@ -188,6 +192,9 @@ func exit() -> void:
 		var heli_ctrl := _vehicle.get_node_or_null("HelicopterController")
 		if heli_ctrl:
 			heli_ctrl.active = false
+		var vehicle_ctrl := _vehicle.get_node_or_null("VehicleController")
+		if vehicle_ctrl and "active" in vehicle_ctrl:
+			vehicle_ctrl.active = false
 		# Boats and helicopters disable the walk animation and apply a seated
 		# pose on entry — re-enable processing and reset all joints on exit.
 		if boat_ctrl or heli_ctrl:
@@ -219,8 +226,8 @@ func exit() -> void:
 	# Restore player visibility and physics (safety net)
 	owner.visible = true
 	owner.set_physics_process(true)
-	owner.collision_layer = 4
-	owner.collision_mask = 115
+	owner.collision_layer = _original_player_layer
+	owner.collision_mask = _original_player_mask
 
 	_vehicle = null
 	owner.current_vehicle = null

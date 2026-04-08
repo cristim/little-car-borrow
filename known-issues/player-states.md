@@ -9,13 +9,6 @@ idle.gd, running.gd, swimming.gd, walking.gd
 
 ## HIGH
 
-### H2 — `driving.gd`: VehicleController never deactivated in `exit()` for cars
-Deactivation delegated entirely to ExitingVehicle. Any direct transition out of Driving
-that skips ExitingVehicle leaves the car controller permanently active.
-
-### H3 — `driving.gd:185-186`: Player collision layer/mask restored to hardcoded values
-Values `4`/`3` must stay in sync with .tscn scene values manually.
-
 ### H4 — `player_weapon.gd:81`: No holster-on-death
 `_armed` stays true; gun mesh remains on model after player dies.
 

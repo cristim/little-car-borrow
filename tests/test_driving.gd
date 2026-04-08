@@ -280,10 +280,13 @@ func test_exit_re_enables_player_physics() -> void:
 
 
 func test_exit_restores_player_collision() -> void:
+	# H3: collision layer/mask must be restored from stored originals, not hardcoded values
+	_player.collision_layer = 4
+	_player.collision_mask = 115
 	_state.enter({"vehicle": _vehicle})
 	_state.exit()
-	assert_eq(_player.collision_layer, 4, "Player layer should be 4")
-	assert_eq(_player.collision_mask, 115, "Player mask should be 115")
+	assert_eq(_player.collision_layer, 4, "Player layer should be restored to original")
+	assert_eq(_player.collision_mask, 115, "Player mask should be restored to original")
 
 
 func test_exit_clears_current_vehicle() -> void:
@@ -309,6 +312,14 @@ func test_exit_applies_brakes_to_stop_car() -> void:
 	assert_eq(_vehicle.brake_input, 1.0, "brake_input should be 1.0 on exit")
 	assert_eq(_vehicle.handbrake_input, 1.0, "handbrake_input should be 1.0 on exit")
 	assert_eq(_vehicle.throttle_input, 0.0, "throttle_input should be 0 on exit")
+
+
+func test_exit_deactivates_vehicle_controller() -> void:
+	# H2: VehicleController must be deactivated in exit() for car vehicles
+	_state.enter({"vehicle": _vehicle})
+	assert_true(_vc.active, "VehicleController active during drive")
+	_state.exit()
+	assert_false(_vc.active, "VehicleController should be deactivated on exit")
 
 
 func test_exit_deactivates_boat_controller() -> void:
