@@ -122,24 +122,29 @@ func test_build_creates_fields_mesh() -> void:
 
 func test_fields_material_uses_vertex_colors() -> void:
 	var span: float = _grid.get_grid_span()
-	var tile := Vector2i(5, 0)
-	var chunk := Node3D.new()
-	add_child_autofree(chunk)
-	_builder.build(chunk, tile, span * 5.0, 0.0)
-
-	for child in chunk.get_children():
-		if child is MeshInstance3D and child.name == "Fields":
-			var mat: StandardMaterial3D = child.material_override
-			assert_true(
-				mat.vertex_color_use_as_albedo,
-				"Fields material should use vertex colors as albedo",
-			)
-			assert_eq(
-				mat.cull_mode,
-				BaseMaterial3D.CULL_DISABLED,
-				"Fields material should be double-sided",
-			)
+	var found_fields := false
+	for tx in range(5, 18):
+		var tile := Vector2i(tx, 0)
+		var chunk := Node3D.new()
+		add_child_autofree(chunk)
+		_builder.build(chunk, tile, span * float(tx), 0.0)
+		for child in chunk.get_children():
+			if child is MeshInstance3D and child.name == "Fields":
+				found_fields = true
+				var mat: StandardMaterial3D = child.material_override
+				assert_true(
+					mat.vertex_color_use_as_albedo,
+					"Fields material should use vertex colors as albedo",
+				)
+				assert_eq(
+					mat.cull_mode,
+					BaseMaterial3D.CULL_DISABLED,
+					"Fields material should be double-sided",
+				)
+				break
+		if found_fields:
 			break
+	assert_true(found_fields, "At least one tile should produce a Fields mesh")
 
 
 func test_build_may_create_fences() -> void:

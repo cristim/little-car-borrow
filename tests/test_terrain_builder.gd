@@ -780,11 +780,11 @@ func test_build_with_river_data() -> void:
 func test_sea_plane_uses_unshaded_mode() -> void:
 	# Sea plane must be unshaded so ambient light cannot bleed through
 	# as a false "illuminated from below" glow at night.
+	# Use tile (-6, 0): past max west boundary (~5.1 spans) and deep in ocean.
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
 	var span: float = _grid.get_grid_span()
-	# Build a west-ocean chunk that is guaranteed to have water
-	_builder.build(chunk, Vector2i(-4, 0), -4.0 * span, 0.0)
+	_builder.build(chunk, Vector2i(-6, 0), -6.0 * span, 0.0)
 
 	var sea_plane: MeshInstance3D = null
 	for child in chunk.get_children():
@@ -792,8 +792,7 @@ func test_sea_plane_uses_unshaded_mode() -> void:
 			sea_plane = child
 			break
 
-	if sea_plane == null:
-		return  # chunk happened to have no water — skip
+	assert_not_null(sea_plane, "Tile (-6,0) should always produce a SeaPlane")
 	var mat := sea_plane.material_override as StandardMaterial3D
 	assert_not_null(mat, "SeaPlane should have a StandardMaterial3D override")
 	assert_eq(
@@ -806,10 +805,11 @@ func test_sea_plane_uses_unshaded_mode() -> void:
 func test_sea_plane_is_mostly_opaque() -> void:
 	# Alpha < 0.85 lets the seabed show through at distance,
 	# making the ocean look lit from below at night.
+	# Use tile (-6, 0): past max west boundary (~5.1 spans) and deep in ocean.
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
 	var span: float = _grid.get_grid_span()
-	_builder.build(chunk, Vector2i(-4, 0), -4.0 * span, 0.0)
+	_builder.build(chunk, Vector2i(-6, 0), -6.0 * span, 0.0)
 
 	var sea_plane: MeshInstance3D = null
 	for child in chunk.get_children():
@@ -817,11 +817,10 @@ func test_sea_plane_is_mostly_opaque() -> void:
 			sea_plane = child
 			break
 
-	if sea_plane == null:
-		return
+	assert_not_null(sea_plane, "Tile (-6,0) should always produce a SeaPlane")
 	var mat := sea_plane.material_override as StandardMaterial3D
 	assert_not_null(mat)
 	assert_true(
 		mat.albedo_color.a >= 0.85,
-		"Sea plane alpha should be ≥ 0.85 to hide the seabed (got %.2f)" % mat.albedo_color.a,
+		"Sea plane alpha should be >= 0.85 to hide the seabed (got %.2f)" % mat.albedo_color.a,
 	)
