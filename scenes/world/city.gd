@@ -25,8 +25,9 @@ const DIR_OFFSETS := {
 	3: Vector2i(-1, 0),  # WEST
 }
 
+const BoundaryScript = preload("res://src/city_boundary.gd")
 var _grid = preload("res://src/road_grid.gd").new()
-var _boundary = preload("res://src/city_boundary.gd").new()
+var _boundary = BoundaryScript.new()
 
 # Tile-matching subsystem
 var _chunk_persistence = preload("res://src/chunk_persistence.gd").new()
@@ -759,14 +760,7 @@ func _init_tree_meshes() -> void:
 
 
 func _init_terrain_noise() -> void:
-	_terrain_noise = FastNoiseLite.new()
-	_terrain_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	_terrain_noise.frequency = 0.003
-	_terrain_noise.fractal_octaves = 4
-	_terrain_noise.fractal_lacunarity = 2.0
-	_terrain_noise.fractal_gain = 0.5
-	_terrain_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
-	_terrain_noise.seed = 42
+	_terrain_noise = BoundaryScript.make_terrain_noise()
 
 
 func _init_builders() -> void:

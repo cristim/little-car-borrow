@@ -17,6 +17,20 @@ var _grid_span: float
 var _terrain_noise: FastNoiseLite
 
 
+## Returns the canonical terrain noise used by city and all managers.
+## seed=42, TYPE_SIMPLEX_SMOOTH, freq=0.003, FRACTAL_FBM, 4 octaves.
+static func make_terrain_noise() -> FastNoiseLite:
+	var n := FastNoiseLite.new()
+	n.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	n.frequency = 0.003
+	n.fractal_octaves = 4
+	n.fractal_lacunarity = 2.0
+	n.fractal_gain = 0.5
+	n.fractal_type = FastNoiseLite.FRACTAL_FBM
+	n.seed = 42
+	return n
+
+
 func init(grid_span: float, terrain_noise: FastNoiseLite = null) -> void:
 	_grid_span = grid_span
 	_terrain_noise = terrain_noise

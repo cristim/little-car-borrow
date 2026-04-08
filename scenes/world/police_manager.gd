@@ -14,8 +14,9 @@ const SEA_LEVEL := -2.0
 const LAUNCH_VEL_THRESHOLD := 8.0
 const LAUNCH_VEL_POST_GRACE := 40.0
 
+const BoundaryScript = preload("res://src/city_boundary.gd")
 var _grid = preload("res://src/road_grid.gd").new()
-var _boundary = preload("res://src/city_boundary.gd").new()
+var _boundary = BoundaryScript.new()
 var _biome_map: RefCounted  # fetched from city_manager meta
 var _police_scene: PackedScene = preload("res://scenes/vehicles/police_vehicle.tscn")
 var _ai_script: GDScript = preload("res://scenes/vehicles/police_ai_controller.gd")
@@ -326,15 +327,7 @@ func _spawn_helicopter() -> void:
 
 
 static func _make_terrain_noise() -> FastNoiseLite:
-	var n := FastNoiseLite.new()
-	n.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	n.frequency = 0.003
-	n.fractal_octaves = 4
-	n.fractal_lacunarity = 2.0
-	n.fractal_gain = 0.5
-	n.fractal_type = FastNoiseLite.FRACTAL_FBM
-	n.seed = 42
-	return n
+	return BoundaryScript.make_terrain_noise()
 
 
 func _fetch_biome_map() -> void:

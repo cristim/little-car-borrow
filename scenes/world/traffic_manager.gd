@@ -41,8 +41,9 @@ const INTERIOR_COLOR := Color(0.12, 0.12, 0.12, 1)
 # until the player is not looking directly at the spawn position.
 const SPAWN_CELL := 50
 
+const BoundaryScript = preload("res://src/city_boundary.gd")
 var _grid = preload("res://src/road_grid.gd").new()
-var _boundary = preload("res://src/city_boundary.gd").new()
+var _boundary = BoundaryScript.new()
 var _biome_map: RefCounted  # fetched from city_manager meta
 var _builder = preload("res://scenes/vehicles/car_body_builder.gd").new()
 var _total_weight := 0
@@ -606,12 +607,4 @@ func _is_in_player_fov(spawn_pos: Vector3) -> bool:
 
 ## Creates a terrain noise matching city.gd _init_terrain_noise().
 static func _make_terrain_noise() -> FastNoiseLite:
-	var n := FastNoiseLite.new()
-	n.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	n.frequency = 0.003
-	n.fractal_octaves = 4
-	n.fractal_lacunarity = 2.0
-	n.fractal_gain = 0.5
-	n.fractal_type = FastNoiseLite.FRACTAL_FBM
-	n.seed = 42
-	return n
+	return BoundaryScript.make_terrain_noise()
