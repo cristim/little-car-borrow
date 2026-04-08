@@ -54,17 +54,28 @@ func resolve(tile: Vector2i) -> Dictionary:
 
 
 ## Adjust biome if it's incompatible with existing neighbors.
+## Iterates until stable so that a bridge biome chosen for N1 is also
+## re-validated against N2, N3, N4. Capped at 8 iterations to avoid
+## infinite loops when no fully compatible biome exists.
 func _adjust_biome_for_neighbors(tile: Vector2i, biome: String) -> String:
 	var adjusted := biome
-	for dir in range(4):
-		var neighbor_edge: Dictionary = _cache.get_neighbor_edge(tile, dir)
-		if neighbor_edge.is_empty():
-			continue
-		var neighbor_biome: String = neighbor_edge.get("biome", "")
-		if neighbor_biome == "":
-			continue
-		if not TileProfile.biomes_compatible(adjusted, neighbor_biome):
-			adjusted = _find_compatible_biome(adjusted, neighbor_biome)
+	var changed := true
+	var iterations := 0
+	while changed and iterations < 8:
+		changed = false
+		iterations += 1
+		for dir in range(4):
+			var neighbor_edge: Dictionary = _cache.get_neighbor_edge(tile, dir)
+			if neighbor_edge.is_empty():
+				continue
+			var neighbor_biome: String = neighbor_edge.get("biome", "")
+			if neighbor_biome == "":
+				continue
+			if not TileProfile.biomes_compatible(adjusted, neighbor_biome):
+				var candidate := _find_compatible_biome(adjusted, neighbor_biome)
+				if candidate != adjusted:
+					adjusted = candidate
+					changed = true
 	return adjusted
 
 

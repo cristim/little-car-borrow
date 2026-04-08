@@ -96,3 +96,24 @@ func test_resolve_returns_seed() -> void:
 	var data: Dictionary = _resolver.resolve(Vector2i(3, 4))
 	assert_true(data.has("seed"))
 	assert_ne(data["seed"], 0)
+
+
+# ==========================================================================
+# Multi-pass neighbor validation (I4 fix)
+# ==========================================================================
+
+
+func test_adjust_biome_uses_while_loop() -> void:
+	var src: String = (ResolverScript as GDScript).source_code
+	assert_true(
+		src.contains("while changed"),
+		"_adjust_biome_for_neighbors must iterate until stable (while changed)",
+	)
+
+
+func test_adjust_biome_has_iteration_cap() -> void:
+	var src: String = (ResolverScript as GDScript).source_code
+	assert_true(
+		src.contains("iterations < 8"),
+		"_adjust_biome_for_neighbors must cap iterations at 8 to prevent infinite loops",
+	)

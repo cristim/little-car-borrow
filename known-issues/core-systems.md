@@ -9,10 +9,6 @@ weapon_mesh_builder.gd, state_machine/state.gd, state_machine/state_machine.gd
 
 ## IMPORTANT
 
-### I4 — `tile_resolver.gd:83-85`: Bridge biome not validated against all neighbors
-`_find_compatible_biome` returns first match without checking other already-resolved
-neighbors. Can produce invalid biome assignments in complex adjacency situations.
-
 ---
 
 ## LOW
