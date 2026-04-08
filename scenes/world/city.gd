@@ -40,7 +40,8 @@ var _sidewalk_mat: StandardMaterial3D
 var _ground_mat: StandardMaterial3D
 var _marking_mat: StandardMaterial3D
 var _ramp_mat: StandardMaterial3D
-var _window_mats: Array[StandardMaterial3D] = []
+var _window_mat_off: StandardMaterial3D
+var _window_mat_on: StandardMaterial3D
 var _building_mats: Array[StandardMaterial3D] = []
 var _trunk_mats: Array[StandardMaterial3D] = []
 var _canopy_mats: Array[StandardMaterial3D] = []
@@ -615,11 +616,15 @@ func _init_materials() -> void:
 	_ramp_mat = StandardMaterial3D.new()
 	_ramp_mat.albedo_color = Color(0.6, 0.55, 0.2)
 
-	for i in 8:
-		var wmat := StandardMaterial3D.new()
-		wmat.albedo_color = Color(0.18, 0.22, 0.28)
-		wmat.cull_mode = BaseMaterial3D.CULL_DISABLED
-		_window_mats.append(wmat)
+	_window_mat_off = StandardMaterial3D.new()
+	_window_mat_off.albedo_color = Color(0.18, 0.22, 0.28)
+	_window_mat_off.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_window_mat_on = StandardMaterial3D.new()
+	_window_mat_on.albedo_color = Color(0.9, 0.8, 0.5)
+	_window_mat_on.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_window_mat_on.emission_enabled = true
+	_window_mat_on.emission = Color(0.9, 0.8, 0.5)
+	_window_mat_on.emission_energy_multiplier = 0.6
 
 	# 12 building colors — cool-toned skyscraper schemes
 	var bld_colors: Array[Color] = [
@@ -767,7 +772,7 @@ func _init_terrain_noise() -> void:
 func _init_builders() -> void:
 	_road_builder.init(_grid, _road_mat, _sidewalk_mat, _ground_mat)
 	_building_builder.init(
-		_grid, _building_mats, _window_mats, _interior_mat, _roof_mats,
+		_grid, _building_mats, _window_mat_off, _window_mat_on, _interior_mat, _roof_mats,
 	)
 	_tree_builder.init(_grid, _trunk_mats, _canopy_mats, _trunk_mesh, _canopy_meshes)
 	_marking_builder.init(_grid, _marking_mat)
@@ -775,7 +780,7 @@ func _init_builders() -> void:
 	_light_builder.init(_grid, _pole_mat)
 	_terrain_builder.init(_grid, _terrain_noise, _terrain_mat, _boundary)
 	_village_builder.init(
-		_grid, _terrain_noise, _building_mats, _window_mats[0], _boundary,
+		_grid, _terrain_noise, _building_mats, _window_mat_off, _boundary,
 		_roof_mats, _building_builder,
 	)
 	_rural_road_builder.init(_grid, _road_mat, _boundary)
@@ -783,7 +788,7 @@ func _init_builders() -> void:
 		_grid, _trunk_mats, _canopy_mats, _trunk_mesh, _canopy_meshes, _boundary
 	)
 	_suburb_builder.init(
-		_grid, _building_mats, _window_mats, _interior_mat,
+		_grid, _building_mats, _window_mat_off, _window_mat_on, _interior_mat,
 		_roof_mats, _building_builder,
 	)
 	_farmland_builder.init(_grid, _boundary)

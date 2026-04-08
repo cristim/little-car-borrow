@@ -17,14 +17,13 @@ func _make_builder() -> RefCounted:
 	var mats: Array[StandardMaterial3D] = []
 	for _i in 3:
 		mats.append(StandardMaterial3D.new())
-	var win_mats: Array[StandardMaterial3D] = []
-	for _i in 4:
-		win_mats.append(StandardMaterial3D.new())
+	var mat_off := StandardMaterial3D.new()
+	var mat_on := StandardMaterial3D.new()
 	var interior_mat := StandardMaterial3D.new()
 	var roof_mats: Array[StandardMaterial3D] = [StandardMaterial3D.new()]
 	var bld_builder = BuilderScript.new()
-	bld_builder.init(grid, mats, win_mats, interior_mat, roof_mats)
-	builder.init(grid, mats, win_mats, interior_mat, roof_mats, bld_builder)
+	bld_builder.init(grid, mats, mat_off, mat_on, interior_mat, roof_mats)
+	builder.init(grid, mats, mat_off, mat_on, interior_mat, roof_mats, bld_builder)
 	return builder
 
 
@@ -124,7 +123,7 @@ func test_same_tile_produces_same_child_names() -> void:
 # ==========================================================================
 
 func test_build_creates_suburb_window_meshes() -> void:
-	# Use a tile seed that reliably places buildings.
+	# Windows are now two shared-material nodes: WindowsOff and WindowsOn
 	var builder = _make_builder()
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
@@ -132,15 +131,18 @@ func test_build_creates_suburb_window_meshes() -> void:
 	if chunk.get_child_count() == 0:
 		return  # no buildings on this tile — vacuously pass
 	var body: Node = chunk.get_child(0)
-	var has_windows := false
+	if not body.has_meta("win_group_meshes"):
+		return  # no windows on this tile
+	var found_off := false
+	var found_on := false
 	for i in body.get_child_count():
-		if body.get_child(i).name.begins_with("SuburbWindows_"):
-			has_windows = true
-			break
-	# Not every tile must have windows (depends on building dimensions)
-	# but if window meshes exist they must have the correct prefix.
-	if has_windows:
-		assert_true(true, "SuburbWindows_ meshes found")
+		var child := body.get_child(i)
+		if child.name == "WindowsOff":
+			found_off = true
+		elif child.name == "WindowsOn":
+			found_on = true
+	assert_true(found_off, "Should have WindowsOff node when windows exist")
+	assert_true(found_on, "Should have WindowsOn node when windows exist")
 
 
 func test_window_mesh_has_material_override() -> void:
@@ -153,16 +155,17 @@ func test_window_mesh_has_material_override() -> void:
 	var body: Node = chunk.get_child(0)
 	for i in body.get_child_count():
 		var child := body.get_child(i)
-		if child is MeshInstance3D and child.name.begins_with("SuburbWindows_"):
+		if child is MeshInstance3D and (
+			child.name == "WindowsOff" or child.name == "WindowsOn"
+		):
 			assert_not_null(
 				(child as MeshInstance3D).material_override,
-				"SuburbWindows_ mesh must have material_override set",
+				"%s must have material_override set" % child.name,
 			)
 
 
-func test_window_mats_are_per_chunk_copies() -> void:
-	# Two builds of the same tile must produce different material instances
-	# (per-chunk copies, not the shared template).
+func test_window_mats_are_shared_across_chunks() -> void:
+	# Both chunks must reference the SAME material instances (shared, not copied).
 	var builder = _make_builder()
 
 	var chunk1 := Node3D.new()
@@ -179,24 +182,27 @@ func test_window_mats_are_per_chunk_copies() -> void:
 	var b1: Node = chunk1.get_child(0)
 	var b2: Node = chunk2.get_child(0)
 
+	if not b1.has_meta("win_group_meshes") or not b2.has_meta("win_group_meshes"):
+		return  # no windows on this tile
+
 	var mat1: StandardMaterial3D = null
 	var mat2: StandardMaterial3D = null
 	for i in b1.get_child_count():
 		var c := b1.get_child(i)
-		if c is MeshInstance3D and c.name.begins_with("SuburbWindows_"):
+		if c is MeshInstance3D and c.name == "WindowsOff":
 			mat1 = (c as MeshInstance3D).material_override as StandardMaterial3D
 			break
 	for i in b2.get_child_count():
 		var c := b2.get_child(i)
-		if c is MeshInstance3D and c.name.begins_with("SuburbWindows_"):
+		if c is MeshInstance3D and c.name == "WindowsOff":
 			mat2 = (c as MeshInstance3D).material_override as StandardMaterial3D
 			break
 
 	if mat1 == null or mat2 == null:
-		return  # no windows on this tile
-	assert_ne(
+		return
+	assert_eq(
 		mat1, mat2,
-		"Each chunk must get its own material instance (not the shared template)",
+		"Both chunks must share the same WindowsOff material (batching)",
 	)
 
 
@@ -212,14 +218,15 @@ func test_body_in_building_chunk_group_when_windows_exist() -> void:
 	if chunk.get_child_count() == 0:
 		return
 	var body: Node = chunk.get_child(0)
-	if body.has_meta("window_mats"):
+	if body.has_meta("win_group_meshes"):
 		assert_true(
 			body.is_in_group("building_chunk"),
 			"Body with windows should be in building_chunk group",
 		)
 
 
-func test_window_active_meta_all_true_initially() -> void:
+func test_window_active_meta_all_false_initially() -> void:
+	# Daytime default: all window groups are off
 	var builder = _make_builder()
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
@@ -231,9 +238,9 @@ func test_window_active_meta_all_true_initially() -> void:
 		return
 	var active: Array = body.get_meta("window_active")
 	for i in active.size():
-		assert_true(
+		assert_false(
 			active[i],
-			"window_active[%d] should start as true (all lit at night start)" % i,
+			"window_active[%d] should start as false (daytime)" % i,
 		)
 
 

@@ -15,58 +15,47 @@ const RoadGridScript = preload("res://src/road_grid.gd")
 
 # --- city.gd material pool tests ---
 
-func test_city_creates_four_window_materials() -> void:
-	var city: Node3D = CityScript.new()
-	add_child_autofree(city)
-	# _init_materials is called in _ready, but we can check the var exists
-	# and is empty before _ready (it was just created)
-	# After _ready it would have 4, but _ready triggers chunk loading
-	# so just verify the type
+func test_city_has_window_mat_off_var() -> void:
+	# Verify city.gd declares _window_mat_off (populated after _ready)
+	var script: GDScript = CityScript as GDScript
+	var src: String = script.source_code
 	assert_true(
-		city._window_mats is Array,
-		"_window_mats should be an Array",
+		src.contains("_window_mat_off"),
+		"city.gd should declare _window_mat_off",
 	)
 
 
-func test_window_mats_is_typed_array() -> void:
-	var city: Node3D = CityScript.new()
-	add_child_autofree(city)
+func test_city_has_window_mat_on_var() -> void:
+	var script: GDScript = CityScript as GDScript
+	var src: String = script.source_code
 	assert_true(
-		city._window_mats is Array,
-		"_window_mats should be an Array",
+		src.contains("_window_mat_on"),
+		"city.gd should declare _window_mat_on",
 	)
 
 
 # --- chunk_builder_buildings.gd tests ---
 
-func test_builder_init_accepts_material_array() -> void:
+func test_builder_init_stores_window_mat_off() -> void:
 	var builder = BuilderScript.new()
 	var grid = RoadGridScript.new()
 	var mats: Array[StandardMaterial3D] = []
 	for _i in 3:
 		mats.append(StandardMaterial3D.new())
-	var win_mats: Array[StandardMaterial3D] = []
-	for _i in 4:
-		win_mats.append(StandardMaterial3D.new())
-	builder.init(grid, mats, win_mats, StandardMaterial3D.new())
-	assert_eq(
-		builder._window_mats.size(), 4,
-		"Builder should store 4 window materials",
-	)
+	var mat_off := StandardMaterial3D.new()
+	var mat_on := StandardMaterial3D.new()
+	builder.init(grid, mats, mat_off, mat_on, StandardMaterial3D.new())
+	assert_eq(builder._window_mat_off, mat_off, "Builder should store window_mat_off")
 
 
-func test_builder_stores_window_mats_reference() -> void:
+func test_builder_init_stores_window_mat_on() -> void:
 	var builder = BuilderScript.new()
 	var grid = RoadGridScript.new()
 	var mats: Array[StandardMaterial3D] = [StandardMaterial3D.new()]
-	var win_mats: Array[StandardMaterial3D] = []
-	var expected := StandardMaterial3D.new()
-	win_mats.append(expected)
-	builder.init(grid, mats, win_mats, StandardMaterial3D.new())
-	assert_eq(
-		builder._window_mats[0], expected,
-		"Builder should store the exact material references",
-	)
+	var mat_off := StandardMaterial3D.new()
+	var mat_on := StandardMaterial3D.new()
+	builder.init(grid, mats, mat_off, mat_on, StandardMaterial3D.new())
+	assert_eq(builder._window_mat_on, mat_on, "Builder should store window_mat_on")
 
 
 func test_build_creates_window_mesh_instances() -> void:
@@ -75,30 +64,27 @@ func test_build_creates_window_mesh_instances() -> void:
 	var mats: Array[StandardMaterial3D] = []
 	for _i in 3:
 		mats.append(StandardMaterial3D.new())
-	var win_mats: Array[StandardMaterial3D] = []
-	for _i in 4:
-		win_mats.append(StandardMaterial3D.new())
-	builder.init(grid, mats, win_mats, StandardMaterial3D.new())
+	builder.init(
+		grid, mats, StandardMaterial3D.new(), StandardMaterial3D.new(),
+		StandardMaterial3D.new(),
+	)
 
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
 	builder.build(chunk, Vector2i(0, 0), 0.0, 0.0)
 
-	# Find window mesh instances — named "Windows_0", "Windows_1", etc.
+	# Two shared-material window nodes: WindowsOff and WindowsOn
 	var body: Node = chunk.get_child(0)
-	var win_count := 0
+	var found_off := false
+	var found_on := false
 	for i in body.get_child_count():
 		var child := body.get_child(i)
-		if child.name.begins_with("Windows_"):
-			win_count += 1
-	assert_gt(
-		win_count, 0,
-		"Should create at least one window mesh instance",
-	)
-	assert_true(
-		win_count <= 4,
-		"Should create at most 4 window mesh instances",
-	)
+		if child.name == "WindowsOff":
+			found_off = true
+		elif child.name == "WindowsOn":
+			found_on = true
+	assert_true(found_off, "Should create WindowsOff mesh node")
+	assert_true(found_on, "Should create WindowsOn mesh node")
 
 
 func test_build_deterministic_with_same_tile() -> void:
@@ -107,12 +93,12 @@ func test_build_deterministic_with_same_tile() -> void:
 	var mats: Array[StandardMaterial3D] = []
 	for _i in 3:
 		mats.append(StandardMaterial3D.new())
-	var win_mats: Array[StandardMaterial3D] = []
-	for _i in 4:
-		win_mats.append(StandardMaterial3D.new())
-	builder.init(grid, mats, win_mats, StandardMaterial3D.new())
+	builder.init(
+		grid, mats, StandardMaterial3D.new(), StandardMaterial3D.new(),
+		StandardMaterial3D.new(),
+	)
 
-	# Build same tile twice, check same window distribution
+	# Build same tile twice — group meshes metadata should have same size
 	var chunk1 := Node3D.new()
 	add_child_autofree(chunk1)
 	builder.build(chunk1, Vector2i(5, 7), 0.0, 0.0)
@@ -124,72 +110,58 @@ func test_build_deterministic_with_same_tile() -> void:
 	var body1: Node = chunk1.get_child(0)
 	var body2: Node = chunk2.get_child(0)
 
-	var names1: Array[String] = []
-	var names2: Array[String] = []
-	for i in body1.get_child_count():
-		var child := body1.get_child(i)
-		if child.name.begins_with("Windows_"):
-			names1.append(child.name)
-	for i in body2.get_child_count():
-		var child := body2.get_child(i)
-		if child.name.begins_with("Windows_"):
-			names2.append(child.name)
-
-	assert_eq(
-		names1, names2,
-		"Same tile should produce same window group distribution",
-	)
+	if not body1.has_meta("win_group_meshes"):
+		return  # no windows on this tile
+	var gm1: Array = body1.get_meta("win_group_meshes")
+	var gm2: Array = body2.get_meta("win_group_meshes")
+	assert_eq(gm1.size(), gm2.size(), "Same tile should produce same number of window groups")
 
 
 func test_window_meshes_use_correct_materials() -> void:
+	# WindowsOff uses mat_off, WindowsOn uses mat_on (shared global materials)
 	var builder = BuilderScript.new()
 	var grid = RoadGridScript.new()
 	var mats: Array[StandardMaterial3D] = []
 	for _i in 3:
 		mats.append(StandardMaterial3D.new())
-	var template_color := Color(0.18, 0.22, 0.28)
-	var win_mats: Array[StandardMaterial3D] = []
-	for _i in 4:
-		var wm := StandardMaterial3D.new()
-		wm.albedo_color = template_color
-		win_mats.append(wm)
-	builder.init(grid, mats, win_mats, StandardMaterial3D.new())
+	var mat_off := StandardMaterial3D.new()
+	mat_off.albedo_color = Color(0.18, 0.22, 0.28)
+	var mat_on := StandardMaterial3D.new()
+	mat_on.albedo_color = Color(0.9, 0.8, 0.5)
+	builder.init(grid, mats, mat_off, mat_on, StandardMaterial3D.new())
 
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
 	builder.build(chunk, Vector2i(0, 0), 0.0, 0.0)
 
-	# Each chunk gets its own material copies (not the template instances).
-	# Verify that each window mesh has a non-null StandardMaterial3D override
-	# with the correct albedo color copied from the template.
 	var body: Node = chunk.get_child(0)
 	for i in body.get_child_count():
 		var child := body.get_child(i)
-		if child is MeshInstance3D and child.name.begins_with("Windows_"):
-			var mi := child as MeshInstance3D
-			assert_not_null(
-				mi.material_override,
-				"Window mesh %s should have a material override" % child.name,
-			)
-			var mat := mi.material_override as StandardMaterial3D
-			assert_eq(
-				mat.albedo_color, template_color,
-				"Window material albedo should match the template color",
-			)
+		if child is MeshInstance3D:
+			if child.name == "WindowsOff":
+				assert_eq(
+					(child as MeshInstance3D).material_override, mat_off,
+					"WindowsOff should reference mat_off",
+				)
+			elif child.name == "WindowsOn":
+				assert_eq(
+					(child as MeshInstance3D).material_override, mat_on,
+					"WindowsOn should reference mat_on",
+				)
 
 
 # --- day_night_environment.gd per-chunk toggling tests ---
 
-func test_builder_stores_window_mats_meta() -> void:
+func test_builder_stores_win_group_meshes_meta() -> void:
 	var builder = BuilderScript.new()
 	var grid = RoadGridScript.new()
 	var mats: Array[StandardMaterial3D] = []
 	for _i in 3:
 		mats.append(StandardMaterial3D.new())
-	var win_mats: Array[StandardMaterial3D] = []
-	for _i in 4:
-		win_mats.append(StandardMaterial3D.new())
-	builder.init(grid, mats, win_mats, StandardMaterial3D.new())
+	builder.init(
+		grid, mats, StandardMaterial3D.new(), StandardMaterial3D.new(),
+		StandardMaterial3D.new(),
+	)
 
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
@@ -197,21 +169,22 @@ func test_builder_stores_window_mats_meta() -> void:
 
 	var body: Node = chunk.get_child(0)
 	assert_true(
-		body.has_meta("window_mats"),
-		"Builder should store window_mats metadata on the body node",
+		body.has_meta("win_group_meshes"),
+		"Builder should store win_group_meshes metadata on the body node",
 	)
 
 
-func test_builder_window_active_all_true_initially() -> void:
+func test_builder_window_active_all_false_initially() -> void:
+	# Daytime default: all window groups are off (no emission)
 	var builder = BuilderScript.new()
 	var grid = RoadGridScript.new()
 	var mats: Array[StandardMaterial3D] = []
 	for _i in 3:
 		mats.append(StandardMaterial3D.new())
-	var win_mats: Array[StandardMaterial3D] = []
-	for _i in 4:
-		win_mats.append(StandardMaterial3D.new())
-	builder.init(grid, mats, win_mats, StandardMaterial3D.new())
+	builder.init(
+		grid, mats, StandardMaterial3D.new(), StandardMaterial3D.new(),
+		StandardMaterial3D.new(),
+	)
 
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
@@ -222,9 +195,9 @@ func test_builder_window_active_all_true_initially() -> void:
 		return  # no windows on this tile — skip
 	var active: Array = body.get_meta("window_active")
 	for i in active.size():
-		assert_true(
+		assert_false(
 			active[i],
-			"window_active[%d] should start as true" % i,
+			"window_active[%d] should start as false (daytime)" % i,
 		)
 
 
@@ -234,10 +207,10 @@ func test_builder_adds_body_to_building_chunk_group() -> void:
 	var mats: Array[StandardMaterial3D] = []
 	for _i in 3:
 		mats.append(StandardMaterial3D.new())
-	var win_mats: Array[StandardMaterial3D] = []
-	for _i in 4:
-		win_mats.append(StandardMaterial3D.new())
-	builder.init(grid, mats, win_mats, StandardMaterial3D.new())
+	builder.init(
+		grid, mats, StandardMaterial3D.new(), StandardMaterial3D.new(),
+		StandardMaterial3D.new(),
+	)
 
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
@@ -245,7 +218,7 @@ func test_builder_adds_body_to_building_chunk_group() -> void:
 
 	var body: Node = chunk.get_child(0)
 	# Only assert group membership when windows were actually created
-	if body.has_meta("window_mats"):
+	if body.has_meta("win_group_meshes"):
 		assert_true(
 			body.is_in_group("building_chunk"),
 			"Body with windows should be in building_chunk group",

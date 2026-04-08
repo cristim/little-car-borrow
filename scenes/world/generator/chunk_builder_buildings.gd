@@ -13,10 +13,12 @@ const ROOFTOP_HELIPAD_MIN_H := 12.0  # minimum building height for a rooftop hel
 const ROOFTOP_HELIPAD_MIN_W := 10.0  # minimum width/depth for rooftop helipad
 const ROOFTOP_HELIPAD_CHANCE := 0.12 # per-building probability
 const ROOFTOP_HELIPADS_PER_CHUNK := 2
+const WIN_GROUPS := 8
 
 var _grid: RefCounted
 var _building_mats: Array[StandardMaterial3D] = []
-var _window_mats: Array[StandardMaterial3D] = []
+var _window_mat_off: StandardMaterial3D
+var _window_mat_on: StandardMaterial3D
 var _interior_mat: StandardMaterial3D
 var _roof_mats: Array[StandardMaterial3D] = []
 var _city_script: GDScript = preload("res://scenes/world/city.gd")
@@ -27,13 +29,15 @@ var _rooftop_helipad_mat: StandardMaterial3D = null
 func init(
 	grid: RefCounted,
 	building_mats: Array[StandardMaterial3D],
-	window_mats: Array[StandardMaterial3D],
+	window_mat_off: StandardMaterial3D,
+	window_mat_on: StandardMaterial3D,
 	interior_mat: StandardMaterial3D,
 	roof_mats: Array[StandardMaterial3D] = [],
 ) -> void:
 	_grid = grid
 	_building_mats = building_mats
-	_window_mats = window_mats
+	_window_mat_off = window_mat_off
+	_window_mat_on = window_mat_on
 	_interior_mat = interior_mat
 	_roof_mats = roof_mats
 
@@ -52,22 +56,14 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 		sts.append(st)
 		st_used.append(false)
 
-	# One SurfaceTool per window material group
-	var win_count := _window_mats.size()
+	# One SurfaceTool per window group — geometry accumulated per group,
+	# then merged into two shared-material MeshInstance3D nodes (off/on).
+	var win_count := WIN_GROUPS
 	var win_sts: Array[SurfaceTool] = []
 	var win_st_has_data: Array[bool] = []
 	for _i in range(win_count):
 		win_sts.append(SurfaceTool.new())
 		win_st_has_data.append(false)
-
-	# Per-chunk window materials — fresh copies of the template so each chunk
-	# toggles independently from every other chunk in the city.
-	var local_win_mats: Array[StandardMaterial3D] = []
-	for i in win_count:
-		var m := StandardMaterial3D.new()
-		m.albedo_color = _window_mats[i].albedo_color
-		m.cull_mode = BaseMaterial3D.CULL_DISABLED
-		local_win_mats.append(m)
 
 	# Single compound collision body for all buildings
 	var body := StaticBody3D.new()
@@ -251,17 +247,17 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 		mesh_inst.material_override = _building_mats[i]
 		body.add_child(mesh_inst)
 
-	# One MeshInstance3D per used window material group
+	# Commit each group's geometry to its own ArrayMesh (no material assigned).
+	# Two shared MeshInstance3D nodes (WindowsOff / WindowsOn) are rebuilt by
+	# day_night_environment when the active state changes — enabling batching.
+	var group_meshes: Array = []
+	group_meshes.resize(win_count)
+	var has_any_windows := false
 	for i in range(win_count):
-		if not win_st_has_data[i]:
-			continue
-		win_sts[i].generate_normals()
-		var win_mesh := win_sts[i].commit()
-		var win_inst := MeshInstance3D.new()
-		win_inst.name = "Windows_%d" % i
-		win_inst.mesh = win_mesh
-		win_inst.material_override = local_win_mats[i]
-		body.add_child(win_inst)
+		if win_st_has_data[i]:
+			win_sts[i].generate_normals()
+			group_meshes[i] = win_sts[i].commit()
+			has_any_windows = true
 
 	# Roof meshes
 	for i in range(roof_count):
@@ -285,14 +281,34 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 		int_inst.material_override = _interior_mat
 		body.add_child(int_inst)
 
-	# Register chunk for independent per-chunk night toggling
-	if win_st_has_data.has(true):
+	# Register chunk for batched night toggling via day_night_environment.
+	if has_any_windows:
+		var win_off_inst := MeshInstance3D.new()
+		win_off_inst.name = "WindowsOff"
+		win_off_inst.material_override = _window_mat_off
+		body.add_child(win_off_inst)
+
+		var win_on_inst := MeshInstance3D.new()
+		win_on_inst.name = "WindowsOn"
+		win_on_inst.material_override = _window_mat_on
+		body.add_child(win_on_inst)
+
 		var win_active: Array[bool] = []
 		win_active.resize(win_count)
-		win_active.fill(true)
-		body.set_meta("window_mats", local_win_mats)
+		win_active.fill(false)  # daytime default: all off
+		body.set_meta("win_group_meshes", group_meshes)
 		body.set_meta("window_active", win_active)
+		body.set_meta("win_off_node", win_off_inst)
+		body.set_meta("win_on_node", win_on_inst)
 		body.add_to_group("building_chunk")
+
+		# Initially all geometry goes to WindowsOff (daytime — no emission)
+		var st_init := SurfaceTool.new()
+		st_init.begin(Mesh.PRIMITIVE_TRIANGLES)
+		for i in range(win_count):
+			if group_meshes[i] != null:
+				st_init.append_from(group_meshes[i] as ArrayMesh, 0, Transform3D.IDENTITY)
+		win_off_inst.mesh = st_init.commit()
 
 	chunk.add_child(body)
 

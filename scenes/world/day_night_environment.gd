@@ -370,6 +370,33 @@ func _night_factor(h: float) -> float:
 	return clampf(1.0 - _sample(SUN_ENERGY, h) * 2.5, 0.0, 1.0)
 
 
+func _rebuild_window_meshes(chunk_body: Node) -> void:
+	var group_meshes: Array = chunk_body.get_meta("win_group_meshes", [])
+	var active: Array = chunk_body.get_meta("window_active", [])
+	var win_off: MeshInstance3D = chunk_body.get_meta("win_off_node", null) as MeshInstance3D
+	var win_on: MeshInstance3D = chunk_body.get_meta("win_on_node", null) as MeshInstance3D
+	if group_meshes.is_empty() or not is_instance_valid(win_off) or not is_instance_valid(win_on):
+		return
+	var st_off := SurfaceTool.new()
+	var st_on := SurfaceTool.new()
+	st_off.begin(Mesh.PRIMITIVE_TRIANGLES)
+	st_on.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var has_off := false
+	var has_on := false
+	for i in group_meshes.size():
+		var mesh: ArrayMesh = group_meshes[i] as ArrayMesh
+		if mesh == null or mesh.get_surface_count() == 0:
+			continue
+		if active[i]:
+			st_on.append_from(mesh, 0, Transform3D.IDENTITY)
+			has_on = true
+		else:
+			st_off.append_from(mesh, 0, Transform3D.IDENTITY)
+			has_off = true
+	win_off.mesh = st_off.commit() if has_off else null
+	win_on.mesh = st_on.commit() if has_on else null
+
+
 func _update_windows(h: float) -> void:
 	var night := h < 6.0 or h > 19.0
 	if night == _last_window_night:
@@ -379,34 +406,26 @@ func _update_windows(h: float) -> void:
 	if night:
 		# Random initial pattern per chunk: each group independently 55% lit
 		for chunk_body in chunks:
-			var mats_v: Variant = (chunk_body as Node).get_meta("window_mats", null)
 			var active_v: Variant = (chunk_body as Node).get_meta("window_active", null)
-			if mats_v == null or active_v == null:
+			if active_v == null:
 				continue
-			var mats: Array = mats_v
 			var active: Array = active_v
-			for i in mats.size():
+			for i in active.size():
 				active[i] = _rng.randf() < 0.55
-				var mat: StandardMaterial3D = mats[i]
-				mat.emission_enabled = active[i]
-				mat.emission = Color(0.9, 0.8, 0.5)
-				mat.emission_energy_multiplier = 0.6
 			(chunk_body as Node).set_meta("window_active", active)
+			_rebuild_window_meshes(chunk_body as Node)
 		if _window_toggle_timer.is_stopped():
 			_window_toggle_timer.wait_time = _rng.randf_range(5.0, 12.0)
 			_window_toggle_timer.start()
 	else:
 		for chunk_body in chunks:
-			var mats_v: Variant = (chunk_body as Node).get_meta("window_mats", null)
 			var active_v: Variant = (chunk_body as Node).get_meta("window_active", null)
-			if mats_v == null or active_v == null:
+			if active_v == null:
 				continue
-			var mats: Array = mats_v
 			var active: Array = active_v
-			active.fill(true)
+			active.fill(false)
 			(chunk_body as Node).set_meta("window_active", active)
-			for mat in mats:
-				(mat as StandardMaterial3D).emission_enabled = false
+			_rebuild_window_meshes(chunk_body as Node)
 		_window_toggle_timer.stop()
 
 
@@ -421,14 +440,12 @@ func _on_window_toggle() -> void:
 
 	# Pick ONE random chunk to update — changes stay local to that chunk
 	var chunk_body: Node = chunks[_rng.randi() % chunks.size()]
-	var mats_v: Variant = chunk_body.get_meta("window_mats", null)
 	var active_v: Variant = chunk_body.get_meta("window_active", null)
-	if mats_v == null or active_v == null:
+	if active_v == null:
 		_window_toggle_timer.wait_time = _rng.randf_range(5.0, 12.0)
 		_window_toggle_timer.start()
 		return
 
-	var mats: Array = mats_v
 	var active: Array = active_v
 
 	var on_indices: Array[int] = []
@@ -444,17 +461,13 @@ func _on_window_toggle() -> void:
 	if _rng.randf() < 0.75 and on_indices.size() > 1:
 		var pick: int = on_indices[_rng.randi_range(0, on_indices.size() - 1)]
 		active[pick] = false
-		(mats[pick] as StandardMaterial3D).emission_enabled = false
 	elif off_indices.size() > 0:
 		# Occasionally turn one back on (light sleepers, night owls)
 		var pick: int = off_indices[_rng.randi_range(0, off_indices.size() - 1)]
 		active[pick] = true
-		var mat: StandardMaterial3D = mats[pick]
-		mat.emission_enabled = true
-		mat.emission = Color(0.9, 0.8, 0.5)
-		mat.emission_energy_multiplier = 0.6
 
 	chunk_body.set_meta("window_active", active)
+	_rebuild_window_meshes(chunk_body)
 	_window_toggle_timer.wait_time = _rng.randf_range(5.0, 12.0)
 	_window_toggle_timer.start()
 

@@ -52,12 +52,13 @@
 - Each chunk contains: roads, block ground, sidewalks, buildings, trees, ramps, lane markings
 - **Builders** (split into `scenes/world/generator/`):
   - `chunk_builder_roads.gd` — merged road/ground/sidewalk meshes via SurfaceTool + compound collision
-  - `chunk_builder_buildings.gd` — buildings grouped by material palette (12 colors), ~12 draw calls
+  - `chunk_builder_buildings.gd` — buildings grouped by material palette (12 colors), ~12 draw calls; window geometry split across 2 shared-material MeshInstance3D nodes (WindowsOff/WindowsOn) for GPU batching
   - `chunk_builder_trees.gd` — MultiMeshInstance3D with per-instance color, ~6 draw calls
   - `chunk_builder_markings.gd` — lane lines + zebra crossings, 1 draw call
   - `chunk_builder_ramps.gd` — fun ramps on boulevards
 - **Performance**: ~22 draw calls/chunk, ~5 StaticBody3D/chunk (was ~1500/~960)
   - Shared material palette (~25 total) instead of ~550 unique materials per chunk
+  - Window batching: 2 global shared materials (`_window_mat_off`/`_window_mat_on`) replace 8 per-chunk copies; geometry redistributed between WindowsOff/WindowsOn MeshInstance3D on day/night transitions rather than toggling emission per-material
   - SurfaceTool merges geometry into ArrayMesh per category
   - MultiMesh for trees with `use_colors = true` + `vertex_color_use_as_albedo`
   - Compound collision bodies: one StaticBody3D with many BoxShape3D children

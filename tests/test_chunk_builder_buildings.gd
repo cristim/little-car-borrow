@@ -10,7 +10,8 @@ const RoadGridScript = preload("res://src/road_grid.gd")
 var _grid: RefCounted
 var _builder: RefCounted
 var _building_mats: Array[StandardMaterial3D]
-var _window_mats: Array[StandardMaterial3D]
+var _window_mat_off: StandardMaterial3D
+var _window_mat_on: StandardMaterial3D
 var _interior_mat: StandardMaterial3D
 var _roof_mats: Array[StandardMaterial3D]
 
@@ -28,9 +29,8 @@ func before_each() -> void:
 	for i in 4:
 		_building_mats.append(_make_mat(Color(0.5 + i * 0.05, 0.5, 0.5)))
 
-	_window_mats = []
-	for i in 2:
-		_window_mats.append(_make_mat(Color(0.18, 0.22, 0.28)))
+	_window_mat_off = _make_mat(Color(0.18, 0.22, 0.28))
+	_window_mat_on = _make_mat(Color(0.9, 0.8, 0.5))
 
 	_interior_mat = _make_mat(Color(0.25, 0.25, 0.25))
 
@@ -39,7 +39,7 @@ func before_each() -> void:
 		_roof_mats.append(_make_mat(Color(0.6 + i * 0.05, 0.3, 0.2)))
 
 	_builder = BuildingsScript.new()
-	_builder.init(_grid, _building_mats, _window_mats, _interior_mat, _roof_mats)
+	_builder.init(_grid, _building_mats, _window_mat_off, _window_mat_on, _interior_mat, _roof_mats)
 
 
 # ================================================================
@@ -58,10 +58,8 @@ func test_init_stores_building_materials() -> void:
 
 
 func test_init_stores_window_materials() -> void:
-	assert_eq(
-		_builder._window_mats.size(), 2,
-		"Should store 2 window materials",
-	)
+	assert_not_null(_builder._window_mat_off, "Should store window_mat_off")
+	assert_not_null(_builder._window_mat_on, "Should store window_mat_on")
 
 
 func test_init_stores_interior_material() -> void:
@@ -80,7 +78,7 @@ func test_init_stores_roof_materials() -> void:
 
 func test_init_without_roof_mats_defaults_empty() -> void:
 	var b := BuildingsScript.new()
-	b.init(_grid, _building_mats, _window_mats, _interior_mat)
+	b.init(_grid, _building_mats, _window_mat_off, _window_mat_on, _interior_mat)
 	assert_eq(
 		b._roof_mats.size(), 0,
 		"Roof mats should default to empty array",
@@ -229,13 +227,16 @@ func test_window_meshes_created() -> void:
 	add_child_autofree(chunk)
 	_builder.build(chunk, Vector2i(0, 0), 0.0, 0.0)
 	var body := chunk.get_child(0) as StaticBody3D
-	var found := false
+	var found_off := false
+	var found_on := false
 	for child in body.get_children():
 		if child is MeshInstance3D:
-			if (child as MeshInstance3D).name.begins_with("Windows_"):
-				found = true
-				break
-	assert_true(found, "Should have at least one Windows_N mesh")
+			if (child as MeshInstance3D).name == "WindowsOff":
+				found_off = true
+			elif (child as MeshInstance3D).name == "WindowsOn":
+				found_on = true
+	assert_true(found_off, "Should have WindowsOff mesh node")
+	assert_true(found_on, "Should have WindowsOn mesh node")
 
 
 func test_window_meshes_have_valid_material() -> void:
@@ -246,11 +247,10 @@ func test_window_meshes_have_valid_material() -> void:
 	for child in body.get_children():
 		if child is MeshInstance3D:
 			var inst := child as MeshInstance3D
-			if inst.name.begins_with("Windows_"):
-				assert_not_null(inst.mesh, "Window mesh should not be null")
+			if inst.name == "WindowsOff" or inst.name == "WindowsOn":
 				assert_not_null(
 					inst.material_override,
-					"Window mesh should have material override",
+					"Window node %s should have material override" % inst.name,
 				)
 
 
@@ -278,7 +278,7 @@ func test_roof_meshes_created_for_short_buildings() -> void:
 
 func test_no_roof_meshes_when_no_roof_materials() -> void:
 	var b := BuildingsScript.new()
-	b.init(_grid, _building_mats, _window_mats, _interior_mat)
+	b.init(_grid, _building_mats, _window_mat_off, _window_mat_on, _interior_mat)
 	var chunk := Node3D.new()
 	add_child_autofree(chunk)
 	b.build(chunk, Vector2i(0, 0), 0.0, 0.0)
