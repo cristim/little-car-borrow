@@ -6,6 +6,7 @@ extends GutTest
 ## state transitions in more depth.
 
 const _SCRIPT_PATH := "res://scenes/vehicles/police_ai_controller.gd"
+const _BASE_PATH := "res://src/vehicle_ai_base.gd"
 const PoliceAIScript = preload(_SCRIPT_PATH)
 
 
@@ -184,7 +185,7 @@ func test_deactivate_sets_active_false() -> void:
 
 
 func test_deactivate_source_applies_brakes() -> void:
-	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
+	var src: String = (load(_BASE_PATH) as GDScript).source_code
 	assert_true(
 		src.contains("_vehicle.brake_input = 1.0"),
 		"deactivate should apply full brake",
@@ -196,7 +197,7 @@ func test_deactivate_source_applies_brakes() -> void:
 
 
 func test_deactivate_source_zeroes_controls() -> void:
-	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
+	var src: String = (load(_BASE_PATH) as GDScript).source_code
 	assert_true(
 		src.contains("_vehicle.steering_input = 0.0"),
 		"deactivate should zero steering",

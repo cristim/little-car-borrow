@@ -2,6 +2,7 @@ extends GutTest
 ## Unit tests for NPC vehicle controller spawn grace, airborne guard,
 ## and reduced escape force.
 
+const _BASE_PATH := "res://src/vehicle_ai_base.gd"
 var _npc_script: GDScript
 
 
@@ -129,7 +130,7 @@ func test_deactivate_without_vehicle_does_not_crash() -> void:
 
 
 func test_deactivate_source_applies_brakes() -> void:
-	var src: String = _npc_script.source_code
+	var src: String = (load(_BASE_PATH) as GDScript).source_code
 	assert_true(
 		src.contains("brake_input = 1.0"),
 		"deactivate should apply full brakes",
@@ -141,7 +142,7 @@ func test_deactivate_source_applies_brakes() -> void:
 
 
 func test_deactivate_source_zeroes_steering_and_throttle() -> void:
-	var src: String = _npc_script.source_code
+	var src: String = (load(_BASE_PATH) as GDScript).source_code
 	assert_true(
 		src.contains("steering_input = 0.0"),
 		"deactivate should zero steering",
