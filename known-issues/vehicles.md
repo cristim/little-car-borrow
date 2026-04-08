@@ -7,10 +7,6 @@ Files: all 20 files in scenes/vehicles/
 
 ## CRITICAL
 
-### C1 — `vehicle_water_detector.gd:59`: Wrong node name for police AI deactivation
-Looks up `"PoliceVehicleController"` but actual name is `"PoliceAIController"`.
-Police AI never deactivated when police car sinks.
-
 ### C2 — `collision_crime_detector.gd:91-97`: `add_child` called after `copy_visual_from`
 Ragdoll visuals placed relative to world origin instead of impact point because ragdoll
 has no world transform when visuals are copied.
@@ -24,9 +20,6 @@ Forces applied as if hull is 0.8m higher than actual.
 ---
 
 ## IMPORTANT
-
-### I1 — `npc_vehicle_controller.gd:698`: `get_meta("city_boundary")` without `has_meta` guard
-Crash if city manager hasn't set the meta key yet. Same issue in `vehicle_water_detector.gd:106`.
 
 ### I2 — `helicopter_ai.gd:263`: Shoot sound lambda missing `is_instance_valid` guard
 If helicopter freed before 0.3s timer fires, attempts to call method on freed object.

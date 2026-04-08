@@ -366,6 +366,25 @@ func test_is_over_water_checks_city_boundary_meta() -> void:
 	)
 
 
+func test_is_over_water_guards_with_has_meta() -> void:
+	# I1: must call has_meta before get_meta to avoid crash when city not ready
+	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
+	assert_true(
+		src.contains('has_meta("city_boundary")'),
+		"_is_over_water should guard with has_meta before get_meta",
+	)
+
+
+func test_is_over_water_returns_false_without_city_manager() -> void:
+	# _is_over_water with no city_manager group returns false (safe default)
+	var detector: Node = WaterScript.new()
+	add_child_autofree(detector)
+	detector._vehicle = RigidBody3D.new()
+	# city_manager group is empty in test — should return false
+	var result: bool = detector._is_over_water(Vector3.ZERO)
+	assert_false(result, "_is_over_water should return false when no city_manager in scene")
+
+
 func test_is_over_water_compares_ground_height() -> void:
 	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
 	assert_true(
