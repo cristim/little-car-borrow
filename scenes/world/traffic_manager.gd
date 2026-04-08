@@ -67,6 +67,7 @@ var _vehicle_lights_script: GDScript = preload(
 var _water_detector_script: GDScript = preload(
 	"res://scenes/vehicles/vehicle_water_detector.gd"
 )
+var _spawn_helper: GDScript = preload("res://src/vehicle_spawn_helper.gd")
 var _spawn_timer := 0.0
 var _launch_check_timer := 0.0
 var _player: Node3D = null
@@ -292,116 +293,21 @@ func _try_spawn() -> void:
 				continue
 			_cell_retry_ms.erase(cell)
 
-		# Raycast downward to find the real physical surface.
-		# Raycast runs everywhere; city vs outside-city only affects which
-		# height thresholds apply and whether a noise fallback is allowed.
-		var sd: float = _boundary.get_signed_distance(spawn_pos.x, spawn_pos.z)
-		var world: World3D = _player.get_world_3d()
-		var space: PhysicsDirectSpaceState3D = world.direct_space_state
-		var rq := PhysicsRayQueryParameters3D.create(
-			Vector3(spawn_pos.x, 80.0, spawn_pos.z),
-			Vector3(spawn_pos.x, -5.0, spawn_pos.z),
+		var space: PhysicsDirectSpaceState3D = _player.get_world_3d().direct_space_state
+		var probe: Dictionary = _spawn_helper.probe_spawn_surface(
+			space, _boundary, spawn_pos
 		)
-		# Mask 1 = Ground layer only. Roads, terrain, bridges and ramps all
-		# use layer 1. Buildings use layer 2 — excluding them prevents the
-		# raycast from landing on building rooftops in suburbs and outside
-		# the city, which would place vehicles 3-8 m above road level.
-		rq.collision_mask = 1
-		var hit: Dictionary = space.intersect_ray(rq)
-		var surface_y: float
-		var surface_src: String
-		if not hit.is_empty():
-			surface_y = (hit["position"] as Vector3).y
-			surface_src = "raycast"
-			# Outside city: if the raycast hit the flat base plane (y ≈ 0),
-			# the terrain chunk hasn't loaded yet. Use the noise estimate so
-			# the car spawns at the correct elevation and isn't embedded when
-			# the chunk loads later.
-			if sd >= 0.0 and surface_y < 1.0:
-				var noise_y: float = _boundary.get_ground_height(
-					spawn_pos.x, spawn_pos.z
-				)
-				if noise_y > 1.0:
-					surface_y = noise_y
-					surface_src = "noise-fallback"
-			# Outside city: reject very steep terrain (no flat road surface).
-			if sd >= 0.0 and surface_y > 6.0:
-				print("[Traffic] SKIP steep surface_y=%.2f xz=(%.1f,%.1f)" % [
-					surface_y, spawn_pos.x, spawn_pos.z,
-				])
-				continue
-		else:
-			# No collision mesh found (unloaded chunk or no collision).
-			if sd < 0.0:
-				continue  # inside city but no road collision — skip
-			# Outside city: fall back to noise height rather than no spawn.
-			surface_y = _boundary.get_ground_height(spawn_pos.x, spawn_pos.z)
-			surface_src = "noise"
-			if surface_y > 6.0:
-				print("[Traffic] SKIP noise steep surface_y=%.2f xz=(%.1f,%.1f)" % [
-					surface_y, spawn_pos.x, spawn_pos.z,
-				])
-				continue
-		# Inside city: roads are at y≈0, allow slight floor variation.
-		# Outside city: negative terrain means underwater — skip entirely.
-		if sd < 0.0 and surface_y < SEA_LEVEL:
+		if not probe.ok:
 			continue
-		if sd >= 0.0 and surface_y < 0.0:
-			continue
+		var surface_y: float = probe.surface_y
+		var terrain_normal: Vector3 = probe.terrain_normal
 		# If a previous launch-cull probed a corrected terrain height for this
-		# cell, use it instead of the current surface_y (the probe catches cases
-		# where the initial raycast hit a flat base plane under an unloaded chunk).
+		# cell, use it instead of the current surface_y.
 		if _cell_y.has(cell):
 			var probed: float = _cell_y[cell]
 			if probed > surface_y:
 				surface_y = probed
-				surface_src = surface_src + "+corrected"
-
-		# Footprint probe: GEVP wheels extend ≈1.2 m (x) and ≈1.4 m (z) from
-		# the chassis centre. If terrain at any wheel position is higher than at
-		# the centre, spawning at centre+0.25 would put that wheel in contact on
-		# frame 1, causing a massive spring_speed impulse.
-		# Cast rays at all four wheel corners; store per-corner heights for the
-		# terrain-normal tilt applied below.  Skip if slope > 2 m across footprint.
-		# Corner order: [0]=front-left, [1]=front-right, [2]=rear-left, [3]=rear-right
-		# (front = -Z when yaw=0; axis-aligned offsets are a good approximation)
-		var max_surface_y: float = surface_y
-		var corner_h: Array[float] = [surface_y, surface_y, surface_y, surface_y]
-		var footprint_offsets: Array[Vector2] = [
-			Vector2(-1.2, -1.4), Vector2(1.2, -1.4),
-			Vector2(-1.2, 1.4), Vector2(1.2, 1.4),
-		]
-		for fi in range(4):
-			var fo: Vector2 = footprint_offsets[fi]
-			var fq := PhysicsRayQueryParameters3D.create(
-				Vector3(spawn_pos.x + fo.x, 80.0, spawn_pos.z + fo.y),
-				Vector3(spawn_pos.x + fo.x, -5.0, spawn_pos.z + fo.y),
-			)
-			fq.collision_mask = 1
-			var fhit: Dictionary = space.intersect_ray(fq)
-			if not fhit.is_empty():
-				var fy: float = (fhit["position"] as Vector3).y
-				corner_h[fi] = fy
-				max_surface_y = maxf(max_surface_y, fy)
-		surface_y = max_surface_y
-
-		# +0.25 m clearance: GEVP rear ray extends 0.15 m below body origin
-		# (spring_length 0.20 + tire_radius 0.30 - attachment_y 0.35).
-		# Spawning with wheels already in contact causes a massive first-frame
-		# damping spike (previous_compression=0 → spring_speed=compression/dt).
-		# 0.25 m keeps all wheels clear of the ground on the first physics tick.
 		spawn_pos.y = surface_y + 0.25
-
-		# Compute terrain normal early so we can skip wild angles before
-		# instantiating the vehicle.  normal.y < 0.3 means slope > ~73° —
-		# no drivable road should be that steep; skip this attempt.
-		var p_fl := Vector3(spawn_pos.x - 1.2, corner_h[0], spawn_pos.z - 1.4)
-		var p_fr := Vector3(spawn_pos.x + 1.2, corner_h[1], spawn_pos.z - 1.4)
-		var p_rl := Vector3(spawn_pos.x - 1.2, corner_h[2], spawn_pos.z + 1.4)
-		var p_rr := Vector3(spawn_pos.x + 1.2, corner_h[3], spawn_pos.z + 1.4)
-		var terrain_normal: Vector3 = (p_rl - p_fr).cross(p_rr - p_fl).normalized()
-		if terrain_normal.y <= 0.3:
-			continue
 
 		var too_close := false
 		for v in _vehicles:
@@ -429,23 +335,14 @@ func _try_spawn() -> void:
 			if h_vel.normalized().dot(offset.normalized()) > 0.0:
 				continue
 
-		print("[Traffic] SPAWN src=%s surface_y=%.2f pos=(%.1f,%.1f,%.1f) sd=%.1f" % [
-			surface_src, surface_y,
-			spawn_pos.x, spawn_pos.y, spawn_pos.z, sd,
+		print("[Traffic] SPAWN surface_y=%.2f pos=(%.1f,%.1f,%.1f)" % [
+			surface_y, spawn_pos.x, spawn_pos.y, spawn_pos.z,
 		])
 		var vehicle := _vehicle_scene.instantiate()
 		_apply_variant(vehicle)
 		_randomize_color(vehicle)
 		vehicle.position = spawn_pos
-		# Tilt vehicle to match terrain slope. terrain_normal was computed above
-		# and is guaranteed to have y > 0.3 (wild angles were skipped).
-		var fwd_flat := Vector3(-sin(yaw), 0.0, -cos(yaw))
-		var fwd_t: Vector3 = fwd_flat - terrain_normal * fwd_flat.dot(terrain_normal)
-		if fwd_t.length_squared() > 0.01:
-			fwd_t = fwd_t.normalized()
-			vehicle.basis = Basis(fwd_t.cross(terrain_normal), terrain_normal, -fwd_t)
-		else:
-			vehicle.rotation.y = yaw
+		_spawn_helper.apply_terrain_tilt(vehicle, terrain_normal, yaw)
 
 		var vc := vehicle.get_node_or_null("VehicleController")
 		if vc:
@@ -516,25 +413,12 @@ func _despawn_far() -> void:
 				v.freeze = false
 			else:
 				var want_frozen: bool = d >= LOD_FREEZE_DIST
-				# Transition: was frozen, about to unfreeze.  Check whether the
-				# terrain chunk loaded and embedded the vehicle while it was
-				# frozen; if so, cull it silently rather than letting physics
-				# eject it at thousands of m/s.
 				if not want_frozen and (v as RigidBody3D).freeze:
-					var vp: Vector3 = (v as Node3D).global_position
-					var uq := PhysicsRayQueryParameters3D.create(
-						Vector3(vp.x, vp.y + 2.0, vp.z),
-						Vector3(vp.x, vp.y - 1.0, vp.z),
-					)
-					uq.collision_mask = 1
-					var uhit: Dictionary = get_tree().current_scene \
-						.get_world_3d().direct_space_state.intersect_ray(uq)
-					if not uhit.is_empty():
-						var terrain_y: float = (uhit["position"] as Vector3).y
-						if terrain_y >= vp.y:
-							# Embedded — cull instead of unfreezing
-							to_remove.append(v)
-							continue
+					if _spawn_helper.is_embedded(
+						v, get_tree().current_scene.get_world_3d()
+					):
+						to_remove.append(v)
+						continue
 				v.freeze = want_frozen
 
 	for v in to_remove:

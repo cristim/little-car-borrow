@@ -10,6 +10,9 @@ const SPAWN_INTERVAL := 1.0
 const DESPAWN_FADE_TIME := 10.0
 const LOD_FREEZE_DIST := 140.0
 const SEA_LEVEL := -2.0
+# Launch detection thresholds (same rationale as traffic_manager).
+const LAUNCH_VEL_THRESHOLD := 8.0
+const LAUNCH_VEL_POST_GRACE := 40.0
 
 var _grid = preload("res://src/road_grid.gd").new()
 var _boundary = preload("res://src/city_boundary.gd").new()
@@ -25,11 +28,13 @@ var _vehicle_lights_script: GDScript = preload(
 var _water_detector_script: GDScript = preload(
 	"res://scenes/vehicles/vehicle_water_detector.gd"
 )
+var _spawn_helper: GDScript = preload("res://src/vehicle_spawn_helper.gd")
 
 var _police: Array[Node] = []
 var _player: Node3D = null
 var _rng := RandomNumberGenerator.new()
 var _spawn_timer := 0.0
+var _launch_check_timer := 0.0
 var _despawn_timer := 0.0
 var _despawning := false
 var _helicopter: CharacterBody3D = null
@@ -66,6 +71,25 @@ func _process(delta: float) -> void:
 		return
 
 	_despawn_far()
+
+	# Launch cull: same two-threshold logic as traffic_manager.
+	_launch_check_timer += delta
+	if _launch_check_timer >= 0.25:
+		_launch_check_timer = 0.0
+		var launched: Array[Node] = []
+		for v in _police:
+			if is_instance_valid(v) and "linear_velocity" in v:
+				var vy: float = (v as RigidBody3D).linear_velocity.y
+				var ai_node: Node = v.get_node_or_null("PoliceAIController")
+				var in_grace: bool = ai_node != null and ai_node._spawn_grace > 0.0
+				var threshold: float = LAUNCH_VEL_THRESHOLD if in_grace \
+					else LAUNCH_VEL_POST_GRACE
+				if vy > threshold:
+					launched.append(v)
+		for v in launched:
+			_police.erase(v)
+			if is_instance_valid(v):
+				v.queue_free()
 
 	if max_police <= 0:
 		return
@@ -177,13 +201,14 @@ func _try_spawn() -> void:
 		if _grid.is_on_ramp(spawn_pos.x, spawn_pos.z):
 			continue
 
-		# Adjust spawn height to terrain level outside city
-		var ground_y: float = _boundary.get_ground_height(
-			spawn_pos.x, spawn_pos.z
+		var space: PhysicsDirectSpaceState3D = _player.get_world_3d().direct_space_state
+		var probe: Dictionary = _spawn_helper.probe_spawn_surface(
+			space, _boundary, spawn_pos
 		)
-		if ground_y < SEA_LEVEL:
+		if not probe.ok:
 			continue
-		spawn_pos.y = ground_y + 0.1
+		spawn_pos.y = probe.surface_y + 0.25
+		var terrain_normal: Vector3 = probe.terrain_normal
 
 		var too_close := false
 		for v in _police:
@@ -204,7 +229,7 @@ func _try_spawn() -> void:
 
 		var vehicle := _police_scene.instantiate()
 		vehicle.position = spawn_pos
-		vehicle.rotation.y = yaw
+		_spawn_helper.apply_terrain_tilt(vehicle, terrain_normal, yaw)
 
 		var vc := vehicle.get_node_or_null("VehicleController")
 		if vc:
@@ -254,7 +279,14 @@ func _despawn_far() -> void:
 			if ai and ai._spawn_grace > 0.0:
 				v.freeze = false
 			else:
-				v.freeze = d >= LOD_FREEZE_DIST
+				var want_frozen: bool = d >= LOD_FREEZE_DIST
+				if not want_frozen and (v as RigidBody3D).freeze:
+					if _spawn_helper.is_embedded(
+						v, get_tree().current_scene.get_world_3d()
+					):
+						to_remove.append(v)
+						continue
+				v.freeze = want_frozen
 	for v in to_remove:
 		_police.erase(v)
 		if is_instance_valid(v):
