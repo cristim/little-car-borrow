@@ -82,7 +82,7 @@ func _spawn_bullet_hole(hit_pos: Vector3, hit_normal: Vector3) -> void:
 	# Position in body-local space, offset slightly along normal to avoid z-fight
 	hole.global_position = hit_pos + hit_normal * 0.01
 	# Orient plane to face outward along the surface normal
-	if hit_normal.abs() != Vector3.UP:
+	if not hit_normal.abs().is_equal_approx(Vector3.UP):
 		hole.look_at(hole.global_position + hit_normal, Vector3.UP)
 	else:
 		hole.look_at(hole.global_position + hit_normal, Vector3.FORWARD)

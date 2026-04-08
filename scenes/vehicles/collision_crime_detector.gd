@@ -90,6 +90,6 @@ func _spawn_ragdoll(pedestrian: Node) -> void:
 	ragdoll.set_script(_ragdoll_script)
 	ragdoll.position = (pedestrian as Node3D).global_position
 	ragdoll.rotation = (pedestrian as Node3D).global_rotation
-	ragdoll.copy_visual_from(pedestrian)
 	get_tree().current_scene.add_child(ragdoll)
+	ragdoll.copy_visual_from(pedestrian)
 	ragdoll.launch(_vehicle.linear_velocity)

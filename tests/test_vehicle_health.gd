@@ -110,3 +110,22 @@ func test_take_damage_spawns_bullet_hole() -> void:
 	var before_count := body.get_child_count()
 	vh.take_damage(5.0, Vector3(0, 1, 0), Vector3.UP)
 	assert_gt(body.get_child_count(), before_count, "Bullet hole should be added")
+
+
+# ---------------------------------------------------------------------------
+# Bullet hole orientation — Vector3 comparison (vehicles/I4)
+# ---------------------------------------------------------------------------
+
+
+func test_bullet_hole_uses_is_equal_approx_not_exact_comparison() -> void:
+	# I4: hit_normal.abs() != Vector3.UP uses exact float comparison which can
+	# miss due to floating-point imprecision. Must use is_equal_approx.
+	var src := VehicleHealthScript.source_code
+	assert_false(
+		src.contains("hit_normal.abs() != Vector3.UP"),
+		"Must not use exact != comparison on Vector3",
+	)
+	assert_true(
+		src.contains("is_equal_approx(Vector3.UP)"),
+		"Must use is_equal_approx for Vector3 UP comparison",
+	)

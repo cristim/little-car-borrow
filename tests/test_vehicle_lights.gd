@@ -216,3 +216,33 @@ func test_disable_stops_physics_processing() -> void:
 		lights.is_physics_processing(),
 		"disable() should stop physics processing to prevent light restore",
 	)
+
+
+# ---------------------------------------------------------------------------
+# Night restore respects _manual_off (vehicles/I5)
+# ---------------------------------------------------------------------------
+
+
+func test_physics_process_night_restore_respects_manual_off_source() -> void:
+	# I5: the per-frame night restore must check _manual_off so lights can
+	# actually be turned off at night.
+	var src := VehicleLightsScript.source_code
+	assert_true(
+		src.contains("_is_night and not _manual_off"),
+		"Night restore in _physics_process must guard with 'and not _manual_off'",
+	)
+
+
+func test_lights_stay_off_at_night_when_manually_off() -> void:
+	# I5 behavioral: after toggle_lights() at night (_manual_off = true),
+	# calling _apply_light_state should keep lights hidden.
+	var lights: Node3D = VehicleLightsScript.new()
+	add_child_autofree(lights)
+	lights._set_night_mode(true)
+	lights.toggle_lights()
+	# _manual_off is now true; re-apply state directly
+	lights._apply_light_state()
+	for hl in lights._headlights:
+		assert_false(hl.visible, "Headlight should stay off when manually disabled at night")
+	for tl in lights._taillights:
+		assert_false(tl.visible, "Taillight should stay off when manually disabled at night")

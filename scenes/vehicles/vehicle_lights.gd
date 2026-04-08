@@ -140,8 +140,8 @@ func _physics_process(_delta: float) -> void:
 			light.visible = false
 		return
 
-	# Restore night-mode lights if within cull distance
-	if _is_night:
+	# Restore night-mode lights if within cull distance and not manually turned off
+	if _is_night and not _manual_off:
 		for light in _headlights:
 			light.visible = true
 		for light in _taillights:

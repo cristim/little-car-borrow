@@ -419,3 +419,22 @@ func test_speed_just_above_threshold_triggers() -> void:
 		_detector._cooldowns.has("hit_vehicle"),
 		"Speed just above threshold should trigger crime",
 	)
+
+
+# ================================================================
+# Ragdoll spawn order (vehicles/C2)
+# ================================================================
+
+
+func test_ragdoll_add_child_before_copy_visual_from() -> void:
+	# C2: ragdoll must be added to scene tree before copy_visual_from is called
+	# so it has a valid world transform when visuals are copied.
+	var src := DetectorScript.source_code
+	var add_idx := src.find("add_child(ragdoll)")
+	var copy_idx := src.find("copy_visual_from(pedestrian)")
+	assert_true(add_idx >= 0, "add_child(ragdoll) should exist in source")
+	assert_true(copy_idx >= 0, "copy_visual_from(pedestrian) should exist in source")
+	assert_true(
+		add_idx < copy_idx,
+		"add_child(ragdoll) must appear before copy_visual_from(pedestrian)",
+	)

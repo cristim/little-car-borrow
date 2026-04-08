@@ -7,12 +7,6 @@ Files: all 20 files in scenes/vehicles/
 
 ## CRITICAL
 
-### C2 — `collision_crime_detector.gd:91-97`: `add_child` called after `copy_visual_from`
-Ragdoll visuals placed relative to world origin instead of impact point because ragdoll
-has no world transform when visuals are copied.
-
-**Fix:** Call `add_child(ragdoll)` before `copy_visual_from(pedestrian)`.
-
 ### C3 — `boat_controller.gd:94-98`: Buoyancy force position ignores center_of_mass offset
 `apply_force` position doesn't account for custom center_of_mass `Vector3(0, -0.8, 0)`.
 Forces applied as if hull is 0.8m higher than actual.
@@ -26,13 +20,6 @@ If helicopter freed before 0.3s timer fires, attempts to call method on freed ob
 
 ### I3 — `helicopter_ai.gd:407`: Global `randf()` used in rotor audio instead of `_rng.randf()`
 Heavy use of global RNG from audio can skew seed state affecting game logic.
-
-### I4 — `vehicle_health.gd:85`: Floating-point exact equality on Vector3
-`hit_normal.abs() != Vector3.UP` uses exact comparison; should use `is_equal_approx`.
-
-### I5 — `vehicle_lights.gd:143-148`: Night restore bypasses `_manual_off` state
-Per-frame restore in `_physics_process` overrides manual-off every frame at night.
-Impossible to turn off lights at night while driving.
 
 ### I6 — `police_ai_controller.gd:677`: Cross-traffic mask includes pedestrians
 Police yield at intersections for jaywalkers during pursuit. Mask `112` includes
