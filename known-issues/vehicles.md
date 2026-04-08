@@ -5,14 +5,6 @@ Files: all 20 files in scenes/vehicles/
 
 ---
 
-## CRITICAL
-
-### C3 — `boat_controller.gd:94-98`: Buoyancy force position ignores center_of_mass offset
-`apply_force` position doesn't account for custom center_of_mass `Vector3(0, -0.8, 0)`.
-Forces applied as if hull is 0.8m higher than actual.
-
----
-
 ## IMPORTANT
 
 ### I8 — `boat_body_init.gd`: Engine mesh from builder silently discarded

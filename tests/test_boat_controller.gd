@@ -269,3 +269,22 @@ func test_speed_factor_clamp() -> void:
 		_src.contains("clampf(speed / 3.0, 0.5, 1.0)"),
 		"Speed factor should clamp between 0.5 and 1.0",
 	)
+
+
+# ==========================================================================
+# Buoyancy CoM offset (C3 fix)
+# ==========================================================================
+
+
+func test_buoyancy_subtracts_center_of_mass() -> void:
+	assert_true(
+		_src.contains("- _body.center_of_mass"),
+		"apply_force offset must subtract center_of_mass for correct torque arm",
+	)
+
+
+func test_buoyancy_uses_local_pt_variable() -> void:
+	assert_true(
+		_src.contains("var local_pt"),
+		"_apply_buoyancy should store the adjusted offset in a local_pt variable",
+	)

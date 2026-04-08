@@ -106,13 +106,8 @@ func _apply_buoyancy() -> void:
 		var depth: float = wave_y - world_point.y
 		if depth > 0.0:
 			var force_mag: float = BUOY_PER_M * clampf(depth, 0.0, MAX_DEPTH_CLAMP)
-			(
-				_body
-				. apply_force(
-					Vector3(0.0, force_mag, 0.0),
-					_body.to_local(world_point),
-				)
-			)
+			var local_pt: Vector3 = _body.to_local(world_point) - _body.center_of_mass
+			_body.apply_force(Vector3(0.0, force_mag, 0.0), local_pt)
 
 
 ## Anti-roll stabilization: applies corrective torque to keep the boat
