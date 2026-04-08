@@ -62,10 +62,23 @@ godot --headless --path . -s addons/gut/gut_cmdln.gd -gdir=res://tests/ -gexit
 1. Implement the feature/fix in `scenes/` or `src/`
 2. Write tests in `tests/` that cover the new behaviour
 3. Lint all changed files: `.venv/bin/gdlint <files>`
-4. Commit implementation and tests **in the same atomic commit**
+4. **Update `.project-docs/`** — add/update the relevant section in `architecture.md`,
+   `decisions.md`, or `conventions.md` before committing (see Project Docs rule below)
+5. Commit implementation, tests, and doc updates **in the same atomic commit**
    - Subject: `feat:` / `fix:` / `improve:` describing the change
    - Body bullet: list what was changed and what the tests verify
-5. Never split "add feature" and "add tests for feature" into separate commits
+6. Never split "add feature" and "add tests for feature" into separate commits
+
+## Project Docs (MANDATORY)
+
+After implementing any feature or non-trivial fix, update `.project-docs/` **in the same commit**:
+
+- **`architecture.md`**: add/update the system section (data flow, key constants, design decisions)
+- **`decisions.md`**: add a dated entry when a non-obvious design choice was made
+- **`conventions.md`**: update if a new pattern or naming convention was introduced
+- **`INDEX.md`**: keep the one-line summary for each doc current
+
+Do NOT skip this step. Stale docs are actively harmful — if you can't describe it in a sentence, the architecture is unclear.
 
 ## Security Rules
 

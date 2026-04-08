@@ -143,6 +143,43 @@
 | 9 | Trigger | Interaction areas, mission triggers |
 | 10 | Navigation | NavMesh obstacles |
 
+## Boat System
+- **BoatController** (`scenes/vehicles/boat_controller.gd`): Archimedes buoyancy on a RigidBody3D
+  - 8 hull sample points (local y=−0.3) × 4900 N/m depth force each
+  - Buoyancy always runs (boat floats when unoccupied); thrust/steering only when `active = true`
+  - Anti-roll torque (`_stabilize`) keeps boat level; wave height uses sine function
+  - `set_passenger(mass)` adds player weight to `_body.mass` so displacement accounts for rider
+- **Waterline occluder** (`scenes/vehicles/boat_body_builder.gd` + `boat_body_init.gd`):
+  - `_build_waterline_cap(profiles)` returns a flat opaque mesh at local y≈0.05
+  - Instantiated as `WaterlineCap` MeshInstance3D inside the `Body` node
+  - Dark bilge colour (fully opaque) depth-occludes the water plane from inside the hull
+- **Boat seating** (`scenes/player/states/driving.gd`):
+  - Player origin (feet) placed at boat local y=−0.50 so hip pivot (y+0.80) aligns with seat top (y=0.30)
+  - Manual gravity settling: `_boat_seat_vel_y -= 9.8 * delta` each frame until reaching seat_world.y
+  - Player X/Z locked to seat local position each frame so they follow the moving boat
+
+## Pier Generation (`scenes/world/generator/chunk_builder_piers.gd`)
+- `build()` finds a coastal edge, builds pier geometry + collision, spawns 1–2 boats
+- **Pier collision**: BoxShape3D dimensions derived from `pier_dir` — `PIER_LENGTH` goes on the axis the pier runs along so X-axis piers get correct 12 m span (was always 12 m on Z, causing fall-through)
+- Box thickness 0.5 m, centre lowered by half-thickness so top face is flush with deck
+- **Boat spawn**: placed at `PIER_LENGTH + 2.0 + i*4.0` from shore (was `PIER_LENGTH * 0.8` — inside pier)
+- Lateral offset `PIER_WIDTH/2 + 3.5` keeps boats clear of dock edge and shore
+
+## Player Fall Damage (`scenes/player/player.gd`)
+- `_fall_peak_y` records the highest y reached since leaving the floor
+- On landing: `fall_dist = _fall_peak_y - landing_y`; damage = `(fall_dist − 3.0) × 10 HP/m`
+- Safe threshold 3 m (curb/small ledge); ~50 HP at 8 m; lethal at ~13 m
+- Calls `GameManager.take_damage()` — HUD and death logic respond normally
+
+## Weapon System (`scenes/player/player_weapon.gd`)
+- 4 weapons: Pistol, SMG, Shotgun, Rifle (switched with keys 1–4 or mouse wheel)
+- Raycast from PlayerCamera pivot through crosshair (anchor 35% screen height)
+- **Effective ranges**: Pistol 80 m, SMG 70 m, Shotgun 40 m, Rifle 200 m
+- Spread (cone half-angle in radians): Pistol 0.0, SMG 0.03, Shotgun 0.08, Rifle 0.005
+- Shotgun fires 6 pellets; each pellet deals `total_damage / pellets`
+- Hits: pedestrians → ragdoll + crime; police → ragdoll + crime; RigidBody3D → impulse + VehicleHealth; StaticBody3D → bullet decal
+- Procedural gunshot audio via AudioStreamGenerator (snap + body tone + filtered tail)
+
 ## Performance Budget
 - 60 FPS at 1080p
 - Max 80 NPC vehicles, 40 pedestrians, 10 police
