@@ -254,3 +254,36 @@ func test_origin_tile_no_river() -> void:
 		data.is_empty(),
 		"City center tile should have no river (height too low)",
 	)
+
+
+# --- clear_tile — cache pruning (core/C2) ---
+
+
+func test_clear_tile_removes_entry() -> void:
+	# C2: cache grows without bound; clear_tile must remove the entry.
+	var tile := Vector2i(200, 200)
+	_river.get_river_at(tile)
+	assert_true(_river._river_tiles.has(tile), "Tile should be cached after query")
+	_river.clear_tile(tile)
+	assert_false(
+		_river._river_tiles.has(tile),
+		"clear_tile should remove the entry from the cache",
+	)
+
+
+func test_clear_tile_nonexistent_no_error() -> void:
+	# Clearing a tile never queried must not crash.
+	_river.clear_tile(Vector2i(99999, 99999))
+	pass_test("clear_tile on uncached tile should not error")
+
+
+func test_clear_tile_allows_fresh_query() -> void:
+	# After clearing, the tile can be queried again and re-cached.
+	var tile := Vector2i(201, 201)
+	_river.get_river_at(tile)
+	_river.clear_tile(tile)
+	_river.get_river_at(tile)
+	assert_true(
+		_river._river_tiles.has(tile),
+		"After clear_tile, querying again should re-cache the tile",
+	)

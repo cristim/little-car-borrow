@@ -339,3 +339,22 @@ func test_make_key_different_tiles_differ() -> void:
 		key_b,
 		"Same indices in different tiles must produce different keys",
 	)
+
+
+# ================================================================
+# A* search radius anchored to goal_pos (core/C1)
+# ================================================================
+
+
+func test_search_radius_uses_goal_pos_not_start_pos() -> void:
+	# C1: pruning neighbors by distance to start_pos cuts off valid paths
+	# when start-to-goal > MAX_SEARCH_RADIUS/2. Must use goal_pos.
+	var src: String = (_graph.get_script() as GDScript).source_code
+	assert_false(
+		src.contains("distance_to(start_pos) > MAX_SEARCH_RADIUS"),
+		"Search radius must NOT be anchored to start_pos",
+	)
+	assert_true(
+		src.contains("distance_to(goal_pos) > MAX_SEARCH_RADIUS"),
+		"Search radius must be anchored to goal_pos",
+	)

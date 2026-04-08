@@ -228,6 +228,7 @@ func _unload_distant_chunks(pos: Vector3) -> void:
 		var node: Node3D = _chunks[tile]
 		_chunks.erase(tile)
 		node.queue_free()
+		_river_map.clear_tile(tile)
 
 
 func _get_tracking_position() -> Vector3:

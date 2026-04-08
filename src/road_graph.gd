@@ -70,7 +70,7 @@ func find_path(from_world: Vector3, to_world: Vector3, grid: RefCounted) -> Arra
 			var n_ew: int = neighbor[1]
 			var n_pos: Vector3 = neighbor[2]
 
-			if n_pos.distance_to(start_pos) > MAX_SEARCH_RADIUS:
+			if n_pos.distance_to(goal_pos) > MAX_SEARCH_RADIUS:
 				continue
 
 			var n_key: Vector3i = _make_key(n_ns, n_ew, n_pos, grid_span)

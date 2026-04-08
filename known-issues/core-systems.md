@@ -7,26 +7,6 @@ weapon_mesh_builder.gd, state_machine/state.gd, state_machine/state_machine.gd
 
 ---
 
-## CRITICAL
-
-### C1 — `road_graph.gd:87`: Search radius anchored to start_pos, not goal
-Neighbors >500m from start but near the goal are incorrectly pruned. `find_path()`
-returns `[]` despite valid path existing when start-to-goal distance approaches 500m.
-
-### C2 — `river_map.gd`: `_river_tiles` cache grows without bound
-Stores entry for every tile ever queried (even empty `{}` for non-river tiles) and
-never pruned. Unbounded memory leak in infinite world.
-
-**Fix:** Add `clear_tile(tile)` method, call from city.gd during chunk unload.
-
-### C3 — `chunk_persistence.gd:36`: File handle open during `DirAccess.remove_absolute`
-In `load_tile()`, corrupt file deletion attempted while FileAccess object still in scope.
-On Windows, file cannot be deleted while open; corrupt file persists forever.
-
-**Fix:** Set `file = null` before calling `DirAccess.remove_absolute(path)`.
-
----
-
 ## IMPORTANT
 
 ### I1 — `city_boundary.gd:6-7`: BASE_RADIUS and VARIATION at debug values

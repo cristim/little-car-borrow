@@ -253,3 +253,21 @@ func test_two_instances_share_filesystem() -> void:
 		"shared",
 		"Second instance should read what first wrote",
 	)
+
+
+# --- File handle closed before delete (core/C3) ---
+
+
+func test_load_tile_closes_file_before_delete() -> void:
+	# C3: on Windows, deleting an open file fails silently; file must be set
+	# to null (closed) before DirAccess.remove_absolute is called.
+	var src := ChunkPersistenceScript.source_code
+	# Find "file = null" before "remove_absolute" in load_tile
+	var null_idx := src.find("file = null")
+	var remove_idx := src.find("DirAccess.remove_absolute")
+	assert_true(null_idx >= 0, "'file = null' should exist in source")
+	assert_true(remove_idx >= 0, "'DirAccess.remove_absolute' should exist in source")
+	assert_true(
+		null_idx < remove_idx,
+		"'file = null' must appear before 'DirAccess.remove_absolute'",
+	)

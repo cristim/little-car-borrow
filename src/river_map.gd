@@ -110,6 +110,11 @@ func _find_downhill_dir(tile: Vector2i, exclude_dir: int) -> int:
 	return best_dir if best_dir >= 0 else (exclude_dir + 2) % 4
 
 
+## Remove a tile from the cache (call during chunk unload to prevent unbounded growth).
+func clear_tile(tile: Vector2i) -> void:
+	_river_tiles.erase(tile)
+
+
 func _find_uphill_dir(tile: Vector2i) -> int:
 	var best_dir := 0
 	var best_h := -INF

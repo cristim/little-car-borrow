@@ -32,7 +32,8 @@ func load_tile(tile: Vector2i) -> Dictionary:
 	var result: Variant = bytes_to_var(bytes)
 	if result is Dictionary and (result as Dictionary).has("biome"):
 		return result
-	# Corrupted or incomplete file — delete and return empty
+	# Corrupted or incomplete file — close handle then delete
+	file = null
 	DirAccess.remove_absolute(path)
 	return {}
 
