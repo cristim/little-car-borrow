@@ -5,16 +5,6 @@ Files: player.gd, player_camera.gd, player_flashlight.gd, player_model.gd,
 player_weapon.gd, states/driving.gd, entering_vehicle.gd, exiting_vehicle.gd,
 idle.gd, running.gd, swimming.gd, walking.gd
 
-## MEDIUM
-
-### M4 — `swimming.gd:99`: `_is_over_water()` defined but never called (dead code)
-
-### M5 — Multiple files: `_is_over_water()` and `_get_camera_relative_direction()` duplicated verbatim
-Present in idle.gd, walking.gd, running.gd, swimming.gd.
-
-
----
-
 ## LOW
 
 ### L1 — `player.gd:42-46`: Stale `nearest_vehicle` reference if vehicle freed without area exit
