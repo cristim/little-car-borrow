@@ -23,3 +23,33 @@
 - **Alternatives**: Separate player-on-foot and player-driving scenes, unified camera that morphs between modes
 - **Rationale**: Single scene avoids complexity of spawning/despawning player nodes. Dual cameras are simpler than a morphing camera - each mode has its own tuning. VehicleCamera as vehicle child means each vehicle type can customize its camera. InputManager guard in vehicle_controller prevents ghost inputs when on foot.
 - **Status**: Implemented - Phase 2 complete
+
+## 2026-03-02: Road Grid Utility — RefCounted vs Node/Autoload
+- **Decision**: `road_grid.gd` extends `RefCounted`; instantiated on demand via `preload("res://src/road_grid.gd").new()`
+- **Alternatives**: Autoload singleton; Node attached to a scene
+- **Rationale**: The road grid is pure math (no scene tree membership, no signals, no `_process`). RefCounted keeps it allocation-scoped and avoids scene-tree pollution. Any script that needs road math can instantiate it locally without depending on a globally registered autoload, making tests straightforward and eliminating hidden coupling.
+- **Status**: Implemented in `src/road_grid.gd`; used by `npc_vehicle_controller.gd`, `police_ai_controller.gd`, `mission_manager.gd`, and chunk builders
+
+## 2026-03-03: Mission System Data Model — Plain Dictionary vs Resource/class_name
+- **Decision**: Missions are plain GDScript `Dictionary` values; no `class_name`, no `Resource` subclass
+- **Alternatives**: `MissionData` Resource subclass; custom `class_name MissionData` script
+- **Rationale**: `class_name` is broken in Godot 4.5 — it causes cascading parse errors across the project (see MEMORY.md). Resources require file-backed `.tres` files or a registered class name, both of which hit the same issue. Plain Dictionaries are reliable, require no type registration, and support duck-typed field access (`mission.get("type", "")`). The tradeoff (no static typing) is acceptable because all mission creation is in `mission_manager.gd`.
+- **Status**: Implemented in `src/autoloads/mission_manager.gd`
+
+## 2026-03-08: Terrain Biome System — Deterministic Noise-Based Assignment vs Runtime Procedural Dispatch
+- **Decision**: Per-tile biome assigned deterministically in `biome_map.gd` using a fixed-seed `FastNoiseLite` (seed 123) combined with distance from city boundary and terrain noise
+- **Alternatives**: Assign biome at chunk build time using random state; fully procedural per-vertex coloring without biome concept
+- **Rationale**: A fixed seed means any tile coordinate always resolves to the same biome regardless of load order or player position — essential for an infinite world where chunks are loaded and unloaded continuously. Runtime random dispatch would produce different biomes on reload. The noise+distance formula gives geographically coherent regions (suburb ring → farmland → forest → mountain) without baking or pre-computation.
+- **Status**: Implemented in `src/biome_map.gd`; dispatches to `chunk_builder_suburb`, `chunk_builder_farmland`, `chunk_builder_mountain`, `chunk_builder_villages`
+
+## 2026-03-08: NPC Road-Following — Waypoint Intersection Approach vs NavMesh
+- **Decision**: NPC vehicles follow roads by tracking the nearest road-grid intersection as a waypoint, computed each frame from `road_grid.gd` math
+- **Alternatives**: Godot NavigationServer3D with baked NavMesh; A* over a discrete road graph
+- **Rationale**: NavMesh requires baking against static geometry — impossible in an infinite procedural world where roads extend indefinitely in all directions. A* over a pre-built graph has the same pre-computation problem. The road grid provides exact lane-centre positions at any world coordinate via `get_road_center_near()`, so NPC steering needs only a heading vector and a lane-error scalar. No baking, no memory overhead for path nodes, and it works at any player-reachable distance.
+- **Status**: Implemented in `scenes/vehicles/npc_vehicle_controller.gd` (extends `vehicle_ai_base.gd`)
+
+## 2026-03-29: Helicopter Flight Model — CharacterBody3D with Manual Velocity vs RigidBody3D
+- **Decision**: Helicopter uses `CharacterBody3D`; `helicopter_controller.gd` sets `velocity` directly and calls `move_and_slide()` each physics frame
+- **Alternatives**: `RigidBody3D` with `apply_central_force` / torque for lift and thrust
+- **Rationale**: `RigidBody3D` introduces unwanted physics coupling: gravity, angular drag, and integration drift make hover feel floaty and precise altitude control difficult. Flight-sim style controls (collective up/down, yaw, forward/back) map cleanly onto direct velocity assignment — `CharacterBody3D.move_and_slide()` handles collision response without the instability of competing forces. The same pattern is used by the player on foot, keeping the codebase consistent.
+- **Status**: Implemented in `scenes/vehicles/helicopter_controller.gd`
