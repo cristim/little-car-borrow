@@ -361,14 +361,18 @@ func _try_spawn() -> void:
 		# the chassis centre. If terrain at any wheel position is higher than at
 		# the centre, spawning at centre+0.25 would put that wheel in contact on
 		# frame 1, causing a massive spring_speed impulse.
-		# Cast rays at all four wheel corners and use the maximum terrain height.
-		# If the footprint spans more than 2 m of height (extreme slope), skip.
+		# Cast rays at all four wheel corners; store per-corner heights for the
+		# terrain-normal tilt applied below.  Skip if slope > 2 m across footprint.
+		# Corner order: [0]=front-left, [1]=front-right, [2]=rear-left, [3]=rear-right
+		# (front = -Z when yaw=0; axis-aligned offsets are a good approximation)
 		var max_surface_y: float = surface_y
-		var footprint := [
+		var corner_h: Array[float] = [surface_y, surface_y, surface_y, surface_y]
+		var footprint_offsets: Array[Vector2] = [
 			Vector2(-1.2, -1.4), Vector2(1.2, -1.4),
 			Vector2(-1.2, 1.4), Vector2(1.2, 1.4),
 		]
-		for fo: Vector2 in footprint:
+		for fi in range(4):
+			var fo: Vector2 = footprint_offsets[fi]
 			var fq := PhysicsRayQueryParameters3D.create(
 				Vector3(spawn_pos.x + fo.x, 80.0, spawn_pos.z + fo.y),
 				Vector3(spawn_pos.x + fo.x, -5.0, spawn_pos.z + fo.y),
@@ -377,12 +381,8 @@ func _try_spawn() -> void:
 			var fhit: Dictionary = space.intersect_ray(fq)
 			if not fhit.is_empty():
 				var fy: float = (fhit["position"] as Vector3).y
+				corner_h[fi] = fy
 				max_surface_y = maxf(max_surface_y, fy)
-		if max_surface_y - surface_y > 2.0:
-			print("[Traffic] SKIP rough center=%.2f max=%.2f xz=(%.1f,%.1f)" % [
-				surface_y, max_surface_y, spawn_pos.x, spawn_pos.z,
-			])
-			continue
 		surface_y = max_surface_y
 
 		# +0.25 m clearance: GEVP rear ray extends 0.15 m below body origin
@@ -391,6 +391,17 @@ func _try_spawn() -> void:
 		# damping spike (previous_compression=0 → spring_speed=compression/dt).
 		# 0.25 m keeps all wheels clear of the ground on the first physics tick.
 		spawn_pos.y = surface_y + 0.25
+
+		# Compute terrain normal early so we can skip wild angles before
+		# instantiating the vehicle.  normal.y < 0.3 means slope > ~73° —
+		# no drivable road should be that steep; skip this attempt.
+		var p_fl := Vector3(spawn_pos.x - 1.2, corner_h[0], spawn_pos.z - 1.4)
+		var p_fr := Vector3(spawn_pos.x + 1.2, corner_h[1], spawn_pos.z - 1.4)
+		var p_rl := Vector3(spawn_pos.x - 1.2, corner_h[2], spawn_pos.z + 1.4)
+		var p_rr := Vector3(spawn_pos.x + 1.2, corner_h[3], spawn_pos.z + 1.4)
+		var terrain_normal: Vector3 = (p_rl - p_fr).cross(p_rr - p_fl).normalized()
+		if terrain_normal.y <= 0.3:
+			continue
 
 		var too_close := false
 		for v in _vehicles:
@@ -426,7 +437,15 @@ func _try_spawn() -> void:
 		_apply_variant(vehicle)
 		_randomize_color(vehicle)
 		vehicle.position = spawn_pos
-		vehicle.rotation.y = yaw
+		# Tilt vehicle to match terrain slope. terrain_normal was computed above
+		# and is guaranteed to have y > 0.3 (wild angles were skipped).
+		var fwd_flat := Vector3(-sin(yaw), 0.0, -cos(yaw))
+		var fwd_t: Vector3 = fwd_flat - terrain_normal * fwd_flat.dot(terrain_normal)
+		if fwd_t.length_squared() > 0.01:
+			fwd_t = fwd_t.normalized()
+			vehicle.basis = Basis(fwd_t.cross(terrain_normal), terrain_normal, -fwd_t)
+		else:
+			vehicle.rotation.y = yaw
 
 		var vc := vehicle.get_node_or_null("VehicleController")
 		if vc:
