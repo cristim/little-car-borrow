@@ -15,19 +15,9 @@ Forces applied as if hull is 0.8m higher than actual.
 
 ## IMPORTANT
 
-### I2 — `helicopter_ai.gd:263`: Shoot sound lambda missing `is_instance_valid` guard
-If helicopter freed before 0.3s timer fires, attempts to call method on freed object.
-
-### I3 — `helicopter_ai.gd:407`: Global `randf()` used in rotor audio instead of `_rng.randf()`
-Heavy use of global RNG from audio can skew seed state affecting game logic.
-
 ### I6 — `police_ai_controller.gd:677`: Cross-traffic mask includes pedestrians
 Police yield at intersections for jaywalkers during pursuit. Mask `112` includes
 pedestrians(32) unlike NPC controller mask `88`.
-
-### I7 — `boat_audio.gd:79` / `engine_audio.gd:82`: Idle burble/wobble 1000x too slow
-Phase increment divides by `SAMPLE_RATE` (22050) inside `_process()` instead of frame rate.
-2 Hz burble becomes ~0.006 Hz (1 cycle per 167 seconds).
 
 ### I8 — `boat_body_init.gd`: Engine mesh from builder silently discarded
 Builder returns `"engine"` and `"stern_z"` keys but boat_body_init only reads hull/cabin/windshield.

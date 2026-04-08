@@ -74,13 +74,6 @@ func _process(delta: float) -> void:
 	var speed_ratio := clampf(speed_kmh / 80.0, 0.0, 1.0)
 	var base_freq := lerpf(BASE_FREQ_MIN, BASE_FREQ_MAX, speed_ratio)
 
-	# Idle burble (2 Hz amplitude modulation)
-	if speed_kmh < 5.0:
-		_burble_phase += IDLE_BURBLE_FREQ / SAMPLE_RATE
-		if _burble_phase > 1.0:
-			_burble_phase -= 1.0
-		base_freq += sin(_burble_phase * TAU) * IDLE_BURBLE_DEPTH
-
 	# Volume
 	var target_vol := lerpf(0.12, 0.45, maxf(speed_ratio, throttle))
 	_smooth_volume = lerpf(_smooth_volume, target_vol, delta * 6.0)
@@ -96,6 +89,14 @@ func _process(delta: float) -> void:
 
 	var frames_available := _playback.get_frames_available()
 	for _i in range(frames_available):
+		# Idle burble: phase incremented per sample (not per frame) for correct 2 Hz rate
+		var sample_freq := base_freq
+		if speed_kmh < 5.0:
+			_burble_phase += IDLE_BURBLE_FREQ / SAMPLE_RATE
+			if _burble_phase > 1.0:
+				_burble_phase -= 1.0
+			sample_freq += sin(_burble_phase * TAU) * IDLE_BURBLE_DEPTH
+
 		var fund := sin(_phase * TAU)
 		var shaped := fund * (0.8 + 0.2 * absf(fund))
 
@@ -114,11 +115,11 @@ func _process(delta: float) -> void:
 
 		_playback.push_frame(Vector2(sample, sample))
 
-		_phase += base_freq / SAMPLE_RATE
-		_phase2 += (base_freq * 2.0) / SAMPLE_RATE
-		_phase3 += (base_freq * 3.0) / SAMPLE_RATE
-		_phase4 += (base_freq * 4.0) / SAMPLE_RATE
-		_phase_sub += (base_freq * 0.5) / SAMPLE_RATE
+		_phase += sample_freq / SAMPLE_RATE
+		_phase2 += (sample_freq * 2.0) / SAMPLE_RATE
+		_phase3 += (sample_freq * 3.0) / SAMPLE_RATE
+		_phase4 += (sample_freq * 4.0) / SAMPLE_RATE
+		_phase_sub += (sample_freq * 0.5) / SAMPLE_RATE
 
 		if _phase > 1.0:
 			_phase -= 1.0

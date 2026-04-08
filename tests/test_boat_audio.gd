@@ -228,3 +228,22 @@ func test_hull_slap_clamped() -> void:
 		_src.contains("clampf((speed_kmh - 15.0) / 40.0, 0.0, 0.15)"),
 		"Hull slap amplitude should be clamped to 0.15",
 	)
+
+
+# ==========================================================================
+# Burble phase updated per sample not per frame (vehicles/I7)
+# ==========================================================================
+
+
+func test_burble_phase_incremented_inside_sample_loop() -> void:
+	# I7: incrementing _burble_phase once per _process() frame with
+	# IDLE_BURBLE_FREQ / SAMPLE_RATE gives 1000x too slow rate (~0.006 Hz).
+	# Must be inside the push_frame loop for correct 2 Hz burble.
+	assert_true(
+		_src.contains("sample_freq"),
+		"Burble must use per-sample local frequency variable",
+	)
+	# The burble increment must appear inside the for loop body (after push_frame setup)
+	var loop_start: int = _src.find("for _i in range(frames_available)")
+	var burble_pos: int = _src.find("_burble_phase += IDLE_BURBLE_FREQ")
+	assert_true(burble_pos > loop_start, "_burble_phase increment must be inside sample loop")

@@ -77,14 +77,6 @@ func _process(delta: float) -> void:
 	var speed_ratio := clampf(speed_kmh / 120.0, 0.0, 1.0)
 	var base_freq := lerpf(BASE_FREQ_MIN, BASE_FREQ_MAX, speed_ratio)
 
-	# Idle wobble with slight irregularity
-	if speed_kmh < 5.0:
-		_wobble_phase += IDLE_WOBBLE_FREQ / SAMPLE_RATE
-		if _wobble_phase > 1.0:
-			_wobble_phase -= 1.0
-		base_freq += sin(_wobble_phase * TAU) * IDLE_WOBBLE_DEPTH
-		base_freq += sin(_wobble_phase * TAU * 2.3) * 3.0
-
 	# Exhaust crackle on throttle lift-off at speed
 	if _prev_throttle > 0.3 and throttle < 0.1 and speed_kmh > 30.0:
 		_crackle_timer = 0.3
@@ -101,6 +93,15 @@ func _process(delta: float) -> void:
 
 	var frames_available := _playback.get_frames_available()
 	for _i in range(frames_available):
+		# Idle wobble: phase incremented per sample (not per frame) for correct rate
+		var sample_freq := base_freq
+		if speed_kmh < 5.0:
+			_wobble_phase += IDLE_WOBBLE_FREQ / SAMPLE_RATE
+			if _wobble_phase > 1.0:
+				_wobble_phase -= 1.0
+			sample_freq += sin(_wobble_phase * TAU) * IDLE_WOBBLE_DEPTH
+			sample_freq += sin(_wobble_phase * TAU * 2.3) * 3.0
+
 		# Fundamental with slight waveshaping (squared sine for growl)
 		var fund := sin(_phase * TAU)
 		var shaped := fund * (0.8 + 0.2 * absf(fund))
@@ -120,12 +121,12 @@ func _process(delta: float) -> void:
 
 		_playback.push_frame(Vector2(sample, sample))
 
-		_phase += base_freq / SAMPLE_RATE
-		_phase2 += (base_freq * 2.0) / SAMPLE_RATE
-		_phase3 += (base_freq * 3.0) / SAMPLE_RATE
-		_phase4 += (base_freq * 4.0) / SAMPLE_RATE
-		_phase5 += (base_freq * 5.0) / SAMPLE_RATE
-		_phase_sub += (base_freq * 0.5) / SAMPLE_RATE
+		_phase += sample_freq / SAMPLE_RATE
+		_phase2 += (sample_freq * 2.0) / SAMPLE_RATE
+		_phase3 += (sample_freq * 3.0) / SAMPLE_RATE
+		_phase4 += (sample_freq * 4.0) / SAMPLE_RATE
+		_phase5 += (sample_freq * 5.0) / SAMPLE_RATE
+		_phase_sub += (sample_freq * 0.5) / SAMPLE_RATE
 
 		if _phase > 1.0:
 			_phase -= 1.0

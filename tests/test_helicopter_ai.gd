@@ -171,3 +171,41 @@ func test_searchlight_shadow_enabled() -> void:
 		light.shadow_enabled,
 		"Searchlight should have shadows enabled",
 	)
+
+
+# ==========================================================================
+# Rotor audio uses _rng not global randf (vehicles/I3)
+# ==========================================================================
+
+
+func test_rotor_audio_uses_rng_not_global_randf() -> void:
+	# I3: global randf() in rotor audio skews shared seed state affecting
+	# game logic RNG. Must use _rng.randf() instead.
+	var src: String = HeliScript.source_code
+	# Find the _fill_rotor_audio function body
+	var fn_start: int = src.find("func _fill_rotor_audio(")
+	var fn_end: int = src.find("\nfunc ", fn_start + 1)
+	var fn_body: String = src.substr(fn_start, fn_end - fn_start)
+	assert_false(
+		fn_body.contains("randf()") and not fn_body.contains("_rng.randf()"),
+		"_fill_rotor_audio must use _rng.randf() not global randf()",
+	)
+	assert_true(
+		fn_body.contains("_rng.randf()"),
+		"_fill_rotor_audio should call _rng.randf()",
+	)
+
+
+# ==========================================================================
+# Shoot sound timer uses is_instance_valid guard (vehicles/I2)
+# ==========================================================================
+
+
+func test_shoot_sound_timer_has_instance_valid_guard() -> void:
+	# I2: if helicopter freed before 0.3s timer fires, the Callable must guard
+	# with is_instance_valid to prevent call on freed object.
+	var src: String = HeliScript.source_code
+	assert_true(
+		src.contains("is_instance_valid(asp)"),
+		"Shoot sound timer lambda must guard with is_instance_valid(asp)",
+	)

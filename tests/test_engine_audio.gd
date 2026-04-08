@@ -258,3 +258,20 @@ func test_crackle_initial_amp_is_012() -> void:
 		_src.contains("_crackle_amp = 0.12"),
 		"Crackle initial amplitude should be 0.12",
 	)
+
+
+# ==========================================================================
+# Wobble phase updated per sample not per frame (vehicles/I7)
+# ==========================================================================
+
+
+func test_wobble_phase_incremented_inside_sample_loop() -> void:
+	# I7: same bug as boat_audio — idle wobble phase must be incremented per
+	# sample, not once per frame, to produce correct 3.5 Hz wobble.
+	assert_true(
+		_src.contains("sample_freq"),
+		"Wobble must use per-sample local frequency variable",
+	)
+	var loop_start: int = _src.find("for _i in range(frames_available)")
+	var wobble_pos: int = _src.find("_wobble_phase += IDLE_WOBBLE_FREQ")
+	assert_true(wobble_pos > loop_start, "_wobble_phase increment must be inside sample loop")

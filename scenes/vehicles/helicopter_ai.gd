@@ -280,7 +280,11 @@ func _play_shoot_sound() -> void:
 
 		playback.push_frame(Vector2(sample, sample))
 
-	get_tree().create_timer(0.3).timeout.connect(asp.queue_free)
+	get_tree().create_timer(0.3).timeout.connect(
+		func() -> void:
+			if is_instance_valid(asp):
+				asp.queue_free()
+	)
 
 
 func _get_player_pos() -> Vector3:
@@ -381,7 +385,7 @@ func _fill_rotor_audio() -> void:
 		pulse = pulse * pulse * pulse * signf(pulse)
 		var blade_sample := pulse * 0.25
 
-		var noise := randf() - 0.5
+		var noise := _rng.randf() - 0.5
 		_rotor_noise_state += noise_alpha * (noise - _rotor_noise_state)
 		var wind_sample := _rotor_noise_state * 0.15
 
