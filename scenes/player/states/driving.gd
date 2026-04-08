@@ -6,6 +6,7 @@ var _original_collision_layer := 0
 var _original_player_layer := 0
 var _original_player_mask := 0
 var _boat_seat_vel_y := 0.0  # vertical velocity for gravity-based bench settling
+var _created_vcam := false  # true when we instantiated the VehicleCamera ourselves
 
 
 func enter(msg: Dictionary = {}) -> void:
@@ -126,6 +127,9 @@ func enter(msg: Dictionary = {}) -> void:
 		vcam = CamScene.instantiate()
 		vcam.set("target_path", NodePath(".."))
 		_vehicle.add_child(vcam)
+		_created_vcam = true
+	else:
+		_created_vcam = false
 	# Pull camera back for boats/helicopters so player and vehicle are visible
 	if is_boat:
 		vcam.set("min_distance", 8.0)
@@ -222,6 +226,13 @@ func exit() -> void:
 		var lights_node := _vehicle.get_node_or_null("Body/VehicleLights")
 		if lights_node:
 			lights_node.set_player_driving(false)
+
+	# Remove dynamically-created boat camera to avoid orphaned nodes
+	if _created_vcam and is_instance_valid(_vehicle):
+		var old_cam: Node = _vehicle.get_node_or_null("VehicleCamera")
+		if is_instance_valid(old_cam):
+			old_cam.queue_free()
+	_created_vcam = false
 
 	# Restore player visibility and physics (safety net)
 	owner.visible = true

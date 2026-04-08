@@ -12,8 +12,6 @@ idle.gd, running.gd, swimming.gd, walking.gd
 ### M5 — Multiple files: `_is_over_water()` and `_get_camera_relative_direction()` duplicated verbatim
 Present in idle.gd, walking.gd, running.gd, swimming.gd.
 
-### M6 — `driving.gd:88-102`: Dynamically instantiated boat camera never removed on exit
-Persists as orphaned child node after player disembarks.
 
 ---
 
