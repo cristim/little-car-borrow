@@ -43,6 +43,8 @@ var _recovery_active := false
 var _recovery_road_index := 0
 var _recovery_direction: int = Direction.NORTH
 
+var _city_manager: Node = null
+
 
 func initialize(vehicle: RigidBody3D, road_idx: int, direction: int) -> void:
 	_vehicle = vehicle
@@ -493,12 +495,13 @@ func _get_recovery_lane_error() -> float:
 
 
 func _is_in_city() -> bool:
-	var city_nodes := get_tree().get_nodes_in_group("city_manager")
-	if city_nodes.is_empty():
+	if not _city_manager or not is_instance_valid(_city_manager):
+		_city_manager = get_tree().get_first_node_in_group("city_manager")
+	if not _city_manager:
 		return true
-	if not city_nodes[0].has_meta("city_boundary"):
+	if not _city_manager.has_meta("city_boundary"):
 		return true
-	var boundary: RefCounted = city_nodes[0].get_meta("city_boundary")
+	var boundary: RefCounted = _city_manager.get_meta("city_boundary")
 	if not boundary:
 		return true
 	return (

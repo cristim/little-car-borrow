@@ -48,6 +48,7 @@ var _crackle_timer := 0.0
 var _crackle_amp := 0.0
 var _prev_throttle := 0.0
 var _smooth_volume := 0.15
+var _cam: Camera3D = null
 
 
 func _ready() -> void:
@@ -62,6 +63,7 @@ func _ready() -> void:
 	attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
 	play()
 	_playback = get_stream_playback()
+	_cam = get_viewport().get_camera_3d()
 
 
 func _process(delta: float) -> void:
@@ -69,9 +71,10 @@ func _process(delta: float) -> void:
 		return
 
 	# Distance culling — stop playback entirely instead of pushing silence
-	var cam := get_viewport().get_camera_3d()
-	if cam:
-		var dist := global_position.distance_to(cam.global_position)
+	if not _cam or not is_instance_valid(_cam):
+		_cam = get_viewport().get_camera_3d()
+	if _cam:
+		var dist := global_position.distance_to(_cam.global_position)
 		if dist > CULL_DISTANCE:
 			if playing:
 				stop()

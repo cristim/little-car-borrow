@@ -135,6 +135,7 @@ func _on_wanted_level_changed(level: int) -> void:
 
 func _try_spawn() -> void:
 	var player_pos := _player.global_position
+	var npc_vehicles: Array = get_tree().get_nodes_in_group("npc_vehicle")
 
 	for _attempt in range(5):
 		var is_ns := _rng.randi() % 2 == 0
@@ -201,7 +202,7 @@ func _try_spawn() -> void:
 				too_close = true
 				break
 		if not too_close:
-			for v in get_tree().get_nodes_in_group("npc_vehicle"):
+			for v in npc_vehicles:
 				if spawn_pos.distance_to((v as Node3D).global_position) < MIN_VEHICLE_DIST:
 					too_close = true
 					break

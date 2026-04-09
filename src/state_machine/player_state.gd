@@ -5,6 +5,8 @@ extends "res://src/state_machine/state.gd"
 
 const SEA_LEVEL: float = GameManager.SEA_LEVEL
 
+var _city_manager: Node = null
+
 
 func _get_camera_relative_direction(input: Vector2) -> Vector3:
 	var cam_yaw: float = owner.player_camera.get_yaw()
@@ -15,10 +17,11 @@ func _get_camera_relative_direction(input: Vector2) -> Vector3:
 
 
 func _get_ground_height(pos: Vector3) -> float:
-	var city_nodes := owner.get_tree().get_nodes_in_group("city_manager")
-	if city_nodes.is_empty():
+	if not _city_manager or not is_instance_valid(_city_manager):
+		_city_manager = owner.get_tree().get_first_node_in_group("city_manager")
+	if not _city_manager:
 		return 0.0
-	var boundary: RefCounted = city_nodes[0].get_meta("city_boundary")
+	var boundary: RefCounted = _city_manager.get_meta("city_boundary")
 	if not boundary:
 		return 0.0
 	return boundary.get_ground_height(pos.x, pos.z)

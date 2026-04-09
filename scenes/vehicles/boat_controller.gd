@@ -31,6 +31,7 @@ const HULL_POINTS := [
 var active := false
 var _body: RigidBody3D = null
 var _base_mass := 0.0
+var _engine_pivot: Node3D = null
 
 
 func _ready() -> void:
@@ -42,6 +43,7 @@ func _ready() -> void:
 		# Low center of mass keeps the boat stable (heavy hull/engine below)
 		_body.center_of_mass_mode = RigidBody3D.CENTER_OF_MASS_MODE_CUSTOM
 		_body.center_of_mass = Vector3(0.0, -0.8, 0.0)
+		_engine_pivot = _body.get_node_or_null("EnginePivot")
 
 
 func _physics_process(delta: float) -> void:
@@ -85,11 +87,10 @@ func _physics_process(delta: float) -> void:
 	# Rotate the visual engine pivot to match steering.
 	# Sign matches steer_angle used for thrust (both negated) so the
 	# pivot visually agrees with the direction the boat is turning.
-	var engine_pivot: Node3D = _body.get_node_or_null("EnginePivot")
-	if engine_pivot:
+	if _engine_pivot:
 		var target_angle: float = -steer * MAX_STEER_ANGLE
-		engine_pivot.rotation.y = lerpf(
-			engine_pivot.rotation.y,
+		_engine_pivot.rotation.y = lerpf(
+			_engine_pivot.rotation.y,
 			target_angle,
 			0.15,
 		)

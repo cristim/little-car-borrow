@@ -257,8 +257,6 @@ func _play_shoot_sound() -> void:
 	asp.play()
 
 	var playback: AudioStreamGeneratorPlayback = asp.get_stream_playback()
-	var shoot_rng := RandomNumberGenerator.new()
-	shoot_rng.randomize()
 
 	var rate := 22050.0
 	var frames := int(rate * 0.12)
@@ -271,10 +269,10 @@ func _play_shoot_sound() -> void:
 
 		if i < snap_end:
 			var snap_env := 1.0 - float(i) / float(snap_end)
-			sample += (shoot_rng.randf() - 0.5) * 0.5 * snap_env
+			sample += (_rng.randf() - 0.5) * 0.5 * snap_env
 
 		var tail_env := exp(-t * 12.0)
-		var noise := (shoot_rng.randf() - 0.5) * 0.2 * tail_env
+		var noise := (_rng.randf() - 0.5) * 0.2 * tail_env
 		filter_state += 0.15 * (noise - filter_state)
 		sample += filter_state
 
