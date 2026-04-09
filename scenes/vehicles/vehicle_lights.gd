@@ -24,6 +24,7 @@ var _is_night := false
 var _manual_on := false
 var _manual_off := false
 var _player_driving := false
+var _culled := false
 
 
 func _ready() -> void:
@@ -132,13 +133,16 @@ func _physics_process(_delta: float) -> void:
 	if _camera == null or not is_instance_valid(_camera):
 		_camera = get_viewport().get_camera_3d()
 	if _camera and global_position.distance_to(_camera.global_position) > CULL_DISTANCE:
-		for light in _headlights:
-			light.visible = false
-		for light in _taillights:
-			light.visible = false
-		for light in _reverse_lights:
-			light.visible = false
+		if not _culled:
+			_culled = true
+			for light in _headlights:
+				light.visible = false
+			for light in _taillights:
+				light.visible = false
+			for light in _reverse_lights:
+				light.visible = false
 		return
+	_culled = false
 
 	# Restore night-mode lights if within cull distance and not manually turned off
 	if _is_night and not _manual_off:

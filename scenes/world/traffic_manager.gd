@@ -167,17 +167,6 @@ func _process(delta: float) -> void:
 				if vy > threshold:
 					launched.append(v)
 					var vpos: Vector3 = (v as Node3D).global_position
-					push_warning(
-						(
-							"[Traffic] CULL launch vy=%.1f pos=(%.1f,%.1f,%.1f)"
-							% [
-								vy,
-								vpos.x,
-								vpos.y,
-								vpos.z,
-							]
-						)
-					)
 					# Probe the real terrain height at this cell so the next spawn
 					# attempt uses a corrected Y instead of the flat-base-plane hit.
 					var probe := (
@@ -328,17 +317,6 @@ func _try_spawn() -> void:
 			if h_vel.normalized().dot(offset.normalized()) > 0.0:
 				continue
 
-		print(
-			(
-				"[Traffic] SPAWN surface_y=%.2f pos=(%.1f,%.1f,%.1f)"
-				% [
-					surface_y,
-					spawn_pos.x,
-					spawn_pos.y,
-					spawn_pos.z,
-				]
-			)
-		)
 		var vehicle := _vehicle_scene.instantiate()
 		_apply_variant(vehicle)
 		_randomize_color(vehicle)
@@ -393,16 +371,6 @@ func _despawn_far() -> void:
 		# Cull vehicles stuck airborne after spawn grace (bad surface detection).
 		var npc_ai_node: Node = v.get_node_or_null("NPCVehicleController")
 		if npc_ai_node and npc_ai_node._spawn_grace <= 0.0 and v_pos.y > AIRBORNE_CULL_HEIGHT:
-			print(
-				(
-					"[Traffic] CULL airborne pos=(%.1f,%.1f,%.1f)"
-					% [
-						v_pos.x,
-						v_pos.y,
-						v_pos.z,
-					]
-				)
-			)
 			to_remove.append(v)
 			continue
 		var d := v_pos.distance_to(player_pos)

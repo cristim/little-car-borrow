@@ -4,9 +4,11 @@ extends CharacterBody3D
 
 const CHASE_SPEED := 5.5
 const SHOOT_RANGE := 30.0
+const SHOOT_RANGE_SQ := SHOOT_RANGE * SHOOT_RANGE
 const SHOOT_COOLDOWN := 1.2
 const SHOOT_DAMAGE := 8.0
 const DESPAWN_DIST := 80.0
+const DESPAWN_DIST_SQ := DESPAWN_DIST * DESPAWN_DIST
 const GRAVITY := 9.8
 const MUZZLE_FLASH_TIME := 0.08
 
@@ -52,8 +54,8 @@ func _physics_process(delta: float) -> void:
 
 	# Despawn if too far from player
 	var target_pos := _get_target_pos()
-	var dist := global_position.distance_to(target_pos)
-	if dist > DESPAWN_DIST:
+	var dist_sq := global_position.distance_squared_to(target_pos)
+	if dist_sq > DESPAWN_DIST_SQ:
 		queue_free()
 		return
 
@@ -85,7 +87,7 @@ func _physics_process(delta: float) -> void:
 
 	# Shooting
 	_shoot_timer -= delta
-	if h_dist < SHOOT_RANGE and _shoot_timer <= 0.0:
+	if h_dist * h_dist < SHOOT_RANGE_SQ and _shoot_timer <= 0.0:
 		_shoot(target_pos)
 		_shoot_timer = SHOOT_COOLDOWN + _rng.randf_range(-0.2, 0.3)
 

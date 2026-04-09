@@ -10,6 +10,7 @@ const SINK_ANGULAR_DAMP := 3.0
 var _timer := 0.0
 var _sinking := false
 var _vehicle: Node = null
+var _boundary: RefCounted = null
 
 
 func _ready() -> void:
@@ -105,13 +106,14 @@ func _spawn_bubbles() -> void:
 
 
 func _is_over_water(pos: Vector3) -> bool:
-	var city_nodes := get_tree().get_nodes_in_group("city_manager")
-	if city_nodes.is_empty():
+	if not _boundary:
+		var city_nodes := get_tree().get_nodes_in_group("city_manager")
+		if city_nodes.is_empty():
+			return false
+		if not city_nodes[0].has_meta("city_boundary"):
+			return false
+		_boundary = city_nodes[0].get_meta("city_boundary")
+	if not _boundary:
 		return false
-	if not city_nodes[0].has_meta("city_boundary"):
-		return false
-	var boundary: RefCounted = city_nodes[0].get_meta("city_boundary")
-	if not boundary:
-		return false
-	var ground_h: float = boundary.get_ground_height(pos.x, pos.z)
+	var ground_h: float = _boundary.get_ground_height(pos.x, pos.z)
 	return ground_h < SEA_LEVEL

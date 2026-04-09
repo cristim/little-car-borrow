@@ -5,6 +5,7 @@ extends "res://src/state_machine/state.gd"
 const FLEE_SPEED := 4.0
 const FLEE_DURATION := 125.0
 const SAFE_DISTANCE := 500.0
+const SAFE_DISTANCE_SQ := SAFE_DISTANCE * SAFE_DISTANCE
 
 var _flee_direction := Vector3.FORWARD
 var _threat_pos := Vector3.ZERO
@@ -37,6 +38,6 @@ func physics_update(delta: float) -> void:
 		ped.look_at(look_target, Vector3.UP)
 
 	_timer += delta
-	var dist := ped.global_position.distance_to(_threat_pos)
-	if _timer >= FLEE_DURATION or dist >= SAFE_DISTANCE:
+	var dist_sq := ped.global_position.distance_squared_to(_threat_pos)
+	if _timer >= FLEE_DURATION or dist_sq >= SAFE_DISTANCE_SQ:
 		state_machine.transition_to("PedestrianWalk", {"direction": _flee_direction})

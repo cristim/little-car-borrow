@@ -5,7 +5,10 @@ extends CharacterBody3D
 const FLEE_VEHICLE_SPEED := 5.0
 const LOD_MID_DIST := 40.0
 const LOD_FAR_DIST := 70.0
+const LOD_MID_DIST_SQ := LOD_MID_DIST * LOD_MID_DIST
+const LOD_FAR_DIST_SQ := LOD_FAR_DIST * LOD_FAR_DIST
 const GUNSHOT_HEAR_RADIUS := 100.0
+const GUNSHOT_HEAR_RADIUS_SQ := GUNSHOT_HEAR_RADIUS * GUNSHOT_HEAR_RADIUS
 
 var _frame_counter := 0
 
@@ -30,10 +33,10 @@ func _physics_process(delta: float) -> void:
 	var skip := false
 	var cam := get_viewport().get_camera_3d()
 	if cam:
-		var d := global_position.distance_to(cam.global_position)
-		if d > LOD_FAR_DIST:
+		var d_sq := global_position.distance_squared_to(cam.global_position)
+		if d_sq > LOD_FAR_DIST_SQ:
 			skip = _frame_counter % 4 != 0
-		elif d > LOD_MID_DIST:
+		elif d_sq > LOD_MID_DIST_SQ:
 			skip = _frame_counter % 2 != 0
 
 	var sm := get_node_or_null("StateMachine")
@@ -69,7 +72,7 @@ func _on_proximity_body_entered(body: Node) -> void:
 
 
 func _on_gunshot_fired(shot_pos: Vector3) -> void:
-	if global_position.distance_to(shot_pos) > GUNSHOT_HEAR_RADIUS:
+	if global_position.distance_squared_to(shot_pos) > GUNSHOT_HEAR_RADIUS_SQ:
 		return
 	var sm := get_node_or_null("StateMachine")
 	if sm and sm.current_state:

@@ -175,6 +175,7 @@ var _last_lights_visible := false
 var _last_window_night := false
 var _rng := RandomNumberGenerator.new()
 var _window_toggle_timer: Timer
+var _cached_cam: Camera3D = null
 
 var _moon: MeshInstance3D
 var _moon_mat: ShaderMaterial
@@ -400,7 +401,9 @@ func _update_moon(h: float) -> void:
 		# Reset so the position is recalculated at the next nightfall.
 		_moon_dir_valid = false
 		return
-	var cam: Camera3D = get_viewport().get_camera_3d()
+	if not _cached_cam or not is_instance_valid(_cached_cam):
+		_cached_cam = get_viewport().get_camera_3d()
+	var cam: Camera3D = _cached_cam
 	var origin: Vector3 = cam.global_position if cam else Vector3.ZERO
 	var sun_fwd: Vector3 = -_light.global_basis.z if _light else Vector3(0.0, -1.0, 0.0)
 	# Fix the moon's sky position once per night so it does not visibly drift.
@@ -420,9 +423,10 @@ func _update_stars(h: float) -> void:
 	if not _star_sphere or not _star_mat:
 		return
 	_star_mat.set_shader_parameter("star_alpha", _night_factor(h))
-	var cam: Camera3D = get_viewport().get_camera_3d()
-	if cam:
-		_star_sphere.global_position = cam.global_position
+	if not _cached_cam or not is_instance_valid(_cached_cam):
+		_cached_cam = get_viewport().get_camera_3d()
+	if _cached_cam:
+		_star_sphere.global_position = _cached_cam.global_position
 
 
 func _update_clouds(delta: float) -> void:

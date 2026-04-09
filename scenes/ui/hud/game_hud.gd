@@ -9,6 +9,9 @@ var _speed_kmh := 0.0
 var _wanted_level := 0
 var _flash_timer := 0.0
 var _reward_timer := 0.0
+var _fps_timer := 0.0
+var _last_fps := -1
+var _last_speed_int := -1
 
 @onready var minimap: Control = $TopRight/MinimapControl
 @onready var money_label: Label = $TopRight/MoneyLabel
@@ -51,8 +54,20 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
-	speed_label.text = "%d km/h" % roundi(_speed_kmh)
+	# FPS: update at most 4 times per second to avoid constant string alloc
+	_fps_timer += delta
+	if _fps_timer >= 0.25:
+		_fps_timer = 0.0
+		var fps := Engine.get_frames_per_second()
+		if fps != _last_fps:
+			_last_fps = fps
+			fps_label.text = "FPS: %d" % fps
+
+	# Speed: only update label when the integer km/h changes
+	var speed_int := roundi(_speed_kmh)
+	if speed_int != _last_speed_int:
+		_last_speed_int = speed_int
+		speed_label.text = "%d km/h" % speed_int
 
 	if _wanted_level > 0:
 		_flash_timer += delta * FLASH_SPEED

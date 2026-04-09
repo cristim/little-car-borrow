@@ -9,6 +9,7 @@ var _timer := 0.0
 var _red_on := true
 var _red_light: OmniLight3D = null
 var _blue_light: OmniLight3D = null
+var _lights_were_active := false
 
 
 func _ready() -> void:
@@ -31,8 +32,12 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if not lights_active:
-		_set_lights(false, false)
+		# Only call _set_lights when transitioning from active to inactive
+		if _lights_were_active:
+			_lights_were_active = false
+			_set_lights(false, false)
 		return
+	_lights_were_active = true
 
 	_timer += delta
 	if _timer >= FLASH_INTERVAL:

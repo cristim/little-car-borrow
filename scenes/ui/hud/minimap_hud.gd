@@ -48,6 +48,7 @@ var _boundary_polygon := PackedVector2Array()
 var _boundary_cached := false
 var _boundary: RefCounted = null
 var _clip_circle := PackedVector2Array()
+var _city_node: Node = null  # cached city_manager reference
 
 # Dynamic map state
 var _zoom_idx: int = DEFAULT_ZOOM_IDX
@@ -281,9 +282,11 @@ func _draw_roads(ppos: Vector3, yaw: float) -> void:
 
 
 func _draw_terrain(ppos: Vector3, yaw: float) -> void:
-	var city_node := get_tree().get_first_node_in_group("city_manager")
-	if not city_node:
+	if not _city_node or not is_instance_valid(_city_node):
+		_city_node = get_tree().get_first_node_in_group("city_manager")
+	if not _city_node:
 		return
+	var city_node: Node = _city_node
 
 	var grid_span: float = _grid.get_grid_span()
 

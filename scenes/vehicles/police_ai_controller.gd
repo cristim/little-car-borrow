@@ -78,6 +78,10 @@ var _path_waypoints: Array[Vector3] = []
 var _path_idx := 0
 var _path_refresh_timer := 0.0
 
+# Cached node references (set in initialize)
+var _light_bar: Node = null
+var _siren: Node = null
+
 
 func initialize(vehicle: RigidBody3D, road_idx: int, direction: int) -> void:
 	_vehicle = vehicle
@@ -87,6 +91,9 @@ func initialize(vehicle: RigidBody3D, road_idx: int, direction: int) -> void:
 	_find_next_intersection()
 	_spawn_grace = 2.0
 	_path_refresh_timer = _rng.randf() * PATH_REFRESH_INTERVAL
+	# Cache light/siren refs — both are baked into the police_vehicle scene
+	_light_bar = vehicle.get_node_or_null("PoliceLightBar")
+	_siren = vehicle.get_node_or_null("PoliceSiren")
 
 
 func _physics_process(delta: float) -> void:
@@ -271,12 +278,15 @@ func _update_path(delta: float) -> void:
 
 func _update_lights_and_siren() -> void:
 	var pursuing := _ai_state == AIState.PURSUE
-	var light_bar := _vehicle.get_node_or_null("PoliceLightBar")
-	if light_bar:
-		light_bar.lights_active = pursuing
-	var siren := _vehicle.get_node_or_null("PoliceSiren")
-	if siren:
-		siren.siren_active = pursuing
+	# Use cached refs (set in initialize); fall back to lookup if not yet set
+	if not _light_bar:
+		_light_bar = _vehicle.get_node_or_null("PoliceLightBar")
+	if _light_bar:
+		_light_bar.lights_active = pursuing
+	if not _siren:
+		_siren = _vehicle.get_node_or_null("PoliceSiren")
+	if _siren:
+		_siren.siren_active = pursuing
 
 
 func _try_dismount(delta: float) -> void:
