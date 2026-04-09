@@ -40,18 +40,6 @@ for the next tone and reads `_tone_queue[0]` as the frequency for the ongoing fr
 
 ---
 
-### C3 — `pedestrian_ragdoll.gd`: `_set_alpha` mutates shared material, corrupting other pedestrians
-**File:** `scenes/pedestrians/pedestrian_ragdoll.gd`, lines 90-100
-**Severity:** Critical (visual corruption -- all pedestrians sharing same material go transparent)
-
-Materials are copied by reference in `_copy_meshes_recursive` (line 76-78).
-Modifying `albedo_color` affects every MeshInstance3D sharing that material.
-
-**Fix:** Duplicate the material:
-`mesh_copy.material_override = (child as MeshInstance3D).material_override.duplicate()`
-
----
-
 ### C4 — `police_officer.gd`: New AudioStreamPlayer3D leaked every shot
 **File:** `scenes/police/police_officer.gd`, lines 122-147
 **Severity:** Critical (memory/node leak -- one new node per gunshot every 1.2s per officer)

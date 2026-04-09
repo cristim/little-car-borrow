@@ -76,7 +76,8 @@ func _copy_meshes_recursive(node: Node, parent: Node, root_xform: Transform3D) -
 		if child is MeshInstance3D:
 			var mesh_copy := MeshInstance3D.new()
 			mesh_copy.mesh = (child as MeshInstance3D).mesh
-			mesh_copy.material_override = ((child as MeshInstance3D).material_override)
+			var src_mat := (child as MeshInstance3D).material_override
+			mesh_copy.material_override = src_mat.duplicate() if src_mat else null
 			# Flatten global position relative to model root
 			var local_xform: Transform3D = root_xform.inverse() * (child as Node3D).global_transform
 			mesh_copy.transform = local_xform

@@ -279,6 +279,52 @@ func test_copy_visual_preserves_mesh_reference() -> void:
 	assert_true(found, "Should have at least one copied MeshInstance3D")
 
 
+func test_copy_visual_duplicates_material_no_shared_mutation() -> void:
+	# Two ragdolls sharing the same source material — _set_alpha on one
+	# must not affect the other (regression: shared static palette mat).
+	var shared_mat := StandardMaterial3D.new()
+	shared_mat.albedo_color = Color(0.5, 0.5, 0.5, 1.0)
+
+	var make_source := func() -> Node3D:
+		var src := Node3D.new()
+		var model := Node3D.new()
+		model.name = "PedestrianModel"
+		var mi := MeshInstance3D.new()
+		mi.mesh = BoxMesh.new()
+		mi.material_override = shared_mat
+		model.add_child(mi)
+		src.add_child(model)
+		return src
+
+	var ragdoll_a := _make_ragdoll()
+	var ragdoll_b := _make_ragdoll()
+	add_child_autofree(ragdoll_a)
+	add_child_autofree(ragdoll_b)
+	var src_a := make_source.call()
+	var src_b := make_source.call()
+	add_child_autofree(src_a)
+	add_child_autofree(src_b)
+	await get_tree().process_frame
+
+	ragdoll_a.copy_visual_from(src_a)
+	ragdoll_b.copy_visual_from(src_b)
+
+	# Fade ragdoll_a — ragdoll_b must remain fully opaque
+	ragdoll_a._set_alpha(0.0)
+
+	for child in ragdoll_b.get_children():
+		if child is MeshInstance3D:
+			var mat = child.material_override
+			if mat is StandardMaterial3D:
+				assert_almost_eq(
+					(mat as StandardMaterial3D).albedo_color.a,
+					1.0,
+					0.001,
+					"Ragdoll B material alpha must be unaffected by ragdoll A fade",
+				)
+			break
+
+
 func test_copy_visual_preserves_material() -> void:
 	var ragdoll := _make_ragdoll()
 	add_child_autofree(ragdoll)
