@@ -1,13 +1,13 @@
 extends GutTest
 ## Unit tests for engine_audio.gd — procedural car engine sound.
 
-var _script: GDScript
+const EngineAudioScript = preload("res://scenes/vehicles/engine_audio.gd")
+
 var _src: String
 
 
 func before_all() -> void:
-	_script = load("res://scenes/vehicles/engine_audio.gd")
-	_src = _script.source_code
+	_src = (EngineAudioScript as GDScript).source_code
 
 
 # ==========================================================================
@@ -16,47 +16,47 @@ func before_all() -> void:
 
 
 func test_sample_rate_is_22050() -> void:
-	assert_true(_src.contains("SAMPLE_RATE := 22050.0"))
+	assert_eq(EngineAudioScript.SAMPLE_RATE, 22050.0)
 
 
 func test_base_freq_min_is_60() -> void:
-	assert_true(_src.contains("BASE_FREQ_MIN := 60.0"))
+	assert_eq(EngineAudioScript.BASE_FREQ_MIN, 60.0)
 
 
 func test_base_freq_max_is_280() -> void:
-	assert_true(_src.contains("BASE_FREQ_MAX := 280.0"))
+	assert_eq(EngineAudioScript.BASE_FREQ_MAX, 280.0)
 
 
 func test_idle_wobble_freq() -> void:
-	assert_true(_src.contains("IDLE_WOBBLE_FREQ := 3.5"))
+	assert_eq(EngineAudioScript.IDLE_WOBBLE_FREQ, 3.5)
 
 
 func test_idle_wobble_depth() -> void:
-	assert_true(_src.contains("IDLE_WOBBLE_DEPTH := 10.0"))
+	assert_eq(EngineAudioScript.IDLE_WOBBLE_DEPTH, 10.0)
 
 
 func test_cull_distance_is_60() -> void:
-	assert_true(_src.contains("CULL_DISTANCE := 60.0"))
+	assert_eq(EngineAudioScript.CULL_DISTANCE, 60.0)
 
 
 func test_h2_amp() -> void:
-	assert_true(_src.contains("H2_AMP := 0.35"))
+	assert_eq(EngineAudioScript.H2_AMP, 0.35)
 
 
 func test_h3_amp() -> void:
-	assert_true(_src.contains("H3_AMP := 0.18"))
+	assert_eq(EngineAudioScript.H3_AMP, 0.18)
 
 
 func test_h4_amp() -> void:
-	assert_true(_src.contains("H4_AMP := 0.08"))
+	assert_eq(EngineAudioScript.H4_AMP, 0.08)
 
 
 func test_h5_amp() -> void:
-	assert_true(_src.contains("H5_AMP := 0.04"))
+	assert_eq(EngineAudioScript.H5_AMP, 0.04)
 
 
 func test_sub_amp() -> void:
-	assert_true(_src.contains("SUB_AMP := 0.2"))
+	assert_eq(EngineAudioScript.SUB_AMP, 0.2)
 
 
 # ==========================================================================
@@ -65,29 +65,39 @@ func test_sub_amp() -> void:
 
 
 func test_initial_smooth_volume() -> void:
-	assert_true(_src.contains("_smooth_volume := 0.15"))
+	var inst: AudioStreamPlayer3D = EngineAudioScript.new()
+	add_child_autofree(inst)
+	assert_eq(inst._smooth_volume, 0.15)
 
 
 func test_initial_crackle_timer() -> void:
-	assert_true(_src.contains("_crackle_timer := 0.0"))
+	var inst: AudioStreamPlayer3D = EngineAudioScript.new()
+	add_child_autofree(inst)
+	assert_eq(inst._crackle_timer, 0.0)
 
 
 func test_initial_crackle_amp() -> void:
-	assert_true(_src.contains("_crackle_amp := 0.0"))
+	var inst: AudioStreamPlayer3D = EngineAudioScript.new()
+	add_child_autofree(inst)
+	assert_eq(inst._crackle_amp, 0.0)
 
 
 func test_initial_prev_throttle() -> void:
-	assert_true(_src.contains("_prev_throttle := 0.0"))
+	var inst: AudioStreamPlayer3D = EngineAudioScript.new()
+	add_child_autofree(inst)
+	assert_eq(inst._prev_throttle, 0.0)
 
 
 func test_initial_phases_are_zero() -> void:
-	assert_true(_src.contains("_phase := 0.0"))
-	assert_true(_src.contains("_phase2 := 0.0"))
-	assert_true(_src.contains("_phase3 := 0.0"))
-	assert_true(_src.contains("_phase4 := 0.0"))
-	assert_true(_src.contains("_phase5 := 0.0"))
-	assert_true(_src.contains("_phase_sub := 0.0"))
-	assert_true(_src.contains("_wobble_phase := 0.0"))
+	var inst: AudioStreamPlayer3D = EngineAudioScript.new()
+	add_child_autofree(inst)
+	assert_eq(inst._phase, 0.0)
+	assert_eq(inst._phase2, 0.0)
+	assert_eq(inst._phase3, 0.0)
+	assert_eq(inst._phase4, 0.0)
+	assert_eq(inst._phase5, 0.0)
+	assert_eq(inst._phase_sub, 0.0)
+	assert_eq(inst._wobble_phase, 0.0)
 
 
 # ==========================================================================

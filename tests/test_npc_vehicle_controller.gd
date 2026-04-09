@@ -15,17 +15,18 @@ func before_all() -> void:
 
 
 func test_spawn_grace_default_zero() -> void:
-	var ai := _npc_script.new()
+	var ai: Node = _npc_script.new()
 	add_child_autofree(ai)
 	assert_eq(ai._spawn_grace, 0.0)
 
 
-func test_spawn_grace_source_set_in_initialize() -> void:
-	var src: String = _npc_script.source_code
-	assert_true(
-		src.contains("_spawn_grace = 4.0"),
-		"initialize() should set _spawn_grace to 4.0",
-	)
+func test_spawn_grace_set_in_initialize() -> void:
+	var ai: Node = _npc_script.new()
+	add_child_autofree(ai)
+	var vehicle := RigidBody3D.new()
+	add_child_autofree(vehicle)
+	ai.initialize(vehicle, 0, 0)
+	assert_eq(ai._spawn_grace, 4.0, "initialize() should set _spawn_grace to 4.0")
 
 
 func test_spawn_grace_source_decremented_in_physics() -> void:
@@ -117,7 +118,7 @@ func test_escape_force_renormalizes_after_flattening() -> void:
 
 
 func test_deactivate_sets_active_false() -> void:
-	var ai := _npc_script.new()
+	var ai: Node = _npc_script.new()
 	add_child_autofree(ai)
 	ai.active = true
 	ai.deactivate()
@@ -125,7 +126,7 @@ func test_deactivate_sets_active_false() -> void:
 
 
 func test_deactivate_without_vehicle_does_not_crash() -> void:
-	var ai := _npc_script.new()
+	var ai: Node = _npc_script.new()
 	add_child_autofree(ai)
 	ai.active = true
 	ai._vehicle = null
