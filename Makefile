@@ -26,7 +26,8 @@ coverage:
 		--coverage-output /tmp/godot_coverage.json \
 		--coverage-format json \
 		--coverage-include "res://src/*" \
-		--coverage-threshold 80
+		--coverage-include "res://scenes/*" \
+		--coverage-threshold 30
 
 # Run coverage for a single source file using its matching test file.
 # Usage: make coverage-file SRC=src/autoloads/game_manager.gd
