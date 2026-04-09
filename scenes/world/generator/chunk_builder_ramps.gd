@@ -8,12 +8,15 @@ const RAMP_HEIGHT := 0.8
 
 var _grid: RefCounted
 var _ramp_mat: StandardMaterial3D
+var _fence_mat: StandardMaterial3D
 var _city_script: GDScript = preload("res://scenes/world/city.gd")
 
 
 func init(grid: RefCounted, ramp_mat: StandardMaterial3D) -> void:
 	_grid = grid
 	_ramp_mat = ramp_mat
+	_fence_mat = StandardMaterial3D.new()
+	_fence_mat.albedo_color = Color(0.5, 0.5, 0.5)
 
 
 func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
@@ -100,12 +103,10 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 
 	st.generate_normals()
 	var fence_mesh := st.commit()
-	var fence_mat := StandardMaterial3D.new()
-	fence_mat.albedo_color = Color(0.5, 0.5, 0.5)
 	var fence_inst := MeshInstance3D.new()
 	fence_inst.name = "StuntParkFence"
 	fence_inst.mesh = fence_mesh
-	fence_inst.material_override = fence_mat
+	fence_inst.material_override = _fence_mat
 	chunk.add_child(fence_inst)
 
 	# Ramps inside the block

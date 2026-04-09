@@ -26,6 +26,12 @@ func init(
 	_canopy_mats = canopy_mats
 	_trunk_mesh = trunk_mesh
 	_canopy_meshes = canopy_meshes
+	# Pre-set vertex_color_use_as_albedo on all shared materials so
+	# _build_multimesh can pass them directly instead of duplicating.
+	for m in _trunk_mats:
+		m.vertex_color_use_as_albedo = true
+	for m in _canopy_mats:
+		m.vertex_color_use_as_albedo = true
 
 
 func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
@@ -262,11 +268,8 @@ func _build_multimesh(
 		mm.set_instance_transform(i, transforms[i])
 		mm.set_instance_color(i, colors[i])
 
-	# Material that uses per-instance vertex color
-	var mat := base_mat.duplicate() as StandardMaterial3D
-	mat.vertex_color_use_as_albedo = true
-
+	# base_mat already has vertex_color_use_as_albedo set in init() — reuse directly.
 	var mmi := MultiMeshInstance3D.new()
 	mmi.multimesh = mm
-	mmi.material_override = mat
+	mmi.material_override = base_mat
 	return mmi

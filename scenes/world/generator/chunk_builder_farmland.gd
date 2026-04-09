@@ -13,6 +13,7 @@ const FENCE_THICKNESS := 0.08
 var _grid: RefCounted
 var _boundary: RefCounted
 var _fence_mat: StandardMaterial3D
+var _field_mat: StandardMaterial3D
 var _city_script: GDScript = preload("res://scenes/world/city.gd")
 
 
@@ -24,6 +25,9 @@ func init(
 	_boundary = boundary
 	_fence_mat = StandardMaterial3D.new()
 	_fence_mat.albedo_color = Color(0.40, 0.28, 0.15)
+	_field_mat = StandardMaterial3D.new()
+	_field_mat.vertex_color_use_as_albedo = true
+	_field_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 
 
 func build(
@@ -117,14 +121,11 @@ func build(
 
 	if has_fields:
 		field_st.generate_normals()
-		var field_mat := StandardMaterial3D.new()
-		field_mat.vertex_color_use_as_albedo = true
-		field_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 		var mesh := field_st.commit()
 		var inst := MeshInstance3D.new()
 		inst.name = "Fields"
 		inst.mesh = mesh
-		inst.material_override = field_mat
+		inst.material_override = _field_mat
 		chunk.add_child(inst)
 
 	if has_fences:

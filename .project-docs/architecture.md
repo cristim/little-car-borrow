@@ -63,7 +63,8 @@
   - Shared material palette (~25 total) instead of ~550 unique materials per chunk
   - Window batching: 2 global shared materials (`_window_mat_off`/`_window_mat_on`) replace 8 per-chunk copies; geometry redistributed between WindowsOff/WindowsOn MeshInstance3D on day/night transitions rather than toggling emission per-material
   - SurfaceTool merges geometry into ArrayMesh per category
-  - MultiMesh for trees with `use_colors = true` + `vertex_color_use_as_albedo`
+  - MultiMesh for trees with `use_colors = true` + `vertex_color_use_as_albedo`; flag pre-set on shared materials in `init()` so `_build_multimesh()` reuses them directly without `.duplicate()` per chunk
+  - All per-builder transient materials (`_field_mat`, `_fence_mat`, `_sea_mat`) created once in `init()`, not inside `build()`
   - Compound collision bodies: one StaticBody3D with many BoxShape3D children
 - **Buildings**: deterministic per-chunk RNG seeded with `hash(tile)`, 1-4 per block
 - **Trees**: seeded with `hash(tile) ^ 0x7F3A` for independent variety

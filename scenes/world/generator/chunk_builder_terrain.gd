@@ -9,6 +9,7 @@ const BLEND_CELLS := 3  # blend edge constraints over this many cells
 var _noise: FastNoiseLite
 var _grid: RefCounted
 var _terrain_mat: StandardMaterial3D
+var _sea_mat: StandardMaterial3D
 var _boundary: RefCounted
 
 # Color palette for height-based vertex coloring
@@ -28,6 +29,11 @@ func init(
 	_grid = grid
 	_noise = noise
 	_terrain_mat = terrain_mat
+	_sea_mat = StandardMaterial3D.new()
+	_sea_mat.albedo_color = Color(0.08, 0.25, 0.52, 0.90)
+	_sea_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_sea_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_sea_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_boundary = boundary
 
 
@@ -309,18 +315,11 @@ func _build_sea_plane(
 	st.generate_normals()
 	var mesh := st.commit()
 
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.08, 0.25, 0.52, 0.90)
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	# Unshaded: water colour is not affected by scene lighting so the seabed
-	# cannot bleed through as a false "illuminated from below" glow at night.
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-
 	var mesh_inst := MeshInstance3D.new()
 	mesh_inst.name = "SeaPlane"
 	mesh_inst.mesh = mesh
-	mesh_inst.material_override = mat
+	# _sea_mat is shared across all sea-plane chunks (created once in init())
+	mesh_inst.material_override = _sea_mat
 	chunk.add_child(mesh_inst)
 
 
