@@ -58,6 +58,9 @@ var _escape_attempts := 0
 # Spawn grace — suppress stuck detection for newly spawned vehicles
 var _spawn_grace := 0.0
 
+# Cached camera for LOD distance checks (re-validated each use)
+var _lod_camera: Camera3D = null
+
 
 func _dir_to_heading(d: int) -> Vector3:
 	match d:
@@ -176,13 +179,14 @@ func _find_nearest_road_index() -> int:
 
 
 func _get_ray_interval() -> int:
-	var cam := get_viewport().get_camera_3d()
-	if not cam:
+	if not _lod_camera or not is_instance_valid(_lod_camera):
+		_lod_camera = get_viewport().get_camera_3d()
+	if not _lod_camera:
 		return RAY_INTERVAL_NEAR
-	var d := _vehicle.global_position.distance_to(cam.global_position)
-	if d > LOD_FAR_DIST:
+	var d_sq: float = _vehicle.global_position.distance_squared_to(_lod_camera.global_position)
+	if d_sq > LOD_FAR_DIST * LOD_FAR_DIST:
 		return RAY_INTERVAL_FAR
-	if d > LOD_MID_DIST:
+	if d_sq > LOD_MID_DIST * LOD_MID_DIST:
 		return RAY_INTERVAL_MID
 	return RAY_INTERVAL_NEAR
 

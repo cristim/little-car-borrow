@@ -8,6 +8,13 @@ var _original_player_mask := 0
 var _boat_seat_vel_y := 0.0  # vertical velocity for gravity-based bench settling
 var _created_vcam := false  # true when we instantiated the VehicleCamera ourselves
 
+# Cached per-vehicle nodes — populated in enter(), cleared in exit()
+var _is_heli := false
+var _is_boat := false
+var _boat_stern_z := 2.5
+var _player_model: Node3D = null
+var _right_shoulder_pivot: Node3D = null
+
 
 func enter(msg: Dictionary = {}) -> void:
 	_vehicle = msg.get("vehicle")
@@ -17,9 +24,11 @@ func enter(msg: Dictionary = {}) -> void:
 	_original_collision_layer = _vehicle.collision_layer
 	_vehicle.collision_layer = 8
 
-	# Detect vehicle type
+	# Detect vehicle type and cache flags for physics_update
 	var is_boat: bool = _vehicle.get_node_or_null("BoatController") != null
 	var is_heli: bool = _vehicle.get_node_or_null("HelicopterController") != null
+	_is_boat = is_boat
+	_is_heli = is_heli
 
 	# Hide player for cars; keep visible for boats and helicopters (shown riding)
 	if not is_boat and not is_heli:
@@ -103,10 +112,15 @@ func enter(msg: Dictionary = {}) -> void:
 		# Start 0.40 m above the final seat position so gravity drops them in.
 		_boat_seat_vel_y = 0.0
 		var sz_enter: float = _vehicle.get_meta("stern_z", 2.5)
+		_boat_stern_z = sz_enter
 		var above_seat: Vector3 = (_vehicle as Node3D).to_global(
 			Vector3(-0.4, -0.10, sz_enter - 0.5)
 		)
 		owner.global_position = above_seat
+		# Cache steering arm nodes for physics_update
+		_player_model = owner.get_node_or_null("PlayerModel")
+		if _player_model:
+			_right_shoulder_pivot = _player_model.get_node_or_null("RightShoulderPivot")
 	var hc := _vehicle.get_node_or_null("HelicopterController")
 	if hc:
 		hc.active = true
@@ -242,6 +256,10 @@ func exit() -> void:
 
 	_vehicle = null
 	owner.current_vehicle = null
+	_is_boat = false
+	_is_heli = false
+	_player_model = null
+	_right_shoulder_pivot = null
 
 
 func physics_update(delta: float) -> void:
@@ -249,7 +267,7 @@ func physics_update(delta: float) -> void:
 	if _vehicle and is_instance_valid(_vehicle):
 		owner.global_position = (_vehicle as Node3D).global_position
 		# If in helicopter, place player in cockpit seat facing nose
-		if _vehicle.get_node_or_null("HelicopterController"):
+		if _is_heli:
 			# Seat cushion top at y=-0.95; player head ends up at ~y=+0.55 (below cabin top 1.1)
 			var seat_offset := Vector3(0.0, -0.95, -0.7)
 			owner.global_position = (_vehicle as Node3D).to_global(seat_offset)
@@ -260,11 +278,11 @@ func physics_update(delta: float) -> void:
 				0.0,
 			)
 		# If in boat, gravity-settle player onto bench then track the boat
-		elif _vehicle.get_node_or_null("BoatController"):
-			var sz: float = _vehicle.get_meta("stern_z", 2.5)
+		elif _is_boat:
 			# Player origin is at feet; hip pivot is 0.80 m above origin.
 			# Seat top (local y=0.30) must align with hips: origin_y = 0.30 - 0.80 = -0.50
-			var seat_world: Vector3 = (_vehicle as Node3D).to_global(Vector3(-0.4, -0.50, sz - 0.5))
+			var seat_local := Vector3(-0.4, -0.50, _boat_stern_z - 0.5)
+			var seat_world: Vector3 = (_vehicle as Node3D).to_global(seat_local)
 			# Apply gravity until player reaches seat surface
 			if owner.global_position.y > seat_world.y + 0.005:
 				_boat_seat_vel_y -= 9.8 * delta
@@ -289,12 +307,9 @@ func physics_update(delta: float) -> void:
 					Input.get_action_strength("move_left")
 					- Input.get_action_strength("move_right")
 				)
-			var pm: Node3D = owner.get_node_or_null("PlayerModel")
-			if pm:
-				var rs: Node3D = pm.get_node_or_null("RightShoulderPivot")
-				if rs:
-					# Arm swings left/right with steering (inverted for PI flip)
-					rs.rotation.y = -steer * 0.4
+			if _right_shoulder_pivot:
+				# Arm swings left/right with steering (inverted for PI flip)
+				_right_shoulder_pivot.rotation.y = -steer * 0.4
 
 
 func handle_input(event: InputEvent) -> void:

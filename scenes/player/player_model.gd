@@ -34,6 +34,11 @@ const LERP_SNAP_EPSILON := 0.0001  # snap lerp to zero below this threshold
 
 var _was_swimming := false
 
+# Cached per-process nodes — populated in _ready to avoid per-frame lookups
+var _player_weapon: Node = null
+var _flashlight: Node = null
+var _cached_camera: Camera3D = null
+
 # Cached face/hand materials — built once in _ready, shared across parts
 var _mat_eye: StandardMaterial3D
 var _mat_eyebrow: StandardMaterial3D
@@ -62,6 +67,11 @@ func _ready() -> void:
 	_build_face_materials()
 	_build_face_details()
 	_build_hands()
+
+	# Cache sibling nodes used every _process frame
+	_player_weapon = owner.get_node_or_null("PlayerWeapon")
+	if _left_elbow:
+		_flashlight = _left_elbow.get_node_or_null("Forearm/Flashlight")
 
 
 ## Create shared materials for face parts (called once).
@@ -358,30 +368,28 @@ func _aim_flashlight_arm(pitch: float) -> void:
 
 
 func _get_gun_elbow_angle() -> float:
-	var pw := get_parent().get_node_or_null("PlayerWeapon")
-	if pw == null:
+	if _player_weapon == null:
 		return DEFAULT_GUN_ELBOW
-	var w: Dictionary = pw.get_current_weapon()
+	var w: Dictionary = _player_weapon.get_current_weapon()
 	var angle: float = w.get("elbow", DEFAULT_GUN_ELBOW)
 	return angle
 
 
 func _get_camera_pitch() -> float:
-	var camera := get_viewport().get_camera_3d()
-	if not camera:
+	if not _cached_camera or not is_instance_valid(_cached_camera):
+		_cached_camera = get_viewport().get_camera_3d()
+	if not _cached_camera:
 		return 0.0
-	var fwd: Vector3 = -camera.global_transform.basis.z
+	var fwd: Vector3 = -_cached_camera.global_transform.basis.z
 	return asin(clampf(fwd.y, -1.0, 1.0))
 
 
 func _is_armed() -> bool:
-	var pw := get_parent().get_node_or_null("PlayerWeapon")
-	return pw != null and pw._armed
+	return _player_weapon != null and _player_weapon._armed
 
 
 func _is_flashlight_on() -> bool:
-	var fl := _left_elbow.get_node_or_null("Forearm/Flashlight")
-	return fl != null and fl.visible
+	return _flashlight != null and _flashlight.visible
 
 
 func _animate_swimming(delta: float) -> void:
