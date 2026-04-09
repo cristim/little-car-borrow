@@ -6,6 +6,39 @@ extends GutTest
 const _SCRIPT_PATH := "res://scenes/vehicles/vehicle_water_detector.gd"
 const WaterScript = preload(_SCRIPT_PATH)
 
+
+# Inner mock used by behavioral tests that need a node with named children.
+class MockVehicle:
+	extends RigidBody3D
+
+
+class MockDeactivatable:
+	extends Node
+
+	var deactivated := false
+
+	func deactivate() -> void:
+		deactivated = true
+
+
+class MockAudio:
+	extends Node
+
+	var stopped := false
+
+	func stop() -> void:
+		stopped = true
+
+
+class MockBoundary:
+	extends RefCounted
+
+	var ground_height_return := 0.0
+
+	func get_ground_height(_x: float, _z: float) -> float:
+		return ground_height_return
+
+
 # ==========================================================================
 # Constants
 # ==========================================================================
@@ -96,38 +129,61 @@ func test_ready_enabled_for_non_boats() -> void:
 
 
 func test_physics_process_skips_when_sinking() -> void:
-	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
-	assert_true(
-		src.contains("if _sinking or not _vehicle"),
-		"Should early-return when already sinking or no vehicle",
-	)
+	# When already sinking, _physics_process must not advance the timer.
+	var parent := RigidBody3D.new()
+	add_child_autofree(parent)
+	var detector: Node = WaterScript.new()
+	parent.add_child(detector)
+	detector._sinking = true
+	detector._timer = 0.0
+	detector._physics_process(WaterScript.CHECK_INTERVAL + 0.1)
+	assert_eq(detector._timer, 0.0, "Timer must not advance when already sinking")
 
 
 func test_physics_process_checks_interval() -> void:
-	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
-	assert_true(
-		src.contains("_timer < CHECK_INTERVAL"),
-		"Should throttle checks by CHECK_INTERVAL",
-	)
+	# Timer below CHECK_INTERVAL must not trigger sinking — _sinking stays false.
+	var parent := RigidBody3D.new()
+	add_child_autofree(parent)
+	# Put vehicle far below sea level so the check would fire if interval passed.
+	parent.global_position = Vector3(0.0, WaterScript.SEA_LEVEL - 10.0, 0.0)
+	var detector: Node = WaterScript.new()
+	parent.add_child(detector)
+	detector._timer = 0.0
+	detector._physics_process(WaterScript.CHECK_INTERVAL * 0.5)
+	assert_false(detector._sinking, "Should not sink before CHECK_INTERVAL elapses")
 
 
-func test_physics_process_checks_rigidbody() -> void:
-	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
-	assert_true(
-		src.contains("not _vehicle is RigidBody3D"),
-		"Should only process RigidBody3D vehicles",
-	)
+func test_physics_process_skips_non_rigidbody() -> void:
+	# A non-RigidBody3D vehicle should not cause sinking regardless of position.
+	var parent := Node3D.new()
+	add_child_autofree(parent)
+	parent.global_position = Vector3(0.0, WaterScript.SEA_LEVEL - 10.0, 0.0)
+	var detector: Node = WaterScript.new()
+	parent.add_child(detector)
+	# Force timer past threshold so the RigidBody3D guard is the only thing
+	# preventing sinking.
+	detector._timer = WaterScript.CHECK_INTERVAL + 1.0
+	detector._physics_process(0.0)
+	assert_false(detector._sinking, "Should not sink when vehicle is not a RigidBody3D")
 
 
-func test_physics_process_checks_sea_level() -> void:
-	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
-	assert_true(
-		src.contains("_vehicle.global_position.y > SEA_LEVEL"),
-		"Should skip if vehicle is above sea level",
-	)
+func test_physics_process_skips_when_above_sea_level() -> void:
+	# A RigidBody3D above sea level must not trigger sinking.
+	var parent := RigidBody3D.new()
+	add_child_autofree(parent)
+	# Place vehicle well above sea level.
+	parent.global_position = Vector3(0.0, WaterScript.SEA_LEVEL + 10.0, 0.0)
+	var detector: Node = WaterScript.new()
+	parent.add_child(detector)
+	detector._timer = WaterScript.CHECK_INTERVAL + 1.0
+	detector._physics_process(0.0)
+	assert_false(detector._sinking, "Should not sink when vehicle is above sea level")
 
 
 func test_physics_process_checks_water_underneath() -> void:
+	# Source inspection: verifies _is_over_water is called before sinking.
+	# Full behavioral coverage needs a city_manager node with boundary meta,
+	# which requires the physics world — kept as source inspection.
 	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
 	assert_true(
 		src.contains("_is_over_water"),
@@ -184,20 +240,37 @@ func test_start_sinking_emits_vehicle_entered_water() -> void:
 
 
 func test_start_sinking_deactivates_npc_controller() -> void:
-	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
+	# Behavioral: a child named "NPCVehicleController" with deactivate() is called.
+	var parent := RigidBody3D.new()
+	add_child_autofree(parent)
+	var npc: Node = MockDeactivatable.new()
+	npc.name = "NPCVehicleController"
+	parent.add_child(npc)
+	var detector: Node = WaterScript.new()
+	parent.add_child(detector)
+	detector._start_sinking()
 	assert_true(
-		src.contains('"NPCVehicleController"'),
-		"Should look for NPCVehicleController to deactivate",
+		(npc as MockDeactivatable).deactivated,
+		"_start_sinking should call deactivate() on NPCVehicleController",
 	)
 
 
 func test_start_sinking_deactivates_police_controller() -> void:
-	# C1: correct node name is PoliceAIController (was PoliceVehicleController)
-	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
+	# Behavioral: correct node name is PoliceAIController (not PoliceVehicleController).
+	var parent := RigidBody3D.new()
+	add_child_autofree(parent)
+	var police: Node = MockDeactivatable.new()
+	police.name = "PoliceAIController"
+	parent.add_child(police)
+	var detector: Node = WaterScript.new()
+	parent.add_child(detector)
+	detector._start_sinking()
 	assert_true(
-		src.contains('"PoliceAIController"'),
-		"Should look for PoliceAIController to deactivate (not PoliceVehicleController)",
+		(police as MockDeactivatable).deactivated,
+		"_start_sinking should call deactivate() on PoliceAIController",
 	)
+	# Source guard: wrong name must not appear in production code.
+	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
 	assert_false(
 		src.contains('"PoliceVehicleController"'),
 		"PoliceVehicleController is the wrong node name — should not appear in source",
@@ -205,10 +278,18 @@ func test_start_sinking_deactivates_police_controller() -> void:
 
 
 func test_start_sinking_stops_engine_audio() -> void:
-	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
+	# Behavioral: a child named "EngineAudio" has stop() called on it.
+	var parent := RigidBody3D.new()
+	add_child_autofree(parent)
+	var audio: Node = MockAudio.new()
+	audio.name = "EngineAudio"
+	parent.add_child(audio)
+	var detector: Node = WaterScript.new()
+	parent.add_child(detector)
+	detector._start_sinking()
 	assert_true(
-		src.contains('"EngineAudio"'),
-		"Should look for EngineAudio to stop",
+		(audio as MockAudio).stopped,
+		"_start_sinking should call stop() on EngineAudio",
 	)
 
 
@@ -346,7 +427,7 @@ func test_bubbles_position_offset() -> void:
 
 
 # ==========================================================================
-# _is_over_water — source verification
+# _is_over_water — behavior and source verification
 # ==========================================================================
 
 
@@ -385,33 +466,45 @@ func test_is_over_water_returns_false_without_city_manager() -> void:
 	assert_false(result, "_is_over_water should return false when no city_manager in scene")
 
 
-func test_is_over_water_compares_ground_height() -> void:
-	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
-	assert_true(
-		src.contains("ground_h < SEA_LEVEL"),
-		"Should compare ground height against SEA_LEVEL",
-	)
+func test_is_over_water_true_when_ground_below_sea_level() -> void:
+	# Behavioral: inject a cached boundary whose ground height is below SEA_LEVEL.
+	var detector: Node = WaterScript.new()
+	add_child_autofree(detector)
+	detector._vehicle = RigidBody3D.new()
+	var boundary: MockBoundary = MockBoundary.new()
+	boundary.ground_height_return = WaterScript.SEA_LEVEL - 1.0
+	detector._boundary = boundary
+	var result: bool = detector._is_over_water(Vector3.ZERO)
+	assert_true(result, "_is_over_water should return true when ground is below SEA_LEVEL")
+
+
+func test_is_over_water_false_when_ground_at_sea_level() -> void:
+	# Behavioral: ground height exactly at SEA_LEVEL — not over water.
+	var detector: Node = WaterScript.new()
+	add_child_autofree(detector)
+	detector._vehicle = RigidBody3D.new()
+	var boundary: MockBoundary = MockBoundary.new()
+	boundary.ground_height_return = WaterScript.SEA_LEVEL
+	detector._boundary = boundary
+	var result: bool = detector._is_over_water(Vector3.ZERO)
+	assert_false(result, "_is_over_water should return false when ground equals SEA_LEVEL")
+
+
+func test_is_over_water_false_when_ground_above_sea_level() -> void:
+	# Behavioral: ground height above SEA_LEVEL — solid land, not water.
+	var detector: Node = WaterScript.new()
+	add_child_autofree(detector)
+	detector._vehicle = RigidBody3D.new()
+	var boundary: MockBoundary = MockBoundary.new()
+	boundary.ground_height_return = WaterScript.SEA_LEVEL + 5.0
+	detector._boundary = boundary
+	var result: bool = detector._is_over_water(Vector3.ZERO)
+	assert_false(result, "_is_over_water should return false when ground is above SEA_LEVEL")
 
 
 # ==========================================================================
 # Vehicle lights are disabled on water entry
 # ==========================================================================
-
-
-func test_start_sinking_looks_for_vehicle_lights() -> void:
-	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
-	assert_true(
-		src.contains('"Body/VehicleLights"'),
-		"_start_sinking should look for Body/VehicleLights node",
-	)
-
-
-func test_start_sinking_calls_disable_on_lights() -> void:
-	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
-	assert_true(
-		src.contains("lights.disable()"),
-		"_start_sinking should call disable() on VehicleLights",
-	)
 
 
 func test_start_sinking_disables_vehicle_lights() -> void:
