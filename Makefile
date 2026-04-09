@@ -1,6 +1,7 @@
 .PHONY: run lint format test coverage clean export-web
 
 GODOT := godot
+GODOT_COV := $(firstword $(wildcard /Users/cristi/bin/godot) $(GODOT))
 VENV := .venv/bin
 
 run:
@@ -22,11 +23,11 @@ test:
 	$(GODOT) --path . --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests/ -gexit
 
 coverage:
-	$(GODOT) --path . --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests/ -gexit \
+	$(GODOT_COV) --path . --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests/ -gexit \
 		--coverage-output /tmp/godot_coverage.json \
 		--coverage-format json \
-		--coverage-include "res://src/*" \
-		--coverage-include "res://scenes/*" \
+		--coverage-include "res://src/**" \
+		--coverage-include "res://scenes/**" \
 		--coverage-threshold 30
 
 # Run coverage for a single source file using its matching test file.
@@ -36,7 +37,7 @@ coverage-file:
 	$(eval _base := $(notdir $(basename $(SRC))))
 	$(eval _test := res://tests/test_$(_base).gd)
 	$(eval _out  := /tmp/godot_coverage_$(_base).json)
-	$(GODOT) --path . --headless -s addons/gut/gut_cmdln.gd \
+	$(GODOT_COV) --path . --headless -s addons/gut/gut_cmdln.gd \
 		-gtest=$(_test) -gexit \
 		--coverage-output $(_out) \
 		--coverage-format json \

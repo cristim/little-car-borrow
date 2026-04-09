@@ -18,6 +18,7 @@ AudioManager="*res://src/autoloads/audio_manager.gd"
 DayNightManager="*res://src/autoloads/day_night_manager.gd"
 MissionManager="*res://src/autoloads/mission_manager.gd"
 SettingsManager="*res://src/autoloads/settings_manager.gd"
+CoveragePreloader="*res://tests/coverage_preloader.gd"
 
 [display]
 
