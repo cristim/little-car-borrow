@@ -18,6 +18,22 @@ const H5_AMP := 0.04
 # Sub-bass one octave below fundamental
 const SUB_AMP := 0.2
 
+const BUS_NAME := "SFX"
+const MAX_DISTANCE := 80.0
+const BUFFER_LENGTH := 0.1
+const SPEED_NORMALIZATION := 120.0
+const IDLE_SPEED_THRESHOLD := 5.0
+const CRACKLE_THROTTLE_HIGH := 0.3
+const CRACKLE_THROTTLE_LOW := 0.1
+const CRACKLE_SPEED_MIN := 30.0
+const CRACKLE_DURATION := 0.3
+const CRACKLE_AMP_INIT := 0.12
+const CRACKLE_DECAY := 0.92
+const WAVE_CLIP_MIN := 0.8
+const WAVE_CLIP_RANGE := 0.2
+const VOLUME_SMOOTH_RATE := 8.0
+const WOBBLE_SECONDARY := 2.3
+
 var _phase := 0.0
 var _phase2 := 0.0
 var _phase3 := 0.0
@@ -39,10 +55,10 @@ func _ready() -> void:
 	_rng.randomize()
 	var gen := AudioStreamGenerator.new()
 	gen.mix_rate = SAMPLE_RATE
-	gen.buffer_length = 0.1
+	gen.buffer_length = BUFFER_LENGTH
 	stream = gen
-	bus = "SFX"
-	max_distance = 80.0
+	bus = BUS_NAME
+	max_distance = MAX_DISTANCE
 	attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
 	play()
 	_playback = get_stream_playback()
@@ -74,37 +90,39 @@ func _process(delta: float) -> void:
 	if "throttle_input" in _vehicle:
 		throttle = _vehicle.throttle_input
 
-	var speed_ratio := clampf(speed_kmh / 120.0, 0.0, 1.0)
+	var speed_ratio := clampf(speed_kmh / SPEED_NORMALIZATION, 0.0, 1.0)
 	var base_freq := lerpf(BASE_FREQ_MIN, BASE_FREQ_MAX, speed_ratio)
 
 	# Exhaust crackle on throttle lift-off at speed
-	if _prev_throttle > 0.3 and throttle < 0.1 and speed_kmh > 30.0:
-		_crackle_timer = 0.3
-		_crackle_amp = 0.12
+	var crackle_trigger := (_prev_throttle > CRACKLE_THROTTLE_HIGH
+			and throttle < CRACKLE_THROTTLE_LOW and speed_kmh > CRACKLE_SPEED_MIN)
+	if crackle_trigger:
+		_crackle_timer = CRACKLE_DURATION
+		_crackle_amp = CRACKLE_AMP_INIT
 	_prev_throttle = throttle
 	if _crackle_timer > 0.0:
 		_crackle_timer -= delta
-		_crackle_amp *= 0.92
+		_crackle_amp *= CRACKLE_DECAY
 
 	# Smooth volume transitions
 	var target_vol := lerpf(0.15, 0.55, maxf(speed_ratio, throttle))
-	_smooth_volume = lerpf(_smooth_volume, target_vol, delta * 8.0)
+	_smooth_volume = lerpf(_smooth_volume, target_vol, delta * VOLUME_SMOOTH_RATE)
 	var volume := _smooth_volume
 
 	var frames_available := _playback.get_frames_available()
 	for _i in range(frames_available):
 		# Idle wobble: phase incremented per sample (not per frame) for correct rate
 		var sample_freq := base_freq
-		if speed_kmh < 5.0:
+		if speed_kmh < IDLE_SPEED_THRESHOLD:
 			_wobble_phase += IDLE_WOBBLE_FREQ / SAMPLE_RATE
 			if _wobble_phase > 1.0:
 				_wobble_phase -= 1.0
 			sample_freq += sin(_wobble_phase * TAU) * IDLE_WOBBLE_DEPTH
-			sample_freq += sin(_wobble_phase * TAU * 2.3) * 3.0
+			sample_freq += sin(_wobble_phase * TAU * WOBBLE_SECONDARY) * 3.0
 
 		# Fundamental with slight waveshaping (squared sine for growl)
 		var fund := sin(_phase * TAU)
-		var shaped := fund * (0.8 + 0.2 * absf(fund))
+		var shaped := fund * (WAVE_CLIP_MIN + WAVE_CLIP_RANGE * absf(fund))
 
 		# Build harmonic stack
 		var sample := shaped * volume

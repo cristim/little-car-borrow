@@ -113,17 +113,11 @@ func test_ready_randomizes_rng() -> void:
 
 
 func test_ready_sets_sfx_bus() -> void:
-	assert_true(
-		_src.contains('bus = "SFX"'),
-		"Should set audio bus to SFX",
-	)
+	assert_eq(EngineAudioScript.BUS_NAME, "SFX")
 
 
 func test_ready_sets_max_distance() -> void:
-	assert_true(
-		_src.contains("max_distance = 80.0"),
-		"Should set max_distance to 80",
-	)
+	assert_eq(EngineAudioScript.MAX_DISTANCE, 80.0)
 
 
 func test_ready_sets_attenuation_model() -> void:
@@ -134,10 +128,7 @@ func test_ready_sets_attenuation_model() -> void:
 
 
 func test_ready_sets_buffer_length() -> void:
-	assert_true(
-		_src.contains("buffer_length = 0.1"),
-		"Buffer length should be 0.1s",
-	)
+	assert_eq(EngineAudioScript.BUFFER_LENGTH, 0.1)
 
 
 func test_ready_creates_generator() -> void:
@@ -181,45 +172,28 @@ func test_throttle_from_throttle_input() -> void:
 
 
 func test_speed_ratio_normalized_to_120_kmh() -> void:
-	assert_true(
-		_src.contains("speed_kmh / 120.0"),
-		"Speed ratio should normalize against 120 km/h",
-	)
+	assert_eq(EngineAudioScript.SPEED_NORMALIZATION, 120.0)
 
 
 func test_idle_wobble_below_5_kmh() -> void:
-	assert_true(
-		_src.contains("speed_kmh < 5.0"),
-		"Idle wobble should activate below 5 km/h",
-	)
+	assert_eq(EngineAudioScript.IDLE_SPEED_THRESHOLD, 5.0)
 
 
 func test_exhaust_crackle_on_throttle_liftoff() -> void:
-	assert_true(
-		_src.contains("_prev_throttle > 0.3 and throttle < 0.1"),
-		"Crackle should trigger on throttle lift-off",
-	)
+	assert_eq(EngineAudioScript.CRACKLE_THROTTLE_HIGH, 0.3)
+	assert_eq(EngineAudioScript.CRACKLE_THROTTLE_LOW, 0.1)
 
 
 func test_crackle_requires_speed_above_30() -> void:
-	assert_true(
-		_src.contains("speed_kmh > 30.0"),
-		"Crackle should require speed above 30 km/h",
-	)
+	assert_eq(EngineAudioScript.CRACKLE_SPEED_MIN, 30.0)
 
 
 func test_crackle_timer_set_to_03() -> void:
-	assert_true(
-		_src.contains("_crackle_timer = 0.3"),
-		"Crackle should last 0.3 seconds",
-	)
+	assert_eq(EngineAudioScript.CRACKLE_DURATION, 0.3)
 
 
 func test_crackle_amp_decays() -> void:
-	assert_true(
-		_src.contains("_crackle_amp *= 0.92"),
-		"Crackle amplitude should decay by 0.92",
-	)
+	assert_eq(EngineAudioScript.CRACKLE_DECAY, 0.92)
 
 
 func test_distance_culling() -> void:
@@ -236,17 +210,12 @@ func test_phase_wrapping() -> void:
 
 
 func test_waveshaping_for_growl() -> void:
-	assert_true(
-		_src.contains("0.8 + 0.2 * absf(fund)"),
-		"Should waveshape fundamental for engine growl",
-	)
+	assert_eq(EngineAudioScript.WAVE_CLIP_MIN, 0.8)
+	assert_eq(EngineAudioScript.WAVE_CLIP_RANGE, 0.2)
 
 
 func test_smooth_volume_transition() -> void:
-	assert_true(
-		_src.contains("delta * 8.0"),
-		"Volume smoothing rate should be delta * 8.0",
-	)
+	assert_eq(EngineAudioScript.VOLUME_SMOOTH_RATE, 8.0)
 
 
 func test_pushes_stereo_frames() -> void:
@@ -257,17 +226,11 @@ func test_pushes_stereo_frames() -> void:
 
 
 func test_idle_wobble_has_secondary_harmonic() -> void:
-	assert_true(
-		_src.contains("_wobble_phase * TAU * 2.3"),
-		"Idle wobble should have secondary harmonic at 2.3x",
-	)
+	assert_eq(EngineAudioScript.WOBBLE_SECONDARY, 2.3)
 
 
 func test_crackle_initial_amp_is_012() -> void:
-	assert_true(
-		_src.contains("_crackle_amp = 0.12"),
-		"Crackle initial amplitude should be 0.12",
-	)
+	assert_eq(EngineAudioScript.CRACKLE_AMP_INIT, 0.12)
 
 
 # ==========================================================================

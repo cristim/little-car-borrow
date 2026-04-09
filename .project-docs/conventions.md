@@ -79,3 +79,30 @@ Canonical group strings used in this project:
 | `"mission_marker"` | MissionMarker nodes |
 | `"helicopter"` | Helicopter CharacterBody3D |
 | `"Road"` | Road/sidewalk surfaces (for GEVP tire friction) |
+
+## Audio Script Constants
+
+Any audio script (engine_audio, boat_audio, etc.) that contains tunable parameters must expose them as named `const` at class scope — never leave bare float/int literals in `_ready()` or `_process()`.
+
+This enables:
+- Direct const-value assertions in tests (`assert_eq(Script.CONST, value)`) instead of fragile source-inspection strings
+- Named values that document intent (e.g. `CRACKLE_DECAY := 0.92` over a bare `0.92`)
+
+Pattern:
+```gdscript
+const BUS_NAME := "SFX"
+const MAX_DISTANCE := 80.0
+const BUFFER_LENGTH := 0.1
+# ... other tuning consts ...
+
+func _ready() -> void:
+    bus = BUS_NAME
+    max_distance = MAX_DISTANCE
+    gen.buffer_length = BUFFER_LENGTH
+```
+
+Tests access consts directly, not via source inspection:
+```gdscript
+assert_eq(MyAudioScript.BUFFER_LENGTH, 0.1)  # good
+assert_true(_src.contains("buffer_length = 0.1"), ...)  # forbidden
+```
