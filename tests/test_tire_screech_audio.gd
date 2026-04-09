@@ -6,6 +6,13 @@ extends GutTest
 const _SCRIPT_PATH := "res://scenes/vehicles/tire_screech_audio.gd"
 const ScreechScript = preload(_SCRIPT_PATH)
 
+
+class MockVehicle:
+	extends Node3D
+	var linear_velocity := Vector3.ZERO
+	var handbrake_input := 0.0
+
+
 # ==========================================================================
 # Constants
 # ==========================================================================
@@ -52,6 +59,18 @@ func test_attack_faster_than_release() -> void:
 
 func test_res_freq_high_above_low() -> void:
 	assert_true(ScreechScript.RES_FREQ_HIGH > ScreechScript.RES_FREQ_LOW)
+
+
+func test_bus_name() -> void:
+	assert_eq(ScreechScript.BUS_NAME, "SFX")
+
+
+func test_max_distance() -> void:
+	assert_eq(ScreechScript.MAX_DISTANCE, 60.0)
+
+
+func test_buffer_length() -> void:
+	assert_almost_eq(ScreechScript.BUFFER_LENGTH, 0.1, 0.001)
 
 
 # ==========================================================================
@@ -114,7 +133,7 @@ func test_ready_sets_buffer_length() -> void:
 	var screech: AudioStreamPlayer3D = ScreechScript.new()
 	add_child_autofree(screech)
 	var gen := screech.stream as AudioStreamGenerator
-	assert_almost_eq(gen.buffer_length, 0.1, 0.001)
+	assert_almost_eq(gen.buffer_length, ScreechScript.BUFFER_LENGTH, 0.001)
 
 
 func test_ready_sets_sfx_bus() -> void:
@@ -126,7 +145,7 @@ func test_ready_sets_sfx_bus() -> void:
 func test_ready_sets_max_distance() -> void:
 	var screech: AudioStreamPlayer3D = ScreechScript.new()
 	add_child_autofree(screech)
-	assert_eq(screech.max_distance, 60.0)
+	assert_eq(screech.max_distance, ScreechScript.MAX_DISTANCE)
 
 
 func test_ready_sets_attenuation_model() -> void:
@@ -162,64 +181,90 @@ func test_ready_rng_randomized() -> void:
 
 
 # ==========================================================================
-# _get_slip_intensity — source verification and logic
+# _get_slip_intensity — behavioral tests
 # ==========================================================================
 
 
-func test_slip_returns_zero_without_linear_velocity() -> void:
-	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
-	assert_true(
-		src.contains('not "linear_velocity" in _vehicle'),
-		"Should check for linear_velocity property on vehicle",
-	)
+func test_slip_zero_without_linear_velocity_property() -> void:
+	var screech: AudioStreamPlayer3D = ScreechScript.new()
+	add_child_autofree(screech)
+	var mock_vehicle := Node.new()  # plain Node has no linear_velocity
+	add_child_autofree(mock_vehicle)
+	screech._vehicle = mock_vehicle
+	assert_eq(screech._get_slip_intensity(), 0.0)
 
 
-func test_slip_returns_zero_below_speed_threshold() -> void:
-	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
-	assert_true(
-		src.contains("speed_kmh < SLIP_SPEED_THRESHOLD"),
-		"Should return 0 below speed threshold",
-	)
+func test_slip_zero_below_speed_threshold() -> void:
+	var screech: AudioStreamPlayer3D = ScreechScript.new()
+	add_child_autofree(screech)
+	var mock := MockVehicle.new()
+	add_child_autofree(mock)
+	# Speed = 5 km/h (below 20 km/h threshold)
+	mock.linear_velocity = Vector3(0.0, 0.0, -5.0 / 3.6)
+	screech._vehicle = mock
+	assert_eq(screech._get_slip_intensity(), 0.0)
 
 
-func test_slip_checks_lateral_threshold() -> void:
-	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
-	assert_true(
-		src.contains("lateral > LATERAL_THRESHOLD"),
-		"Should check lateral movement against threshold",
-	)
+func test_slip_zero_when_moving_straight() -> void:
+	var screech: AudioStreamPlayer3D = ScreechScript.new()
+	add_child_autofree(screech)
+	var mock := MockVehicle.new()
+	add_child_autofree(mock)
+	# Moving forward at 80 km/h (22.2 m/s), no lateral component
+	mock.linear_velocity = Vector3(0.0, 0.0, -22.22)
+	screech._vehicle = mock
+	# lateral cross should be 0 (moving straight)
+	assert_almost_eq(screech._get_slip_intensity(), 0.0, 0.01)
 
 
-func test_slip_checks_handbrake() -> void:
-	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
-	assert_true(
-		src.contains("handbrake > 0.5"),
-		"Should detect handbrake for skid",
-	)
+func test_slip_nonzero_above_lateral_threshold() -> void:
+	var screech: AudioStreamPlayer3D = ScreechScript.new()
+	add_child_autofree(screech)
+	var mock := MockVehicle.new()
+	add_child_autofree(mock)
+	# Moving fast enough (80 km/h) with large lateral component (perpendicular)
+	mock.linear_velocity = Vector3(22.22, 0.0, 0.0)  # pure lateral at 80 km/h
+	screech._vehicle = mock
+	var slip := screech._get_slip_intensity()
+	assert_true(slip > 0.0, "Full lateral slip should produce non-zero intensity")
 
 
-func test_slip_handbrake_requires_speed() -> void:
-	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
-	assert_true(
-		src.contains("speed_kmh > 30.0"),
-		"Handbrake screech should require minimum speed",
-	)
+func test_slip_handbrake_at_low_speed_no_screech() -> void:
+	var screech: AudioStreamPlayer3D = ScreechScript.new()
+	add_child_autofree(screech)
+	var mock := MockVehicle.new()
+	add_child_autofree(mock)
+	# Handbrake engaged but slow (15 km/h < 30 km/h threshold)
+	mock.linear_velocity = Vector3(0.0, 0.0, -4.17)  # 15 km/h straight ahead
+	mock.handbrake_input = 1.0
+	screech._vehicle = mock
+	# Speed below threshold → 0
+	assert_eq(screech._get_slip_intensity(), 0.0)
 
 
-func test_slip_clamps_to_zero_one() -> void:
-	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
-	assert_true(
-		src.contains("clampf((lateral - LATERAL_THRESHOLD) * 2.0, 0.0, 1.0)"),
-		"Lateral slip should be clamped to [0, 1]",
-	)
+func test_slip_handbrake_min_intensity() -> void:
+	var screech: AudioStreamPlayer3D = ScreechScript.new()
+	add_child_autofree(screech)
+	var mock := MockVehicle.new()
+	add_child_autofree(mock)
+	# Handbrake at high speed going straight → should give HANDBRAKE_SLIP_MIN
+	mock.linear_velocity = Vector3(0.0, 0.0, -15.0)  # 54 km/h
+	mock.handbrake_input = 1.0
+	screech._vehicle = mock
+	var slip := screech._get_slip_intensity()
+	assert_almost_eq(slip, ScreechScript.HANDBRAKE_SLIP_MIN, 0.01)
 
 
-func test_slip_handbrake_minimum_intensity() -> void:
-	var src: String = (load(_SCRIPT_PATH) as GDScript).source_code
-	assert_true(
-		src.contains("maxf(slip, 0.6)"),
-		"Handbrake should guarantee at least 0.6 slip intensity",
-	)
+func test_slip_const_handbrake_threshold() -> void:
+	assert_eq(ScreechScript.HANDBRAKE_THRESHOLD, 0.5)
+
+
+func test_slip_const_handbrake_speed_min() -> void:
+	assert_eq(ScreechScript.HANDBRAKE_SPEED_MIN, 30.0)
+
+
+func test_slip_const_handbrake_slip_min() -> void:
+	assert_eq(ScreechScript.HANDBRAKE_SLIP_MIN, 0.6)
 
 
 # ==========================================================================

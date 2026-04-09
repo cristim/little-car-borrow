@@ -13,6 +13,13 @@ const RES_FREQ_HIGH := 1800.0
 const ATTACK_SPEED := 8.0
 const RELEASE_SPEED := 4.0
 
+const BUS_NAME := "SFX"
+const MAX_DISTANCE := 60.0
+const BUFFER_LENGTH := 0.1
+const HANDBRAKE_THRESHOLD := 0.5
+const HANDBRAKE_SPEED_MIN := 30.0
+const HANDBRAKE_SLIP_MIN := 0.6
+
 var _phase := 0.0
 var _phase2 := 0.0
 var _playback: AudioStreamGeneratorPlayback = null
@@ -28,10 +35,10 @@ func _ready() -> void:
 	_rng.randomize()
 	var gen := AudioStreamGenerator.new()
 	gen.mix_rate = SAMPLE_RATE
-	gen.buffer_length = 0.1
+	gen.buffer_length = BUFFER_LENGTH
 	stream = gen
-	bus = "SFX"
-	max_distance = 60.0
+	bus = BUS_NAME
+	max_distance = MAX_DISTANCE
 	attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
 	play()
 	_playback = get_stream_playback()
@@ -134,7 +141,7 @@ func _get_slip_intensity() -> float:
 	var slip := 0.0
 	if lateral > LATERAL_THRESHOLD:
 		slip = clampf((lateral - LATERAL_THRESHOLD) * 2.0, 0.0, 1.0)
-	if handbrake > 0.5 and speed_kmh > 30.0:
-		slip = maxf(slip, 0.6)
+	if handbrake > HANDBRAKE_THRESHOLD and speed_kmh > HANDBRAKE_SPEED_MIN:
+		slip = maxf(slip, HANDBRAKE_SLIP_MIN)
 
 	return slip
