@@ -15,6 +15,17 @@ const H3_AMP := 0.15
 const H4_AMP := 0.06
 const SUB_AMP := 0.25
 
+const BUS_NAME := "SFX"
+const MAX_DISTANCE := 80.0
+const BUFFER_LENGTH := 0.1
+const SMOOTH_VOLUME_INIT := 0.12
+const SPEED_NORMALIZATION := 80.0
+const IDLE_SPEED_THRESHOLD := 5.0
+const BURBLE_SPEED_MIN := 15.0
+const BURBLE_SPEED_RANGE := 40.0
+const BURBLE_AMP_MAX := 0.15
+const VOLUME_SMOOTH_RATE := 6.0
+
 var _phase := 0.0
 var _phase2 := 0.0
 var _phase3 := 0.0
@@ -25,7 +36,7 @@ var _vehicle: Node = null
 var _controller: Node = null
 var _playback: AudioStreamGeneratorPlayback = null
 var _rng := RandomNumberGenerator.new()
-var _smooth_volume := 0.12
+var _smooth_volume := SMOOTH_VOLUME_INIT
 
 
 func _ready() -> void:
@@ -36,10 +47,10 @@ func _ready() -> void:
 
 	var gen := AudioStreamGenerator.new()
 	gen.mix_rate = SAMPLE_RATE
-	gen.buffer_length = 0.1
+	gen.buffer_length = BUFFER_LENGTH
 	stream = gen
-	bus = "SFX"
-	max_distance = 80.0
+	bus = BUS_NAME
+	max_distance = MAX_DISTANCE
 	attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
 	play()
 	_playback = get_stream_playback()
@@ -71,12 +82,12 @@ func _process(delta: float) -> void:
 	if _controller and "active" in _controller and _controller.active:
 		throttle = Input.get_action_strength("move_forward")
 
-	var speed_ratio := clampf(speed_kmh / 80.0, 0.0, 1.0)
+	var speed_ratio := clampf(speed_kmh / SPEED_NORMALIZATION, 0.0, 1.0)
 	var base_freq := lerpf(BASE_FREQ_MIN, BASE_FREQ_MAX, speed_ratio)
 
 	# Volume
 	var target_vol := lerpf(0.12, 0.45, maxf(speed_ratio, throttle))
-	_smooth_volume = lerpf(_smooth_volume, target_vol, delta * 6.0)
+	_smooth_volume = lerpf(_smooth_volume, target_vol, delta * VOLUME_SMOOTH_RATE)
 	var volume := _smooth_volume
 
 	# Water gurgle amplitude (always present, louder at speed)
@@ -84,14 +95,14 @@ func _process(delta: float) -> void:
 
 	# Hull slap at speed
 	var slap_amp := 0.0
-	if speed_kmh > 15.0:
-		slap_amp = clampf((speed_kmh - 15.0) / 40.0, 0.0, 0.15)
+	if speed_kmh > BURBLE_SPEED_MIN:
+		slap_amp = clampf((speed_kmh - BURBLE_SPEED_MIN) / BURBLE_SPEED_RANGE, 0.0, BURBLE_AMP_MAX)
 
 	var frames_available := _playback.get_frames_available()
 	for _i in range(frames_available):
 		# Idle burble: phase incremented per sample (not per frame) for correct 2 Hz rate
 		var sample_freq := base_freq
-		if speed_kmh < 5.0:
+		if speed_kmh < IDLE_SPEED_THRESHOLD:
 			_burble_phase += IDLE_BURBLE_FREQ / SAMPLE_RATE
 			if _burble_phase > 1.0:
 				_burble_phase -= 1.0
