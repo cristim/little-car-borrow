@@ -60,9 +60,10 @@ func mark_dirty(tile: Vector2i, data: Dictionary) -> void:
 
 ## Flush all dirty tiles to disk.
 func flush_dirty() -> void:
-	for tile: Vector2i in _dirty:
-		save_tile(tile, _dirty[tile])
+	var to_flush: Dictionary = _dirty.duplicate()
 	_dirty.clear()
+	for tile: Vector2i in to_flush:
+		save_tile(tile, to_flush[tile])
 
 
 ## Return number of dirty tiles pending write.

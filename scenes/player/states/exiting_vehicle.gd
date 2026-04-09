@@ -30,7 +30,7 @@ func enter(msg: Dictionary = {}) -> void:
 
 	# Place player at water surface if ejected underwater
 	if player.global_position.y < GameManager.SEA_LEVEL:
-		player.global_position.y = SEA_LEVEL
+		player.global_position.y = GameManager.SEA_LEVEL
 
 	player.velocity = Vector3.ZERO
 
