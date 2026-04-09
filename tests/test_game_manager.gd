@@ -340,6 +340,19 @@ func test_load_emits_money_signal() -> void:
 
 
 # ================================================================
+# restart_game — deferred reload (C1)
+# ================================================================
+
+
+func test_restart_game_uses_call_deferred() -> void:
+	var src: String = (GameManagerScript as GDScript).source_code
+	assert_true(
+		src.contains('call_deferred("reload_current_scene")'),
+		"restart_game must use call_deferred to avoid mid-frame crash",
+	)
+
+
+# ================================================================
 # Death
 # ================================================================
 

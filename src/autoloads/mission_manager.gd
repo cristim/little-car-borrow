@@ -10,6 +10,7 @@ var _available_missions: Array[Dictionary] = []
 var _active_mission: Dictionary = {}
 var _refresh_timer := 0.0
 var _mission_timer := 0.0
+var _mission_counter: int = 0
 var _player: Node3D = null
 var _rng := RandomNumberGenerator.new()
 var _grid = preload("res://src/road_grid.gd").new()
@@ -210,6 +211,7 @@ func _on_vehicle_entered(vehicle: Node) -> void:
 
 
 func _generate_delivery() -> Dictionary:
+	_mission_counter += 1
 	var pp := _player.global_position
 	var start := _gen_sidewalk_pos(pp, 40.0, 150.0)
 	var pickup := _gen_sidewalk_pos(start, 40.0, 120.0)
@@ -217,7 +219,7 @@ func _generate_delivery() -> Dictionary:
 	var tl := _rng.randf_range(90.0, 150.0)
 	var reward := _rng.randi_range(300, 800)
 	return {
-		"id": "delivery_%d" % Time.get_ticks_usec(),
+		"id": "delivery_%d" % _mission_counter,
 		"type": "delivery",
 		"title": "Express Delivery",
 		"objective": "Pick up the package",
@@ -232,13 +234,14 @@ func _generate_delivery() -> Dictionary:
 
 
 func _generate_taxi() -> Dictionary:
+	_mission_counter += 1
 	var pp := _player.global_position
 	var start := _gen_sidewalk_pos(pp, 40.0, 150.0)
 	var dropoff := _gen_sidewalk_pos(start, 100.0, 300.0)
 	var tl := _rng.randf_range(60.0, 120.0)
 	var reward := _rng.randi_range(200, 500)
 	return {
-		"id": "taxi_%d" % Time.get_ticks_usec(),
+		"id": "taxi_%d" % _mission_counter,
 		"type": "taxi",
 		"title": "Taxi Fare",
 		"objective": "Pick up the passenger",
@@ -253,6 +256,7 @@ func _generate_taxi() -> Dictionary:
 
 
 func _generate_theft() -> Dictionary:
+	_mission_counter += 1
 	var variants := [
 		"sedan",
 		"sports",
@@ -267,7 +271,7 @@ func _generate_theft() -> Dictionary:
 	var dropoff := _gen_sidewalk_pos(start, 200.0, 400.0)
 	var reward := _rng.randi_range(500, 1500)
 	return {
-		"id": "theft_%d" % Time.get_ticks_usec(),
+		"id": "theft_%d" % _mission_counter,
 		"type": "theft",
 		"title": "Vehicle Theft",
 		"objective": "Steal a %s and deliver it" % variant,
@@ -285,7 +289,7 @@ func _generate_theft() -> Dictionary:
 
 
 func _get_boundary():
-	if _boundary:
+	if is_instance_valid(_boundary):
 		return _boundary
 	var city_nodes := get_tree().get_nodes_in_group("city_manager")
 	if city_nodes.is_empty():

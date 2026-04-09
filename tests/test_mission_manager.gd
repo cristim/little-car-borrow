@@ -711,7 +711,7 @@ func test_sidewalk_fallback_uses_fixed_street_y() -> void:
 	# The fallback position when no valid sidewalk is found must use a
 	# fixed Y of 0.15 (street level), never the player's own Y which can
 	# be elevated on rooftops or slopes.
-	var src: String = MissionScript.source_code
+	var src: String = (MissionScript as GDScript).source_code
 	assert_true(
 		src.contains("0.15"),
 		"Fallback position in _gen_sidewalk_pos should use Y = 0.15 (street level)",
@@ -1186,3 +1186,5 @@ func test_instance_theft_valid_vehicle_force_exit() -> void:
 	EventBus.force_exit_vehicle.disconnect(cb)
 	assert_eq(received.size(), 1, "Instance: force_exit_vehicle for valid vehicle")
 	GameManager.money = before
+
+

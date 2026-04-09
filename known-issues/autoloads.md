@@ -5,41 +5,6 @@ Scope: all files under `src/autoloads/`
 
 ---
 
-## CRITICAL
-
-### C1 — `game_manager.gd`: `restart_game` teardown order causes freed-object errors
-**File:** `src/autoloads/game_manager.gd`, lines 60-65
-
-`WantedLevelManager.clear()` and `MissionManager.fail_mission("restart")` are called
-before `reload_current_scene()`, which destroys the scene tree. Signal handlers triggered
-by those calls (e.g. `EventBus.wanted_level_changed`, `EventBus.mission_failed`) fire
-into nodes that are mid-teardown, producing "attempt to call function on freed object".
-
-**Fix:** Call `get_tree().reload_current_scene()` in a `call_deferred` so signal
-callbacks complete first.
-
----
-
-### C2 — `mission_manager.gd`: Mission IDs from `Time.get_ticks_usec()` collide in tight loops
-**File:** `src/autoloads/mission_manager.gd`, lines 234, 255, 282
-
-Multiple missions generated in the same loop iteration can receive identical IDs since
-`get_ticks_usec` resolution may be coarser than 1 us on some platforms.
-
-**Fix:** Append a monotonically incrementing counter to the ID.
-
----
-
-### C3 — `mission_manager.gd`: Stale cached `_boundary` reference after scene reload
-**File:** `src/autoloads/mission_manager.gd`, lines 298-305
-
-`_boundary` is cached from a `get_meta` call but never re-validated. After scene reload,
-it holds a stale reference to a freed RefCounted object, causing crash on next use.
-
-**Fix:** Validate `is_instance_valid(_boundary)` before returning cached value.
-
----
-
 ## HIGH
 
 ### H1 — `game_manager.gd`: `_try_unlock_shotgun` called repeatedly with no guard

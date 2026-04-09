@@ -63,7 +63,7 @@ func restart_game() -> void:
 	health = MAX_HEALTH
 	WantedLevelManager.clear()
 	MissionManager.fail_mission("restart")
-	get_tree().reload_current_scene()
+	get_tree().call_deferred("reload_current_scene")
 
 
 func save_progress() -> void:
