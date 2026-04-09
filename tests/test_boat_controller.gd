@@ -1,13 +1,13 @@
 extends GutTest
 ## Unit tests for boat_controller.gd — buoyancy physics and boat steering.
 
-var _script: GDScript
+const BoatControllerScript = preload("res://scenes/vehicles/boat_controller.gd")
+
 var _src: String
 
 
 func before_all() -> void:
-	_script = load("res://scenes/vehicles/boat_controller.gd")
-	_src = _script.source_code
+	_src = (BoatControllerScript as GDScript).source_code
 
 
 # ==========================================================================
@@ -16,60 +16,45 @@ func before_all() -> void:
 
 
 func test_sea_level_is_negative_2() -> void:
-	assert_true(_src.contains("SEA_LEVEL := -2.0"))
+	assert_eq(BoatControllerScript.SEA_LEVEL, -2.0)
 
 
 func test_rho_water_is_1000() -> void:
-	assert_true(_src.contains("RHO_WATER := 1000.0"), "Should use seawater density")
+	assert_eq(BoatControllerScript.RHO_WATER, 1000.0)
 
 
 func test_thrust_force_is_6000() -> void:
-	assert_true(_src.contains("THRUST_FORCE := 6000.0"))
+	assert_eq(BoatControllerScript.THRUST_FORCE, 6000.0)
 
 
 func test_max_steer_angle_is_05() -> void:
-	assert_true(_src.contains("MAX_STEER_ANGLE := 0.5"))
+	assert_eq(BoatControllerScript.MAX_STEER_ANGLE, 0.5)
 
 
 func test_wave_amplitude_is_015() -> void:
-	assert_true(_src.contains("WAVE_AMPLITUDE := 0.15"))
+	assert_eq(BoatControllerScript.WAVE_AMPLITUDE, 0.15)
 
 
 func test_wave_frequency_is_12() -> void:
-	assert_true(_src.contains("WAVE_FREQUENCY := 1.2"))
+	assert_eq(BoatControllerScript.WAVE_FREQUENCY, 1.2)
 
 
 func test_hull_has_8_buoyancy_points() -> void:
-	assert_true(
-		_src.contains("Vector3(-1.2, -0.3, -2.0)"),
-		"Should have port bow point",
-	)
-	assert_true(
-		_src.contains("Vector3(1.2, -0.3, -2.0)"),
-		"Should have starboard bow point",
-	)
-	assert_true(
-		_src.contains("Vector3(0.0, -0.3, -2.5)"),
-		"Should have keel bow point",
-	)
-	assert_true(
-		_src.contains("Vector3(0.0, -0.3, 2.5)"),
-		"Should have keel stern point",
-	)
+	assert_eq(BoatControllerScript.HULL_POINTS[0], Vector3(-1.2, -0.3, -2.0))
+	assert_eq(BoatControllerScript.HULL_POINTS[1], Vector3(1.2, -0.3, -2.0))
+	assert_eq(BoatControllerScript.HULL_POINTS[6], Vector3(0.0, -0.3, -2.5))
+	assert_eq(BoatControllerScript.HULL_POINTS[7], Vector3(0.0, -0.3, 2.5))
 
 
 func test_hull_point_area_is_05() -> void:
-	assert_true(
-		_src.contains("HULL_POINT_AREA := 0.5"),
-		"Should define 0.5 m² per hull sample point",
-	)
+	assert_eq(BoatControllerScript.HULL_POINT_AREA, 0.5)
 
 
 func test_set_passenger_adjusts_mass() -> void:
 	var body := RigidBody3D.new()
 	body.mass = 800.0
 	var ctrl: Node = Node.new()
-	ctrl.set_script(_script)
+	ctrl.set_script(BoatControllerScript)
 	body.add_child(ctrl)
 	add_child_autofree(body)
 	ctrl.set_passenger(75.0)
@@ -95,14 +80,14 @@ func test_set_passenger_adjusts_mass() -> void:
 
 func test_active_defaults_false() -> void:
 	var ctrl: Node = Node.new()
-	ctrl.set_script(_script)
+	ctrl.set_script(BoatControllerScript)
 	add_child_autofree(ctrl)
 	assert_false(ctrl.active, "Controller should be inactive by default")
 
 
 func test_body_is_null_without_rigidbody_parent() -> void:
 	var ctrl: Node = Node.new()
-	ctrl.set_script(_script)
+	ctrl.set_script(BoatControllerScript)
 	add_child_autofree(ctrl)
 	assert_null(ctrl._body, "Should be null when parent is not RigidBody3D")
 
@@ -110,7 +95,7 @@ func test_body_is_null_without_rigidbody_parent() -> void:
 func test_body_set_with_rigidbody_parent() -> void:
 	var body := RigidBody3D.new()
 	var ctrl: Node = Node.new()
-	ctrl.set_script(_script)
+	ctrl.set_script(BoatControllerScript)
 	body.add_child(ctrl)
 	add_child_autofree(body)
 	assert_not_null(ctrl._body, "Should reference parent RigidBody3D")
@@ -125,7 +110,7 @@ func test_body_set_with_rigidbody_parent() -> void:
 func test_ready_sets_linear_damp() -> void:
 	var body := RigidBody3D.new()
 	var ctrl: Node = Node.new()
-	ctrl.set_script(_script)
+	ctrl.set_script(BoatControllerScript)
 	body.add_child(ctrl)
 	add_child_autofree(body)
 	assert_almost_eq(body.linear_damp, 0.8, 0.01, "Linear damp should be 0.8")
@@ -134,7 +119,7 @@ func test_ready_sets_linear_damp() -> void:
 func test_ready_sets_angular_damp() -> void:
 	var body := RigidBody3D.new()
 	var ctrl: Node = Node.new()
-	ctrl.set_script(_script)
+	ctrl.set_script(BoatControllerScript)
 	body.add_child(ctrl)
 	add_child_autofree(body)
 	assert_eq(body.angular_damp, 6.0, "Angular damp should be 6.0")
@@ -143,7 +128,7 @@ func test_ready_sets_angular_damp() -> void:
 func test_ready_sets_custom_center_of_mass() -> void:
 	var body := RigidBody3D.new()
 	var ctrl: Node = Node.new()
-	ctrl.set_script(_script)
+	ctrl.set_script(BoatControllerScript)
 	body.add_child(ctrl)
 	add_child_autofree(body)
 	assert_eq(

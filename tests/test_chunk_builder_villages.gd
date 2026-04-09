@@ -506,19 +506,11 @@ func test_is_flat_enough_city_center_is_flat() -> void:
 
 
 func test_source_contains_village_search_attempts() -> void:
-	var script: GDScript = VillageScript
-	assert_true(
-		script.source_code.contains("VILLAGE_SEARCH_ATTEMPTS"),
-		"Source should reference VILLAGE_SEARCH_ATTEMPTS",
-	)
+	assert_eq(VillageScript.VILLAGE_SEARCH_ATTEMPTS, 10)
 
 
 func test_source_contains_flatness_threshold() -> void:
-	var script: GDScript = VillageScript
-	assert_true(
-		script.source_code.contains("FLATNESS_THRESHOLD"),
-		"Source should reference FLATNESS_THRESHOLD",
-	)
+	assert_eq(VillageScript.FLATNESS_THRESHOLD, 2.0)
 
 
 func test_source_contains_is_flat_enough() -> void:
@@ -546,9 +538,4 @@ func test_source_contains_set_meta_village_center() -> void:
 
 
 func test_source_flatness_uses_village_radius() -> void:
-	var script: GDScript = VillageScript
-	# _is_flat_enough uses VILLAGE_RADIUS for sample offsets
-	assert_true(
-		script.source_code.contains("VILLAGE_RADIUS"),
-		"_is_flat_enough should use VILLAGE_RADIUS for sample offsets",
-	)
+	assert_eq(VillageScript.VILLAGE_RADIUS, 30.0)
