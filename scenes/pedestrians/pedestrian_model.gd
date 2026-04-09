@@ -54,44 +54,72 @@ const EYE_COLORS: Array[Color] = [
 const WALK_ELBOW_BASE := -0.5  # base elbow fold when walking (~29°)
 const WALK_ELBOW_DYN := 0.15  # extra fold on forward shoulder swing
 
+# Static palette — built once on first spawn (41 total), shared across all instances.
+# Eliminates 7 StandardMaterial3D allocations per pedestrian after the first.
+static var _s_shirt_mats: Array[StandardMaterial3D] = []
+static var _s_pant_mats: Array[StandardMaterial3D] = []
+static var _s_skin_mats: Array[StandardMaterial3D] = []
+static var _s_hair_mats: Array[StandardMaterial3D] = []
+static var _s_brow_mats: Array[StandardMaterial3D] = []
+static var _s_eye_mats: Array[StandardMaterial3D] = []
+static var _s_mouth_mat: StandardMaterial3D = null
+
 var _rng := RandomNumberGenerator.new()
 var _left_elbow: Node3D
 var _right_elbow: Node3D
 
 
+static func _build_static_palette() -> void:
+	for c in SHIRT_COLORS:
+		var m := StandardMaterial3D.new()
+		m.albedo_color = c
+		_s_shirt_mats.append(m)
+	for c in PANT_COLORS:
+		var m := StandardMaterial3D.new()
+		m.albedo_color = c
+		_s_pant_mats.append(m)
+	for c in SKIN_COLORS:
+		var m := StandardMaterial3D.new()
+		m.albedo_color = c
+		_s_skin_mats.append(m)
+	for c in HAIR_COLORS:
+		var hm := StandardMaterial3D.new()
+		hm.albedo_color = c
+		_s_hair_mats.append(hm)
+		var bm := StandardMaterial3D.new()
+		bm.albedo_color = c.darkened(0.15)
+		_s_brow_mats.append(bm)
+	for c in EYE_COLORS:
+		var m := StandardMaterial3D.new()
+		m.albedo_color = c
+		_s_eye_mats.append(m)
+	_s_mouth_mat = StandardMaterial3D.new()
+	_s_mouth_mat.albedo_color = Color(0.60, 0.28, 0.26)
+
+
 func _ready() -> void:
 	_rng.randomize()
 
-	var shirt_col := SHIRT_COLORS[_rng.randi() % SHIRT_COLORS.size()]
-	var pant_col := PANT_COLORS[_rng.randi() % PANT_COLORS.size()]
-	var skin_col := SKIN_COLORS[_rng.randi() % SKIN_COLORS.size()]
-	var hair_col := HAIR_COLORS[_rng.randi() % HAIR_COLORS.size()]
-	var eye_col := EYE_COLORS[_rng.randi() % EYE_COLORS.size()]
+	if _s_shirt_mats.is_empty():
+		_build_static_palette()
+
+	var shirt_idx := _rng.randi() % SHIRT_COLORS.size()
+	var pant_idx := _rng.randi() % PANT_COLORS.size()
+	var skin_idx := _rng.randi() % SKIN_COLORS.size()
+	var hair_idx := _rng.randi() % HAIR_COLORS.size()
+	var eye_idx := _rng.randi() % EYE_COLORS.size()
 
 	# Uniform scale: 87%–113% for height/build variation
 	var s: float = _rng.randf_range(0.87, 1.13)
 	scale = Vector3(s, s, s)
 
-	var shirt_mat := StandardMaterial3D.new()
-	shirt_mat.albedo_color = shirt_col
-
-	var pant_mat := StandardMaterial3D.new()
-	pant_mat.albedo_color = pant_col
-
-	var skin_mat := StandardMaterial3D.new()
-	skin_mat.albedo_color = skin_col
-
-	var hair_mat := StandardMaterial3D.new()
-	hair_mat.albedo_color = hair_col
-
-	var eye_mat := StandardMaterial3D.new()
-	eye_mat.albedo_color = eye_col
-
-	var brow_mat := StandardMaterial3D.new()
-	brow_mat.albedo_color = hair_col.darkened(0.15)
-
-	var mouth_mat := StandardMaterial3D.new()
-	mouth_mat.albedo_color = Color(0.60, 0.28, 0.26)
+	var shirt_mat: StandardMaterial3D = _s_shirt_mats[shirt_idx]
+	var pant_mat: StandardMaterial3D = _s_pant_mats[pant_idx]
+	var skin_mat: StandardMaterial3D = _s_skin_mats[skin_idx]
+	var hair_mat: StandardMaterial3D = _s_hair_mats[hair_idx]
+	var brow_mat: StandardMaterial3D = _s_brow_mats[hair_idx]
+	var eye_mat: StandardMaterial3D = _s_eye_mats[eye_idx]
+	var mouth_mat: StandardMaterial3D = _s_mouth_mat
 
 	# --- Torso (child 0) ---
 	var torso_mesh := BoxMesh.new()

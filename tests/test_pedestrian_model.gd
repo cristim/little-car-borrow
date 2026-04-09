@@ -839,6 +839,46 @@ func test_elbow_rotates_when_walking() -> void:
 	)
 
 
+# ---------------------------------------------------------------------------
+# Material palette sharing — palette pool performance fix
+# ---------------------------------------------------------------------------
+
+
+func test_mouth_material_shared_across_instances() -> void:
+	var model1 := _make_model()
+	add_child_autofree(model1)
+	var model2 := _make_model()
+	add_child_autofree(model2)
+	await get_tree().process_frame
+
+	var mouth1 := (_head_pivot(model1).get_node("Mouth") as MeshInstance3D).mesh as BoxMesh
+	var mouth2 := (_head_pivot(model2).get_node("Mouth") as MeshInstance3D).mesh as BoxMesh
+	assert_eq(
+		mouth1.material,
+		mouth2.material,
+		"Mouth material is constant — all pedestrians must share the same object",
+	)
+
+
+func test_same_shirt_color_reuses_material_object() -> void:
+	# With 10 shirt colours, 11 models guarantees a repeat (pigeonhole).
+	var mat_by_color: Dictionary = {}
+	for _i in range(11):
+		var model := _make_model()
+		add_child_autofree(model)
+		await get_tree().process_frame
+		var mat := (model.get_child(0) as MeshInstance3D).material_override as StandardMaterial3D
+		var col: Color = mat.albedo_color
+		if mat_by_color.has(col):
+			assert_eq(
+				mat_by_color[col],
+				mat,
+				"Two pedestrians with the same shirt colour must share the same material object",
+			)
+			return
+		mat_by_color[col] = mat
+
+
 func test_elbow_decays_when_still() -> void:
 	var ped := CharacterBody3D.new()
 	add_child_autofree(ped)
