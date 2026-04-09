@@ -10,7 +10,6 @@ const MIN_PED_DIST := 8.0
 const SPAWN_INTERVAL := 1.0
 const SPAWNS_PER_TICK := 2
 const SIDEWALK_OFFSET := 1.5
-const SEA_LEVEL := -2.0
 
 const BoundaryScript = preload("res://src/city_boundary.gd")
 var _grid = preload("res://src/road_grid.gd").new()
@@ -102,7 +101,7 @@ func _try_spawn() -> void:
 
 		# Adjust spawn height to terrain level outside city
 		var ground_y: float = _boundary.get_ground_height(spawn_pos.x, spawn_pos.z)
-		if ground_y < SEA_LEVEL:
+		if ground_y < GameManager.SEA_LEVEL:
 			continue
 		spawn_pos.y = ground_y + 0.15
 

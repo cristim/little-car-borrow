@@ -2,6 +2,7 @@ extends Node
 ## Manages global game state: money, health, save/load, pause.
 
 const MAX_HEALTH := 100.0
+const SEA_LEVEL := -2.0
 const SAVE_PATH := "user://savegame.cfg"
 const SECTION := "progress"
 

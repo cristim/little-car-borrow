@@ -12,7 +12,6 @@ const UPDATE_INTERVAL := 0.5
 const SCAN_RANGE := 5  # check -5..+5 tiles around player (boundary can extend ~4.6 tiles)
 const LOOKAHEAD_TIME := 3.0  # seconds of velocity prediction
 const FLUSH_INTERVAL := 5.0  # seconds between disk flushes
-const SEA_LEVEL := -2.0
 const EDGE_MISMATCH_THRESHOLD := 0.05  # meters — triggers neighbor rebuild
 const MAX_CASCADING_REPAIRS := 12  # safety cap to prevent runaway rebuilds
 const FALL_THRESHOLD := -15.0  # Y below which triggers self-repair
@@ -522,7 +521,7 @@ func _build_terrain_biome(
 	# Piers on coastal terrain tiles (has both water and land above sea level)
 	var has_water: bool = chunk.get_meta("has_water", false)
 	var max_h: float = chunk.get_meta("terrain_max_height", 0.0)
-	if has_water and max_h > SEA_LEVEL:
+	if has_water and max_h > GameManager.SEA_LEVEL:
 		_pier_builder.build(chunk, tile, ox, oz)
 
 	match biome:

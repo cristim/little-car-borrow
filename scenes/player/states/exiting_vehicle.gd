@@ -4,7 +4,6 @@ extends "res://src/state_machine/state.gd"
 
 const DOOR_OPEN_ANGLE := -1.2
 const DOOR_ANIM_DURATION := 0.3
-const SEA_LEVEL := -2.0
 
 var _done := false
 
@@ -30,7 +29,7 @@ func enter(msg: Dictionary = {}) -> void:
 		player.global_position = vehicle.global_position + Vector3(-2.0, 0.5, 0.0)
 
 	# Place player at water surface if ejected underwater
-	if player.global_position.y < SEA_LEVEL:
+	if player.global_position.y < GameManager.SEA_LEVEL:
 		player.global_position.y = SEA_LEVEL
 
 	player.velocity = Vector3.ZERO

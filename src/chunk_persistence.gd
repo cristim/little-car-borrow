@@ -18,6 +18,8 @@ func save_tile(tile: Vector2i, data: Dictionary) -> void:
 	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
 	if file:
 		file.store_buffer(bytes)
+		_dirty.erase(tile)  # keep dirty dict consistent with on-disk state
+
 
 
 ## Load tile data from disk. Returns empty dict if not found or corrupt.

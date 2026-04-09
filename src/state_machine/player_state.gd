@@ -3,7 +3,7 @@ extends "res://src/state_machine/state.gd"
 ## Provides SEA_LEVEL, camera-relative direction, ground height,
 ## water detection, and the land-vehicle interaction prompt.
 
-const SEA_LEVEL := -2.0
+const SEA_LEVEL: float = GameManager.SEA_LEVEL
 
 
 func _get_camera_relative_direction(input: Vector2) -> Vector3:

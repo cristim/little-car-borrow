@@ -15,6 +15,10 @@ func _ready() -> void:
 			states[child.name.to_lower()] = child
 			child.state_machine = self
 	if initial_state:
+		if initial_state.get_parent() != self:
+			push_error(
+				"StateMachine: initial_state '%s' is not a direct child" % initial_state.name
+			)
 		current_state = initial_state
 		current_state.enter()
 

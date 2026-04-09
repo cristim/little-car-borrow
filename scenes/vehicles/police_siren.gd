@@ -3,6 +3,7 @@ extends AudioStreamPlayer3D
 ## Uses dual oscillators with overtones and amplitude modulation.
 
 const SAMPLE_RATE := 22050.0
+const CULL_DISTANCE := 120.0  # matches max_distance; stop generating beyond this
 
 # Wail pattern: slow sweep between frequencies
 const WAIL_LOW := 570.0
@@ -38,6 +39,11 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	# Distance culling — push silence-free frames beyond cull distance
+	var cam := get_viewport().get_camera_3d()
+	if cam and global_position.distance_to(cam.global_position) > CULL_DISTANCE:
+		return
+
 	var playback := get_stream_playback() as AudioStreamGeneratorPlayback
 	if not playback:
 		return

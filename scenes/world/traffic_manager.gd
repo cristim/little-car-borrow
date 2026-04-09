@@ -31,7 +31,6 @@ const VARIANTS := [
 	{"name": "van", "weight": 1, "mass_mult": 1.6},
 	{"name": "pickup", "weight": 1, "mass_mult": 1.5},
 ]
-const SEA_LEVEL := -2.0
 const HIGHWAY_INDICES := [0, 5]
 const GLASS_COLOR := Color(0.6, 0.75, 0.85, 0.4)
 const INTERIOR_COLOR := Color(0.12, 0.12, 0.12, 1)

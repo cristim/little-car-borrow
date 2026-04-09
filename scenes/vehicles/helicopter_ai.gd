@@ -148,7 +148,7 @@ func _apply_body_tilt() -> void:
 	if h_vel.length() > 1.0:
 		var move_angle := atan2(h_vel.x, h_vel.y)
 		rotation.y = move_angle
-		rotation.x = -TILT_ANGLE
+		rotation.x = lerpf(rotation.x, -TILT_ANGLE, 0.1)
 	else:
 		rotation.x = lerpf(rotation.x, 0.0, 0.1)
 

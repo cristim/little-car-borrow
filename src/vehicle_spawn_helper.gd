@@ -2,7 +2,6 @@ extends RefCounted
 ## Shared spawn-placement helpers used by traffic_manager.gd and
 ## police_manager.gd.  All functions are static so no instance is needed.
 
-const SEA_LEVEL := -2.0
 ## GEVP wheel footprint half-extents (metres).
 ## Wheels are ≈1.2 m left/right and ≈1.4 m front/rear of body centre.
 const FP_X := 1.2
@@ -56,7 +55,7 @@ static func probe_spawn_surface(
 			return result  # inside city, no road — skip
 		surface_y = boundary.get_ground_height(spawn_pos.x, spawn_pos.z)
 
-	if sd < 0.0 and surface_y < SEA_LEVEL:
+	if sd < 0.0 and surface_y < GameManager.SEA_LEVEL:
 		return result
 	if sd >= 0.0 and surface_y < 0.0:
 		return result

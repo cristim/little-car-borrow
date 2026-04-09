@@ -16,6 +16,9 @@ func build(weapon_name: String, scale_factor: float = 1.0) -> Node3D:
 			_build_shotgun(root)
 		"Rifle":
 			_build_rifle(root)
+		_:
+			push_warning("WeaponMeshBuilder: unknown weapon '%s'" % weapon_name)
+			root.set_meta("muzzle_local_pos", Vector3(0.0, 0.0, -0.15))
 
 	if scale_factor != 1.0:
 		root.scale = Vector3.ONE * scale_factor

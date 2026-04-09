@@ -16,6 +16,7 @@ var destroyed := false
 
 var _fire_particles: GPUParticles3D = null
 var _smoke_particles: GPUParticles3D = null
+var _fire_sound: AudioStreamPlayer3D = null
 var _fire_timer := 0.0
 var _bullet_holes: Array[MeshInstance3D] = []
 var _vehicle: RigidBody3D = null
@@ -258,6 +259,8 @@ func _create_smoke_particles() -> void:
 func _explode() -> void:
 	on_fire = false
 	destroyed = true
+	if _fire_sound and is_instance_valid(_fire_sound):
+		_fire_sound.stop()
 	if not _vehicle or not is_instance_valid(_vehicle):
 		return
 
@@ -326,7 +329,8 @@ func _set_body_burned() -> void:
 func _play_fire_sound() -> void:
 	if not _vehicle:
 		return
-	var asp := AudioStreamPlayer3D.new()
+	_fire_sound = AudioStreamPlayer3D.new()
+	var asp: AudioStreamPlayer3D = _fire_sound
 	var gen := AudioStreamGenerator.new()
 	gen.mix_rate = 22050.0
 	gen.buffer_length = 2.0

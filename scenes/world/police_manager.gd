@@ -9,7 +9,6 @@ const MIN_VEHICLE_DIST := 20.0
 const SPAWN_INTERVAL := 1.0
 const DESPAWN_FADE_TIME := 10.0
 const LOD_FREEZE_DIST := 140.0
-const SEA_LEVEL := -2.0
 # Launch detection thresholds (same rationale as traffic_manager).
 const LAUNCH_VEL_THRESHOLD := 8.0
 const LAUNCH_VEL_POST_GRACE := 40.0
