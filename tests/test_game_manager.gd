@@ -449,3 +449,61 @@ func test_instance_on_mission_completed() -> void:
 	gm.missions_completed = 0
 	gm._on_mission_completed("test")
 	assert_eq(gm.missions_completed, 1, "_on_mission_completed should increment counter")
+
+
+# ================================================================
+# H1 — _try_unlock_shotgun fires at most once
+# H2 — deduct_money rejects negative amount
+# XH2 — _try_unlock_shotgun safe with freed player node
+# ================================================================
+
+
+func test_shotgun_unlocked_flag_set_after_valid_player() -> void:
+	var gm: Node = GameManagerScript.new()
+	add_child_autofree(gm)
+	var p := Node.new()
+	p.add_to_group("player")
+	add_child_autofree(p)
+	gm._try_unlock_shotgun()
+	assert_true(gm._shotgun_unlocked, "Flag must be set after first unlock attempt with valid player")
+
+
+func test_shotgun_unlock_idempotent() -> void:
+	var gm: Node = GameManagerScript.new()
+	add_child_autofree(gm)
+	var p := Node.new()
+	p.add_to_group("player")
+	add_child_autofree(p)
+	gm._try_unlock_shotgun()
+	var flag_after_first: bool = gm._shotgun_unlocked
+	gm._try_unlock_shotgun()
+	assert_true(flag_after_first, "Flag set on first call")
+	assert_true(gm._shotgun_unlocked, "Flag stays set on second call")
+
+
+func test_deduct_money_rejects_negative_amount() -> void:
+	var gm: Node = GameManagerScript.new()
+	add_child_autofree(gm)
+	gm.money = 100
+	var result: bool = gm.deduct_money(-50)
+	assert_false(result, "Negative amount must return false")
+	assert_eq(gm.money, 100, "Money must not change on negative amount")
+
+
+func test_deduct_money_rejects_zero_amount() -> void:
+	var gm: Node = GameManagerScript.new()
+	add_child_autofree(gm)
+	gm.money = 100
+	var result: bool = gm.deduct_money(0)
+	assert_false(result, "Zero amount must return false")
+
+
+func test_shotgun_unlock_safe_with_freed_player() -> void:
+	var gm: Node = GameManagerScript.new()
+	add_child_autofree(gm)
+	var p := Node.new()
+	p.add_to_group("player")
+	add_child(p)
+	p.free()
+	gm._try_unlock_shotgun()
+	pass_test("_try_unlock_shotgun with freed player must not crash")

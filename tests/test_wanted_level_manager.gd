@@ -470,3 +470,43 @@ func test_instance_clear() -> void:
 	wlm.clear()
 	assert_eq(wlm.heat, 0.0, "heat should be 0 after clear")
 	assert_eq(wlm.wanted_level, 0, "level should be 0 after clear")
+
+
+# ================================================================
+# H1 — _try_unlock_rifle fires at most once
+# XH2 — _try_unlock_rifle safe with freed player node
+# ================================================================
+
+
+func test_rifle_unlocked_flag_set_after_valid_player() -> void:
+	var wlm: Node = WantedScript.new()
+	add_child_autofree(wlm)
+	var p := Node.new()
+	p.add_to_group("player")
+	add_child_autofree(p)
+	wlm._try_unlock_rifle()
+	assert_true(wlm._rifle_unlocked, "Flag must be set after first unlock attempt with valid player")
+
+
+func test_rifle_unlock_idempotent() -> void:
+	var wlm: Node = WantedScript.new()
+	add_child_autofree(wlm)
+	var p := Node.new()
+	p.add_to_group("player")
+	add_child_autofree(p)
+	wlm._try_unlock_rifle()
+	var flag_after_first: bool = wlm._rifle_unlocked
+	wlm._try_unlock_rifle()
+	assert_true(flag_after_first, "Flag set on first call")
+	assert_true(wlm._rifle_unlocked, "Flag stays set on second call")
+
+
+func test_rifle_unlock_safe_with_freed_player() -> void:
+	var wlm: Node = WantedScript.new()
+	add_child_autofree(wlm)
+	var p := Node.new()
+	p.add_to_group("player")
+	add_child(p)
+	p.free()
+	wlm._try_unlock_rifle()
+	pass_test("_try_unlock_rifle with freed player must not crash")

@@ -347,3 +347,34 @@ func test_get_sun_progress_instance_at_24() -> void:
 	add_child_autofree(dnm)
 	dnm.current_hour = 24.0
 	assert_almost_eq(dnm.get_sun_progress(), 1.0, 0.001, "Sun progress at hour 24 should be 1.0")
+
+
+# ================================================================
+# H5 + M3 — wrapf handles midnight rollover and negative time_speed
+# ================================================================
+
+
+func test_midnight_rollover_wraps_hour_into_valid_range() -> void:
+	var dnm: Node = DayNightScript.new()
+	add_child_autofree(dnm)
+	dnm.current_hour = 23.9
+	dnm.time_speed = 1.0
+	# Advance enough to cross midnight
+	dnm._process(0.5 / DayNightScript.HOURS_PER_SECOND)
+	assert_true(
+		dnm.current_hour >= 0.0 and dnm.current_hour < 24.0,
+		"Hour must wrap into [0, 24) after crossing midnight",
+	)
+
+
+func test_negative_time_speed_wraps_correctly() -> void:
+	var dnm: Node = DayNightScript.new()
+	add_child_autofree(dnm)
+	dnm.current_hour = 0.1
+	dnm.time_speed = -1.0
+	# Advance enough to cross below 0
+	dnm._process(0.5 / DayNightScript.HOURS_PER_SECOND)
+	assert_true(
+		dnm.current_hour >= 0.0 and dnm.current_hour < 24.0,
+		"Negative time_speed must wrap into [0, 24) without going negative",
+	)

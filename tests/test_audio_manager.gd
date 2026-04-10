@@ -266,3 +266,18 @@ func test_play_ui_with_wav_stream_no_crash() -> void:
 	var stream := AudioStreamWAV.new()
 	_am.play_ui(stream)
 	assert_true(true, "play_ui with AudioStreamWAV should not crash")
+
+
+# ================================================================
+# H6 — play_sfx / play_ui reject null stream silently (no crash)
+# ================================================================
+
+
+func test_play_sfx_null_stream_no_crash() -> void:
+	_am.play_sfx(null, Vector3.ZERO)
+	pass_test("play_sfx(null) must not crash")
+
+
+func test_play_ui_null_stream_no_crash() -> void:
+	_am.play_ui(null)
+	pass_test("play_ui(null) must not crash")
