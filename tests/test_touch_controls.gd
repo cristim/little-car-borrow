@@ -102,10 +102,10 @@ func test_release_all_fingers_clears_state() -> void:
 func test_button_positions_computed_on_layout() -> void:
 	var tc: Control = _create_touch_controls()
 
-	assert_eq(tc._button_positions.size(), 4, "Should have 4 button positions after layout")
+	assert_eq(tc._button_positions.size(), 6, "Should have 6 button positions after layout")
 
 	# Pause button should be near top-right
-	var pause_btn: Dictionary = tc._button_positions[3]
+	var pause_btn: Dictionary = tc._button_positions[5]
 	assert_eq(pause_btn["name"], "pause", "Last button should be pause")
 	assert_gt(
 		pause_btn["center"].x, tc._viewport_size.x * 0.5, "Pause button should be on right half"

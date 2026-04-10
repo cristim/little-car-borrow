@@ -106,3 +106,22 @@ Tests access consts directly, not via source inspection:
 assert_eq(MyAudioScript.BUFFER_LENGTH, 0.1)  # good
 assert_true(_src.contains("buffer_length = 0.1"), ...)  # forbidden
 ```
+
+
+## Public Accessors for Private Fields
+
+When tests or sibling nodes need to read private state, add a named public getter rather than accessing `_field` directly:
+
+```gdscript
+# In production script:
+var _unlocked: Array[bool] = [...]
+var _current_idx := 0
+
+func get_unlocked() -> Array[bool]:
+    return _unlocked
+
+func get_current_weapon_index() -> int:
+    return _current_idx
+```
+
+Tests and HUD code call `pw.get_unlocked()` and `pw.get_current_weapon_index()`, never `pw._unlocked` or `pw._current_idx`. This prevents fragile cross-script coupling to private implementation details.

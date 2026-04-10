@@ -434,6 +434,7 @@ func test_build_multimesh_returns_valid_mmi() -> void:
 
 	var base_mat := StandardMaterial3D.new()
 	base_mat.albedo_color = Color(0.5, 0.5, 0.5)
+	base_mat.vertex_color_use_as_albedo = true  # mimic init() setup
 
 	var mesh := SphereMesh.new()
 	var mmi: MultiMeshInstance3D = (

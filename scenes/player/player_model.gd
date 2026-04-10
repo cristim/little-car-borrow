@@ -69,7 +69,8 @@ func _ready() -> void:
 	_build_hands()
 
 	# Cache sibling nodes used every _process frame
-	_player_weapon = owner.get_node_or_null("PlayerWeapon")
+	if owner:
+		_player_weapon = owner.get_node_or_null("PlayerWeapon")
 	if _left_elbow:
 		_flashlight = _left_elbow.get_node_or_null("Forearm/Flashlight")
 

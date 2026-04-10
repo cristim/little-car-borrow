@@ -46,12 +46,12 @@ func test_get_current_weapon_returns_weapons_at_current_idx() -> void:
 func test_player_model_uses_get_current_weapon() -> void:
 	var src: String = (PlayerModelScript as GDScript).source_code
 	assert_true(
-		src.contains("pw.get_current_weapon()"),
-		"player_model must call pw.get_current_weapon() instead of accessing pw._current_idx",
+		src.contains(".get_current_weapon()"),
+		"player_model must call get_current_weapon() instead of accessing _current_idx directly",
 	)
 	assert_false(
-		src.contains("pw._current_idx"),
-		"player_model must not access private pw._current_idx directly",
+		src.contains("_player_weapon._current_idx"),
+		"player_model must not access private _current_idx directly",
 	)
 
 

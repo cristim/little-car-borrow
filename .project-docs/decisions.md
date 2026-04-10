@@ -54,6 +54,12 @@
 - **Rationale**: `RigidBody3D` introduces unwanted physics coupling: gravity, angular drag, and integration drift make hover feel floaty and precise altitude control difficult. Flight-sim style controls (collective up/down, yaw, forward/back) map cleanly onto direct velocity assignment — `CharacterBody3D.move_and_slide()` handles collision response without the instability of competing forces. The same pattern is used by the player on foot, keeping the codebase consistent.
 - **Status**: Implemented in `scenes/vehicles/helicopter_controller.gd`
 
+## 2026-04-09: Bridge Elevation Threshold — MIN_BRIDGE_HEIGHT vs SEA_LEVEL Margin
+- **Decision**: Bridges are only generated when ground height > `MIN_BRIDGE_HEIGHT = 0.5` (absolute, not relative to sea level)
+- **Alternatives**: Previous threshold `h > SEA_LEVEL + 0.3 = -1.7` (too permissive — allowed bridges on flat city ground)
+- **Rationale**: Bridges should appear only in elevated terrain where rivers flow through valleys between hills. Flat city ground at h≈0 should have normal road surfaces, not bridge decks. The 0.5m threshold excludes flat ground while still allowing bridges on hills that typically reach 2–15m.
+- **Status**: Fixed in `chunk_builder_bridge.gd`; constant named `MIN_BRIDGE_HEIGHT`
+
 ## 2026-04-08: Weapon Impulse — Local-Space vs World-Space Offset
 - **Decision**: `apply_impulse(impulse, body.to_local(hit_pos))` using body-local coordinates
 - **Alternatives**: `hit_pos - body.global_position` (world-space offset, was the bug)

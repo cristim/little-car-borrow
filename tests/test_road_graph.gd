@@ -357,6 +357,6 @@ func test_search_radius_uses_goal_pos_not_start_pos() -> void:
 		"Search radius must NOT be anchored to start_pos",
 	)
 	assert_true(
-		src.contains("distance_to(goal_pos) > MAX_SEARCH_RADIUS"),
-		"Search radius must be anchored to goal_pos",
+		src.contains("distance_squared_to(goal_pos) > MAX_SEARCH_RADIUS * MAX_SEARCH_RADIUS"),
+		"Search radius must be anchored to goal_pos using squared distance",
 	)

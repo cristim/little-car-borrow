@@ -294,7 +294,7 @@ func test_complete_mission_emits_completed() -> void:
 	MissionManager.accept_mission("delivery_1")
 	MissionManager._active_mission["state"] = "active"
 	var received := []
-	var cb := func(mid: String) -> void: received.append(mid)
+	var cb := func(mid: String, _reward: int) -> void: received.append(mid)
 	EventBus.mission_completed.connect(cb)
 	MissionManager.complete_mission()
 	EventBus.mission_completed.disconnect(cb)
@@ -552,6 +552,7 @@ func test_vehicle_entered_matches_theft_variant() -> void:
 	MissionManager.accept_mission("theft_1")
 	var vehicle := Node.new()
 	vehicle.name = "TestVehicle"
+	vehicle.set_meta("variant", "sedan")
 	var body := Node3D.new()
 	body.name = "Body"
 	body.scale = Vector3(1.0, 1.0, 1.0)  # sedan scale
@@ -1104,7 +1105,7 @@ func test_complete_theft_emits_completed_signal() -> void:
 	MissionManager._active_mission = mission
 
 	var received := []
-	var cb := func(mid: String) -> void: received.append(mid)
+	var cb := func(mid: String, _reward: int) -> void: received.append(mid)
 	EventBus.mission_completed.connect(cb)
 	MissionManager.complete_mission()
 	EventBus.mission_completed.disconnect(cb)

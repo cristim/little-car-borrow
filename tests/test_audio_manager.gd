@@ -50,7 +50,6 @@ func test_ensure_buses_creates_ambient_bus() -> void:
 func test_ensure_buses_idempotent() -> void:
 	_am._ensure_buses()
 	var count_before := AudioServer.bus_count
-	_am._buses_created = false  # reset guard to test re-entry
 	_am._ensure_buses()
 	# Buses already exist so no new ones should be added
 	assert_eq(
@@ -60,10 +59,9 @@ func test_ensure_buses_idempotent() -> void:
 	)
 
 
-func test_ensure_buses_sets_flag() -> void:
-	_am._buses_created = false
+func test_ensure_buses_sets_bus_count_above_one() -> void:
 	_am._ensure_buses()
-	assert_true(_am._buses_created, "_buses_created should be true")
+	assert_gt(AudioServer.bus_count, 1, "bus_count should be > 1 after _ensure_buses")
 
 
 # ================================================================

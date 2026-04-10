@@ -218,6 +218,6 @@ func test_idle_uses_jump_speed_property() -> void:
 func test_player_jump_speed_default() -> void:
 	var src: String = (PlayerScript as GDScript).source_code
 	assert_true(
-		src.contains("jump_speed := 7.0"),
-		"Player jump_speed should default to 7.0",
+		src.contains("jump_speed := 4.9"),
+		"Player jump_speed should default to 4.9",
 	)

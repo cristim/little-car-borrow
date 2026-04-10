@@ -324,13 +324,14 @@ func test_shoot_sets_shoot_pose_timer() -> void:
 
 
 func test_shoot_creates_audio_child() -> void:
-	var child_count_before := _officer.get_child_count()
-	_officer._shoot(Vector3.ZERO)
-	# _play_gunshot adds an AudioStreamPlayer3D child
-	assert_gt(
-		_officer.get_child_count(),
-		child_count_before,
-		"Should add audio player child",
+	# Audio player is created in _ready(), not per-shot
+	assert_not_null(
+		_officer._gunshot_player,
+		"Should have an AudioStreamPlayer3D after _ready()",
+	)
+	assert_true(
+		_officer._gunshot_player is AudioStreamPlayer3D,
+		"Audio player should be AudioStreamPlayer3D",
 	)
 
 

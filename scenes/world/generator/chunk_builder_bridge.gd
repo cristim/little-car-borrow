@@ -3,6 +3,7 @@ extends RefCounted
 ## Flat road deck + simple railings, deck in "Road" group for vehicles.
 
 const SEA_LEVEL := -2.0
+const MIN_BRIDGE_HEIGHT := 0.5  # bridges only on elevated terrain, not flat city ground
 const DECK_WIDTH := 10.0
 const DECK_THICKNESS := 0.4
 const RAILING_HEIGHT := 1.0
@@ -63,7 +64,7 @@ func build(
 		if river_ew:
 			var river_z: float = oz + offset
 			var h: float = _boundary.get_ground_height(road_cx, river_z)
-			if h > SEA_LEVEL + 0.3:
+			if h > MIN_BRIDGE_HEIGHT:
 				var bridge_len: float = rw * 2.0
 				var center := Vector3(road_cx, h + DECK_THICKNESS * 0.5, river_z)
 				var deck_size := Vector3(DECK_WIDTH, DECK_THICKNESS, bridge_len)
@@ -87,7 +88,7 @@ func build(
 		if river_ns:
 			var river_x: float = ox + offset
 			var h: float = _boundary.get_ground_height(river_x, road_cz)
-			if h > SEA_LEVEL + 0.3:
+			if h > MIN_BRIDGE_HEIGHT:
 				var bridge_len: float = rw * 2.0
 				var center := Vector3(river_x, h + DECK_THICKNESS * 0.5, road_cz)
 				var deck_size := Vector3(bridge_len, DECK_THICKNESS, DECK_WIDTH)

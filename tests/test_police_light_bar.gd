@@ -172,9 +172,10 @@ func test_set_lights_both_off() -> void:
 func test_process_inactive_turns_lights_off() -> void:
 	var bar: Node3D = LightBarScript.new()
 	add_child_autofree(bar)
-	# Turn lights on manually
-	bar._set_lights(true, true)
-	# Process with inactive — should turn off
+	# First activate so _lights_were_active is set
+	bar.lights_active = true
+	bar._process(0.01)
+	# Now deactivate — next _process should call _set_lights(false, false)
 	bar.lights_active = false
 	bar._process(0.05)
 	assert_false(bar._red_light.visible)

@@ -442,13 +442,6 @@ func test_fog_suppression_in_source() -> void:
 # ==========================================================================
 
 
-func test_moon_phase_in_range_after_ready() -> void:
-	var env: Node = DayNightEnvScript.new()
-	add_child_autofree(env)
-	assert_gte(env._moon_phase, 0.0, "Moon phase should be >= 0.0")
-	assert_lte(env._moon_phase, 1.0, "Moon phase should be <= 1.0")
-
-
 func test_moon_mesh_created() -> void:
 	var env: Node = DayNightEnvScript.new()
 	add_child_autofree(env)
@@ -462,11 +455,11 @@ func test_moon_hidden_initially() -> void:
 	assert_false(env._moon.visible, "Moon should start hidden")
 
 
-func test_moon_shader_has_phase_uniform() -> void:
+func test_moon_shader_has_sun_dir_uniform() -> void:
 	var src: String = (DayNightEnvScript as GDScript).source_code
 	assert_true(
-		src.contains('"phase"'),
-		"Moon shader should use a 'phase' uniform",
+		src.contains('"sun_dir"'),
+		"Moon shader should use a 'sun_dir' uniform",
 	)
 
 

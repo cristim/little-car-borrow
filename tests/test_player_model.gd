@@ -238,13 +238,13 @@ func test_is_armed_false_when_no_weapon_node() -> void:
 func test_is_armed_true_when_weapon_armed() -> void:
 	var pw := Node.new()
 	pw.name = "PlayerWeapon"
-	pw.set_meta("_armed", true)
 	# Use a script to add the _armed property
 	var script := GDScript.new()
 	script.source_code = "extends Node\nvar _armed := true\n"
 	script.reload()
 	pw.set_script(script)
 	_parent.add_child(pw)
+	_model._player_weapon = pw  # bypass owner cache miss
 	assert_true(
 		_model._is_armed(),
 		"_is_armed should be true when PlayerWeapon._armed is true",
@@ -290,6 +290,7 @@ func test_is_flashlight_on_true_when_visible() -> void:
 	fl.name = "Flashlight"
 	fl.visible = true
 	forearm.add_child(fl)
+	_model._flashlight = fl  # bypass _ready() cache miss
 	assert_true(
 		_model._is_flashlight_on(),
 		"_is_flashlight_on should be true when flashlight visible",
@@ -316,11 +317,16 @@ func test_get_gun_elbow_reads_weapon_data() -> void:
 	pw.name = "PlayerWeapon"
 	var script := GDScript.new()
 	script.source_code = (
-		"extends Node\n" + 'const WEAPONS := [{"elbow": -0.4}]\n' + "var _current_idx := 0\n"
+		"extends Node\n"
+		+ 'const WEAPONS := [{"elbow": -0.4}]\n'
+		+ "var _current_idx := 0\n"
+		+ "func get_current_weapon() -> Dictionary:\n"
+		+ "\treturn WEAPONS[_current_idx]\n"
 	)
 	script.reload()
 	pw.set_script(script)
 	_parent.add_child(pw)
+	_model._player_weapon = pw  # bypass owner cache miss
 	var angle: float = _model._get_gun_elbow_angle()
 	assert_almost_eq(angle, -0.4, 0.001, "Should read elbow from weapon data")
 
@@ -723,10 +729,8 @@ func test_thumb_sides_are_mirrored() -> void:
 
 
 func test_lerp_snap_epsilon_constant_exists() -> void:
-	var inst := PlayerModelScript.new()
-	add_child_autofree(inst)
 	assert_true(
-		inst.get_script_constant_map().has("LERP_SNAP_EPSILON"),
+		PlayerModelScript.get_script_constant_map().has("LERP_SNAP_EPSILON"),
 		"LERP_SNAP_EPSILON const should be defined in player_model.gd",
 	)
 
