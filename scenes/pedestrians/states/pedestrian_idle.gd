@@ -16,7 +16,10 @@ func physics_update(delta: float) -> void:
 	var ped := owner as CharacterBody3D
 	ped.velocity.x = 0.0
 	ped.velocity.z = 0.0
-	ped.velocity.y -= 9.8 * delta
+	if not ped.is_on_floor():
+		ped.velocity.y -= 9.8 * delta
+	else:
+		ped.velocity.y = 0.0
 	ped.move_and_slide()
 
 	_timer += delta

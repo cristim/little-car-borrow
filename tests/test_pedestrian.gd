@@ -354,3 +354,44 @@ func test_physics_process_without_sm_does_not_crash() -> void:
 
 	# Should survive without crashing
 	assert_true(ped.is_in_group("pedestrian"))
+
+
+# ---------------------------------------------------------------------------
+# I6 — skip branch calls move_and_slide to consume accumulated velocity
+# I7 — state files guard gravity with is_on_floor()
+# ---------------------------------------------------------------------------
+
+
+func test_skip_branch_calls_move_and_slide() -> void:
+	var src: String = (PedestrianScript as GDScript).source_code
+	assert_true(
+		src.contains("move_and_slide()"),
+		"pedestrian.gd skip branch must call move_and_slide()",
+	)
+
+
+func test_flee_state_guards_gravity_with_is_on_floor() -> void:
+	var FleeScript: GDScript = preload("res://scenes/pedestrians/states/pedestrian_flee.gd")
+	var src: String = (FleeScript as GDScript).source_code
+	assert_true(
+		src.contains("is_on_floor()"),
+		"pedestrian_flee.gd must guard gravity accumulation with is_on_floor()",
+	)
+
+
+func test_walk_state_guards_gravity_with_is_on_floor() -> void:
+	var WalkScript: GDScript = preload("res://scenes/pedestrians/states/pedestrian_walk.gd")
+	var src: String = (WalkScript as GDScript).source_code
+	assert_true(
+		src.contains("is_on_floor()"),
+		"pedestrian_walk.gd must guard gravity accumulation with is_on_floor()",
+	)
+
+
+func test_idle_state_guards_gravity_with_is_on_floor() -> void:
+	var IdleScript: GDScript = preload("res://scenes/pedestrians/states/pedestrian_idle.gd")
+	var src: String = (IdleScript as GDScript).source_code
+	assert_true(
+		src.contains("is_on_floor()"),
+		"pedestrian_idle.gd must guard gravity accumulation with is_on_floor()",
+	)

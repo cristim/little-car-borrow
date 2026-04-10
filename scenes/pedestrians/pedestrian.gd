@@ -44,7 +44,11 @@ func _physics_process(delta: float) -> void:
 		# Disable state machine tick this frame; just apply gravity
 		if sm:
 			sm.set_physics_process(false)
-		velocity.y -= 9.8 * delta
+		if not is_on_floor():
+			velocity.y -= 9.8 * delta
+		else:
+			velocity.y = 0.0
+		move_and_slide()
 	else:
 		if sm:
 			sm.set_physics_process(true)

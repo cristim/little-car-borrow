@@ -22,7 +22,10 @@ func physics_update(delta: float) -> void:
 	var ped := owner as CharacterBody3D
 	ped.velocity.x = _direction.x * WALK_SPEED
 	ped.velocity.z = _direction.z * WALK_SPEED
-	ped.velocity.y -= 9.8 * delta
+	if not ped.is_on_floor():
+		ped.velocity.y -= 9.8 * delta
+	else:
+		ped.velocity.y = 0.0
 	ped.move_and_slide()
 
 	# Face walk direction (model faces +Z; look_at orients -Z, so negate direction)
