@@ -585,6 +585,40 @@ func test_los_blocks_shot_on_hit() -> void:
 # ================================================================
 
 
+# ================================================================
+# C4 + L6 — Gunshot player reused (no per-shot leak); bus is SFX not Ambient
+# ================================================================
+
+
+func test_gunshot_player_created_in_ready() -> void:
+	assert_not_null(
+		_officer._gunshot_player,
+		"_gunshot_player must be created during _ready",
+	)
+
+
+func test_gunshot_player_is_child_of_officer() -> void:
+	var found := false
+	for child in _officer.get_children():
+		if child == _officer._gunshot_player:
+			found = true
+			break
+	assert_true(found, "_gunshot_player must be a direct child of the officer")
+
+
+func test_gunshot_player_uses_sfx_bus() -> void:
+	assert_eq(
+		_officer._gunshot_player.bus,
+		"SFX",
+		"Gunshot player must use the SFX bus, not Ambient",
+	)
+
+
+# ================================================================
+# PlayerStub for vehicle targeting tests
+# ================================================================
+
+
 class PlayerStub:
 	extends Node3D
 	var current_vehicle: Node3D = null

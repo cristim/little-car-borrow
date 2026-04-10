@@ -508,3 +508,22 @@ func test_process_updates_fps_label() -> void:
 		hud.fps_label.text.begins_with("FPS:"),
 		"FPS label should start with 'FPS:'",
 	)
+
+
+# ================================================================
+# C1 — mission_completed reward comes from signal param, not get_active_mission
+# ================================================================
+
+
+func test_mission_completed_shows_reward_from_signal_param() -> void:
+	var hud := _build_hud()
+	await get_tree().process_frame
+
+	EventBus.mission_completed.emit("test_mission", 500)
+
+	assert_eq(
+		hud.reward_label.text,
+		"+$500",
+		"Reward label must show value from signal param",
+	)
+	assert_true(hud.reward_label.visible, "Reward label should be visible after mission completed")
