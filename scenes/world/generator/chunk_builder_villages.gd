@@ -59,7 +59,7 @@ func build(
 		var test_x: float = ox + rng.randf_range(-span * 0.3, span * 0.3)
 		var test_z: float = oz + rng.randf_range(-span * 0.3, span * 0.3)
 		if _is_flat_enough(test_x, test_z):
-			var center_h: float = _sample_height(test_x, test_z)
+			var center_h: float = _boundary.get_ground_height(test_x, test_z)
 			if center_h > 1.0:
 				village_center = Vector3(test_x, center_h, test_z)
 				found = true
@@ -110,7 +110,7 @@ func build(
 		var dist: float = rng.randf_range(5.0, VILLAGE_RADIUS)
 		var bx: float = village_center.x + cos(angle) * dist
 		var bz: float = village_center.z + sin(angle) * dist
-		var by: float = _sample_height(bx, bz)
+		var by: float = _boundary.get_ground_height(bx, bz)
 
 		if by < 1.0:
 			continue  # skip if underwater
@@ -178,11 +178,11 @@ func build(
 func _is_flat_enough(cx: float, cz: float) -> bool:
 	var r := VILLAGE_RADIUS
 	var samples: Array[float] = [
-		_sample_height(cx, cz),
-		_sample_height(cx - r, cz - r),
-		_sample_height(cx + r, cz - r),
-		_sample_height(cx - r, cz + r),
-		_sample_height(cx + r, cz + r),
+		_boundary.get_ground_height(cx, cz),
+		_boundary.get_ground_height(cx - r, cz - r),
+		_boundary.get_ground_height(cx + r, cz - r),
+		_boundary.get_ground_height(cx - r, cz + r),
+		_boundary.get_ground_height(cx + r, cz + r),
 	]
 	var min_h := samples[0]
 	var max_h := samples[0]
@@ -191,45 +191,3 @@ func _is_flat_enough(cx: float, cz: float) -> bool:
 		max_h = maxf(max_h, h)
 	return (max_h - min_h) < FLATNESS_THRESHOLD
 
-
-func _sample_height(wx: float, wz: float) -> float:
-	# Must match chunk_builder_terrain.gd _sample_height exactly
-	var raw: float = _noise.get_noise_2d(wx, wz)
-	var n: float = (raw + 1.0) * 0.5
-	var grid_span: float = _grid.get_grid_span()
-
-	var edge_dist: float = _boundary.get_signed_distance(wx, wz)
-	if edge_dist < 0.0:
-		return 0.0  # inside city
-
-	var fade: float = clampf(edge_dist / (grid_span * 3.0), 0.0, 1.0)
-	var max_h: float = lerpf(20.0, 80.0, fade)
-	var h: float = n * max_h - 6.0
-
-	# West ocean: terrain descends below sea level westward.
-	# Shore slope starts ~2.5 tiles west (just past suburb ring at ~2.26),
-	# fully submerged by ~3.5 tiles. 100m depression overwhelms terrain noise.
-	var shore_start: float = grid_span * 2.5
-	var shore_end: float = grid_span * 3.5
-	var in_ocean := -wx > shore_start
-	if in_ocean:
-		var west_t: float = clampf(
-			(-wx - shore_start) / (shore_end - shore_start),
-			0.0,
-			1.0,
-		)
-		h -= west_t * west_t * 100.0
-
-	# Non-ocean terrain stays above sea level (no scattered ponds)
-	if not in_ocean:
-		h = maxf(h, -2.0)
-
-	# Cubic ease-in blend from city ground (y=0) over two tile spans.
-	# Negative heights allowed for beach slopes and underwater seabed.
-	var blend_range: float = grid_span * 2.0
-	if edge_dist < blend_range:
-		var t: float = edge_dist / blend_range
-		t = t * t * t  # cubic — very flat near city
-		h = lerpf(0.0, h, t)
-
-	return h

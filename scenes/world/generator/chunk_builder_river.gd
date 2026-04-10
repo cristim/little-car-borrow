@@ -4,7 +4,6 @@ extends RefCounted
 
 const SEA_LEVEL := -2.0
 const RIVER_DEPTH := 2.0
-const BANK_SLOPE_WIDTH := 3.0
 const SUBDIVISIONS := 8
 
 var _grid: RefCounted

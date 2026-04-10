@@ -93,6 +93,44 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 				)
 				x += TREE_SPACING + rng.randf_range(-3.0, 3.0)
 
+	# N-S road sidewalks (left side — mirror of right)
+	for i in range(_grid.GRID_SIZE + 1):
+		var rw: float = _grid.get_road_width(i)
+		var cx: float = _grid.get_road_center_local(i) + ox
+		var tree_x: float = cx - rw * 0.5 - _grid.SIDEWALK_WIDTH * 0.5
+		for j in range(_grid.GRID_SIZE):
+			var z_start: float = _grid.get_road_center_local(j) + _grid.get_road_width(j) * 0.5
+			var z_end: float = (
+				_grid.get_road_center_local(j + 1) - _grid.get_road_width(j + 1) * 0.5
+			)
+			var z := z_start + TREE_SPACING * 0.5
+			while z < z_end - 1.0:
+				var sh: float = _grid.SIDEWALK_HEIGHT
+				var pos := Vector3(tree_x, sh, z + oz)
+				_collect_tree(
+					rng, pos, trunk_transforms, trunk_colors, canopy_transforms, canopy_colors, body
+				)
+				z += TREE_SPACING + rng.randf_range(-3.0, 3.0)
+
+	# E-W road sidewalks (top side — mirror of bottom)
+	for j in range(_grid.GRID_SIZE + 1):
+		var rw: float = _grid.get_road_width(j)
+		var cz: float = _grid.get_road_center_local(j) + oz
+		var tree_z: float = cz - rw * 0.5 - _grid.SIDEWALK_WIDTH * 0.5
+		for i in range(_grid.GRID_SIZE):
+			var x_start: float = _grid.get_road_center_local(i) + _grid.get_road_width(i) * 0.5
+			var x_end: float = (
+				_grid.get_road_center_local(i + 1) - _grid.get_road_width(i + 1) * 0.5
+			)
+			var x := x_start + TREE_SPACING * 0.5
+			while x < x_end - 1.0:
+				var sh: float = _grid.SIDEWALK_HEIGHT
+				var pos := Vector3(x + ox, sh, tree_z)
+				_collect_tree(
+					rng, pos, trunk_transforms, trunk_colors, canopy_transforms, canopy_colors, body
+				)
+				x += TREE_SPACING + rng.randf_range(-3.0, 3.0)
+
 	# Build trunk MultiMesh
 	if trunk_transforms.size() > 0:
 		var mm := _build_multimesh(_trunk_mesh, trunk_transforms, trunk_colors, _trunk_mats[0])

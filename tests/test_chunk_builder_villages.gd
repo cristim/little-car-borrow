@@ -30,7 +30,7 @@ func before_each() -> void:
 	_noise.seed = 42
 
 	_boundary = BoundaryScript.new()
-	_boundary.init(_grid.get_grid_span())
+	_boundary.init(_grid.get_grid_span(), _noise)
 
 	_building_mats = []
 	for _i in 3:
@@ -539,3 +539,24 @@ func test_source_contains_set_meta_village_center() -> void:
 
 func test_source_flatness_uses_village_radius() -> void:
 	assert_eq(VillageScript.VILLAGE_RADIUS, 30.0)
+
+
+# ================================================================
+# LOW-03 — _sample_height duplication removed; uses _boundary directly
+# ================================================================
+
+
+func test_sample_height_function_removed() -> void:
+	var src: String = (VillageScript as GDScript).source_code
+	assert_false(
+		src.contains("func _sample_height("),
+		"_sample_height was a duplicate of boundary.get_ground_height and must be removed (LOW-03)",
+	)
+
+
+func test_villages_uses_boundary_get_ground_height() -> void:
+	var src: String = (VillageScript as GDScript).source_code
+	assert_true(
+		src.contains("_boundary.get_ground_height("),
+		"Villages must use _boundary.get_ground_height() instead of local _sample_height",
+	)

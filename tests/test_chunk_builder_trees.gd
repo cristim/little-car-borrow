@@ -487,3 +487,20 @@ func test_build_multimesh_does_not_mutate_base_material() -> void:
 		base_mat.vertex_color_use_as_albedo,
 		"Base material should not be mutated (duplicate is used)",
 	)
+
+
+# ================================================================
+# LOW-01 — trees on all 4 sidewalks (left/right, top/bottom)
+# ================================================================
+
+
+func test_trees_source_has_both_positive_and_negative_sidewalk_offsets() -> void:
+	var src: String = (TreesScript as GDScript).source_code
+	assert_true(
+		src.contains("+ _grid.SIDEWALK_WIDTH * 0.5"),
+		"Trees should be placed on right/bottom sidewalks (+offset)",
+	)
+	assert_true(
+		src.contains("- _grid.SIDEWALK_WIDTH * 0.5"),
+		"Trees should be placed on left/top sidewalks (-offset) — LOW-01 fix",
+	)

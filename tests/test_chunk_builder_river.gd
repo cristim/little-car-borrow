@@ -399,3 +399,16 @@ func test_river_no_longer_uses_per_vertex_wy() -> void:
 		src.contains("wy0") or src.contains("wy1"),
 		"Per-vertex wy0/wy1 variables must be removed in favour of flat water_y",
 	)
+
+
+# ================================================================
+# LOW-02 — BANK_SLOPE_WIDTH unused constant removed
+# ================================================================
+
+
+func test_bank_slope_width_constant_removed() -> void:
+	var src: String = (RiverScript as GDScript).source_code
+	assert_false(
+		src.contains("BANK_SLOPE_WIDTH"),
+		"BANK_SLOPE_WIDTH was unused and must be removed (LOW-02)",
+	)
