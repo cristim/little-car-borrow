@@ -378,3 +378,24 @@ func test_build_deterministic_same_tile_and_data() -> void:
 		chunk2.get_child_count(),
 		"Same tile+data should produce same child count",
 	)
+
+
+# ================================================================
+# CRIT-04 — Water surface uses single flat water_y, not per-vertex terrain heights
+# ================================================================
+
+
+func test_river_uses_single_water_y_before_loop() -> void:
+	var src: String = (RiverScript as GDScript).source_code
+	assert_true(
+		src.contains("water_y"),
+		"River builder must compute a single water_y level before the subdivision loop",
+	)
+
+
+func test_river_no_longer_uses_per_vertex_wy() -> void:
+	var src: String = (RiverScript as GDScript).source_code
+	assert_false(
+		src.contains("wy0") or src.contains("wy1"),
+		"Per-vertex wy0/wy1 variables must be removed in favour of flat water_y",
+	)

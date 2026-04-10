@@ -326,3 +326,39 @@ func test_build_deterministic_same_tile() -> void:
 		chunk2.get_child_count(),
 		"Same tile should produce same child count",
 	)
+
+
+# ================================================================
+# CRIT-02/03 — Bridge uses river position data; old h_ns > 0.5 block removed
+# ================================================================
+
+
+func test_bridge_reads_river_position_field() -> void:
+	var src: String = (BridgeScript as GDScript).source_code
+	assert_true(
+		src.contains('river_data.get("position"'),
+		"Bridge must read river position from river_data",
+	)
+
+
+func test_bridge_uses_river_orientation_booleans() -> void:
+	var src: String = (BridgeScript as GDScript).source_code
+	assert_true(
+		src.contains("river_ns") and src.contains("river_ew"),
+		"Bridge must use river_ns/river_ew booleans to select crossing type",
+	)
+
+
+func test_bridge_no_longer_uses_arbitrary_height_threshold() -> void:
+	var src: String = (BridgeScript as GDScript).source_code
+	assert_false(
+		src.contains("h_ns > 0.5") or src.contains("h_ew > 0.5"),
+		"Old arbitrary height threshold must be removed",
+	)
+
+
+func test_bridge_has_sea_level_constant() -> void:
+	assert_true(
+		BridgeScript.SEA_LEVEL < 0.0,
+		"Bridge builder must define a negative SEA_LEVEL constant",
+	)
