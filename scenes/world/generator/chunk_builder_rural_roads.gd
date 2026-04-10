@@ -130,11 +130,13 @@ func build(
 			if h0 < SEA_LEVEL or h1 < SEA_LEVEL:
 				continue
 			var avg_h: float = (h0 + h1) * 0.5 + ROAD_Y_OFFSET
+			var slope_angle: float = atan2(h1 - h0, step)
 			var col := CollisionShape3D.new()
 			var shape := BoxShape3D.new()
-			shape.size = Vector3(rw, 0.3, step)
+			shape.size = Vector3(rw, 0.3, step / maxf(cos(slope_angle), 0.1))
 			col.shape = shape
 			col.position = Vector3(road_cx, avg_h, (z0 + z1) * 0.5)
+			col.rotation.x = -slope_angle
 			body.add_child(col)
 
 	for road: Dictionary in ew_roads:
@@ -149,11 +151,13 @@ func build(
 			if h0 < SEA_LEVEL or h1 < SEA_LEVEL:
 				continue
 			var avg_h: float = (h0 + h1) * 0.5 + ROAD_Y_OFFSET
+			var slope_angle: float = atan2(h1 - h0, step)
 			var col := CollisionShape3D.new()
 			var shape := BoxShape3D.new()
-			shape.size = Vector3(step, 0.3, rw)
+			shape.size = Vector3(step / maxf(cos(slope_angle), 0.1), 0.3, rw)
 			col.shape = shape
 			col.position = Vector3((x0 + x1) * 0.5, avg_h, road_cz)
+			col.rotation.z = -slope_angle
 			body.add_child(col)
 
 	if body.get_child_count() > 0:

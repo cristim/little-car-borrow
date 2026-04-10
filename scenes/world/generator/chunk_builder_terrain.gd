@@ -354,53 +354,44 @@ func _apply_edge_constraints(
 	if edge_heights.is_empty():
 		return h
 
-	var result := h
 	var total_weight := 0.0
+	var weighted_target := 0.0
 
-	# Check each edge: if we have constraints and are within blend range
 	# NORTH (iz=0)
 	if edge_heights.has(0) and iz <= BLEND_CELLS:
-		var edge_h: float = _sample_edge_array(
-			edge_heights[0],
-			ix,
-		)
+		var edge_h: float = _sample_edge_array(edge_heights[0], ix)
 		var t: float = 1.0 - float(iz) / float(BLEND_CELLS)
-		result = lerpf(result, edge_h, t)
+		weighted_target += edge_h * t
 		total_weight += t
 
 	# SOUTH (iz=SUBDIVISIONS)
 	if edge_heights.has(2) and iz >= SUBDIVISIONS - BLEND_CELLS:
-		var edge_h: float = _sample_edge_array(
-			edge_heights[2],
-			ix,
-		)
+		var edge_h: float = _sample_edge_array(edge_heights[2], ix)
 		var dist: int = SUBDIVISIONS - iz
 		var t: float = 1.0 - float(dist) / float(BLEND_CELLS)
-		if total_weight > 0.0:
-			result = lerpf(result, edge_h, t * 0.5)
-		else:
-			result = lerpf(result, edge_h, t)
+		weighted_target += edge_h * t
+		total_weight += t
 
 	# WEST (ix=0)
 	if edge_heights.has(3) and ix <= BLEND_CELLS:
-		var edge_h: float = _sample_edge_array(
-			edge_heights[3],
-			iz,
-		)
+		var edge_h: float = _sample_edge_array(edge_heights[3], iz)
 		var t: float = 1.0 - float(ix) / float(BLEND_CELLS)
-		result = lerpf(result, edge_h, t)
+		weighted_target += edge_h * t
+		total_weight += t
 
 	# EAST (ix=SUBDIVISIONS)
 	if edge_heights.has(1) and ix >= SUBDIVISIONS - BLEND_CELLS:
-		var edge_h: float = _sample_edge_array(
-			edge_heights[1],
-			iz,
-		)
+		var edge_h: float = _sample_edge_array(edge_heights[1], iz)
 		var dist: int = SUBDIVISIONS - ix
 		var t: float = 1.0 - float(dist) / float(BLEND_CELLS)
-		result = lerpf(result, edge_h, t)
+		weighted_target += edge_h * t
+		total_weight += t
 
-	return result
+	if total_weight <= 0.0:
+		return h
+
+	weighted_target /= total_weight
+	return lerpf(h, weighted_target, clampf(total_weight, 0.0, 1.0))
 
 
 ## Sample a height from an edge array, mapping grid index to edge sample.

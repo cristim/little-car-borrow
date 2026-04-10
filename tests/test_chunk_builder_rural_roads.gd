@@ -311,3 +311,32 @@ func test_road_y_offset_positive() -> void:
 		RuralRoadsScript.ROAD_Y_OFFSET > 0.0,
 		"ROAD_Y_OFFSET should be positive to float above terrain",
 	)
+
+
+# ================================================================
+# IMP-07 — Slope-following collision boxes
+# ================================================================
+
+
+func test_collision_uses_atan2_for_slope() -> void:
+	var src: String = (RuralRoadsScript as GDScript).source_code
+	assert_true(
+		src.contains("atan2"),
+		"IMP-07: collision must use atan2 to compute slope angle",
+	)
+
+
+func test_collision_ns_rotates_around_x() -> void:
+	var src: String = (RuralRoadsScript as GDScript).source_code
+	assert_true(
+		src.contains("rotation.x"),
+		"IMP-07: N-S segments must rotate collision shape around X axis to follow slope",
+	)
+
+
+func test_collision_ew_rotates_around_z() -> void:
+	var src: String = (RuralRoadsScript as GDScript).source_code
+	assert_true(
+		src.contains("rotation.z"),
+		"IMP-07: E-W segments must rotate collision shape around Z axis to follow slope",
+	)
