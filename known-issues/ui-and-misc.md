@@ -10,47 +10,6 @@ pedestrian_idle.gd, pedestrian_walk.gd, police_officer.gd
 
 ---
 
-## CRITICAL
-
-### C1 — `game_hud.gd`: `_on_mission_completed` reads active mission after it has been cleared
-**File:** `scenes/ui/hud/game_hud.gd`, line 112
-**Severity:** Critical (logic bug — reward is always $0)
-
-`_on_mission_completed` calls `MissionManager.get_active_mission()` to read the reward.
-However, `mission_completed` is emitted by MissionManager *after* it has already
-cleared `_active_mission` to `{}`. The returned dictionary will be empty, so
-`mission.get("reward", 0)` always returns 0 and the reward label always shows `+$0`.
-
-The same bug exists in `mission_hud.gd` line 59 for the same reason.
-
-**Fix:** The `mission_completed` signal should carry the reward amount directly, or the
-signal should be emitted before the active mission is cleared.
-
----
-
-### C2 — `ui_sounds.gd`: Tone queue dequeues the wrong element
-**File:** `scenes/ui/ui_sounds.gd`, lines 35-52
-**Severity:** Critical (audio plays wrong tones in wrong order)
-
-The dequeue logic pops `_tone_queue[0]` on line 52 when `_tone_remaining` reaches
-zero -- but on the same pass the code already reset `_tone_remaining = TONE_DURATION`
-for the next tone and reads `_tone_queue[0]` as the frequency for the ongoing frame.
-
-**Fix:** Pop the queue and reset phase at the start of each new tone.
-
----
-
-### C4 — `police_officer.gd`: New AudioStreamPlayer3D leaked every shot
-**File:** `scenes/police/police_officer.gd`, lines 122-147
-**Severity:** Critical (memory/node leak -- one new node per gunshot every 1.2s per officer)
-
-If the officer is `queue_free()`-d while the 0.3s cleanup timer is pending, Godot
-attempts to free an already-freed node.
-
-**Fix:** Keep a single reusable AudioStreamPlayer3D as a child node.
-
----
-
 ## IMPORTANT
 
 ### I1 — `minimap_hud.gd`: `_draw_clipped_line` misses lines crossing circle with both endpoints outside
@@ -89,5 +48,4 @@ attempts to free an already-freed node.
 ### L3 — `audio_panel.gd` / `controls_panel.gd`: Fragile parent path navigation
 ### L4 — `minimap_hud.gd`: Road grid jitter from `get_road_center_near` snapping
 ### L5 — `touch_controls.gd`: Joystick thumb not reset on pause
-### L6 — `police_officer.gd`: Gunshot uses "Ambient" bus instead of "SFX"
 ### L7 — `mission_marker.gd`: Magic number 8 for collision layer
