@@ -186,13 +186,13 @@ func test_save_load_roundtrip_no_crash() -> void:
 
 func test_load_settings_source_handles_fullscreen_true_branch() -> void:
 	assert_true(
-		SettingsScript.source_code.contains("WINDOW_MODE_FULLSCREEN"),
+		(SettingsScript as GDScript).source_code.contains("WINDOW_MODE_FULLSCREEN"),
 		"load_settings should handle fullscreen=true via WINDOW_MODE_FULLSCREEN",
 	)
 
 
 func test_load_settings_source_handles_fullscreen_false_branch() -> void:
 	assert_true(
-		SettingsScript.source_code.contains("WINDOW_MODE_WINDOWED"),
+		(SettingsScript as GDScript).source_code.contains("WINDOW_MODE_WINDOWED"),
 		"load_settings should handle fullscreen=false via WINDOW_MODE_WINDOWED",
 	)

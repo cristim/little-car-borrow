@@ -11,7 +11,7 @@ const PedestrianManagerScript = preload("res://scenes/world/pedestrian_manager.g
 
 
 func test_traffic_manager_reads_current_vehicle() -> void:
-	var src: String = TrafficManagerScript.source_code
+	var src: String = (TrafficManagerScript as GDScript).source_code
 	assert_true(
 		src.contains('_player.get("current_vehicle")'),
 		"traffic_manager should check _player.current_vehicle",
@@ -19,7 +19,7 @@ func test_traffic_manager_reads_current_vehicle() -> void:
 
 
 func test_traffic_manager_reads_linear_velocity() -> void:
-	var src: String = TrafficManagerScript.source_code
+	var src: String = (TrafficManagerScript as GDScript).source_code
 	assert_true(
 		src.contains("linear_velocity"),
 		"traffic_manager should read RigidBody3D.linear_velocity",
@@ -27,7 +27,7 @@ func test_traffic_manager_reads_linear_velocity() -> void:
 
 
 func test_traffic_manager_checks_rigidbody3d() -> void:
-	var src: String = TrafficManagerScript.source_code
+	var src: String = (TrafficManagerScript as GDScript).source_code
 	assert_true(
 		src.contains("vehicle is RigidBody3D"),
 		"traffic_manager should type-check vehicle as RigidBody3D",
@@ -35,7 +35,7 @@ func test_traffic_manager_checks_rigidbody3d() -> void:
 
 
 func test_pedestrian_manager_reads_current_vehicle() -> void:
-	var src: String = PedestrianManagerScript.source_code
+	var src: String = (PedestrianManagerScript as GDScript).source_code
 	assert_true(
 		src.contains('_player.get("current_vehicle")'),
 		"pedestrian_manager should check _player.current_vehicle",
@@ -43,7 +43,7 @@ func test_pedestrian_manager_reads_current_vehicle() -> void:
 
 
 func test_pedestrian_manager_reads_linear_velocity() -> void:
-	var src: String = PedestrianManagerScript.source_code
+	var src: String = (PedestrianManagerScript as GDScript).source_code
 	assert_true(
 		src.contains("linear_velocity"),
 		"pedestrian_manager should read RigidBody3D.linear_velocity",
@@ -51,7 +51,7 @@ func test_pedestrian_manager_reads_linear_velocity() -> void:
 
 
 func test_pedestrian_manager_checks_rigidbody3d() -> void:
-	var src: String = PedestrianManagerScript.source_code
+	var src: String = (PedestrianManagerScript as GDScript).source_code
 	assert_true(
 		src.contains("vehicle is RigidBody3D"),
 		"pedestrian_manager should type-check vehicle as RigidBody3D",

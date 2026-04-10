@@ -233,7 +233,7 @@ func test_is_over_water_returns_false_without_city_manager() -> void:
 
 
 func test_walking_checks_jump_input_on_floor() -> void:
-	var src: String = WalkingScript.source_code
+	var src: String = (WalkingScript as GDScript).source_code
 	assert_true(
 		src.contains('is_action_just_pressed("jump")'),
 		"Walking state should check for jump input when on floor",
@@ -241,7 +241,7 @@ func test_walking_checks_jump_input_on_floor() -> void:
 
 
 func test_walking_uses_jump_speed_property() -> void:
-	var src: String = WalkingScript.source_code
+	var src: String = (WalkingScript as GDScript).source_code
 	assert_true(
 		src.contains("player.jump_speed"),
 		"Walking state should set velocity.y to player.jump_speed on jump",

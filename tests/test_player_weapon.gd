@@ -578,8 +578,10 @@ func test_no_error_on_death_when_unarmed() -> void:
 
 
 func test_ragdoll_lifetime_constant_defined() -> void:
+	var inst := WeaponScript.new()
+	add_child_autofree(inst)
 	assert_true(
-		WeaponScript.get_script_constant_map().has("RAGDOLL_LIFETIME"),
+		inst.get_script_constant_map().has("RAGDOLL_LIFETIME"),
 		"RAGDOLL_LIFETIME const should be defined",
 	)
 

@@ -10,7 +10,7 @@ const VehicleHealthScript = preload("res://scenes/vehicles/vehicle_health.gd")
 
 func test_explosion_impulse_value_is_500() -> void:
 	# Read the source and verify the impulse constant is 500, not 1500
-	var source := VehicleHealthScript.source_code
+	var source: String = (VehicleHealthScript as GDScript).source_code
 	assert_true(
 		source.contains("apply_central_impulse(Vector3(0, 500.0, 0))"),
 		"Explosion impulse should be 500.0",
@@ -120,7 +120,7 @@ func test_take_damage_spawns_bullet_hole() -> void:
 func test_bullet_hole_uses_is_equal_approx_not_exact_comparison() -> void:
 	# I4: hit_normal.abs() != Vector3.UP uses exact float comparison which can
 	# miss due to floating-point imprecision. Must use is_equal_approx.
-	var src := VehicleHealthScript.source_code
+	var src: String = (VehicleHealthScript as GDScript).source_code
 	assert_false(
 		src.contains("hit_normal.abs() != Vector3.UP"),
 		"Must not use exact != comparison on Vector3",

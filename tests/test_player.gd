@@ -176,14 +176,14 @@ func test_interaction_entered_ignores_non_vehicle_zone() -> void:
 func test_interaction_entered_shows_steal_prompt() -> void:
 	var captured := []
 	var on_prompt := func(text: String) -> void: captured.append(text)
-	EventBus.show_interaction_prompt.connect(_on_prompt)
+	EventBus.show_interaction_prompt.connect(on_prompt)
 	var vehicle := Node3D.new()
 	var zone := Area3D.new()
 	zone.add_to_group("vehicle_interaction")
 	vehicle.add_child(zone)
 	add_child_autofree(vehicle)
 	_player._on_interaction_area_entered(zone)
-	EventBus.show_interaction_prompt.disconnect(_on_prompt)
+	EventBus.show_interaction_prompt.disconnect(on_prompt)
 	assert_eq(captured.size(), 1, "Should emit one prompt signal")
 	if captured.size() > 0:
 		assert_eq(captured[0], "Hold F to steal", "Should show steal prompt")
@@ -192,7 +192,7 @@ func test_interaction_entered_shows_steal_prompt() -> void:
 func test_interaction_entered_shows_board_prompt_for_boat() -> void:
 	var captured := []
 	var on_prompt := func(text: String) -> void: captured.append(text)
-	EventBus.show_interaction_prompt.connect(_on_prompt)
+	EventBus.show_interaction_prompt.connect(on_prompt)
 	var vehicle := Node3D.new()
 	var boat_ctrl := Node.new()
 	boat_ctrl.name = "BoatController"
@@ -202,7 +202,7 @@ func test_interaction_entered_shows_board_prompt_for_boat() -> void:
 	vehicle.add_child(zone)
 	add_child_autofree(vehicle)
 	_player._on_interaction_area_entered(zone)
-	EventBus.show_interaction_prompt.disconnect(_on_prompt)
+	EventBus.show_interaction_prompt.disconnect(on_prompt)
 	assert_eq(captured.size(), 1, "Should emit one prompt signal")
 	if captured.size() > 0:
 		assert_eq(captured[0], "Hold F to board", "Should show board prompt for boats")
@@ -230,7 +230,7 @@ func test_interaction_exited_clears_nearest_vehicle() -> void:
 func test_interaction_exited_emits_hide_prompt() -> void:
 	var captured := []
 	var on_hide := func() -> void: captured.append(true)
-	EventBus.hide_interaction_prompt.connect(_on_hide)
+	EventBus.hide_interaction_prompt.connect(on_hide)
 	var vehicle := Node3D.new()
 	var zone := Area3D.new()
 	zone.add_to_group("vehicle_interaction")
@@ -238,7 +238,7 @@ func test_interaction_exited_emits_hide_prompt() -> void:
 	add_child_autofree(vehicle)
 	_player.nearest_vehicle = vehicle
 	_player._on_interaction_area_exited(zone)
-	EventBus.hide_interaction_prompt.disconnect(_on_hide)
+	EventBus.hide_interaction_prompt.disconnect(on_hide)
 	assert_eq(captured.size(), 1, "Should emit hide_interaction_prompt")
 
 

@@ -217,7 +217,7 @@ func test_camera_relative_direction_forward() -> void:
 
 
 func test_running_checks_jump_input_on_floor() -> void:
-	var src: String = RunningScript.source_code
+	var src: String = (RunningScript as GDScript).source_code
 	assert_true(
 		src.contains('is_action_just_pressed("jump")'),
 		"Running state should check for jump input when on floor",
@@ -225,7 +225,7 @@ func test_running_checks_jump_input_on_floor() -> void:
 
 
 func test_running_uses_jump_speed_property() -> void:
-	var src: String = RunningScript.source_code
+	var src: String = (RunningScript as GDScript).source_code
 	assert_true(
 		src.contains("player.jump_speed"),
 		"Running state should set velocity.y to player.jump_speed on jump",

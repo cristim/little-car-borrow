@@ -181,7 +181,7 @@ func test_context_cycles_correctly() -> void:
 
 
 func test_toggle_fullscreen_source_inspection() -> void:
-	var src: String = InputManagerScript.source_code
+	var src: String = (InputManagerScript as GDScript).source_code
 	assert_true(
 		src.contains("WINDOW_MODE_FULLSCREEN"),
 		"_toggle_fullscreen should reference WINDOW_MODE_FULLSCREEN",
@@ -206,7 +206,7 @@ func test_toggle_fullscreen_source_inspection() -> void:
 
 
 func test_input_handler_source_inspection() -> void:
-	var src: String = InputManagerScript.source_code
+	var src: String = (InputManagerScript as GDScript).source_code
 	assert_true(
 		src.contains("toggle_fullscreen"),
 		"_input should handle toggle_fullscreen action",

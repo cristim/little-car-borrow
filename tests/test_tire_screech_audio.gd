@@ -225,7 +225,7 @@ func test_slip_nonzero_above_lateral_threshold() -> void:
 	# Moving fast enough (80 km/h) with large lateral component (perpendicular)
 	mock.linear_velocity = Vector3(22.22, 0.0, 0.0)  # pure lateral at 80 km/h
 	screech._vehicle = mock
-	var slip := screech._get_slip_intensity()
+	var slip: float = screech._get_slip_intensity()
 	assert_true(slip > 0.0, "Full lateral slip should produce non-zero intensity")
 
 
@@ -251,7 +251,7 @@ func test_slip_handbrake_min_intensity() -> void:
 	mock.linear_velocity = Vector3(0.0, 0.0, -15.0)  # 54 km/h
 	mock.handbrake_input = 1.0
 	screech._vehicle = mock
-	var slip := screech._get_slip_intensity()
+	var slip: float = screech._get_slip_intensity()
 	assert_almost_eq(slip, ScreechScript.HANDBRAKE_SLIP_MIN, 0.01)
 
 

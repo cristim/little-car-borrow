@@ -34,7 +34,7 @@ func test_set_night_mode_false_hides_all_lights() -> void:
 func test_on_time_changed_accepts_float_parameter() -> void:
 	# Verify the _on_time_changed method signature accepts a float,
 	# matching EventBus.time_of_day_changed(hour: float).
-	var source := VehicleLightsScript.source_code
+	var source: String = (VehicleLightsScript as GDScript).source_code
 	assert_true(
 		source.contains("func _on_time_changed(_hour: float)"),
 		"_on_time_changed should accept a float parameter",
@@ -226,7 +226,7 @@ func test_disable_stops_physics_processing() -> void:
 func test_physics_process_night_restore_respects_manual_off_source() -> void:
 	# I5: the per-frame night restore must check _manual_off so lights can
 	# actually be turned off at night.
-	var src := VehicleLightsScript.source_code
+	var src: String = (VehicleLightsScript as GDScript).source_code
 	assert_true(
 		src.contains("_is_night and not _manual_off"),
 		"Night restore in _physics_process must guard with 'and not _manual_off'",

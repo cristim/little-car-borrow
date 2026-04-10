@@ -174,7 +174,7 @@ func test_joystick_drag_clamps_to_radius() -> void:
 	tc._handle_screen_drag(drag_event)
 
 	# Thumb should be clamped to radius distance from center
-	var dist := tc._joystick_thumb.distance_to(tc._joystick_center)
+	var dist: float = tc._joystick_thumb.distance_to(tc._joystick_center)
 	assert_almost_eq(dist, tc.JOY_RADIUS, 0.1, "Thumb should be clamped to JOY_RADIUS")
 
 	# Direction should be normalized to ~1.0 on X

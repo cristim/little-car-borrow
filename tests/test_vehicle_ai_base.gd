@@ -172,19 +172,19 @@ func test_reverse_invalid_defaults_north() -> void:
 
 func test_find_next_road_coord_positive_direction_returns_ahead() -> void:
 	# With sign_dir=1 (southward), result should be > current
-	var result := _ai._find_next_road_coord(0.0, 1)
+	var result: float = _ai._find_next_road_coord(0.0, 1)
 	assert_true(result > 0.0, "Positive sign_dir should return a coordinate ahead")
 
 
 func test_find_next_road_coord_negative_direction_returns_behind() -> void:
 	# With sign_dir=-1 (northward), result should be < current
-	var result := _ai._find_next_road_coord(0.0, -1)
+	var result: float = _ai._find_next_road_coord(0.0, -1)
 	assert_true(result < 0.0, "Negative sign_dir should return a coordinate behind")
 
 
 func test_find_next_road_coord_respects_min_ahead() -> void:
 	# Minimum look-ahead is 15 units
-	var result := _ai._find_next_road_coord(0.0, 1)
+	var result: float = _ai._find_next_road_coord(0.0, 1)
 	assert_true(result >= 15.0, "Should not return a coord less than 15 units ahead")
 
 

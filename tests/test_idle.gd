@@ -200,7 +200,7 @@ func test_physics_update_decelerates_horizontal_velocity() -> void:
 
 
 func test_idle_checks_jump_input_on_floor() -> void:
-	var src: String = IdleScript.source_code
+	var src: String = (IdleScript as GDScript).source_code
 	assert_true(
 		src.contains('is_action_just_pressed("jump")'),
 		"Idle state should check for jump input when on floor",
@@ -208,7 +208,7 @@ func test_idle_checks_jump_input_on_floor() -> void:
 
 
 func test_idle_uses_jump_speed_property() -> void:
-	var src: String = IdleScript.source_code
+	var src: String = (IdleScript as GDScript).source_code
 	assert_true(
 		src.contains("player.jump_speed"),
 		"Idle state should set velocity.y to player.jump_speed on jump",
@@ -216,7 +216,7 @@ func test_idle_uses_jump_speed_property() -> void:
 
 
 func test_player_jump_speed_default() -> void:
-	var src: String = PlayerScript.source_code
+	var src: String = (PlayerScript as GDScript).source_code
 	assert_true(
 		src.contains("jump_speed := 7.0"),
 		"Player jump_speed should default to 7.0",

@@ -723,8 +723,10 @@ func test_thumb_sides_are_mirrored() -> void:
 
 
 func test_lerp_snap_epsilon_constant_exists() -> void:
+	var inst := PlayerModelScript.new()
+	add_child_autofree(inst)
 	assert_true(
-		PlayerModelScript.get_script_constant_map().has("LERP_SNAP_EPSILON"),
+		inst.get_script_constant_map().has("LERP_SNAP_EPSILON"),
 		"LERP_SNAP_EPSILON const should be defined in player_model.gd",
 	)
 

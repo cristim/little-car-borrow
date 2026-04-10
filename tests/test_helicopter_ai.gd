@@ -181,7 +181,7 @@ func test_searchlight_shadow_enabled() -> void:
 func test_rotor_audio_uses_rng_not_global_randf() -> void:
 	# I3: global randf() in rotor audio skews shared seed state affecting
 	# game logic RNG. Must use _rng.randf() instead.
-	var src: String = HeliScript.source_code
+	var src: String = (HeliScript as GDScript).source_code
 	# Find the _fill_rotor_audio function body
 	var fn_start: int = src.find("func _fill_rotor_audio(")
 	var fn_end: int = src.find("\nfunc ", fn_start + 1)
@@ -204,7 +204,7 @@ func test_rotor_audio_uses_rng_not_global_randf() -> void:
 func test_shoot_sound_timer_has_instance_valid_guard() -> void:
 	# I2: if helicopter freed before 0.3s timer fires, the Callable must guard
 	# with is_instance_valid to prevent call on freed object.
-	var src: String = HeliScript.source_code
+	var src: String = (HeliScript as GDScript).source_code
 	assert_true(
 		src.contains("is_instance_valid(asp)"),
 		"Shoot sound timer lambda must guard with is_instance_valid(asp)",

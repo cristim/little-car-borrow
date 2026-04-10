@@ -546,7 +546,7 @@ func test_right_hip_has_one_leg() -> void:
 
 
 func test_shoot_performs_los_raycast() -> void:
-	var src: String = OfficerScript.source_code
+	var src: String = (OfficerScript as GDScript).source_code
 	assert_true(
 		src.contains("intersect_ray"),
 		"_shoot should cast a ray for line-of-sight check",
@@ -554,7 +554,7 @@ func test_shoot_performs_los_raycast() -> void:
 
 
 func test_los_raycast_uses_mask_3() -> void:
-	var src: String = OfficerScript.source_code
+	var src: String = (OfficerScript as GDScript).source_code
 	# Mask 3 = Ground (1) + Static (2). Police layer (64) is NOT in the mask
 	# so other officers/vehicles don't block shots.
 	assert_true(
@@ -564,7 +564,7 @@ func test_los_raycast_uses_mask_3() -> void:
 
 
 func test_los_excludes_self() -> void:
-	var src: String = OfficerScript.source_code
+	var src: String = (OfficerScript as GDScript).source_code
 	assert_true(
 		src.contains("query.exclude = [self]"),
 		"LOS raycast should exclude the officer itself",
@@ -572,7 +572,7 @@ func test_los_excludes_self() -> void:
 
 
 func test_los_blocks_shot_on_hit() -> void:
-	var src: String = OfficerScript.source_code
+	var src: String = (OfficerScript as GDScript).source_code
 	# When the ray hits something, _shoot returns early without dealing damage
 	assert_true(
 		src.contains("is_empty()"),

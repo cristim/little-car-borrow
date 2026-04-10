@@ -568,7 +568,7 @@ func test_only_rock_has_distortion() -> void:
 
 func test_speak_tts_caps_queue_at_three() -> void:
 	# I4: TTS queue must not grow beyond 3 entries to prevent stale playback
-	var src: String = RadioScript.source_code
+	var src: String = (RadioScript as GDScript).source_code
 	assert_true(
 		src.contains("_tts_queue.size() >= 3"),
 		"_speak_tts must cap queue at 3 entries",

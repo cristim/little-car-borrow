@@ -356,7 +356,7 @@ func test_night_factor_clamped_above_zero() -> void:
 	var env: Node = DayNightEnvScript.new()
 	add_child_autofree(env)
 	for h in [5.0, 6.0, 7.0, 12.0, 17.0, 18.0, 20.0]:
-		var f := env._night_factor(float(h))
+		var f: float = env._night_factor(float(h))
 		assert_gte(f, 0.0, "_night_factor must not go negative at h=%s" % h)
 		assert_lte(f, 1.0, "_night_factor must not exceed 1.0 at h=%s" % h)
 

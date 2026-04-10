@@ -316,7 +316,7 @@ func test_marker_type_settable() -> void:
 
 
 func test_snap_to_ground_is_called_in_ready() -> void:
-	var src: String = MarkerScript.source_code
+	var src: String = (MarkerScript as GDScript).source_code
 	assert_true(
 		src.contains("_snap_to_ground"),
 		"_ready should call _snap_to_ground to prevent rooftop spawns",
@@ -324,7 +324,7 @@ func test_snap_to_ground_is_called_in_ready() -> void:
 
 
 func test_snap_to_ground_uses_ground_layer_only() -> void:
-	var src: String = MarkerScript.source_code
+	var src: String = (MarkerScript as GDScript).source_code
 	assert_true(
 		src.contains("collision_mask = 1"),
 		"_snap_to_ground raycast should use mask 1 (ground only, not buildings)",

@@ -357,7 +357,7 @@ func test_patrol_pick_direction_covers_all_non_reverse() -> void:
 
 
 func test_brake_params_pursuit_vehicle() -> void:
-	var bp := PoliceAIScript._calc_brake_params(true, false)
+	var bp: Dictionary = _ai._calc_brake_params(true, false)
 	assert_eq(bp.hard_dist, PoliceAIScript.PURSUIT_HARD_BRAKE_DIST)
 	assert_eq(bp.soft_dist, PoliceAIScript.PURSUIT_SOFT_BRAKE_DIST)
 	assert_eq(bp.hard_brake, PoliceAIScript.PURSUIT_HARD_BRAKE)
@@ -365,7 +365,7 @@ func test_brake_params_pursuit_vehicle() -> void:
 
 
 func test_brake_params_pursuit_pedestrian() -> void:
-	var bp := PoliceAIScript._calc_brake_params(true, true)
+	var bp: Dictionary = _ai._calc_brake_params(true, true)
 	assert_eq(bp.hard_dist, PoliceAIScript.HARD_BRAKE_DIST)
 	assert_eq(bp.soft_dist, PoliceAIScript.SOFT_BRAKE_DIST)
 	assert_eq(bp.hard_brake, PoliceAIScript.PATROL_HARD_BRAKE)
@@ -373,7 +373,7 @@ func test_brake_params_pursuit_pedestrian() -> void:
 
 
 func test_brake_params_patrol_vehicle() -> void:
-	var bp := PoliceAIScript._calc_brake_params(false, false)
+	var bp: Dictionary = _ai._calc_brake_params(false, false)
 	assert_eq(bp.hard_dist, PoliceAIScript.HARD_BRAKE_DIST)
 	assert_eq(bp.soft_dist, PoliceAIScript.SOFT_BRAKE_DIST)
 	assert_eq(bp.hard_brake, PoliceAIScript.PATROL_HARD_BRAKE)
@@ -381,7 +381,7 @@ func test_brake_params_patrol_vehicle() -> void:
 
 
 func test_brake_params_patrol_pedestrian() -> void:
-	var bp := PoliceAIScript._calc_brake_params(false, true)
+	var bp: Dictionary = _ai._calc_brake_params(false, true)
 	assert_eq(bp.hard_dist, PoliceAIScript.HARD_BRAKE_DIST)
 	assert_eq(bp.soft_dist, PoliceAIScript.SOFT_BRAKE_DIST)
 	assert_eq(bp.hard_brake, PoliceAIScript.PATROL_HARD_BRAKE)
@@ -584,7 +584,7 @@ func test_spawn_grace_not_reset_on_state_transition() -> void:
 
 
 func test_escape_force_zeroes_y_component() -> void:
-	var src: String = PoliceAIScript.source_code
+	var src: String = (PoliceAIScript as GDScript).source_code
 	assert_true(
 		src.contains("back_dir.y = 0.0"),
 		"Escape force should zero Y component to prevent vertical launch",
@@ -592,7 +592,7 @@ func test_escape_force_zeroes_y_component() -> void:
 
 
 func test_escape_force_has_length_guard() -> void:
-	var src: String = PoliceAIScript.source_code
+	var src: String = (PoliceAIScript as GDScript).source_code
 	assert_true(
 		src.contains("back_dir.length_squared() > 0.001"),
 		"Escape force should guard against near-zero length after flattening",
@@ -600,7 +600,7 @@ func test_escape_force_has_length_guard() -> void:
 
 
 func test_escape_force_renormalizes_after_flattening() -> void:
-	var src: String = PoliceAIScript.source_code
+	var src: String = (PoliceAIScript as GDScript).source_code
 	assert_true(
 		src.contains("back_dir = back_dir.normalized()"),
 		"Escape force should re-normalize after zeroing Y",
