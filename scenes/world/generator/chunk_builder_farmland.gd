@@ -45,10 +45,14 @@ func build(
 	field_st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var has_fields := false
 
-	# Fence geometry
+	# Fence geometry + collision body
 	var fence_st := SurfaceTool.new()
 	fence_st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var has_fences := false
+	var fence_body := StaticBody3D.new()
+	fence_body.name = "Fences"
+	fence_body.collision_layer = 2  # Static
+	fence_body.collision_mask = 0
 
 	var field_count := rng.randi_range(3, 7)
 	for _f in range(field_count):
@@ -78,45 +82,29 @@ func build(
 		field_st.add_vertex(v2)
 		has_fields = true
 
-		# Fence along field borders (thin box meshes)
+		# Fence along field borders (mesh + collision)
 		if rng.randf() < 0.6:
 			var fy: float = y + FENCE_HEIGHT * 0.5
 			# North fence
-			(
-				_city_script
-				. st_add_box(
-					fence_st,
-					Vector3(fx, fy, fz - fd * 0.5),
-					Vector3(fw, FENCE_HEIGHT, FENCE_THICKNESS),
-				)
-			)
+			var n_center := Vector3(fx, fy, fz - fd * 0.5)
+			var n_size := Vector3(fw, FENCE_HEIGHT, FENCE_THICKNESS)
+			_city_script.st_add_box(fence_st, n_center, n_size)
+			_city_script.add_box_collision(fence_body, n_center, n_size)
 			# South fence
-			(
-				_city_script
-				. st_add_box(
-					fence_st,
-					Vector3(fx, fy, fz + fd * 0.5),
-					Vector3(fw, FENCE_HEIGHT, FENCE_THICKNESS),
-				)
-			)
+			var s_center := Vector3(fx, fy, fz + fd * 0.5)
+			var s_size := Vector3(fw, FENCE_HEIGHT, FENCE_THICKNESS)
+			_city_script.st_add_box(fence_st, s_center, s_size)
+			_city_script.add_box_collision(fence_body, s_center, s_size)
 			# West fence
-			(
-				_city_script
-				. st_add_box(
-					fence_st,
-					Vector3(fx - fw * 0.5, fy, fz),
-					Vector3(FENCE_THICKNESS, FENCE_HEIGHT, fd),
-				)
-			)
+			var w_center := Vector3(fx - fw * 0.5, fy, fz)
+			var w_size := Vector3(FENCE_THICKNESS, FENCE_HEIGHT, fd)
+			_city_script.st_add_box(fence_st, w_center, w_size)
+			_city_script.add_box_collision(fence_body, w_center, w_size)
 			# East fence
-			(
-				_city_script
-				. st_add_box(
-					fence_st,
-					Vector3(fx + fw * 0.5, fy, fz),
-					Vector3(FENCE_THICKNESS, FENCE_HEIGHT, fd),
-				)
-			)
+			var e_center := Vector3(fx + fw * 0.5, fy, fz)
+			var e_size := Vector3(FENCE_THICKNESS, FENCE_HEIGHT, fd)
+			_city_script.st_add_box(fence_st, e_center, e_size)
+			_city_script.add_box_collision(fence_body, e_center, e_size)
 			has_fences = true
 
 	if has_fields:
@@ -131,8 +119,9 @@ func build(
 	if has_fences:
 		fence_st.generate_normals()
 		var mesh := fence_st.commit()
-		var inst := MeshInstance3D.new()
-		inst.name = "Fences"
-		inst.mesh = mesh
-		inst.material_override = _fence_mat
-		chunk.add_child(inst)
+		var fence_inst := MeshInstance3D.new()
+		fence_inst.name = "FenceMesh"
+		fence_inst.mesh = mesh
+		fence_inst.material_override = _fence_mat
+		fence_body.add_child(fence_inst)
+		chunk.add_child(fence_body)

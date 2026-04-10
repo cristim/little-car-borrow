@@ -51,63 +51,50 @@ func build(chunk: Node3D, tile: Vector2i, ox: float, oz: float) -> void:
 	var bd: float = z1 - z0
 
 	# Fence around the block
+	var fence_body := StaticBody3D.new()
+	fence_body.name = "StuntParkFence"
+	fence_body.collision_layer = 2  # Static
+	fence_body.collision_mask = 0
+
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var fence_y: float = FENCE_HEIGHT * 0.5
+
 	# North fence
-	(
-		_city_script
-		. st_add_box(
-			st,
-			Vector3(cx, fence_y, z0),
-			Vector3(bw, FENCE_HEIGHT, FENCE_THICKNESS),
-		)
-	)
+	var n_center := Vector3(cx, fence_y, z0)
+	var n_size := Vector3(bw, FENCE_HEIGHT, FENCE_THICKNESS)
+	_city_script.st_add_box(st, n_center, n_size)
+	_city_script.add_box_collision(fence_body, n_center, n_size)
 	# South fence
-	(
-		_city_script
-		. st_add_box(
-			st,
-			Vector3(cx, fence_y, z1),
-			Vector3(bw, FENCE_HEIGHT, FENCE_THICKNESS),
-		)
-	)
+	var s_center := Vector3(cx, fence_y, z1)
+	var s_size := Vector3(bw, FENCE_HEIGHT, FENCE_THICKNESS)
+	_city_script.st_add_box(st, s_center, s_size)
+	_city_script.add_box_collision(fence_body, s_center, s_size)
 	# West fence
-	(
-		_city_script
-		. st_add_box(
-			st,
-			Vector3(x0, fence_y, cz),
-			Vector3(FENCE_THICKNESS, FENCE_HEIGHT, bd),
-		)
-	)
+	var w_center := Vector3(x0, fence_y, cz)
+	var w_size := Vector3(FENCE_THICKNESS, FENCE_HEIGHT, bd)
+	_city_script.st_add_box(st, w_center, w_size)
+	_city_script.add_box_collision(fence_body, w_center, w_size)
+
 	# East fence (gap for entrance)
 	var half_d: float = bd * 0.5 - 4.0
 	if half_d > 1.0:
-		(
-			_city_script
-			. st_add_box(
-				st,
-				Vector3(x1, fence_y, z0 + half_d * 0.5),
-				Vector3(FENCE_THICKNESS, FENCE_HEIGHT, half_d),
-			)
-		)
-		(
-			_city_script
-			. st_add_box(
-				st,
-				Vector3(x1, fence_y, z1 - half_d * 0.5),
-				Vector3(FENCE_THICKNESS, FENCE_HEIGHT, half_d),
-			)
-		)
+		var e_top_center := Vector3(x1, fence_y, z0 + half_d * 0.5)
+		var e_bot_center := Vector3(x1, fence_y, z1 - half_d * 0.5)
+		var e_size := Vector3(FENCE_THICKNESS, FENCE_HEIGHT, half_d)
+		_city_script.st_add_box(st, e_top_center, e_size)
+		_city_script.add_box_collision(fence_body, e_top_center, e_size)
+		_city_script.st_add_box(st, e_bot_center, e_size)
+		_city_script.add_box_collision(fence_body, e_bot_center, e_size)
 
 	st.generate_normals()
 	var fence_mesh := st.commit()
 	var fence_inst := MeshInstance3D.new()
-	fence_inst.name = "StuntParkFence"
+	fence_inst.name = "FenceMesh"
 	fence_inst.mesh = fence_mesh
 	fence_inst.material_override = _fence_mat
-	chunk.add_child(fence_inst)
+	fence_body.add_child(fence_inst)
+	chunk.add_child(fence_body)
 
 	# Ramps inside the block
 	var margin := 4.0

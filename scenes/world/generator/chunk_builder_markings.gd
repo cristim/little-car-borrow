@@ -33,6 +33,8 @@ func build(chunk: Node3D, ox: float, oz: float, _span: float) -> void:
 	_build_crossings(st, ox, oz)
 
 	var mesh := st.commit()
+	if mesh.get_surface_count() == 0:
+		return
 
 	var mesh_inst := MeshInstance3D.new()
 	mesh_inst.name = "Markings"

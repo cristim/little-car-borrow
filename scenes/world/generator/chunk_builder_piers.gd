@@ -166,6 +166,7 @@ func _build_pier_geometry(
 			piling_top.y = deck_y
 			_add_piling(st, piling_pos, piling_top)
 
+	st.generate_normals()
 	var mesh := st.commit()
 	var mesh_inst := MeshInstance3D.new()
 	mesh_inst.name = "PierMesh"
@@ -196,13 +197,6 @@ func _add_piling(
 	bottom: Vector3,
 	top: Vector3,
 ) -> void:
-	# Simple box column
-	var r := PILING_RADIUS
-	var n := Vector3.ZERO  # Let generate_normals handle it
-	for dx in [-r, r]:
-		for dz in [-r, r]:
-			pass  # We'll do a simpler approach
-
 	# Just use a thin box
 	var cx := (bottom.x + top.x) * 0.5
 	var cz := (bottom.z + top.z) * 0.5

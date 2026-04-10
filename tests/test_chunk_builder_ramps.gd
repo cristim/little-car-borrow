@@ -128,7 +128,7 @@ func _find_stunt_park_tile() -> Vector2i:
 	return Vector2i(-99999, -99999)
 
 
-func test_stunt_park_has_fence_child() -> void:
+func test_stunt_park_has_fence_body() -> void:
 	var tile := _find_stunt_park_tile()
 	if tile == Vector2i(-99999, -99999):
 		pass_test("No stunt park tile found")
@@ -141,10 +141,58 @@ func test_stunt_park_has_fence_child() -> void:
 
 	var found_fence := false
 	for child in chunk.get_children():
-		if child is MeshInstance3D and child.name == "StuntParkFence":
+		if child is StaticBody3D and child.name == "StuntParkFence":
 			found_fence = true
 			break
-	assert_true(found_fence, "Stunt park should have a StuntParkFence mesh")
+	assert_true(found_fence, "Stunt park should have a StuntParkFence StaticBody3D")
+
+
+func test_fence_body_has_collision_shapes() -> void:
+	var tile := _find_stunt_park_tile()
+	if tile == Vector2i(-99999, -99999):
+		pass_test("No stunt park tile found")
+		return
+
+	var span: float = _grid.get_grid_span()
+	var chunk := Node3D.new()
+	add_child_autofree(chunk)
+	_builder.build(chunk, tile, span * float(tile.x), span * float(tile.y))
+
+	for child in chunk.get_children():
+		if child is StaticBody3D and child.name == "StuntParkFence":
+			var col_count := 0
+			for sub in child.get_children():
+				if sub is CollisionShape3D:
+					col_count += 1
+			assert_true(
+				col_count >= 3,
+				"Fence body must have at least 3 collision shapes (N/S/W panels)",
+			)
+			return
+	pass_test("No stunt park found")
+
+
+func test_fence_body_collision_layer() -> void:
+	var tile := _find_stunt_park_tile()
+	if tile == Vector2i(-99999, -99999):
+		pass_test("No stunt park tile found")
+		return
+
+	var span: float = _grid.get_grid_span()
+	var chunk := Node3D.new()
+	add_child_autofree(chunk)
+	_builder.build(chunk, tile, span * float(tile.x), span * float(tile.y))
+
+	for child in chunk.get_children():
+		if child is StaticBody3D and child.name == "StuntParkFence":
+			assert_eq(
+				child.collision_layer,
+				2,
+				"Fence body collision_layer should be 2 (Static)",
+			)
+			assert_eq(child.collision_mask, 0, "Fence body collision_mask should be 0")
+			return
+	pass_test("No stunt park found")
 
 
 func test_stunt_park_has_ramp_children() -> void:
@@ -295,18 +343,21 @@ func test_fence_has_material_override() -> void:
 	_builder.build(chunk, tile, span * float(tile.x), span * float(tile.y))
 
 	for child in chunk.get_children():
-		if child is MeshInstance3D and child.name == "StuntParkFence":
-			assert_not_null(
-				child.material_override,
-				"Fence should have a material override",
-			)
-			var mat: StandardMaterial3D = child.material_override
-			assert_eq(
-				mat.albedo_color,
-				Color(0.5, 0.5, 0.5),
-				"Fence material should be grey",
-			)
-			break
+		if child is StaticBody3D and child.name == "StuntParkFence":
+			for sub in child.get_children():
+				if sub is MeshInstance3D and sub.name == "FenceMesh":
+					assert_not_null(
+						sub.material_override,
+						"FenceMesh should have a material override",
+					)
+					var mat: StandardMaterial3D = sub.material_override
+					assert_eq(
+						mat.albedo_color,
+						Color(0.5, 0.5, 0.5),
+						"Fence material should be grey",
+					)
+					return
+	pass_test("Fence mesh not found")
 
 
 # ================================================================

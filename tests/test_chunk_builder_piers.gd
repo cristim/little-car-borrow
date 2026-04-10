@@ -656,3 +656,16 @@ func test_find_shore_edge_returns_empty_for_city_center() -> void:
 		result.is_empty(),
 		"City center should have no shore edge (all heights are 0)",
 	)
+
+
+# ================================================================
+# IMP-01 — generate_normals() called before commit
+# ================================================================
+
+
+func test_pier_geometry_calls_generate_normals() -> void:
+	var src: String = (PiersScript as GDScript).source_code
+	assert_true(
+		src.contains("st.generate_normals()"),
+		"Pier builder must call st.generate_normals() before committing the mesh",
+	)

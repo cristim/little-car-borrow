@@ -147,9 +147,9 @@ func test_fields_material_uses_vertex_colors() -> void:
 	assert_true(found_fields, "At least one tile should produce a Fields mesh")
 
 
-func test_build_may_create_fences() -> void:
+func test_build_may_create_fence_body() -> void:
 	# Fences appear with ~60% probability per field, so across many tiles
-	# we should see at least one fence
+	# we should see at least one fence StaticBody3D
 	var span: float = _grid.get_grid_span()
 	var found_fences := false
 	for tx in range(3, 15):
@@ -158,20 +158,79 @@ func test_build_may_create_fences() -> void:
 		add_child_autofree(chunk)
 		_builder.build(chunk, tile, span * float(tx), 0.0)
 		for child in chunk.get_children():
-			if child is MeshInstance3D and child.name == "Fences":
+			if child is StaticBody3D and child.name == "Fences":
 				found_fences = true
-				assert_eq(
-					child.material_override,
-					_builder._fence_mat,
-					"Fences should use fence material",
-				)
 				break
 		if found_fences:
 			break
 	assert_true(
 		found_fences,
-		"At least one tile should produce fences across 12 tiles",
+		"At least one tile should produce a Fences StaticBody3D across 12 tiles",
 	)
+
+
+func test_farmland_fence_has_collision_shapes() -> void:
+	var span: float = _grid.get_grid_span()
+	for tx in range(3, 15):
+		var tile := Vector2i(tx, 0)
+		var chunk := Node3D.new()
+		add_child_autofree(chunk)
+		_builder.build(chunk, tile, span * float(tx), 0.0)
+		for child in chunk.get_children():
+			if child is StaticBody3D and child.name == "Fences":
+				var col_count := 0
+				for sub in child.get_children():
+					if sub is CollisionShape3D:
+						col_count += 1
+				assert_true(
+					col_count >= 4,
+					"Fence body must have at least 4 collision shapes (N/S/W/E per field)",
+				)
+				return
+	pass_test("No fence body found in range — skipping collision check")
+
+
+func test_farmland_fence_collision_layer() -> void:
+	var span: float = _grid.get_grid_span()
+	for tx in range(3, 15):
+		var tile := Vector2i(tx, 0)
+		var chunk := Node3D.new()
+		add_child_autofree(chunk)
+		_builder.build(chunk, tile, span * float(tx), 0.0)
+		for child in chunk.get_children():
+			if child is StaticBody3D and child.name == "Fences":
+				assert_eq(
+					child.collision_layer,
+					2,
+					"Fence body collision_layer should be 2 (Static)",
+				)
+				assert_eq(child.collision_mask, 0, "Fence body collision_mask should be 0")
+				return
+	pass_test("No fence body found in range — skipping layer check")
+
+
+func test_farmland_fence_has_mesh_child() -> void:
+	var span: float = _grid.get_grid_span()
+	for tx in range(3, 15):
+		var tile := Vector2i(tx, 0)
+		var chunk := Node3D.new()
+		add_child_autofree(chunk)
+		_builder.build(chunk, tile, span * float(tx), 0.0)
+		for child in chunk.get_children():
+			if child is StaticBody3D and child.name == "Fences":
+				var found_mesh := false
+				for sub in child.get_children():
+					if sub is MeshInstance3D and sub.name == "FenceMesh":
+						found_mesh = true
+						assert_eq(
+							sub.material_override,
+							_builder._fence_mat,
+							"FenceMesh should use fence material",
+						)
+						break
+				assert_true(found_mesh, "Fences body must contain a FenceMesh child")
+				return
+	pass_test("No fence body found in range — skipping mesh check")
 
 
 # ================================================================

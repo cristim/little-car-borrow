@@ -347,3 +347,16 @@ func test_dashed_line_z_no_vertices_for_short_segment() -> void:
 			0,
 			"Very short segment should produce no surfaces",
 		)
+
+
+# ================================================================
+# IMP-10 — empty mesh guard prevents adding a node
+# ================================================================
+
+
+func test_empty_mesh_guard_present_in_source() -> void:
+	var src: String = (MarkingsScript as GDScript).source_code
+	assert_true(
+		src.contains("get_surface_count() == 0"),
+		"Markings builder must guard against adding an empty mesh node",
+	)
