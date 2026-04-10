@@ -63,7 +63,8 @@ var _pan_offset := Vector3.ZERO  # world-space pan in fullscreen
 func _ready() -> void:
 	custom_minimum_size = Vector2(MINI_SIZE, MINI_SIZE)
 	_scale = ZOOM_LEVELS[_zoom_idx]
-	_rebuild_clip_circle()
+	resized.connect(_rebuild_clip_circle)
+	# Do NOT call _rebuild_clip_circle here — size is (0, 0) at _ready time
 
 
 func _rebuild_clip_circle() -> void:
@@ -151,6 +152,8 @@ func _toggle_fullscreen() -> void:
 
 
 func _draw() -> void:
+	if _clip_circle.is_empty():
+		_rebuild_clip_circle()
 	if not _player:
 		return
 
@@ -700,10 +703,10 @@ func _height_to_minimap_color(h: float) -> Color:
 		var t := clampf((h - SEA_LEVEL) / -SEA_LEVEL, 0.0, 1.0)
 		col = Color(0.76, 0.70, 0.50).lerp(Color(0.22, 0.45, 0.18), t)
 	elif h < 30.0:
-		var t := clampf((h - 20.0) / 10.0, 0.0, 1.0)
+		var t := clampf(h / 30.0, 0.0, 1.0)  # grass→rock over full 0..30 range
 		col = Color(0.22, 0.45, 0.18).lerp(Color(0.45, 0.42, 0.38), t)
 	elif h < 50.0:
-		var t := clampf((h - 40.0) / 10.0, 0.0, 1.0)
+		var t := clampf((h - 30.0) / 20.0, 0.0, 1.0)  # rock→snow over 30..50
 		col = Color(0.45, 0.42, 0.38).lerp(Color(0.90, 0.90, 0.92), t)
 	else:
 		col = Color(0.90, 0.90, 0.92)

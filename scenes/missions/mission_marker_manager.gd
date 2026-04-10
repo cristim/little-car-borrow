@@ -79,6 +79,7 @@ func _on_vehicle_entered(_vehicle: Node) -> void:
 	var mid: String = mission.get("id", "")
 	if _markers.has(mid):
 		return  # already spawned
+	_markers[mid] = []  # reserve slot before spawning to block concurrent signals
 	var dp: Vector3 = mission.get("dropoff_pos", Vector3.ZERO)
 	_spawn_marker(mid, "dropoff", dp)
 

@@ -512,6 +512,37 @@ func test_spawn_marker_unknown_type_uses_white() -> void:
 
 
 # ================================================================
+# I5 — race condition: vehicle_entered twice spawns only one dropoff
+# ================================================================
+
+
+func test_vehicle_entered_twice_spawns_only_one_dropoff() -> void:
+	_mgr._mock_active_mission = {
+		"id": "race_th",
+		"type": "theft",
+		"state": "active",
+		"dropoff_pos": Vector3(10.0, 0.0, 20.0),
+	}
+
+	var vehicle := Node3D.new()
+	add_child_autofree(vehicle)
+
+	# Call handler twice in succession (simulates rapid signal firing)
+	_mgr._on_vehicle_entered(vehicle)
+	_mgr._on_vehicle_entered(vehicle)
+
+	assert_true(
+		_mgr._markers.has("race_th"),
+		"Markers dict should contain the mission id",
+	)
+	assert_eq(
+		_mgr._markers["race_th"].size(),
+		1,
+		"Only one dropoff marker should be spawned (I5 guard prevents duplicate)",
+	)
+
+
+# ================================================================
 # TestableMarkerManager — subclass that avoids scene dependencies
 # ================================================================
 

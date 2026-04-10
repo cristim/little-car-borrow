@@ -423,3 +423,48 @@ func test_helipad_color_is_distinct_from_heli_color() -> void:
 		mm.HELI_COLOR,
 		"HELIPAD_COLOR should differ from police HELI_COLOR",
 	)
+
+
+# ================================================================
+# I2 — _rebuild_clip_circle lazy init via resized signal
+# ================================================================
+
+
+func test_ready_connects_resized_signal() -> void:
+	var src: String = (MinimapScript as GDScript).source_code
+	assert_true(
+		src.contains("resized.connect(_rebuild_clip_circle)"),
+		"_ready() must connect resized signal to _rebuild_clip_circle",
+	)
+
+
+func test_ready_does_not_call_rebuild_directly() -> void:
+	var src: String = (MinimapScript as GDScript).source_code
+	# Find _ready body and confirm no direct _rebuild_clip_circle() call
+	# The only call to _rebuild_clip_circle in _ready should be via the signal
+	var ready_idx: int = src.find("func _ready()")
+	var next_func_idx: int = src.find("\nfunc ", ready_idx + 1)
+	var ready_body: String = src.substr(ready_idx, next_func_idx - ready_idx)
+	assert_false(
+		ready_body.contains("_rebuild_clip_circle()"),
+		"_ready() must not call _rebuild_clip_circle() directly — use lazy init in _draw()",
+	)
+
+
+# ================================================================
+# I9 — height gradient is continuous (no flat band between h=0 and h=20)
+# ================================================================
+
+
+func test_gradient_h10_and_h25_are_distinct() -> void:
+	var mm := _build_minimap()
+	var col_10: Color = mm._height_to_minimap_color(10.0)
+	var col_25: Color = mm._height_to_minimap_color(25.0)
+	assert_ne(col_10, col_25, "Colors at h=10 and h=25 must differ (gradient must not be flat)")
+
+
+func test_gradient_h0_and_h20_are_distinct() -> void:
+	var mm := _build_minimap()
+	var col_0: Color = mm._height_to_minimap_color(0.0)
+	var col_20: Color = mm._height_to_minimap_color(20.0)
+	assert_ne(col_0, col_20, "Colors at h=0 and h=20 must differ (gradient flat band is fixed)")
