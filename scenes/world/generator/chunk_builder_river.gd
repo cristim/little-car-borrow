@@ -43,6 +43,11 @@ func build(
 	var entry_pt := _edge_point(ox, oz, hs, entry_dir, pos)
 	var exit_pt := _edge_point(ox, oz, hs, exit_dir, pos)
 
+	# Flat water level: use the lower of entry/exit terrain heights
+	var h_entry: float = _boundary.get_ground_height(entry_pt.x, entry_pt.z)
+	var h_exit: float = _boundary.get_ground_height(exit_pt.x, exit_pt.z)
+	var water_y: float = minf(h_entry, h_exit) - RIVER_DEPTH * 0.5
+
 	# Build water plane along the river path
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -53,20 +58,14 @@ func build(
 		var p0: Vector3 = entry_pt.lerp(exit_pt, t0)
 		var p1: Vector3 = entry_pt.lerp(exit_pt, t1)
 
-		# Water surface height follows terrain minus depth
-		var h0: float = _boundary.get_ground_height(p0.x, p0.z)
-		var h1: float = _boundary.get_ground_height(p1.x, p1.z)
-		var wy0: float = h0 - RIVER_DEPTH * 0.5
-		var wy1: float = h1 - RIVER_DEPTH * 0.5
-
 		# Perpendicular direction for width
 		var dir := (exit_pt - entry_pt).normalized()
 		var perp := Vector3(-dir.z, 0.0, dir.x) * width * 0.5
 
-		var v0 := Vector3(p0.x - perp.x, wy0, p0.z - perp.z)
-		var v1 := Vector3(p0.x + perp.x, wy0, p0.z + perp.z)
-		var v2 := Vector3(p1.x + perp.x, wy1, p1.z + perp.z)
-		var v3 := Vector3(p1.x - perp.x, wy1, p1.z - perp.z)
+		var v0 := Vector3(p0.x - perp.x, water_y, p0.z - perp.z)
+		var v1 := Vector3(p0.x + perp.x, water_y, p0.z + perp.z)
+		var v2 := Vector3(p1.x + perp.x, water_y, p1.z + perp.z)
+		var v3 := Vector3(p1.x - perp.x, water_y, p1.z - perp.z)
 
 		# Two triangles
 		st.add_vertex(v0)
