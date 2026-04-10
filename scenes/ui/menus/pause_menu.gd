@@ -58,7 +58,7 @@ func _on_audio_pressed() -> void:
 
 
 func _on_fullscreen_pressed() -> void:
-	InputManager._toggle_fullscreen()
+	InputManager.toggle_fullscreen()
 
 
 func _on_quit_pressed() -> void:

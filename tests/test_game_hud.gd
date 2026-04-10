@@ -501,8 +501,7 @@ func test_weapon_unlocked_triggers_update() -> void:
 
 func test_process_updates_fps_label() -> void:
 	var hud := _build_hud()
-	await get_tree().process_frame
-	await get_tree().process_frame
+	hud._process(0.26)
 
 	assert_true(
 		hud.fps_label.text.begins_with("FPS:"),
@@ -513,6 +512,23 @@ func test_process_updates_fps_label() -> void:
 # ================================================================
 # C1 — mission_completed reward comes from signal param, not get_active_mission
 # ================================================================
+
+
+# ================================================================
+# I8 — game_hud must not access private weapon fields directly
+# ================================================================
+
+
+func test_game_hud_does_not_access_private_weapon_fields() -> void:
+	var src: String = (GameHudScript as GDScript).source_code
+	assert_false(
+		src.contains("pw._unlocked"),
+		"game_hud must not access pw._unlocked directly — use pw.get_unlocked()",
+	)
+	assert_false(
+		src.contains("pw._current_idx"),
+		"game_hud must not access pw._current_idx directly — use pw.get_current_weapon_index()",
+	)
 
 
 func test_mission_completed_shows_reward_from_signal_param() -> void:

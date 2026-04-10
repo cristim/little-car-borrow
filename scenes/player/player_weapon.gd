@@ -202,6 +202,14 @@ func get_current_weapon() -> Dictionary:
 	return WEAPONS[_current_idx]
 
 
+func get_unlocked() -> Array[bool]:
+	return _unlocked
+
+
+func get_current_weapon_index() -> int:
+	return _current_idx
+
+
 func unlock_weapon(idx: int) -> void:
 	if idx < 0 or idx >= WEAPONS.size():
 		return

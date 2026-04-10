@@ -286,3 +286,16 @@ func test_instance_set_context_menu() -> void:
 	add_child_autofree(im)
 	im.set_context(im.Context.MENU)
 	assert_eq(im.current_context, im.Context.MENU, "Context should be MENU")
+
+
+# ================================================================
+# I4 — public toggle_fullscreen wrapper (no underscore)
+# ================================================================
+
+
+func test_public_toggle_fullscreen_defined() -> void:
+	var src: String = (InputManagerScript as GDScript).source_code
+	assert_true(
+		src.contains("func toggle_fullscreen()"),
+		"InputManager must expose a public toggle_fullscreen() (no underscore) wrapper",
+	)

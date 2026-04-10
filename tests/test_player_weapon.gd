@@ -578,10 +578,8 @@ func test_no_error_on_death_when_unarmed() -> void:
 
 
 func test_ragdoll_lifetime_constant_defined() -> void:
-	var inst := WeaponScript.new()
-	add_child_autofree(inst)
 	assert_true(
-		inst.get_script_constant_map().has("RAGDOLL_LIFETIME"),
+		WeaponScript.get_script_constant_map().has("RAGDOLL_LIFETIME"),
 		"RAGDOLL_LIFETIME const should be defined",
 	)
 
@@ -620,4 +618,28 @@ func test_apply_impulse_uses_to_local_for_hit_position() -> void:
 	assert_false(
 		src.contains("hit_pos - body.global_position"),
 		"apply_impulse must not pass world-space offset hit_pos - body.global_position",
+	)
+
+
+# ==========================================================================
+# I8 — public accessors for _unlocked and _current_idx
+# ==========================================================================
+
+
+func test_get_unlocked_returns_four_element_array() -> void:
+	var result: Array[bool] = _pw.get_unlocked()
+	assert_eq(result.size(), 4, "get_unlocked() should return a 4-element array")
+
+
+func test_get_unlocked_all_true_by_default() -> void:
+	var result: Array[bool] = _pw.get_unlocked()
+	for i in range(result.size()):
+		assert_true(result[i], "All weapons should be unlocked by default (index %d)" % i)
+
+
+func test_get_current_weapon_index_returns_zero_initially() -> void:
+	assert_eq(
+		_pw.get_current_weapon_index(),
+		0,
+		"get_current_weapon_index() should return 0 initially",
 	)

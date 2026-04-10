@@ -202,8 +202,8 @@ func _update_weapon_slots() -> void:
 		return
 
 	var weapons: Array = pw.WEAPONS
-	var unlocked: Array = pw._unlocked
-	var current: int = pw._current_idx
+	var unlocked: Array[bool] = pw.get_unlocked()
+	var current: int = pw.get_current_weapon_index()
 
 	for i in range(weapon_slots.get_child_count()):
 		var slot := weapon_slots.get_child(i) as ColorRect
