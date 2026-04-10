@@ -122,7 +122,7 @@ func complete_mission() -> void:
 		(delivered_vehicle as Node).call_deferred("queue_free")
 
 	GameManager.add_money(reward)
-	EventBus.mission_completed.emit(mid)
+	EventBus.mission_completed.emit(mid, reward)
 	EventBus.mission_objective_updated.emit("")
 	_try_unlock_smg()
 	_active_mission = {}

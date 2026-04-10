@@ -119,9 +119,7 @@ func _on_timer(time_remaining: float) -> void:
 		timer_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
 
 
-func _on_mission_completed(_mission_id: String) -> void:
-	var mission := MissionManager.get_active_mission()
-	var reward: int = mission.get("reward", 0)
+func _on_mission_completed(_mission_id: String, reward: int) -> void:
 	reward_label.text = "+$%d" % reward
 	reward_label.remove_theme_color_override("font_color")
 	reward_label.visible = true

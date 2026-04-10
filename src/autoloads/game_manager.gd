@@ -87,7 +87,7 @@ func load_progress() -> void:
 	EventBus.player_money_changed.emit(money)
 
 
-func _on_mission_completed(_mission_id: String) -> void:
+func _on_mission_completed(_mission_id: String, _reward: int) -> void:
 	missions_completed += 1
 	save_progress()
 

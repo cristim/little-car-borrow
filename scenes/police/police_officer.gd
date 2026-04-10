@@ -23,6 +23,7 @@ var _right_shoulder: Node3D
 var _left_hip: Node3D
 var _right_hip: Node3D
 var _rng := RandomNumberGenerator.new()
+var _gunshot_player: AudioStreamPlayer3D
 
 
 func _ready() -> void:
@@ -30,6 +31,15 @@ func _ready() -> void:
 	add_to_group("police_officer")
 	collision_layer = 4  # NPC layer
 	collision_mask = 3  # Static + Ground
+
+	_gunshot_player = AudioStreamPlayer3D.new()
+	var gen := AudioStreamGenerator.new()
+	gen.mix_rate = 22050.0
+	gen.buffer_length = 0.15
+	_gunshot_player.stream = gen
+	_gunshot_player.max_distance = 50.0
+	_gunshot_player.bus = "SFX"
+	add_child(_gunshot_player)
 
 	_build_model()
 
@@ -127,17 +137,8 @@ func _shoot(target_pos: Vector3) -> void:
 
 
 func _play_gunshot() -> void:
-	var player := AudioStreamPlayer3D.new()
-	var gen := AudioStreamGenerator.new()
-	gen.mix_rate = 22050.0
-	gen.buffer_length = 0.15
-	player.stream = gen
-	player.max_distance = 50.0
-	player.bus = "Ambient"
-	add_child(player)
-	player.play()
-
-	var playback: AudioStreamGeneratorPlayback = player.get_stream_playback()
+	_gunshot_player.play()
+	var playback: AudioStreamGeneratorPlayback = _gunshot_player.get_stream_playback()
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	# Short noise burst = gunshot
@@ -147,9 +148,6 @@ func _play_gunshot() -> void:
 		var env := (1.0 - t) * (1.0 - t)
 		var noise := (rng.randf() - 0.5) * 0.3 * env
 		playback.push_frame(Vector2(noise, noise))
-
-	# Auto-cleanup after sound finishes
-	get_tree().create_timer(0.3).timeout.connect(player.queue_free)
 
 
 func _get_target_pos() -> Vector3:
