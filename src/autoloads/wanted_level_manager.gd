@@ -10,6 +10,7 @@ const HEAT_DECAY_DELAY := 5.0
 var wanted_level := 0
 var heat := 0.0
 var _decay_cooldown := 0.0
+var _rifle_unlocked := false
 
 
 func _ready() -> void:
@@ -54,9 +55,15 @@ func clear() -> void:
 
 
 func _try_unlock_rifle() -> void:
+	if _rifle_unlocked:
+		return
 	var players := get_tree().get_nodes_in_group("player")
 	if players.is_empty():
 		return
-	var weapon := players[0].get_node_or_null("PlayerWeapon")
+	var p: Node = players[0]
+	if not is_instance_valid(p):
+		return
+	_rifle_unlocked = true
+	var weapon := p.get_node_or_null("PlayerWeapon")
 	if weapon and weapon.has_method("unlock_weapon"):
 		weapon.unlock_weapon(3)

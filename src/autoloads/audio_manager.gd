@@ -6,15 +6,12 @@ const BUS_SFX := "SFX"
 const BUS_MUSIC := "Music"
 const BUS_AMBIENT := "Ambient"
 
-var _buses_created := false
-
-
 func _ready() -> void:
 	_ensure_buses()
 
 
 func _ensure_buses() -> void:
-	if _buses_created:
+	if AudioServer.bus_count > 1:
 		return
 	for bus_name in [BUS_SFX, BUS_MUSIC, BUS_AMBIENT]:
 		if AudioServer.get_bus_index(bus_name) == -1:
@@ -22,7 +19,6 @@ func _ensure_buses() -> void:
 			AudioServer.add_bus(idx)
 			AudioServer.set_bus_name(idx, bus_name)
 			AudioServer.set_bus_send(idx, BUS_MASTER)
-	_buses_created = true
 	_setup_music_bus_effects()
 
 
@@ -65,6 +61,8 @@ func get_bus_volume(bus_name: String) -> float:
 
 
 func play_sfx(stream: AudioStream, position: Vector3) -> void:
+	if not stream:
+		return
 	var player := AudioStreamPlayer3D.new()
 	player.stream = stream
 	player.bus = BUS_SFX
@@ -75,6 +73,8 @@ func play_sfx(stream: AudioStream, position: Vector3) -> void:
 
 
 func play_ui(stream: AudioStream) -> void:
+	if not stream:
+		return
 	var player := AudioStreamPlayer.new()
 	player.stream = stream
 	player.bus = BUS_SFX

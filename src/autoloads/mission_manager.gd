@@ -11,6 +11,7 @@ var _active_mission: Dictionary = {}
 var _refresh_timer := 0.0
 var _mission_timer := 0.0
 var _mission_counter: int = 0
+var _smg_unlocked := false
 var _player: Node3D = null
 var _rng := RandomNumberGenerator.new()
 var _grid = preload("res://src/road_grid.gd").new()
@@ -43,7 +44,7 @@ func _process(delta: float) -> void:
 	if not _active_mission.is_empty():
 		var tl: float = _active_mission.get("time_limit", 0.0)
 		if tl > 0.0 and _active_mission.get("state") == "active":
-			_mission_timer -= delta
+			_mission_timer = maxf(_mission_timer - delta, 0.0)
 			EventBus.mission_timer_updated.emit(_mission_timer)
 			if _mission_timer <= 0.0:
 				fail_mission("timeout")
@@ -196,11 +197,7 @@ func _on_vehicle_entered(vehicle: Node) -> void:
 
 	# Check if vehicle variant matches
 	var needed: String = _active_mission.get("vehicle_variant", "")
-	var body := vehicle.get_node_or_null("Body") as Node3D
-	if not body:
-		return
-
-	var variant_name := _identify_variant(body.scale)
+	var variant_name: String = vehicle.get_meta("variant", "")
 	if variant_name == needed:
 		_active_mission["state"] = "active"
 		_active_mission["_delivered_vehicle"] = vehicle
@@ -355,9 +352,15 @@ func _identify_variant(body_scale: Vector3) -> String:
 
 
 func _try_unlock_smg() -> void:
+	if _smg_unlocked:
+		return
 	var players := get_tree().get_nodes_in_group("player")
 	if players.is_empty():
 		return
-	var weapon := players[0].get_node_or_null("PlayerWeapon")
+	var p: Node = players[0]
+	if not is_instance_valid(p):
+		return
+	_smg_unlocked = true
+	var weapon := p.get_node_or_null("PlayerWeapon")
 	if weapon and weapon.has_method("unlock_weapon"):
 		weapon.unlock_weapon(1)

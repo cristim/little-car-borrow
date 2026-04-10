@@ -11,6 +11,7 @@ const MIN_VEHICLE_DIST := 18.0
 const SPAWN_INTERVAL := 1.0
 const SPAWNS_PER_TICK := 2
 const LOD_FREEZE_DIST := 140.0
+const SEA_LEVEL := -2.0
 # Max valid road height: terrain is capped at 6 m + 0.5 m ride clearance.
 # Any vehicle above this after its spawn grace has failed to land and is culled.
 const AIRBORNE_CULL_HEIGHT := 8.0
@@ -423,6 +424,7 @@ func _pick_weighted_variant() -> int:
 func _apply_variant(vehicle: Node) -> void:
 	var v: Dictionary = VARIANTS[_pick_weighted_variant()]
 	var vname: String = v.name
+	vehicle.set_meta("variant", vname)
 	var body := vehicle.get_node_or_null("Body") as Node3D
 	if not body:
 		return

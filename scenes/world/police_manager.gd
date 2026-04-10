@@ -12,6 +12,7 @@ const LOD_FREEZE_DIST := 140.0
 # Launch detection thresholds (same rationale as traffic_manager).
 const LAUNCH_VEL_THRESHOLD := 8.0
 const LAUNCH_VEL_POST_GRACE := 40.0
+const SEA_LEVEL := -2.0
 
 const BoundaryScript = preload("res://src/city_boundary.gd")
 var _grid = preload("res://src/road_grid.gd").new()

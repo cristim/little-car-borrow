@@ -4,6 +4,7 @@ extends "res://src/state_machine/state.gd"
 
 const DOOR_OPEN_ANGLE := -1.2
 const DOOR_ANIM_DURATION := 0.3
+const SEA_LEVEL := -2.0
 
 var _done := false
 

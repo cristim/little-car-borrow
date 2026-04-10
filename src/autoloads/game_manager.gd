@@ -11,6 +11,7 @@ var missions_completed: int = 0
 var total_earnings: int = 0
 var health: float = MAX_HEALTH
 var is_dead: bool = false
+var _shotgun_unlocked := false
 
 
 func _ready() -> void:
@@ -29,6 +30,8 @@ func add_money(amount: int) -> void:
 
 
 func deduct_money(amount: int) -> bool:
+	if amount <= 0:
+		return false
 	if money < amount:
 		return false
 	money -= amount
@@ -90,9 +93,15 @@ func _on_mission_completed(_mission_id: String) -> void:
 
 
 func _try_unlock_shotgun() -> void:
+	if _shotgun_unlocked:
+		return
 	var players := get_tree().get_nodes_in_group("player")
 	if players.is_empty():
 		return
-	var weapon := players[0].get_node_or_null("PlayerWeapon")
+	var p: Node = players[0]
+	if not is_instance_valid(p):
+		return
+	_shotgun_unlocked = true
+	var weapon := p.get_node_or_null("PlayerWeapon")
 	if weapon and weapon.has_method("unlock_weapon"):
 		weapon.unlock_weapon(2)

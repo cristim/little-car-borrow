@@ -6,6 +6,7 @@ extends RefCounted
 ## Wheels are ≈1.2 m left/right and ≈1.4 m front/rear of body centre.
 const FP_X := 1.2
 const FP_Z := 1.4
+const SEA_LEVEL := -2.0
 
 
 ## Probes the spawn surface at spawn_pos, returning a placement result.

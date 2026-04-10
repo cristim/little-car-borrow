@@ -10,6 +10,7 @@ const MIN_PED_DIST := 8.0
 const SPAWN_INTERVAL := 1.0
 const SPAWNS_PER_TICK := 2
 const SIDEWALK_OFFSET := 1.5
+const SEA_LEVEL := -2.0
 
 const BoundaryScript = preload("res://src/city_boundary.gd")
 var _grid = preload("res://src/road_grid.gd").new()

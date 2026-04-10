@@ -23,6 +23,7 @@ const DIR_OFFSETS := {
 	2: Vector2i(0, 1),   # SOUTH
 	3: Vector2i(-1, 0),  # WEST
 }
+const SEA_LEVEL := -2.0
 
 const BoundaryScript = preload("res://src/city_boundary.gd")
 var _grid = preload("res://src/road_grid.gd").new()
